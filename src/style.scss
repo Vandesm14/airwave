@@ -42,6 +42,10 @@ body {
         color: white;
       }
     }
+
+    &.live {
+      border-color: red;
+    }
   }
 
   canvas {

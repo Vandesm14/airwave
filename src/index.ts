@@ -67,10 +67,22 @@ async function complete(model: string, messages: Array<Message>) {
 type Aircraft = {
   x: number;
   y: number;
+
+  target: {
+    /** In Degrees (0 is north; up) */
+    heading: number;
+    /** In Knots */
+    speed: number;
+    /** In Feet */
+    altitude: number;
+  };
+
   /** In Degrees (0 is north; up) */
   heading: number;
   /** In Knots */
   speed: number;
+  /** In Feet */
+  altitude: number;
   callsign: string;
 };
 
@@ -97,7 +109,7 @@ enum TaskType {
 
 type Task = [TaskType, number];
 type CommandResponse = {
-  readback: string;
+  reply: string;
   id: string;
   tasks: Array<Task>;
 };
@@ -142,7 +154,7 @@ async function parseATCMessage(text: string) {
     {
       role: 'system',
       content:
-        'Your job is to take in raw audio transcription and format it into a list of tasks for an aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nAvailable Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"readback": "Left turn heading 180, reduce speed to 230, Skywest 5138", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}\n\nIf you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "readback".',
+        'You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of tasks for your aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nAvailable Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"reply": "Left turn heading 180, reduce speed to 230, Skywest 5138.", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}\n\nIf you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".\nExample:\nUser: American 0725, turn.\nAssistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}',
     },
     {
       role: 'user',
@@ -160,10 +172,12 @@ async function parseATCMessage(text: string) {
     ) {
       let message = messageTemplate.innerHTML
         .replace('{{callsign}}', json.id)
-        .replace('{{text}}', json.readback);
+        .replace('{{text}}', json.reply);
 
       chatbox.insertAdjacentHTML('beforeend', message);
     }
+
+    console.log({ text, json });
 
     let aircraft = aircrafts.find((el) => el.callsign === json.id);
     if (aircraft) {
@@ -176,10 +190,13 @@ async function parseATCMessage(text: string) {
 
         switch (task[0]) {
           case TaskType.HEADING:
-            aircraft.heading = value;
+            aircraft.target.heading = value;
             break;
           case TaskType.SPEED:
-            aircraft.speed = value;
+            aircraft.target.speed = value;
+            break;
+          case TaskType.ALTITUDE:
+            aircraft.target.altitude = value;
             break;
         }
       }
@@ -195,12 +212,29 @@ document.addEventListener('keydown', (e) => {
     whisper.abortRecording();
     isRecording = false;
   }
+
+  if (chatbox instanceof HTMLDivElement) {
+    if (isRecording) {
+      chatbox.classList.add('live');
+    } else {
+      chatbox.classList.remove('live');
+    }
+  }
 });
 
 document.addEventListener('keyup', (e) => {
   if (e.key === 'Insert' && isRecording) {
     isRecording = false;
+
     whisper.stopRecording(parseATCMessage);
+  }
+
+  if (chatbox instanceof HTMLDivElement) {
+    if (isRecording) {
+      chatbox.classList.add('live');
+    } else {
+      chatbox.classList.remove('live');
+    }
   }
 });
 
@@ -220,7 +254,9 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
     let airspace = calcAirspace(width, height);
 
     if (init) {
-      spawnRandomAircraft(airspace);
+      for (let i = 0; i < 1; i++) {
+        spawnRandomAircraft(airspace);
+      }
 
       runways.push({
         x: width / 2,
@@ -237,6 +273,8 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
     }
 
     for (let aircraft of aircrafts) {
+      updateAircraftTargets(aircraft, dts);
+
       let newPos = movePoint(
         aircraft.x,
         aircraft.y,
@@ -252,15 +290,72 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
   }
 }
 
+function updateAircraftTargets(aircraft: Aircraft, dts: number) {
+  /** In feet per second */
+  const climbSpeed = Math.round(2000 / 60) * dts;
+  /** In degrees per second */
+  const turnSpeed = 2 * dts;
+  /** In knots per second */
+  const speedSpeed = 1 * dts;
+
+  if (Math.abs(aircraft.altitude - aircraft.target.altitude) < climbSpeed) {
+    aircraft.altitude = aircraft.target.altitude;
+  }
+  if (Math.abs(aircraft.heading - aircraft.target.heading) < turnSpeed) {
+    aircraft.heading = aircraft.target.heading;
+  }
+  if (Math.abs(aircraft.speed - aircraft.target.speed) < speedSpeed) {
+    aircraft.speed = aircraft.target.speed;
+  }
+
+  if (aircraft.altitude !== aircraft.target.altitude) {
+    if (aircraft.altitude < aircraft.target.altitude) {
+      aircraft.altitude += climbSpeed;
+    } else {
+      aircraft.altitude -= climbSpeed;
+    }
+  }
+
+  if (aircraft.heading !== aircraft.target.heading) {
+    let delta_angle =
+      ((aircraft.target.heading - aircraft.heading + 540.0) % 360.0) - 180.0;
+    if (delta_angle < 0) {
+      aircraft.heading -= turnSpeed;
+    } else {
+      aircraft.heading += turnSpeed;
+    }
+  }
+
+  if (aircraft.speed !== aircraft.target.speed) {
+    if (aircraft.speed < aircraft.target.speed) {
+      aircraft.speed += speedSpeed;
+    } else {
+      aircraft.speed -= speedSpeed;
+    }
+  }
+}
+
 function spawnRandomAircraft(airspace: Airspace) {
   let result = getRandomPointOnCircle(airspace.x, airspace.y, airspace.r + 25);
   let degrees = getAngle(result.x, result.y, airspace.x, airspace.y);
 
+  let heading = degreesToHeading(degrees);
+  let speed = 250;
+  let altitude = 8000;
+
   let aircraft: Aircraft = {
     x: result.x,
     y: result.y,
-    heading: degreesToHeading(degrees),
-    speed: 250,
+
+    target: {
+      heading,
+      speed,
+      altitude,
+    },
+
+    heading,
+    speed,
+    altitude,
     callsign: randomCallsign(),
   };
 
@@ -373,6 +468,23 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     ctx.fillText(aircraft.callsign, aircraft.x + spacing, aircraft.y - spacing);
     ctx.fill();
 
+    let altitudeIcon = '➡';
+    if (aircraft.altitude < aircraft.target.altitude) {
+      altitudeIcon = '⬈';
+    } else if (aircraft.altitude > aircraft.target.altitude) {
+      altitudeIcon = '⬊';
+    }
+
+    ctx.beginPath();
+    ctx.fillText(
+      Math.round(aircraft.altitude / 100).toString() +
+        altitudeIcon +
+        Math.round(aircraft.target.altitude / 100).toString(),
+      aircraft.x + spacing,
+      aircraft.y - spacing + fontSize
+    );
+    ctx.fill();
+
     ctx.beginPath();
     ctx.fillText(
       Math.round(aircraft.heading)
@@ -380,7 +492,15 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
         .padStart(3, '0')
         .replace('360', '000'),
       aircraft.x + spacing,
-      aircraft.y - spacing + fontSize
+      aircraft.y - spacing + fontSize * 2
+    );
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.fillText(
+      Math.round(aircraft.speed).toString(),
+      aircraft.x + spacing,
+      aircraft.y - spacing + fontSize * 3
     );
     ctx.fill();
   }
