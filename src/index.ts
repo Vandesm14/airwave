@@ -89,14 +89,18 @@ type Runway = {
   length: number;
 };
 
-enum CommandType {
-  ALTITUDE = 'Altitude',
-  HEADING = 'Heading',
-  SPEED = 'Speed',
+enum TaskType {
+  ALTITUDE = 'altitude',
+  HEADING = 'heading',
+  SPEED = 'speed',
 }
 
-type Command = [CommandType, number];
-type Commands = Array<Command>;
+type Task = [TaskType, number];
+type CommandResponse = {
+  readback: string;
+  id: string;
+  tasks: Array<Task>;
+};
 
 let aircrafts: Array<Aircraft> = [];
 let runways: Array<Runway> = [];
@@ -117,7 +121,7 @@ document.addEventListener('keyup', (e) => {
         {
           role: 'system',
           content:
-            'Your job is to take in raw audio transcription and format it into a list of tasks for an aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"readback": "Left turn heading 180, reduce speed to 230, Skywest 5138", "tasks":[["heading", 180], ["speed", 230]]}',
+            'Your job is to take in raw audio transcription and format it into a list of tasks for an aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nAvailable Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"readback": "Left turn heading 180, reduce speed to 230, Skywest 5138", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}',
         },
         {
           role: 'user',
@@ -127,8 +131,25 @@ document.addEventListener('keyup', (e) => {
 
       if (response.choices instanceof Array) {
         let reply = response.choices[0].message.content;
-        let utterance = new SpeechSynthesisUtterance(reply);
+        let json: CommandResponse = JSON.parse(reply);
+
+        let utterance = new SpeechSynthesisUtterance(json.readback);
         speechSynthesis.speak(utterance);
+
+        let aircraft = aircrafts.find((el) => el.callsign === json.id);
+        if (aircraft) {
+          for (let task of json.tasks) {
+            let value = task[1];
+            switch (task[0]) {
+              case TaskType.HEADING:
+                aircraft.heading = value;
+                break;
+              case TaskType.SPEED:
+                aircraft.speed = value;
+                break;
+            }
+          }
+        }
       }
     });
   }
