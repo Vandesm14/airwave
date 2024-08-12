@@ -1,6 +1,33 @@
 type Ctx = CanvasRenderingContext2D;
 
 const feetPerPixel = 0.005;
+const knotToFeetPerSecond = 1.68781;
+
+function headingToDegrees(heading: number) {
+  return (heading + 270) % 360;
+}
+
+function degreesToHeading(degrees: number) {
+  return (degrees + 90) % 360;
+}
+
+type Aircraft = {
+  x: number;
+  y: number;
+  /** In Degrees (0 is up) */
+  heading: number;
+  /** In Knots */
+  speed: number;
+};
+
+type Airspace = {
+  x: number;
+  y: number;
+  r: number;
+};
+
+let aircrafts: Array<Aircraft> = [];
+let lastTime = Date.now();
 
 const canvas = document.getElementById('canvas');
 if (canvas instanceof HTMLCanvasElement && canvas !== null) {
@@ -8,48 +35,70 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
 
-    draw(canvas);
+    draw(canvas, false);
   });
+
+  setInterval(() => draw(canvas, false), 1000 / 30);
 
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 
-  draw(canvas);
+  draw(canvas, true);
 }
 
-type Aircraft = {
-  x: number;
-  y: number;
-  heading: number;
-};
-
-function draw(canvas: HTMLCanvasElement) {
+function draw(canvas: HTMLCanvasElement, init: boolean) {
   const width = canvas.width;
   const height = canvas.height;
+
+  let dt = Date.now() - lastTime;
+  lastTime = Date.now();
+  let dts = dt / 1000;
 
   let ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
-    let circle = drawCompass(ctx, width, height);
+    let airspace = calcAirspace(width, height);
+    drawCompass(ctx, airspace);
     drawRunway(ctx, width, height);
 
-    let result = getRandomPointOnCircle(circle.x, circle.y, circle.r + 25);
-    let heading = (getAngle(result.x, result.y, circle.x, circle.y) + 90) % 360;
-    let aircraft: Aircraft = {
-      x: result.x,
-      y: result.y,
-      heading,
-    };
+    if (init) {
+      spawnRandomAircraft(airspace);
+    }
 
-    drawBlip(ctx, aircraft);
+    for (let aircraft of aircrafts) {
+      let newPos = movePoint(
+        aircraft.x,
+        aircraft.y,
+        aircraft.speed * knotToFeetPerSecond * feetPerPixel * dts,
+        headingToDegrees(aircraft.heading)
+      );
+
+      aircraft.x = newPos.x;
+      aircraft.y = newPos.y;
+
+      drawBlip(ctx, aircraft);
+    }
   }
 }
 
-function drawCompass(ctx: Ctx, width: number, height: number) {
-  ctx.strokeStyle = 'white';
+function spawnRandomAircraft(airspace: Airspace) {
+  let result = getRandomPointOnCircle(airspace.x, airspace.y, airspace.r + 25);
+  let heading =
+    (getAngle(result.x, result.y, airspace.x, airspace.y) + 90) % 360;
 
+  let aircraft: Aircraft = {
+    x: result.x,
+    y: result.y,
+    heading,
+    speed: 250,
+  };
+
+  aircrafts.push(aircraft);
+}
+
+function calcAirspace(width: number, height: number): Airspace {
   let x = width / 2;
   let y = height / 2;
   let radius = x;
@@ -59,15 +108,18 @@ function drawCompass(ctx: Ctx, width: number, height: number) {
 
   radius -= 50;
 
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.stroke();
-
   return {
     x,
     y,
     r: radius,
   };
+}
+
+function drawCompass(ctx: Ctx, airspace: Airspace) {
+  ctx.strokeStyle = 'white';
+  ctx.beginPath();
+  ctx.arc(airspace.x, airspace.y, airspace.r, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 function drawRunway(ctx: Ctx, width: number, height: number) {
@@ -138,4 +190,20 @@ function getAngle(x1: number, y1: number, x2: number, y2: number) {
   const angleDegrees = angleRadians * (180 / Math.PI);
 
   return angleDegrees;
+}
+
+function movePoint(
+  x: number,
+  y: number,
+  length: number,
+  directionDegrees: number
+) {
+  // Convert direction from degrees to radians
+  const directionRadians = directionDegrees * (Math.PI / 180);
+
+  // Calculate the new coordinates
+  const newX = x + length * Math.cos(directionRadians);
+  const newY = y + length * Math.sin(directionRadians);
+
+  return { x: newX, y: newY };
 }
