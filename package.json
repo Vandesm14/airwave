@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "solid-js": "^1.8.19"
+    "zepto": "^1.2.0"
   },
   "devDependencies": {
+    "@types/zepto": "^1.0.36",
     "sass": "^1.77.8",
     "typescript": "^5.5.3",
-    "vite": "^5.4.0",
-    "vite-plugin-solid": "^2.10.2"
+    "vite": "^5.4.0"
   }
 }
