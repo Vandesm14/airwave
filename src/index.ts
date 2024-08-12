@@ -212,8 +212,8 @@ function drawRunway(ctx: Ctx, runway: Runway) {
 }
 
 function drawBlip(ctx: Ctx, aircraft: Aircraft) {
-  ctx.fillStyle = '#00ff00';
-  ctx.strokeStyle = '#00ff00';
+  ctx.fillStyle = '#00aa00';
+  ctx.strokeStyle = '#00aa00';
 
   ctx.moveTo(aircraft.x, aircraft.y);
 
@@ -238,7 +238,7 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     const endX = aircraft.x + length * Math.cos(angleRadians);
     const endY = aircraft.y + length * Math.sin(angleRadians);
 
-    ctx.strokeStyle = '#00ff00';
+    ctx.strokeStyle = '#00aa00';
     ctx.beginPath();
     ctx.moveTo(aircraft.x, aircraft.y);
     ctx.lineTo(endX, endY);
@@ -249,7 +249,7 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     let spacing = 10;
     let fontSize = 15;
 
-    ctx.fillStyle = '#00ff00';
+    ctx.fillStyle = '#55ff55';
     ctx.font = `900 ${fontSize}px monospace`;
     ctx.beginPath();
     ctx.fillText(aircraft.callsign, aircraft.x + spacing, aircraft.y - spacing);
