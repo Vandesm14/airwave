@@ -18,9 +18,9 @@ body {
     padding: 5px;
 
     position: absolute;
-    top: 20%;
-    height: 30%;
-    max-height: 30%;
+    bottom: 0;
+    min-height: 200px;
+    max-height: 200px;
     background-color: #000000aa;
 
     overflow-y: auto;
