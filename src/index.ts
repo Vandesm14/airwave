@@ -1,7 +1,9 @@
 type Ctx = CanvasRenderingContext2D;
 
-const feetPerPixel = 0.005;
-const knotToFeetPerSecond = 1.68781;
+const timeScale = 1;
+
+const feetPerPixel = 0.007;
+const knotToFeetPerSecond = 1.68781 * timeScale;
 
 function headingToDegrees(heading: number) {
   return (heading + 270) % 360;
@@ -92,7 +94,7 @@ function spawnRandomAircraft(airspace: Airspace) {
     x: result.x,
     y: result.y,
     heading,
-    speed: 250,
+    speed: 220,
   };
 
   aircrafts.push(aircraft);
