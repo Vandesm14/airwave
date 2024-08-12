@@ -3,26 +3,21 @@ import axios from "axios";
 
 const AUDIO_TYPE = "audio";
 const MODEL = "whisper-1";
-const TRANSCRIPTIONS_API_URL = "https://api.openai.com/v1/audio/transcriptions";
+const TRANSCRIPTIONS_API_URL = "http://localhost:8000/transcribe";
 
 export class WhisperSTT {
-  private readonly apiKey: string;
   private recorder: RecordRTCPromisesHandler | null;
   private stream: MediaStream | null;
   public isRecording: boolean;
   public isStopped: boolean;
   public isPaused: boolean;
 
-  constructor(apiKey: string) {
+  constructor() {
     this.recorder = null;
     this.stream = null;
     this.isRecording = false;
     this.isStopped = true;
     this.isPaused = false;
-    if (!apiKey) {
-      throw new Error("API key is required");
-    }
-    this.apiKey = apiKey;
   }
 
   public pauseRecording = async (): Promise<void> => {
@@ -93,7 +88,6 @@ export class WhisperSTT {
     formData.append("model", MODEL);
 
     const headers = {
-      Authorization: `Bearer ${this.apiKey}`,
       "Content-Type": "multipart/form-data",
     };
     try {
