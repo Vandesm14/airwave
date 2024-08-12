@@ -2,7 +2,8 @@ type Ctx = CanvasRenderingContext2D;
 
 const timeScale = 1;
 
-const feetPerPixel = 0.007;
+const nauticalMilesToFeet = 6076.115;
+const feetPerPixel = 0.005;
 const knotToFeetPerSecond = 1.68781 * timeScale;
 const milesToFeet = 5280;
 
@@ -112,7 +113,10 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
     }
 
     drawCompass(ctx, airspace);
-    drawRunway(ctx, runways[0]);
+
+    for (let runway of runways) {
+      drawRunway(ctx, runway);
+    }
 
     for (let aircraft of aircrafts) {
       let newPos = movePoint(
@@ -192,35 +196,17 @@ function drawRunway(ctx: Ctx, runway: Runway) {
     lineWidth
   );
 
-  ctx.beginPath();
-  ctx.arc(
-    length / 2 + milesToFeet * feetPerPixel * 2,
-    1 / 2,
-    5,
-    0,
-    Math.PI * 2
-  );
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(
-    length / 2 + milesToFeet * feetPerPixel * 4,
-    1 / 2,
-    5,
-    0,
-    Math.PI * 2
-  );
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(
-    length / 2 + milesToFeet * feetPerPixel * 6,
-    1 / 2,
-    5,
-    0,
-    Math.PI * 2
-  );
-  ctx.stroke();
+  for (let i = 2; i <= 6; i += 2) {
+    ctx.beginPath();
+    ctx.arc(
+      length / 2 + milesToFeet * feetPerPixel * i,
+      1 / 2,
+      6,
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
+  }
 
   ctx.resetTransform();
 }
@@ -236,13 +222,19 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(aircraft.x, aircraft.y, 15, 0, Math.PI * 2);
+  ctx.arc(
+    aircraft.x,
+    aircraft.y,
+    nauticalMilesToFeet * feetPerPixel * 0.8,
+    0,
+    Math.PI * 2
+  );
   ctx.stroke();
 
   function drawDirection(ctx: Ctx, aircraft: Aircraft) {
     const angleDegrees = (aircraft.heading + 270) % 360;
     const angleRadians = angleDegrees * (Math.PI / 180);
-    const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 30;
+    const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 60;
     const endX = aircraft.x + length * Math.cos(angleRadians);
     const endY = aircraft.y + length * Math.sin(angleRadians);
 
