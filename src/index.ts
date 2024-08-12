@@ -1,3 +1,5 @@
+type Ctx = CanvasRenderingContext2D;
+
 const canvas = document.getElementById('canvas');
 if (canvas instanceof HTMLCanvasElement && canvas !== null) {
   window.addEventListener('resize', () => {
@@ -28,6 +30,8 @@ function draw(canvas: HTMLCanvasElement) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
+    drawCompass(ctx, width, height);
+
     drawBlip(ctx, {
       x: width / 2,
       y: height / 2,
@@ -36,7 +40,20 @@ function draw(canvas: HTMLCanvasElement) {
   }
 }
 
-function drawBlip(ctx: CanvasRenderingContext2D, aircraft: Aircraft) {
+function drawCompass(ctx: Ctx, width: number, height: number) {
+  ctx.strokeStyle = 'white';
+
+  let diameter = width / 2;
+  if (height < width) {
+    diameter = height / 2;
+  }
+
+  ctx.beginPath();
+  ctx.arc(width / 2, height / 2, diameter - 50, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function drawBlip(ctx: Ctx, aircraft: Aircraft) {
   ctx.fillStyle = '#00ff00';
   ctx.strokeStyle = '#00ff00';
   ctx.beginPath();
@@ -47,7 +64,7 @@ function drawBlip(ctx: CanvasRenderingContext2D, aircraft: Aircraft) {
   ctx.arc(aircraft.x, aircraft.y, 15, 0, Math.PI * 2);
   ctx.stroke();
 
-  function drawDirection(ctx: CanvasRenderingContext2D, aircraft: Aircraft) {
+  function drawDirection(ctx: Ctx, aircraft: Aircraft) {
     const angleDegrees = (aircraft.heading + 270) % 360;
     const angleRadians = angleDegrees * (Math.PI / 180);
     const length = 40;
