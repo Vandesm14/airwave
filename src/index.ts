@@ -140,6 +140,11 @@ document.addEventListener('keyup', (e) => {
         if (aircraft) {
           for (let task of json.tasks) {
             let value = task[1];
+
+            if (typeof value !== 'number') {
+              continue;
+            }
+
             switch (task[0]) {
               case TaskType.HEADING:
                 aircraft.heading = value;
