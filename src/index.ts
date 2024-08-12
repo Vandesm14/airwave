@@ -1,3 +1,24 @@
+import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
+
+const whisper = new WhisperSTT();
+
+let isRecording = false;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Pause' && !isRecording) {
+    whisper.startRecording();
+    isRecording = true;
+  }
+});
+
+// Example: `JetBlue4677, turn left heading 270.`
+// Example: `American 0-9-8-6 reduce speed to 240 knots`
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Pause') {
+    isRecording = false;
+    whisper.stopRecording((text) => alert(text));
+  }
+});
+
 type Ctx = CanvasRenderingContext2D;
 
 const timeScale = 1;
