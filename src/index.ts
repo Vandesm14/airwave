@@ -4,6 +4,7 @@ const timeScale = 1;
 
 const feetPerPixel = 0.007;
 const knotToFeetPerSecond = 1.68781 * timeScale;
+const milesToFeet = 5280;
 
 function headingToDegrees(heading: number) {
   return (heading + 270) % 360;
@@ -35,6 +36,9 @@ function randomCallsign() {
   )}${randomNumber(0, 9)}${randomNumber(0, 9)}`;
 }
 
+const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+const toDegrees = (degrees: number) => (degrees / Math.PI) * 180;
+
 type Aircraft = {
   x: number;
   y: number;
@@ -51,7 +55,17 @@ type Airspace = {
   r: number;
 };
 
+type Runway = {
+  x: number;
+  y: number;
+  /** In Degrees (0 is north; up) */
+  heading: number;
+  /** In Feet */
+  length: number;
+};
+
 let aircrafts: Array<Aircraft> = [];
+let runways: Array<Runway> = [];
 let lastTime = Date.now();
 
 const canvas = document.getElementById('canvas');
@@ -85,12 +99,20 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
     ctx.fillRect(0, 0, width, height);
 
     let airspace = calcAirspace(width, height);
-    drawCompass(ctx, airspace);
-    drawRunway(ctx, width, height);
 
     if (init) {
       spawnRandomAircraft(airspace);
+
+      runways.push({
+        x: width / 2,
+        y: height / 2,
+        heading: 360,
+        length: 7000,
+      });
     }
+
+    drawCompass(ctx, airspace);
+    drawRunway(ctx, runways[0]);
 
     for (let aircraft of aircrafts) {
       let newPos = movePoint(
@@ -147,17 +169,58 @@ function drawCompass(ctx: Ctx, airspace: Airspace) {
   ctx.stroke();
 }
 
-function drawRunway(ctx: Ctx, width: number, height: number) {
-  let length = feetPerPixel * 7000;
+function drawRunway(ctx: Ctx, runway: Runway) {
+  let length = feetPerPixel * runway.length;
+  let width = 5;
+  let lineWidth = 1.5;
 
-  let x1 = width * 0.5;
-  let y1 = height * 0.5 - length * 0.5;
+  let x1 = runway.x;
+  let y1 = runway.y;
 
   ctx.translate(x1, y1);
-  ctx.rotate(0);
+  ctx.rotate(toRadians(headingToDegrees(runway.heading)));
 
   ctx.fillStyle = 'grey';
-  ctx.fillRect(0, 0, 3, length);
+  ctx.fillRect(-length / 2, -width / 2, length, width);
+
+  ctx.fillStyle = '#3087f2';
+  ctx.strokeStyle = '#3087f2';
+  ctx.fillRect(
+    length / 2,
+    -lineWidth / 2,
+    milesToFeet * feetPerPixel * 10,
+    lineWidth
+  );
+
+  ctx.beginPath();
+  ctx.arc(
+    length / 2 + milesToFeet * feetPerPixel * 2,
+    1 / 2,
+    5,
+    0,
+    Math.PI * 2
+  );
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(
+    length / 2 + milesToFeet * feetPerPixel * 4,
+    1 / 2,
+    5,
+    0,
+    Math.PI * 2
+  );
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(
+    length / 2 + milesToFeet * feetPerPixel * 6,
+    1 / 2,
+    5,
+    0,
+    Math.PI * 2
+  );
+  ctx.stroke();
 
   ctx.resetTransform();
 }
