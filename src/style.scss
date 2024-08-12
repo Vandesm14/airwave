@@ -1,3 +1,19 @@
-canvas {
-  border: 1px solid black;
+html,
+body {
+  margin: 0;
+  padding: 0;
+
+  height: 100%;
+}
+
+.radar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  canvas {
+    flex: 1;
+    border: 1px solid black;
+    height: 100%;
+  }
 }

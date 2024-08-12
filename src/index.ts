@@ -1,5 +1,19 @@
 const canvas = document.getElementById('canvas');
-if (canvas instanceof HTMLCanvasElement) {
+if (canvas instanceof HTMLCanvasElement && canvas !== null) {
+  window.addEventListener('resize', () => {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    draw(canvas);
+  });
+
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
+  draw(canvas);
+}
+
+function draw(canvas: HTMLCanvasElement) {
   const width = canvas.width;
   const height = canvas.height;
 
