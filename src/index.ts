@@ -106,65 +106,6 @@ let aircrafts: Array<Aircraft> = [];
 let runways: Array<Runway> = [];
 let lastTime = Date.now();
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Insert' && !isRecording) {
-    whisper.startRecording();
-    isRecording = true;
-  } else if (e.key === 'Delete' && isRecording) {
-    whisper.abortRecording();
-    isRecording = false;
-  }
-});
-
-document.addEventListener('keyup', (e) => {
-  if (e.key === 'Insert' && isRecording) {
-    isRecording = false;
-    whisper.stopRecording(async (text) => {
-      let response = await complete('gpt-4o-mini', [
-        {
-          role: 'system',
-          content:
-            'Your job is to take in raw audio transcription and format it into a list of tasks for an aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nAvailable Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"readback": "Left turn heading 180, reduce speed to 230, Skywest 5138", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}\n\nIf you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "readback".',
-        },
-        {
-          role: 'user',
-          content: text,
-        },
-      ]);
-
-      if (response.choices instanceof Array) {
-        let reply = response.choices[0].message.content;
-        let json: CommandResponse = JSON.parse(reply);
-
-        console.log({ text, json });
-
-        let utterance = new SpeechSynthesisUtterance(json.readback);
-        speechSynthesis.speak(utterance);
-
-        let aircraft = aircrafts.find((el) => el.callsign === json.id);
-        if (aircraft) {
-          for (let task of json.tasks) {
-            let value = task[1];
-
-            if (typeof value !== 'number') {
-              continue;
-            }
-
-            switch (task[0]) {
-              case TaskType.HEADING:
-                aircraft.heading = value;
-                break;
-              case TaskType.SPEED:
-                aircraft.speed = value;
-                break;
-            }
-          }
-        }
-      }
-    });
-  }
-});
-
 const canvas = document.getElementById('canvas');
 if (canvas instanceof HTMLCanvasElement && canvas !== null) {
   window.addEventListener('resize', () => {
@@ -181,6 +122,87 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
 
   draw(canvas, true);
 }
+
+const chatbox = document.getElementById('chatbox');
+const messageTemplate = document.getElementById('message-template');
+
+async function parseATCMessage(text: string) {
+  if (
+    chatbox instanceof HTMLDivElement &&
+    messageTemplate instanceof HTMLTemplateElement
+  ) {
+    let message = messageTemplate.innerHTML
+      .replace('{{callsign}}', 'ATC')
+      .replace('{{text}}', text);
+
+    chatbox.insertAdjacentHTML('beforeend', message);
+  }
+
+  let response = await complete('gpt-4o-mini', [
+    {
+      role: 'system',
+      content:
+        'Your job is to take in raw audio transcription and format it into a list of tasks for an aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nAvailable Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"readback": "Left turn heading 180, reduce speed to 230, Skywest 5138", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}\n\nIf you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "readback".',
+    },
+    {
+      role: 'user',
+      content: text,
+    },
+  ]);
+
+  if (response.choices instanceof Array) {
+    let reply = response.choices[0].message.content;
+    let json: CommandResponse = JSON.parse(reply);
+
+    if (
+      chatbox instanceof HTMLDivElement &&
+      messageTemplate instanceof HTMLTemplateElement
+    ) {
+      let message = messageTemplate.innerHTML
+        .replace('{{callsign}}', json.id)
+        .replace('{{text}}', json.readback);
+
+      chatbox.insertAdjacentHTML('beforeend', message);
+    }
+
+    let aircraft = aircrafts.find((el) => el.callsign === json.id);
+    if (aircraft) {
+      for (let task of json.tasks) {
+        let value = task[1];
+
+        if (typeof value !== 'number') {
+          continue;
+        }
+
+        switch (task[0]) {
+          case TaskType.HEADING:
+            aircraft.heading = value;
+            break;
+          case TaskType.SPEED:
+            aircraft.speed = value;
+            break;
+        }
+      }
+    }
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Insert' && !isRecording) {
+    whisper.startRecording();
+    isRecording = true;
+  } else if (e.key === 'Delete' && isRecording) {
+    whisper.abortRecording();
+    isRecording = false;
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Insert' && isRecording) {
+    isRecording = false;
+    whisper.stopRecording(parseATCMessage);
+  }
+});
 
 function draw(canvas: HTMLCanvasElement, init: boolean) {
   const width = canvas.width;

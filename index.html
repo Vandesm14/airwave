@@ -4,12 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/src/style.scss" />
-    <title>Document</title>
+    <title>Airwave - ATC Simulator</title>
   </head>
   <body>
     <div class="radar">
+      <div id="chatbox"></div>
       <canvas id="canvas"></canvas>
     </div>
+    <template id="message-template">
+      <div class="message">
+        <span class="callsign">{{callsign}}</span
+        ><span class="text">{{text}}</span>
+      </div>
+    </template>
     <script type="module" src="/src/index.ts"></script>
   </body>
 </html>

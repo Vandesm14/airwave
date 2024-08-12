@@ -11,6 +11,39 @@ body {
   flex-direction: column;
   height: 100%;
 
+  #chatbox {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px;
+
+    position: absolute;
+    top: 20%;
+    height: 30%;
+    max-height: 30%;
+    background-color: #000000aa;
+
+    overflow-y: auto;
+
+    border: 1px solid white;
+    min-width: 300px;
+    max-width: 20%;
+
+    font: 14px monospace;
+
+    .message {
+      .callsign {
+        color: red;
+        font-weight: bold;
+      }
+
+      .text {
+        margin-left: 5px;
+        color: white;
+      }
+    }
+  }
+
   canvas {
     flex: 1;
     border: 1px solid black;
