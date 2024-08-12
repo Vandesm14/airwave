@@ -79,6 +79,18 @@ export class WhisperSTT {
     }
   };
 
+  public abortRecording = async () => {
+    if (!this.isRecording || !this.recorder) {
+      throw new Error("Cannot stop recording: no recorder");
+    }
+    await this.recorder.stopRecording();
+    this.recorder = null;
+    this.stream = null;
+    this.isRecording = false;
+    this.isStopped = true;
+    this.isPaused = false;
+  };
+
   private readonly transcribe = async (
     audioBlob: Blob,
     onFinish: (text: string) => void,
