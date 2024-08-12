@@ -38,7 +38,7 @@ function randomCallsign() {
 type Aircraft = {
   x: number;
   y: number;
-  /** In Degrees (0 is up) */
+  /** In Degrees (0 is north; up) */
   heading: number;
   /** In Knots */
   speed: number;
