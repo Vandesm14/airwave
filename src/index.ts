@@ -10,7 +10,29 @@ function headingToDegrees(heading: number) {
 }
 
 function degreesToHeading(degrees: number) {
-  return (degrees + 90) % 360;
+  return (degrees + 360 + 90) % 360;
+}
+
+const airlines: Record<string, string> = {
+  AAL: 'American',
+  SKW: 'Sky West',
+  JBL: 'Jet Blue',
+};
+
+function randomNumber(from: number, to: number) {
+  return Math.round(Math.random() * to - from) + from;
+}
+
+function randomAirline() {
+  let keys = Object.keys(airlines);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+function randomCallsign() {
+  return `${randomAirline()}${randomNumber(0, 9)}${randomNumber(
+    0,
+    9
+  )}${randomNumber(0, 9)}${randomNumber(0, 9)}`;
 }
 
 type Aircraft = {
@@ -20,6 +42,7 @@ type Aircraft = {
   heading: number;
   /** In Knots */
   speed: number;
+  callsign: string;
 };
 
 type Airspace = {
@@ -87,14 +110,14 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
 
 function spawnRandomAircraft(airspace: Airspace) {
   let result = getRandomPointOnCircle(airspace.x, airspace.y, airspace.r + 25);
-  let heading =
-    (getAngle(result.x, result.y, airspace.x, airspace.y) + 90) % 360;
+  let degrees = getAngle(result.x, result.y, airspace.x, airspace.y);
 
   let aircraft: Aircraft = {
     x: result.x,
     y: result.y,
-    heading,
-    speed: 220,
+    heading: degreesToHeading(degrees),
+    speed: 250,
+    callsign: randomCallsign(),
   };
 
   aircrafts.push(aircraft);
@@ -136,7 +159,7 @@ function drawRunway(ctx: Ctx, width: number, height: number) {
   ctx.fillStyle = 'grey';
   ctx.fillRect(0, 0, 3, length);
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.resetTransform();
 }
 
 function drawBlip(ctx: Ctx, aircraft: Aircraft) {
@@ -156,17 +179,41 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
   function drawDirection(ctx: Ctx, aircraft: Aircraft) {
     const angleDegrees = (aircraft.heading + 270) % 360;
     const angleRadians = angleDegrees * (Math.PI / 180);
-    const length = 40;
+    const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 30;
     const endX = aircraft.x + length * Math.cos(angleRadians);
     const endY = aircraft.y + length * Math.sin(angleRadians);
 
+    ctx.strokeStyle = '#00ff00';
     ctx.beginPath();
     ctx.moveTo(aircraft.x, aircraft.y);
     ctx.lineTo(endX, endY);
     ctx.stroke();
   }
 
+  function drawInfo(ctx: Ctx, aircraft: Aircraft) {
+    let spacing = 10;
+    let fontSize = 15;
+
+    ctx.fillStyle = '#00ff00';
+    ctx.font = `900 ${fontSize}px monospace`;
+    ctx.beginPath();
+    ctx.fillText(aircraft.callsign, aircraft.x + spacing, aircraft.y - spacing);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.fillText(
+      Math.round(aircraft.heading)
+        .toString()
+        .padStart(3, '0')
+        .replace('360', '000'),
+      aircraft.x + spacing,
+      aircraft.y - spacing + fontSize
+    );
+    ctx.fill();
+  }
+
   drawDirection(ctx, aircraft);
+  drawInfo(ctx, aircraft);
 }
 
 function getRandomPointOnCircle(cx: number, cy: number, r: number) {
