@@ -65,6 +65,19 @@ type Runway = {
   length: number;
 };
 
+enum CommandType {
+  ALTITUDE = 'Altitude',
+  HEADING = 'Heading',
+  SPEED = 'Speed',
+}
+
+type Command = {
+  type: string;
+  value: number;
+};
+
+type Commands = Array<Command>;
+
 let aircrafts: Array<Aircraft> = [];
 let runways: Array<Runway> = [];
 let lastTime = Date.now();
