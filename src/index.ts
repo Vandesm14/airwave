@@ -1,5 +1,7 @@
 type Ctx = CanvasRenderingContext2D;
 
+const feetPerPixel = 0.005;
+
 const canvas = document.getElementById('canvas');
 if (canvas instanceof HTMLCanvasElement && canvas !== null) {
   window.addEventListener('resize', () => {
@@ -31,6 +33,7 @@ function draw(canvas: HTMLCanvasElement) {
     ctx.fillRect(0, 0, width, height);
 
     let circle = drawCompass(ctx, width, height);
+    drawRunway(ctx, width, height);
 
     let result = getRandomPointOnCircle(circle.x, circle.y, circle.r + 25);
     let heading = (getAngle(result.x, result.y, circle.x, circle.y) + 90) % 360;
@@ -65,6 +68,21 @@ function drawCompass(ctx: Ctx, width: number, height: number) {
     y,
     r: radius,
   };
+}
+
+function drawRunway(ctx: Ctx, width: number, height: number) {
+  let length = feetPerPixel * 7000;
+
+  let x1 = width * 0.5;
+  let y1 = height * 0.5 - length * 0.5;
+
+  ctx.translate(x1, y1);
+  ctx.rotate(0);
+
+  ctx.fillStyle = 'grey';
+  ctx.fillRect(0, 0, 3, length);
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function drawBlip(ctx: Ctx, aircraft: Aircraft) {
