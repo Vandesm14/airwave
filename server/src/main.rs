@@ -1,86 +1,55 @@
-use base64::{engine::general_purpose, Engine as _};
-use core::str;
+use axum::body::Bytes;
+use axum::Router;
+use axum::{extract::State, routing::post};
 use dotenv::dotenv;
-use reqwest::{header, Body, Client};
-use rocket::data::{Data, ToByteUnit};
-use rocket::http::Status;
-use rocket::response::content;
-use rocket::{post, routes, State};
-use std::env;
-
-#[macro_use]
-extern crate rocket;
+use reqwest::multipart::Part;
+use reqwest::{header, Client};
+use std::{env, sync::Arc};
 
 struct AppState {
   client: Client,
   api_key: String,
 }
 
-#[post("/transcribe", data = "<body>")]
-async fn transcribe(
-  state: &State<AppState>,
-  body: Data<'_>,
-) -> Result<content::RawJson<String>, Status> {
-  let body_bytes = body
-    .open(512.mebibytes())
-    .into_bytes()
-    .await
-    .map_err(|_| Status::InternalServerError)?;
-
-  let mut req = reqwest::Request::new(
-    reqwest::Method::POST,
-    "https://api.openai.com/v1/audio/transcriptions"
-      .parse()
-      .unwrap(),
-  );
-
-  *req.body_mut() = Some(Body::from(body_bytes.to_vec()));
-  req.headers_mut().insert(
-    header::AUTHORIZATION,
-    header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
-      .unwrap(),
-  );
-  req.headers_mut().insert(
-    header::CONTENT_TYPE,
-    header::HeaderValue::from_str("multipart/form-data").unwrap(),
-  );
-
-  let response = state
-    .client
-    .execute(req)
-    .await
-    .map_err(|_| Status::BadGateway)?;
-  let body = response
-    .text()
-    .await
-    .map_err(|_| Status::InternalServerError)?;
-
-  if is_base64(&body) {
-    match general_purpose::STANDARD.decode(&body) {
-      Ok(decoded) => Ok(content::RawJson(
-        String::from_utf8_lossy(&decoded).into_owned(),
-      )),
-      Err(_) => Err(Status::InternalServerError),
-    }
-  } else {
-    Ok(content::RawJson(body))
-  }
-}
-
-fn is_base64(s: &str) -> bool {
-  if s.contains(['\n', '\r', '\t', ' ']) {
-    return false;
-  }
-  general_purpose::STANDARD.decode(s).is_ok()
-}
-
-#[launch]
-fn rocket() -> _ {
+#[tokio::main]
+async fn main() {
   dotenv().ok();
   let api_key = env::var("API_KEY").expect("API_KEY must be set");
   let client = Client::new();
 
-  rocket::build()
-    .manage(AppState { client, api_key })
-    .mount("/", routes![transcribe])
+  let shared_state = Arc::new(AppState { api_key, client });
+
+  let app = Router::new()
+    .route("/transcribe", post(transcribe))
+    .with_state(shared_state);
+
+  // run our app with hyper, listening globally on port 3000
+  let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
+  axum::serve(listener, app).await.unwrap();
+}
+
+async fn transcribe(State(state): State<Arc<AppState>>, body: Bytes) -> String {
+  let form = reqwest::multipart::Form::new();
+  let form =
+    form.part("file", Part::bytes(body.to_vec()).file_name("audio.wav"));
+  let form = form.text("model", "whisper-1".to_string());
+
+  let response = state
+    .client
+    .post("https://api.openai.com/v1/audio/transcriptions")
+    .multipart(form)
+    .header(
+      header::AUTHORIZATION,
+      header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
+        .unwrap(),
+    )
+    .header(
+      header::CONTENT_TYPE,
+      header::HeaderValue::from_str("multipart/form-data").unwrap(),
+    )
+    .send()
+    .await
+    .unwrap();
+
+  response.text().await.unwrap()
 }

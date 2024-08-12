@@ -83,17 +83,13 @@ export class WhisperSTT {
     audioBlob: Blob,
     onFinish: (text: string) => void,
   ): Promise<void> => {
-    const formData = new FormData();
-    formData.append("file", audioBlob, "audio.wav");
-    formData.append("model", MODEL);
-
     const headers = {
-      "Content-Type": "multipart/form-data",
+      "Content-Type": "application/octet-stream",
     };
     try {
       const response = await axios.post<{ text: string }>(
         TRANSCRIPTIONS_API_URL,
-        formData,
+        audioBlob,
         {
           headers,
         },
