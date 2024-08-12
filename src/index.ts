@@ -30,32 +30,49 @@ function draw(canvas: HTMLCanvasElement) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
-    drawCompass(ctx, width, height);
+    let circle = drawCompass(ctx, width, height);
 
-    drawBlip(ctx, {
-      x: width / 2,
-      y: height / 2,
-      heading: 0,
-    });
+    let result = getRandomPointOnCircle(circle.x, circle.y, circle.r + 25);
+    let heading = (getAngle(result.x, result.y, circle.x, circle.y) + 90) % 360;
+    let aircraft: Aircraft = {
+      x: result.x,
+      y: result.y,
+      heading,
+    };
+
+    drawBlip(ctx, aircraft);
   }
 }
 
 function drawCompass(ctx: Ctx, width: number, height: number) {
   ctx.strokeStyle = 'white';
 
-  let diameter = width / 2;
+  let x = width / 2;
+  let y = height / 2;
+  let radius = x;
   if (height < width) {
-    diameter = height / 2;
+    radius = y;
   }
 
+  radius -= 50;
+
   ctx.beginPath();
-  ctx.arc(width / 2, height / 2, diameter - 50, 0, Math.PI * 2);
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.stroke();
+
+  return {
+    x,
+    y,
+    r: radius,
+  };
 }
 
 function drawBlip(ctx: Ctx, aircraft: Aircraft) {
   ctx.fillStyle = '#00ff00';
   ctx.strokeStyle = '#00ff00';
+
+  ctx.moveTo(aircraft.x, aircraft.y);
+
   ctx.beginPath();
   ctx.arc(aircraft.x, aircraft.y, 3, 0, Math.PI * 2);
   ctx.fill();
@@ -78,4 +95,29 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
   }
 
   drawDirection(ctx, aircraft);
+}
+
+function getRandomPointOnCircle(cx: number, cy: number, r: number) {
+  // Generate a random angle in radians
+  const randomAngle = Math.random() * 2 * Math.PI;
+
+  // Calculate the coordinates of the point on the circle
+  const x = cx + r * Math.cos(randomAngle);
+  const y = cy + r * Math.sin(randomAngle);
+
+  return { x, y, angle: randomAngle };
+}
+
+function getAngle(x1: number, y1: number, x2: number, y2: number) {
+  // Calculate the difference in coordinates
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  // Calculate the angle in radians
+  const angleRadians = Math.atan2(dy, dx);
+
+  // Convert the angle to degrees
+  const angleDegrees = angleRadians * (180 / Math.PI);
+
+  return angleDegrees;
 }
