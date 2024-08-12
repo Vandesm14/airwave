@@ -381,9 +381,30 @@ function calcAirspace(width: number, height: number): Airspace {
 
 function drawCompass(ctx: Ctx, airspace: Airspace) {
   ctx.strokeStyle = 'white';
+  ctx.fillStyle = 'white';
   ctx.beginPath();
   ctx.arc(airspace.x, airspace.y, airspace.r, 0, Math.PI * 2);
   ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < 36; i++) {
+    let text = degreesToHeading(i * 10)
+      .toString()
+      .padStart(3, '0');
+    if (text === '000') {
+      text = '360';
+    }
+
+    ctx.beginPath();
+    ctx.fillText(
+      text,
+      Math.cos(toRadians(i * 10)) * (airspace.x - 30) + airspace.x,
+      Math.sin(toRadians(i * 10)) * (airspace.y - 60) + airspace.y
+    );
+    ctx.stroke();
+  }
 }
 
 function drawRunway(ctx: Ctx, runway: Runway) {
@@ -459,9 +480,10 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
   }
 
   function drawInfo(ctx: Ctx, aircraft: Aircraft) {
-    let spacing = 10;
+    let spacing = 16;
     let fontSize = 15;
 
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#55ff55';
     ctx.font = `900 ${fontSize}px monospace`;
     ctx.beginPath();
