@@ -1,23 +1,8 @@
+import axios from 'axios';
 import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
 
 const whisper = new WhisperSTT();
-
 let isRecording = false;
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Pause' && !isRecording) {
-    whisper.startRecording();
-    isRecording = true;
-  }
-});
-
-// Example: `JetBlue4677, turn left heading 270.`
-// Example: `American 0-9-8-6 reduce speed to 240 knots`
-document.addEventListener('keyup', (e) => {
-  if (e.key === 'Pause') {
-    isRecording = false;
-    whisper.stopRecording((text) => alert(text));
-  }
-});
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -61,6 +46,24 @@ function randomCallsign() {
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 const toDegrees = (degrees: number) => (degrees / Math.PI) * 180;
 
+type Message = {
+  role: string;
+  content: string;
+};
+
+async function complete(model: string, messages: Array<Message>) {
+  let response = await axios.post(
+    'http://localhost:8000/complete',
+    JSON.stringify({
+      model,
+      messages,
+    }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+
+  return response.data;
+}
+
 type Aircraft = {
   x: number;
   y: number;
@@ -92,16 +95,44 @@ enum CommandType {
   SPEED = 'Speed',
 }
 
-type Command = {
-  type: string;
-  value: number;
-};
-
+type Command = [CommandType, number];
 type Commands = Array<Command>;
 
 let aircrafts: Array<Aircraft> = [];
 let runways: Array<Runway> = [];
 let lastTime = Date.now();
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Pause' && !isRecording) {
+    whisper.startRecording();
+    isRecording = true;
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Pause') {
+    isRecording = false;
+    whisper.stopRecording(async (text) => {
+      let response = await complete('gpt-4o-mini', [
+        {
+          role: 'system',
+          content:
+            'Your job is to take in raw audio transcription and format it into a list of tasks for an aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"readback": "Left turn heading 180, reduce speed to 230, Skywest 5138", "tasks":[["heading", 180], ["speed", 230]]}',
+        },
+        {
+          role: 'user',
+          content: text,
+        },
+      ]);
+
+      if (response.choices instanceof Array) {
+        let reply = response.choices[0].message.content;
+        let utterance = new SpeechSynthesisUtterance(reply);
+        speechSynthesis.speak(utterance);
+      }
+    });
+  }
+});
 
 const canvas = document.getElementById('canvas');
 if (canvas instanceof HTMLCanvasElement && canvas !== null) {

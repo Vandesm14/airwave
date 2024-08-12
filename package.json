@@ -10,6 +10,7 @@
     "serve": "cd server && go run main.go"
   },
   "dependencies": {
+    "axios": "^1.7.3",
     "zepto": "^1.2.0"
   },
   "devDependencies": {

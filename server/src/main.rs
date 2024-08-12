@@ -21,6 +21,7 @@ async fn main() {
 
   let app = Router::new()
     .route("/transcribe", post(transcribe))
+    .route("/complete", post(complete))
     .with_state(shared_state);
 
   // run our app with hyper, listening globally on port 3000
@@ -47,6 +48,27 @@ async fn transcribe(State(state): State<Arc<AppState>>, body: Bytes) -> String {
       header::CONTENT_TYPE,
       header::HeaderValue::from_str("multipart/form-data").unwrap(),
     )
+    .send()
+    .await
+    .unwrap();
+
+  response.text().await.unwrap()
+}
+
+async fn complete(State(state): State<Arc<AppState>>, body: String) -> String {
+  let response = state
+    .client
+    .post("https://api.openai.com/v1/chat/completions")
+    .header(
+      header::AUTHORIZATION,
+      header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
+        .unwrap(),
+    )
+    .header(
+      header::CONTENT_TYPE,
+      header::HeaderValue::from_str("application/json").unwrap(),
+    )
+    .body(body)
     .send()
     .await
     .unwrap();
