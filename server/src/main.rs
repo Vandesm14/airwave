@@ -1,7 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
 use core::str;
 use dotenv::dotenv;
-use reqwest::{header, Client};
+use reqwest::{header, Body, Client};
 use rocket::data::{Data, ToByteUnit};
 use rocket::http::Status;
 use rocket::response::content;
@@ -34,7 +34,7 @@ async fn transcribe(
       .unwrap(),
   );
 
-  *req.body_mut() = Some(body_bytes.to_vec().into());
+  *req.body_mut() = Some(Body::from(body_bytes.to_vec()));
   req.headers_mut().insert(
     header::AUTHORIZATION,
     header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
