@@ -103,6 +103,7 @@ type Airspace = {
 };
 
 type Runway = {
+  id: string;
   x: number;
   y: number;
   /** In Degrees (0 is north; up) */
@@ -216,23 +217,26 @@ Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
       for (let task of json.tasks) {
         let value = task[1];
 
-        if (typeof value !== 'number' || typeof value !== 'string') {
-          continue;
+        if (typeof value === 'number') {
+          switch (task[0]) {
+            case TaskType.HEADING:
+              aircraft.target.heading = value;
+              break;
+            case TaskType.SPEED:
+              aircraft.target.speed = value;
+              break;
+            case TaskType.ALTITUDE:
+              aircraft.target.altitude = value;
+              break;
+          }
         }
 
-        switch (task[0]) {
-          case TaskType.LAND:
-            aircraft.target.runway = value;
-            break;
-          case TaskType.HEADING:
-            aircraft.target.heading = parseInt(value);
-            break;
-          case TaskType.SPEED:
-            aircraft.target.speed = parseInt(value);
-            break;
-          case TaskType.ALTITUDE:
-            aircraft.target.altitude = parseInt(value);
-            break;
+        if (typeof value === 'string') {
+          switch (task[0]) {
+            case TaskType.LAND:
+              aircraft.target.runway = value;
+              break;
+          }
         }
       }
     }
@@ -289,16 +293,40 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
     let airspace = calcAirspace(width, height);
 
     if (init) {
-      for (let i = 0; i < 1; i++) {
-        spawnRandomAircraft(airspace);
-      }
-
-      runways.push({
+      let runway: Runway = {
+        id: '20',
         x: width / 2,
         y: height / 2,
-        heading: 360,
+        heading: 200,
         length: 7000,
-      });
+      };
+      runways.push(runway);
+
+      for (let i = 0; i < 1; i++) {
+        // spawnRandomAircraft(airspace);
+        let spawn = movePoint(
+          runway.x,
+          runway.y,
+          runway.length * feetPerPixel +
+            nauticalMilesToFeet * feetPerPixel * 10,
+          inverseDegrees(headingToDegrees(runway.heading))
+        );
+        let aircraft: Aircraft = {
+          x: spawn.x + 10,
+          y: spawn.y + 10,
+          target: {
+            runway: null,
+            heading: runway.heading,
+            speed: 250,
+            altitude: 4000,
+          },
+          heading: runway.heading,
+          speed: 250,
+          altitude: 4000,
+          callsign: 'SKW9810',
+        };
+        aircrafts.push(aircraft);
+      }
     }
 
     drawCompass(ctx, airspace);
@@ -321,6 +349,20 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
       aircraft.y = newPos.y;
 
       drawBlip(ctx, aircraft);
+
+      let runway = runways[0];
+      ctx.strokeStyle = 'red';
+      ctx.beginPath();
+      let result = calculatePerpendicularLine(
+        runway,
+        headingToDegrees(runway.heading),
+        aircraft
+      );
+      // ctx.arc(point.x, point.y, milesToFeet * feetPerPixel * 2, 0, Math.PI * 2);
+      ctx.moveTo(aircraft.x, aircraft.y);
+      let line = movePoint(aircraft.x, aircraft.y, 50, result.heading);
+      ctx.lineTo(line.x, line.y);
+      ctx.stroke();
     }
   }
 }
@@ -333,6 +375,47 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
   /** In knots per second */
   const speedSpeed = timeScale * 1 * dts;
 
+  // Update targets based on target ILS
+  if (aircraft.target.runway !== null) {
+    const runway = runways.find((r) => r.id === aircraft.target.runway);
+    if (runway) {
+      let runwayHeading = runway.heading;
+      let result = calculatePerpendicularLine(
+        runway,
+        headingToDegrees(runwayHeading),
+        aircraft
+      );
+      let delta_angle = calcDeltaAngle(
+        aircraft.heading,
+        degreesToHeading(result.heading)
+      );
+
+      let turnPadding = 10;
+
+      let speedInPixels =
+        aircraft.speed * knotToFeetPerSecond * feetPerPixel * dts;
+      let secondsUntilContact = (result.distance / speedInPixels) * dts;
+      let secondsToTurnBack = turnSpeed * turnPadding;
+
+      console.log({
+        speedInPixels,
+        secondsUntilContact,
+        secondsToTurnBack,
+      });
+
+      if (secondsToTurnBack >= secondsUntilContact) {
+        aircraft.target.heading = runwayHeading;
+      } else {
+        if (delta_angle > 0) {
+          aircraft.target.heading = runwayHeading + turnPadding;
+        } else if (delta_angle < 0) {
+          aircraft.target.heading = runwayHeading - turnPadding;
+        }
+      }
+    }
+  }
+
+  // Set if "close enough"
   if (Math.abs(aircraft.altitude - aircraft.target.altitude) < climbSpeed) {
     aircraft.altitude = aircraft.target.altitude;
   }
@@ -343,6 +426,7 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
     aircraft.speed = aircraft.target.speed;
   }
 
+  // Change based on speed if not equal
   if (aircraft.altitude !== aircraft.target.altitude) {
     if (aircraft.altitude < aircraft.target.altitude) {
       aircraft.altitude += climbSpeed;
@@ -350,17 +434,16 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
       aircraft.altitude -= climbSpeed;
     }
   }
-
   if (aircraft.heading !== aircraft.target.heading) {
-    let delta_angle =
-      ((aircraft.target.heading - aircraft.heading + 540.0) % 360.0) - 180.0;
+    // let delta_angle =
+    //   ((aircraft.target.heading - aircraft.heading + 540.0) % 360.0) - 180.0;
+    let delta_angle = calcDeltaAngle(aircraft.heading, aircraft.target.heading);
     if (delta_angle < 0) {
       aircraft.heading -= turnSpeed;
     } else {
       aircraft.heading += turnSpeed;
     }
   }
-
   if (aircraft.speed !== aircraft.target.speed) {
     if (aircraft.speed < aircraft.target.speed) {
       aircraft.speed += speedSpeed;
@@ -460,17 +543,17 @@ function drawRunway(ctx: Ctx, runway: Runway) {
   ctx.fillStyle = '#3087f2';
   ctx.strokeStyle = '#3087f2';
   ctx.fillRect(
-    length / 2,
+    -length / 2,
     -lineWidth / 2,
-    milesToFeet * feetPerPixel * 10,
+    -milesToFeet * feetPerPixel * 10,
     lineWidth
   );
 
   for (let i = 2; i <= 6; i += 2) {
     ctx.beginPath();
     ctx.arc(
-      length / 2 + milesToFeet * feetPerPixel * i,
-      1 / 2,
+      -(length / 2 + milesToFeet * feetPerPixel * i),
+      -(1 / 2),
       6,
       0,
       Math.PI * 2
@@ -606,4 +689,58 @@ function movePoint(
   const newY = y + length * Math.sin(directionRadians);
 
   return { x: newX, y: newY };
+}
+
+function calculatePerpendicularLine(
+  linePoint: { x: number; y: number },
+  lineDirection: number,
+  testPoint: { x: number; y: number }
+): { heading: number; distance: number } {
+  // Convert line direction to radians
+  const lineAngleRad = (lineDirection * Math.PI) / 180;
+
+  // Calculate the vector of the line
+  const lineVectorX = Math.cos(lineAngleRad);
+  const lineVectorY = Math.sin(lineAngleRad);
+
+  // Calculate the vector from the line point to the test point
+  const vectorToTestX = testPoint.x - linePoint.x;
+  const vectorToTestY = testPoint.y - linePoint.y;
+
+  // Calculate the dot product
+  const dotProduct = vectorToTestX * lineVectorX + vectorToTestY * lineVectorY;
+
+  // Calculate the closest point on the line to the test point
+  const closestPointX = linePoint.x + dotProduct * lineVectorX;
+  const closestPointY = linePoint.y + dotProduct * lineVectorY;
+
+  // Calculate the vector from the test point to the closest point
+  const perpendicularVectorX = closestPointX - testPoint.x;
+  const perpendicularVectorY = closestPointY - testPoint.y;
+
+  // Calculate the angle of this vector
+  let perpendicularAngle = Math.atan2(
+    perpendicularVectorY,
+    perpendicularVectorX
+  );
+
+  // Convert to degrees and normalize to 0-360 range
+  let perpendicularHeading = (perpendicularAngle * 180) / Math.PI;
+  perpendicularHeading = (perpendicularHeading + 360) % 360;
+
+  // Calculate the distance using the Pythagorean theorem
+  const perpendicularDistance = Math.sqrt(
+    perpendicularVectorX * perpendicularVectorX +
+      perpendicularVectorY * perpendicularVectorY
+  );
+
+  return { heading: perpendicularHeading, distance: perpendicularDistance };
+}
+
+function calcDeltaAngle(current: number, target: number): number {
+  return ((target - current + 540.0) % 360.0) - 180.0;
+}
+
+function inverseDegrees(degrees: number): number {
+  return (degrees + 180) % 360;
 }
