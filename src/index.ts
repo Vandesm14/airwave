@@ -410,8 +410,8 @@ function drawCompass(ctx: Ctx, airspace: Airspace) {
     ctx.beginPath();
     ctx.fillText(
       text,
-      Math.cos(toRadians(i * 10)) * (airspace.x - 30) + airspace.x,
-      Math.sin(toRadians(i * 10)) * (airspace.y - 60) + airspace.y
+      Math.cos(toRadians(i * 10)) * (airspace.r + 20) + airspace.x,
+      Math.sin(toRadians(i * 10)) * (airspace.r + 20) + airspace.y
     );
     ctx.stroke();
   }
