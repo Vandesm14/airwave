@@ -23,7 +23,9 @@ function degreesToHeading(degrees: number) {
 
 function speak(text: string) {
   if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(
+      text.replace(/[0-9]/g, '$& ')
+    );
     utterance.volume = 0.01;
     utterance.rate = 1.1;
     utterance.pitch = 1.3;
@@ -133,6 +135,7 @@ type CommandResponse = {
 let aircrafts: Array<Aircraft | undefined> = [];
 let runways: Array<Runway> = [];
 let lastTime = Date.now();
+let lastDraw = 0;
 
 const canvas = document.getElementById('canvas');
 if (canvas instanceof HTMLCanvasElement && canvas !== null) {
@@ -177,6 +180,10 @@ Available Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)
 Examples:
 User: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.
 Assistant: {"reply": "Left turn heading 180, reduce speed to 230, Skywest 5138.", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}
+User: Skywest 5-1-3-8 climb and maintain flight level 050.
+Assistant: {"reply": "Climb and maintain flight level 050, Skywest 5138.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
+User: Skywest 5-1-3-8 descend and maintain 5,000 feet.
+Assistant: {"reply": "Descend and and maintain 5,000 feet, Skywest 5138.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
 User: Skywest 5-1-3-8 cleared to land runway 18 left.
 Assistant: {"reply": "Cleared to land runway 18 left, Skywest 5138.", "id": "SKW5138", "tasks":[["land", "18L"]]}
 
@@ -300,7 +307,12 @@ function loopMain(canvas: HTMLCanvasElement, init: boolean) {
   }
 
   loopUpdate(dts);
-  loopDraw(canvas, airspace, dts);
+
+  let deltaDrawTime = Date.now() - lastDraw;
+  if (lastDraw === 0 || deltaDrawTime >= 1000 / 1) {
+    lastDraw = Date.now();
+    loopDraw(canvas, airspace, dts);
+  }
 }
 
 function loopInit(width: number, height: number, airspace: Airspace) {
@@ -334,6 +346,8 @@ function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
 
   let ctx = canvas.getContext('2d');
   if (ctx) {
+    const fontSize = 15;
+    ctx.font = `900 ${fontSize}px monospace`;
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
@@ -349,8 +363,8 @@ function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
       }
     }
 
-    ctx.fillStyle = '#007700';
-    ctx.fillText(`${Math.round(1 / dts)} fps`, 0, 20);
+    ctx.fillStyle = '#009900';
+    ctx.fillText(`${Math.round(1 / dts)} fps`, 10, 20);
   }
 }
 
@@ -592,13 +606,12 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     let fontSize = 15;
 
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#55ff55';
-    ctx.font = `900 ${fontSize}px monospace`;
+    ctx.fillStyle = '#44ff44';
     ctx.beginPath();
     ctx.fillText(aircraft.callsign, aircraft.x + spacing, aircraft.y - spacing);
     ctx.fill();
 
-    let altitudeIcon = '➡';
+    let altitudeIcon = ' ';
     if (aircraft.altitude < aircraft.target.altitude) {
       altitudeIcon = '⬈';
     } else if (aircraft.altitude > aircraft.target.altitude) {
@@ -607,9 +620,13 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
 
     ctx.beginPath();
     ctx.fillText(
-      Math.round(aircraft.altitude / 100).toString() +
+      Math.round(aircraft.altitude / 100)
+        .toString()
+        .padStart(3, '0') +
         altitudeIcon +
-        Math.round(aircraft.target.altitude / 100).toString(),
+        Math.round(aircraft.target.altitude / 100)
+          .toString()
+          .padStart(3, '0'),
       aircraft.x + spacing,
       aircraft.y - spacing + fontSize
     );
@@ -620,7 +637,12 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
       Math.round(aircraft.heading)
         .toString()
         .padStart(3, '0')
-        .replace('360', '000'),
+        .replace('360', '000') +
+        ' ' +
+        Math.round(aircraft.target.heading)
+          .toString()
+          .padStart(3, '0')
+          .replace('360', '000'),
       aircraft.x + spacing,
       aircraft.y - spacing + fontSize * 2
     );
