@@ -4,7 +4,10 @@ use axum::{extract::State, routing::post};
 use dotenv::dotenv;
 use reqwest::multipart::Part;
 use reqwest::{header, Client};
+use std::thread;
 use std::{env, sync::Arc};
+use tokio::process::Command;
+use tower_http::services::ServeDir;
 
 struct AppState {
   client: Client,
@@ -13,6 +16,14 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
+  let watcher = tokio::spawn(async move {
+    Command::new("pnpm")
+      .arg("build")
+      .current_dir("../")
+      .output()
+      .await
+  });
+
   dotenv().ok();
   let api_key = env::var("API_KEY").expect("API_KEY must be set");
   let client = Client::new();
@@ -20,13 +31,17 @@ async fn main() {
   let shared_state = Arc::new(AppState { api_key, client });
 
   let app = Router::new()
+    .nest_service("/", ServeDir::new("../dist"))
     .route("/transcribe", post(transcribe))
     .route("/complete", post(complete))
     .with_state(shared_state);
 
-  // run our app with hyper, listening globally on port 3000
   let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
-  axum::serve(listener, app).await.unwrap();
+  let server = axum::serve(listener, app);
+
+  let (a, b) = tokio::join!(watcher, server);
+  a.unwrap().unwrap();
+  b.unwrap();
 }
 
 async fn transcribe(State(state): State<Arc<AppState>>, body: Bytes) -> String {
