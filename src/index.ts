@@ -22,12 +22,15 @@ function degreesToHeading(degrees: number) {
 }
 
 function speak(text: string) {
-  // if ('speechSynthesis' in window) {
-  //   const utterance = new SpeechSynthesisUtterance(text);
-  //   window.speechSynthesis.speak(utterance);
-  // } else {
-  //   console.log("Sorry, your browser doesn't support text to speech!");
-  // }
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.volume = 0.01;
+    utterance.rate = 1.1;
+    utterance.pitch = 1.3;
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.log("Sorry, your browser doesn't support text to speech!");
+  }
 }
 
 const airlines: Record<string, string> = {
@@ -310,29 +313,7 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
       runways.push(runway);
 
       for (let i = 0; i < 1; i++) {
-        // spawnRandomAircraft(airspace);
-        let spawn = movePoint(
-          runway.x,
-          runway.y,
-          runway.length * feetPerPixel +
-            nauticalMilesToFeet * feetPerPixel * 10,
-          inverseDegrees(headingToDegrees(runway.heading))
-        );
-        let aircraft: Aircraft = {
-          x: spawn.x + 10,
-          y: spawn.y + 10,
-          target: {
-            runway: '20',
-            heading: runway.heading,
-            speed: 250,
-            altitude: 4000,
-          },
-          heading: runway.heading,
-          speed: 250,
-          altitude: 4000,
-          callsign: 'SKW9810',
-        };
-        aircrafts.push(aircraft);
+        spawnRandomAircraft(airspace);
       }
     }
 
@@ -383,35 +364,18 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
     if (runway) {
       let runwayHeading = runway.heading;
       let info = runwayInfo(runway);
-      let result = calculatePerpendicularLine(
-        info.start,
-        runwayHeading,
-        aircraft
+      let deltaAngle = calcDeltaAngle(
+        calculateAngleBetweenPoints(info.start, aircraft),
+        inverseDegrees(headingToDegrees(runwayHeading))
       );
-      let deltaAngle = calcDeltaAngle(aircraft.heading, result.heading);
 
-      if (Math.abs(deltaAngle) <= 90 + 60) {
-        let turnPadding =
-          Math.abs(
-            calculateAngleBetweenPoints(info.start, aircraft) -
-              inverseDegrees(headingToDegrees(runwayHeading))
-          ) * 8;
-        let speedInPixels = aircraft.speed * knotToFeetPerSecond * feetPerPixel;
-        let secondsUntilContact = result.intersectionDistance / speedInPixels;
-        let secondsToTurnBack = turnSpeed * turnPadding;
+      if (Math.abs(deltaAngle) <= 40) {
+        let turnPadding = Math.min(20, Math.abs(deltaAngle) * 4);
 
-        console.log('cont', secondsUntilContact);
-        console.log('turn', secondsToTurnBack);
-        console.log('ang', turnPadding);
-
-        if (secondsToTurnBack >= secondsUntilContact) {
-          aircraft.target.heading = runwayHeading;
-        } else {
-          if (deltaAngle < 0) {
-            aircraft.target.heading = runwayHeading + turnPadding;
-          } else if (deltaAngle > 0) {
-            aircraft.target.heading = runwayHeading - turnPadding;
-          }
+        if (deltaAngle < 0) {
+          aircraft.target.heading = runwayHeading + turnPadding;
+        } else if (deltaAngle > 0) {
+          aircraft.target.heading = runwayHeading - turnPadding;
         }
       }
     }
