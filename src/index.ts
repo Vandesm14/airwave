@@ -114,6 +114,7 @@ type Runway = {
 
 enum TaskType {
   LAND = 'land',
+  GOAROUND = 'go-around',
   ALTITUDE = 'altitude',
   HEADING = 'heading',
   SPEED = 'speed',
@@ -170,7 +171,7 @@ async function parseATCMessage(textRaw: string) {
     {
       role: 'system',
       content: `You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of tasks for your aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.
-Available Tasks: ["heading", number], ["speed", number], ["altitude", number], ["land", string]
+Available Tasks: ["heading", number], ["speed", number], ["altitude", number], ["land", string], ["go-around"]
 Available Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)
 Examples:
 User: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.
@@ -237,6 +238,12 @@ Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
               aircraft.target.runway = value;
               break;
           }
+        }
+
+        switch (task[0]) {
+          case TaskType.GOAROUND:
+            aircraft.target.runway = null;
+            break;
         }
       }
     }
@@ -360,12 +367,6 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
         aircraft.speed * knotToFeetPerSecond * feetPerPixel * dts;
       let secondsUntilContact = (result.distance / speedInPixels) * dts;
       let secondsToTurnBack = turnSpeed * turnPadding;
-
-      console.log({
-        speedInPixels,
-        secondsUntilContact,
-        secondsToTurnBack,
-      });
 
       if (secondsToTurnBack >= secondsUntilContact) {
         aircraft.target.heading = runwayHeading;
@@ -659,7 +660,7 @@ function calculatePerpendicularLine(
   linePoint: { x: number; y: number },
   lineDirection: number,
   testPoint: { x: number; y: number }
-): { heading: number; distance: number } {
+): { heading: number; distance: number; intersectionDistance: number } {
   // Convert line direction to radians
   const lineAngleRad = (lineDirection * Math.PI) / 180;
 
@@ -692,13 +693,21 @@ function calculatePerpendicularLine(
   let perpendicularHeading = (perpendicularAngle * 180) / Math.PI;
   perpendicularHeading = (perpendicularHeading + 360) % 360;
 
-  // Calculate the distance using the Pythagorean theorem
+  // Calculate the perpendicular distance using the Pythagorean theorem
   const perpendicularDistance = Math.sqrt(
     perpendicularVectorX * perpendicularVectorX +
       perpendicularVectorY * perpendicularVectorY
   );
 
-  return { heading: perpendicularHeading, distance: perpendicularDistance };
+  // Calculate the intersection distance
+  // This is the distance from the linePoint to the intersection point
+  const intersectionDistance = Math.sqrt(dotProduct * dotProduct);
+
+  return {
+    heading: perpendicularHeading,
+    distance: perpendicularDistance,
+    intersectionDistance: intersectionDistance,
+  };
 }
 
 function calcDeltaAngle(current: number, target: number): number {
