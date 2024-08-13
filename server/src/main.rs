@@ -4,9 +4,7 @@ use axum::{extract::State, routing::post};
 use dotenv::dotenv;
 use reqwest::multipart::Part;
 use reqwest::{header, Client};
-use std::thread;
 use std::{env, sync::Arc};
-use tokio::process::Command;
 use tower_http::services::ServeDir;
 
 struct AppState {
@@ -16,14 +14,6 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
-  let watcher = tokio::spawn(async move {
-    Command::new("pnpm")
-      .arg("build")
-      .current_dir("../")
-      .output()
-      .await
-  });
-
   dotenv().ok();
   let api_key = env::var("API_KEY").expect("API_KEY must be set");
   let client = Client::new();
@@ -37,11 +27,7 @@ async fn main() {
     .with_state(shared_state);
 
   let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
-  let server = axum::serve(listener, app);
-
-  let (a, b) = tokio::join!(watcher, server);
-  a.unwrap().unwrap();
-  b.unwrap();
+  axum::serve(listener, app).await.unwrap();
 }
 
 async fn transcribe(State(state): State<Arc<AppState>>, body: Bytes) -> String {
