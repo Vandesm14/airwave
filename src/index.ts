@@ -21,6 +21,15 @@ function degreesToHeading(degrees: number) {
   return (degrees + 360 + 90) % 360;
 }
 
+function speak(text: string) {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.log("Sorry, your browser doesn't support text to speech!");
+  }
+}
+
 const airlines: Record<string, string> = {
   AAL: 'American',
   SKW: 'Sky West',
@@ -177,6 +186,7 @@ async function parseATCMessage(text: string) {
       chatbox.insertAdjacentHTML('beforeend', message);
     }
 
+    speak(json.reply);
     console.log({ text, json });
 
     let aircraft = aircrafts.find((el) => el.callsign === json.id);
