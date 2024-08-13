@@ -6,7 +6,7 @@ let isRecording = false;
 
 type Ctx = CanvasRenderingContext2D;
 
-const timeScale = 1;
+const timeScale = 1.2;
 
 const nauticalMilesToFeet = 6076.115;
 const feetPerPixel = 0.005;
@@ -22,12 +22,12 @@ function degreesToHeading(degrees: number) {
 }
 
 function speak(text: string) {
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.speak(utterance);
-  } else {
-    console.log("Sorry, your browser doesn't support text to speech!");
-  }
+  // if ('speechSynthesis' in window) {
+  //   const utterance = new SpeechSynthesisUtterance(text);
+  //   window.speechSynthesis.speak(utterance);
+  // } else {
+  //   console.log("Sorry, your browser doesn't support text to speech!");
+  // }
 }
 
 const airlines: Record<string, string> = {
@@ -53,7 +53,6 @@ function randomCallsign() {
 }
 
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-const toDegrees = (degrees: number) => (degrees / Math.PI) * 180;
 
 type Message = {
   role: string;
@@ -184,6 +183,7 @@ async function parseATCMessage(text: string) {
         .replace('{{text}}', json.reply);
 
       chatbox.insertAdjacentHTML('beforeend', message);
+      chatbox.scrollTo(0, chatbox.scrollHeight);
     }
 
     speak(json.reply);
@@ -302,11 +302,11 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
 
 function updateAircraftTargets(aircraft: Aircraft, dts: number) {
   /** In feet per second */
-  const climbSpeed = Math.round(2000 / 60) * dts;
+  const climbSpeed = timeScale * Math.round(2000 / 60) * dts;
   /** In degrees per second */
-  const turnSpeed = 2 * dts;
+  const turnSpeed = timeScale * 2 * dts;
   /** In knots per second */
-  const speedSpeed = 1 * dts;
+  const speedSpeed = timeScale * 1 * dts;
 
   if (Math.abs(aircraft.altitude - aircraft.target.altitude) < climbSpeed) {
     aircraft.altitude = aircraft.target.altitude;
