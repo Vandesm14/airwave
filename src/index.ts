@@ -6,7 +6,7 @@ let isRecording = false;
 
 type Ctx = CanvasRenderingContext2D;
 
-const timeScale = 1;
+const timeScale = 2;
 
 const nauticalMilesToFeet = 6076.115;
 const feetPerPixel = 0.005;
@@ -387,18 +387,30 @@ function updateAircraftILS(aircraft: Aircraft) {
     if (runway) {
       let runwayHeading = runway.heading;
       let info = runwayInfo(runway);
-      let deltaAngle = calcDeltaAngle(
+      let deltaAngleStart = calcDeltaAngle(
         calculateAngleBetweenPoints(info.start, aircraft),
         inverseDegrees(headingToDegrees(runwayHeading))
       );
 
-      if (Math.abs(deltaAngle) <= 40) {
-        let turnPadding = Math.min(20, Math.abs(deltaAngle) * 4);
+      if (Math.abs(deltaAngleStart) <= 10) {
+        let turnPadding = Math.min(30, Math.abs(deltaAngleStart) * 6);
 
-        if (deltaAngle < 0) {
+        if (deltaAngleStart < 0) {
           aircraft.target.heading = runwayHeading + turnPadding;
-        } else if (deltaAngle > 0) {
+        } else if (deltaAngleStart > 0) {
           aircraft.target.heading = runwayHeading - turnPadding;
+        }
+      } else {
+        if (
+          Math.round(Math.abs(deltaAngleStart)) === 180 &&
+          calculateSquaredDistance(aircraft, runway) <= Math.pow(10, 2)
+        ) {
+          let index = aircrafts.findIndex(
+            (el) => el?.callsign === aircraft.callsign
+          );
+          if (index >= 0) {
+            aircrafts[index] = undefined;
+          }
         }
       }
     }
@@ -702,60 +714,6 @@ function movePoint(
   return { x: newX, y: newY };
 }
 
-function calculatePerpendicularLine(
-  linePoint: { x: number; y: number },
-  lineDirection: number,
-  testPoint: { x: number; y: number }
-): { heading: number; distance: number; intersectionDistance: number } {
-  // Convert line direction to radians
-  const lineAngleRad = (lineDirection * Math.PI) / 180;
-
-  // Calculate the vector of the line
-  const lineVectorX = Math.cos(lineAngleRad);
-  const lineVectorY = Math.sin(lineAngleRad);
-
-  // Calculate the vector from the line point to the test point
-  const vectorToTestX = testPoint.x - linePoint.x;
-  const vectorToTestY = testPoint.y - linePoint.y;
-
-  // Calculate the dot product
-  const dotProduct = vectorToTestX * lineVectorX + vectorToTestY * lineVectorY;
-
-  // Calculate the closest point on the line to the test point
-  const closestPointX = linePoint.x + dotProduct * lineVectorX;
-  const closestPointY = linePoint.y + dotProduct * lineVectorY;
-
-  // Calculate the vector from the test point to the closest point
-  const perpendicularVectorX = closestPointX - testPoint.x;
-  const perpendicularVectorY = closestPointY - testPoint.y;
-
-  // Calculate the angle of this vector
-  let perpendicularAngle = Math.atan2(
-    perpendicularVectorY,
-    perpendicularVectorX
-  );
-
-  // Convert to degrees and normalize to 0-360 range
-  let perpendicularHeading = (perpendicularAngle * 180) / Math.PI;
-  perpendicularHeading = (perpendicularHeading + 360) % 360;
-
-  // Calculate the perpendicular distance using the Pythagorean theorem
-  const perpendicularDistance = Math.sqrt(
-    perpendicularVectorX * perpendicularVectorX +
-      perpendicularVectorY * perpendicularVectorY
-  );
-
-  // Calculate the intersection distance
-  // This is the distance from the linePoint to the intersection point
-  const intersectionDistance = Math.sqrt(dotProduct * dotProduct);
-
-  return {
-    heading: perpendicularHeading,
-    distance: perpendicularDistance,
-    intersectionDistance: intersectionDistance,
-  };
-}
-
 function calcDeltaAngle(current: number, target: number): number {
   return ((target - current + 540.0) % 360.0) - 180.0;
 }
@@ -768,9 +726,7 @@ function calculateSquaredDistance(
   a: { x: number; y: number },
   b: { x: number; y: number }
 ): number {
-  return (
-    Math.pow(b.x, 2) - Math.pow(a.x, 2) + Math.pow(b.y, 2) - Math.pow(a.y, 2)
-  );
+  return Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2);
 }
 
 function calculateDistance(
