@@ -6,7 +6,7 @@ let isRecording = false;
 
 type Ctx = CanvasRenderingContext2D;
 
-const timeScale = 2;
+const timeScale = 1;
 
 const nauticalMilesToFeet = 6076.115;
 const feetPerPixel = 0.005;
@@ -197,27 +197,27 @@ Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
     let reply = response.choices[0].message.content;
     let json: CommandResponse = JSON.parse(reply);
 
-    if (
-      chatbox instanceof HTMLDivElement &&
-      messageTemplate instanceof HTMLTemplateElement
-    ) {
-      let message = messageTemplate.innerHTML
-        .replace('{{callsign}}', json.id)
-        .replace('{{text}}', json.reply)
-        .replace(
-          '{{tasks}}',
-          JSON.stringify(json.tasks, null, 0).replace(/"/g, '&quot;')
-        );
-
-      chatbox.insertAdjacentHTML('beforeend', message);
-      chatbox.scrollTo(0, chatbox.scrollHeight);
-    }
-
-    speak(json.reply);
-    console.log({ text, json });
-
     let aircraft = aircrafts.find((el) => el.callsign === json.id);
     if (aircraft) {
+      if (
+        chatbox instanceof HTMLDivElement &&
+        messageTemplate instanceof HTMLTemplateElement
+      ) {
+        let message = messageTemplate.innerHTML
+          .replace('{{callsign}}', json.id)
+          .replace('{{text}}', json.reply)
+          .replace(
+            '{{tasks}}',
+            JSON.stringify(json.tasks, null, 0).replace(/"/g, '&quot;')
+          );
+
+        chatbox.insertAdjacentHTML('beforeend', message);
+        chatbox.scrollTo(0, chatbox.scrollHeight);
+      }
+
+      speak(json.reply);
+      console.log({ text, json });
+
       for (let task of json.tasks) {
         let value = task[1];
 
