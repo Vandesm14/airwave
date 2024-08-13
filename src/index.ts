@@ -77,6 +77,8 @@ type Aircraft = {
   y: number;
 
   target: {
+    /** Name of cleared runway to land on */
+    runway: null | string;
     /** In Degrees (0 is north; up) */
     heading: number;
     /** In Knots */
@@ -110,6 +112,7 @@ type Runway = {
 };
 
 enum TaskType {
+  LAND = 'land',
   ALTITUDE = 'altitude',
   HEADING = 'heading',
   SPEED = 'speed',
@@ -146,23 +149,38 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
 const chatbox = document.getElementById('chatbox');
 const messageTemplate = document.getElementById('message-template');
 
-async function parseATCMessage(text: string) {
+async function parseATCMessage(textRaw: string) {
+  let text = textRaw.replace(/\s9\sor\s{0,1}/g, '9');
+
   if (
     chatbox instanceof HTMLDivElement &&
     messageTemplate instanceof HTMLTemplateElement
   ) {
     let message = messageTemplate.innerHTML
       .replace('{{callsign}}', 'ATC')
-      .replace('{{text}}', text);
+      .replace('{{text}}', text)
+      .replace('{{tasks}}', '');
 
     chatbox.insertAdjacentHTML('beforeend', message);
+    chatbox.scrollTo(0, chatbox.scrollHeight);
   }
 
   let response = await complete('gpt-4o-mini', [
     {
       role: 'system',
-      content:
-        'You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of tasks for your aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.\nAvailable Tasks: heading, speed, altitude\nAvailable Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)\nExample:\nUser: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.\nAssistant: {"reply": "Left turn heading 180, reduce speed to 230, Skywest 5138.", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}\n\nIf you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".\nExample:\nUser: American 0725, turn.\nAssistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}',
+      content: `You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of tasks for your aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.
+Available Tasks: ["heading", number], ["speed", number], ["altitude", number], ["land", string]
+Available Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)
+Examples:
+User: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.
+Assistant: {"reply": "Left turn heading 180, reduce speed to 230, Skywest 5138.", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}
+User: Skywest 5-1-3-8 cleared to land runway 18 left.
+Assistant: {"reply": "Cleared to land runway 18 left, Skywest 5138.", "id": "SKW5138", "tasks":[["land", "18L"]]}
+
+If you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".
+Example:
+User: American 0725, turn.
+Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
     },
     {
       role: 'user',
@@ -180,7 +198,11 @@ async function parseATCMessage(text: string) {
     ) {
       let message = messageTemplate.innerHTML
         .replace('{{callsign}}', json.id)
-        .replace('{{text}}', json.reply);
+        .replace('{{text}}', json.reply)
+        .replace(
+          '{{tasks}}',
+          JSON.stringify(json.tasks, null, 0).replace(/"/g, '&quot;')
+        );
 
       chatbox.insertAdjacentHTML('beforeend', message);
       chatbox.scrollTo(0, chatbox.scrollHeight);
@@ -194,19 +216,22 @@ async function parseATCMessage(text: string) {
       for (let task of json.tasks) {
         let value = task[1];
 
-        if (typeof value !== 'number') {
+        if (typeof value !== 'number' || typeof value !== 'string') {
           continue;
         }
 
         switch (task[0]) {
+          case TaskType.LAND:
+            aircraft.target.runway = value;
+            break;
           case TaskType.HEADING:
-            aircraft.target.heading = value;
+            aircraft.target.heading = parseInt(value);
             break;
           case TaskType.SPEED:
-            aircraft.target.speed = value;
+            aircraft.target.speed = parseInt(value);
             break;
           case TaskType.ALTITUDE:
-            aircraft.target.altitude = value;
+            aircraft.target.altitude = parseInt(value);
             break;
         }
       }
@@ -358,6 +383,7 @@ function spawnRandomAircraft(airspace: Airspace) {
     y: result.y,
 
     target: {
+      runway: null,
       heading,
       speed,
       altitude,
