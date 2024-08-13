@@ -6,7 +6,7 @@ let isRecording = false;
 
 type Ctx = CanvasRenderingContext2D;
 
-const timeScale = 1.2;
+const timeScale = 2;
 
 const nauticalMilesToFeet = 6076.115;
 const feetPerPixel = 0.005;
@@ -310,7 +310,29 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
       runways.push(runway);
 
       for (let i = 0; i < 1; i++) {
-        spawnRandomAircraft(airspace);
+        // spawnRandomAircraft(airspace);
+        let spawn = movePoint(
+          runway.x,
+          runway.y,
+          runway.length * feetPerPixel +
+            nauticalMilesToFeet * feetPerPixel * 10,
+          inverseDegrees(headingToDegrees(runway.heading))
+        );
+        let aircraft: Aircraft = {
+          x: spawn.x + 10,
+          y: spawn.y + 10,
+          target: {
+            runway: '20',
+            heading: runway.heading,
+            speed: 250,
+            altitude: 4000,
+          },
+          heading: runway.heading,
+          speed: 250,
+          altitude: 4000,
+          callsign: 'SKW9810',
+        };
+        aircrafts.push(aircraft);
       }
     }
 
@@ -318,6 +340,12 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
 
     for (let runway of runways) {
       drawRunway(ctx, runway);
+
+      let info = runwayInfo(runway);
+      ctx.fillStyle = '#white';
+      ctx.beginPath();
+      ctx.arc(info.start.x, info.start.y, 5, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     for (let aircraft of aircrafts) {
@@ -335,6 +363,9 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
 
       drawBlip(ctx, aircraft);
     }
+
+    ctx.fillStyle = '#007700';
+    ctx.fillText(`${Math.round(1 / dts)} fps`, 0, 20);
   }
 }
 
@@ -351,30 +382,36 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
     const runway = runways.find((r) => r.id === aircraft.target.runway);
     if (runway) {
       let runwayHeading = runway.heading;
+      let info = runwayInfo(runway);
       let result = calculatePerpendicularLine(
-        runway,
-        headingToDegrees(runwayHeading),
+        info.start,
+        runwayHeading,
         aircraft
       );
-      let delta_angle = calcDeltaAngle(
-        aircraft.heading,
-        degreesToHeading(result.heading)
-      );
+      let deltaAngle = calcDeltaAngle(aircraft.heading, result.heading);
 
-      let turnPadding = 10;
+      if (Math.abs(deltaAngle) <= 90 + 60) {
+        let turnPadding =
+          Math.abs(
+            calculateAngleBetweenPoints(info.start, aircraft) -
+              inverseDegrees(headingToDegrees(runwayHeading))
+          ) * 8;
+        let speedInPixels = aircraft.speed * knotToFeetPerSecond * feetPerPixel;
+        let secondsUntilContact = result.intersectionDistance / speedInPixels;
+        let secondsToTurnBack = turnSpeed * turnPadding;
 
-      let speedInPixels =
-        aircraft.speed * knotToFeetPerSecond * feetPerPixel * dts;
-      let secondsUntilContact = (result.distance / speedInPixels) * dts;
-      let secondsToTurnBack = turnSpeed * turnPadding;
+        console.log('cont', secondsUntilContact);
+        console.log('turn', secondsToTurnBack);
+        console.log('ang', turnPadding);
 
-      if (secondsToTurnBack >= secondsUntilContact) {
-        aircraft.target.heading = runwayHeading;
-      } else {
-        if (delta_angle > 0) {
-          aircraft.target.heading = runwayHeading + turnPadding;
-        } else if (delta_angle < 0) {
-          aircraft.target.heading = runwayHeading - turnPadding;
+        if (secondsToTurnBack >= secondsUntilContact) {
+          aircraft.target.heading = runwayHeading;
+        } else {
+          if (deltaAngle < 0) {
+            aircraft.target.heading = runwayHeading + turnPadding;
+          } else if (deltaAngle > 0) {
+            aircraft.target.heading = runwayHeading - turnPadding;
+          }
         }
       }
     }
@@ -716,4 +753,65 @@ function calcDeltaAngle(current: number, target: number): number {
 
 function inverseDegrees(degrees: number): number {
   return (degrees + 180) % 360;
+}
+
+function calculateSquaredDistance(
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+): number {
+  return (
+    Math.pow(b.x, 2) - Math.pow(a.x, 2) + Math.pow(b.y, 2) - Math.pow(a.y, 2)
+  );
+}
+
+function calculateDistance(
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+): number {
+  return Math.sqrt(
+    Math.pow(b.x, 2) - Math.pow(a.x, 2) + Math.pow(b.y, 2) - Math.pow(a.y, 2)
+  );
+}
+
+function runwayInfo(runway: Runway): {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+} {
+  let start = movePoint(
+    runway.x,
+    runway.y,
+    runway.length * feetPerPixel * 0.5,
+    inverseDegrees(headingToDegrees(runway.heading))
+  );
+  let end = movePoint(
+    runway.x,
+    runway.y,
+    runway.length * feetPerPixel * 0.5,
+    headingToDegrees(runway.heading)
+  );
+
+  return {
+    start,
+    end,
+  };
+}
+
+function calculateAngleBetweenPoints(
+  point1: { x: number; y: number },
+  point2: { x: number; y: number }
+): number {
+  // Calculate the differences in coordinates
+  const dx = point2.x - point1.x;
+  const dy = point2.y - point1.y;
+
+  // Calculate the angle using Math.atan2
+  let angle = Math.atan2(dy, dx);
+
+  // Convert the angle from radians to degrees
+  angle = angle * (180 / Math.PI);
+
+  // Normalize the angle to be between 0 and 360 degrees
+  angle = (angle + 360) % 360;
+
+  return angle;
 }
