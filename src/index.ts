@@ -151,7 +151,7 @@ const chatbox = document.getElementById('chatbox');
 const messageTemplate = document.getElementById('message-template');
 
 async function parseATCMessage(textRaw: string) {
-  let text = textRaw.replace(/\s9\sor\s{0,1}/g, '9');
+  let text = textRaw.replace(/9\sor\s?/g, '9');
 
   if (
     chatbox instanceof HTMLDivElement &&
@@ -303,29 +303,7 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
       runways.push(runway);
 
       for (let i = 0; i < 1; i++) {
-        // spawnRandomAircraft(airspace);
-        let spawn = movePoint(
-          runway.x,
-          runway.y,
-          runway.length * feetPerPixel +
-            nauticalMilesToFeet * feetPerPixel * 10,
-          inverseDegrees(headingToDegrees(runway.heading))
-        );
-        let aircraft: Aircraft = {
-          x: spawn.x + 10,
-          y: spawn.y + 10,
-          target: {
-            runway: null,
-            heading: runway.heading,
-            speed: 250,
-            altitude: 4000,
-          },
-          heading: runway.heading,
-          speed: 250,
-          altitude: 4000,
-          callsign: 'SKW9810',
-        };
-        aircrafts.push(aircraft);
+        spawnRandomAircraft(airspace);
       }
     }
 
@@ -349,20 +327,6 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
       aircraft.y = newPos.y;
 
       drawBlip(ctx, aircraft);
-
-      let runway = runways[0];
-      ctx.strokeStyle = 'red';
-      ctx.beginPath();
-      let result = calculatePerpendicularLine(
-        runway,
-        headingToDegrees(runway.heading),
-        aircraft
-      );
-      // ctx.arc(point.x, point.y, milesToFeet * feetPerPixel * 2, 0, Math.PI * 2);
-      ctx.moveTo(aircraft.x, aircraft.y);
-      let line = movePoint(aircraft.x, aircraft.y, 50, result.heading);
-      ctx.lineTo(line.x, line.y);
-      ctx.stroke();
     }
   }
 }
