@@ -130,7 +130,7 @@ type CommandResponse = {
   tasks: Array<Task>;
 };
 
-let aircrafts: Array<Aircraft> = [];
+let aircrafts: Array<Aircraft | undefined> = [];
 let runways: Array<Runway> = [];
 let lastTime = Date.now();
 
@@ -139,16 +139,14 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
   window.addEventListener('resize', () => {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-
-    draw(canvas, false);
   });
 
-  setInterval(() => draw(canvas, false), 1000 / 30);
+  setInterval(() => loopMain(canvas, false), 1000 / 30);
 
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 
-  draw(canvas, true);
+  loopMain(canvas, true);
 }
 
 const chatbox = document.getElementById('chatbox');
@@ -197,7 +195,7 @@ Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
     let reply = response.choices[0].message.content;
     let json: CommandResponse = JSON.parse(reply);
 
-    let aircraft = aircrafts.find((el) => el.callsign === json.id);
+    let aircraft = aircrafts.find((el) => el?.callsign === json.id);
     if (aircraft) {
       if (
         chatbox instanceof HTMLDivElement &&
@@ -287,62 +285,68 @@ document.addEventListener('keyup', (e) => {
   }
 });
 
-function draw(canvas: HTMLCanvasElement, init: boolean) {
+function loopMain(canvas: HTMLCanvasElement, init: boolean) {
   const width = canvas.width;
   const height = canvas.height;
+
+  let airspace = calcAirspace(width, height);
 
   let dt = Date.now() - lastTime;
   lastTime = Date.now();
   let dts = dt / 1000;
+
+  if (init) {
+    loopInit(width, height, calcAirspace(width, height));
+  }
+
+  loopUpdate(dts);
+  loopDraw(canvas, airspace, dts);
+}
+
+function loopInit(width: number, height: number, airspace: Airspace) {
+  let runway: Runway = {
+    id: '20',
+    x: width / 2,
+    y: height / 2,
+    heading: 200,
+    length: 7000,
+  };
+  runways.push(runway);
+
+  for (let i = 0; i < 1; i++) {
+    spawnRandomAircraft(airspace);
+  }
+}
+
+function loopUpdate(dts: number) {
+  for (let aircraft of aircrafts) {
+    if (aircraft) {
+      updateAircraftPosition(aircraft, dts);
+      updateAircraftILS(aircraft);
+      updateAircraftTargets(aircraft, dts);
+    }
+  }
+}
+
+function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
+  const width = canvas.width;
+  const height = canvas.height;
 
   let ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
-    let airspace = calcAirspace(width, height);
-
-    if (init) {
-      let runway: Runway = {
-        id: '20',
-        x: width / 2,
-        y: height / 2,
-        heading: 200,
-        length: 7000,
-      };
-      runways.push(runway);
-
-      for (let i = 0; i < 1; i++) {
-        spawnRandomAircraft(airspace);
-      }
-    }
-
     drawCompass(ctx, airspace);
 
     for (let runway of runways) {
       drawRunway(ctx, runway);
-
-      let info = runwayInfo(runway);
-      ctx.fillStyle = '#white';
-      ctx.beginPath();
-      ctx.arc(info.start.x, info.start.y, 5, 0, Math.PI * 2);
-      ctx.fill();
     }
 
     for (let aircraft of aircrafts) {
-      updateAircraftTargets(aircraft, dts);
-
-      let newPos = movePoint(
-        aircraft.x,
-        aircraft.y,
-        aircraft.speed * knotToFeetPerSecond * feetPerPixel * dts,
-        headingToDegrees(aircraft.heading)
-      );
-
-      aircraft.x = newPos.x;
-      aircraft.y = newPos.y;
-
-      drawBlip(ctx, aircraft);
+      if (aircraft) {
+        drawBlip(ctx, aircraft);
+      }
     }
 
     ctx.fillStyle = '#007700';
@@ -350,14 +354,19 @@ function draw(canvas: HTMLCanvasElement, init: boolean) {
   }
 }
 
-function updateAircraftTargets(aircraft: Aircraft, dts: number) {
-  /** In feet per second */
-  const climbSpeed = timeScale * Math.round(2000 / 60) * dts;
-  /** In degrees per second */
-  const turnSpeed = timeScale * 2 * dts;
-  /** In knots per second */
-  const speedSpeed = timeScale * 1 * dts;
+function updateAircraftPosition(aircraft: Aircraft, dts: number) {
+  let newPos = movePoint(
+    aircraft.x,
+    aircraft.y,
+    aircraft.speed * knotToFeetPerSecond * feetPerPixel * dts,
+    headingToDegrees(aircraft.heading)
+  );
 
+  aircraft.x = newPos.x;
+  aircraft.y = newPos.y;
+}
+
+function updateAircraftILS(aircraft: Aircraft) {
   // Update targets based on target ILS
   if (aircraft.target.runway !== null) {
     const runway = runways.find((r) => r.id === aircraft.target.runway);
@@ -380,6 +389,15 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
       }
     }
   }
+}
+
+function updateAircraftTargets(aircraft: Aircraft, dts: number) {
+  /** In feet per second */
+  const climbSpeed = timeScale * Math.round(2000 / 60) * dts;
+  /** In degrees per second */
+  const turnSpeed = timeScale * 2 * dts;
+  /** In knots per second */
+  const speedSpeed = timeScale * 1 * dts;
 
   // Set if "close enough"
   if (Math.abs(aircraft.altitude - aircraft.target.altitude) < climbSpeed) {
@@ -515,19 +533,14 @@ function drawRunway(ctx: Ctx, runway: Runway) {
     lineWidth
   );
 
-  for (let i = 2; i <= 6; i += 2) {
+  ctx.resetTransform();
+
+  let info = runwayInfo(runway);
+  for (let point of info.ilsPoints) {
     ctx.beginPath();
-    ctx.arc(
-      -(length / 2 + milesToFeet * feetPerPixel * i),
-      -(1 / 2),
-      6,
-      0,
-      Math.PI * 2
-    );
+    ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
     ctx.stroke();
   }
-
-  ctx.resetTransform();
 }
 
 function drawBlip(ctx: Ctx, aircraft: Aircraft) {
@@ -740,6 +753,7 @@ function calculateDistance(
 function runwayInfo(runway: Runway): {
   start: { x: number; y: number };
   end: { x: number; y: number };
+  ilsPoints: { x: number; y: number }[];
 } {
   let start = movePoint(
     runway.x,
@@ -754,9 +768,23 @@ function runwayInfo(runway: Runway): {
     headingToDegrees(runway.heading)
   );
 
+  let ilsPoints: { x: number; y: number }[] = [];
+
+  for (let i = 2; i <= 6; i += 2) {
+    ilsPoints.push(
+      movePoint(
+        start.x,
+        start.y,
+        length / 2 + milesToFeet * feetPerPixel * i,
+        inverseDegrees(headingToDegrees(runway.heading))
+      )
+    );
+  }
+
   return {
     start,
     end,
+    ilsPoints,
   };
 }
 
