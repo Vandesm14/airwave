@@ -23,13 +23,17 @@ function degreesToHeading(degrees: number) {
 
 function speak(text: string) {
   if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(
-      text.replace(/[0-9]/g, '$& ')
-    );
-    utterance.volume = 0.01;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.3;
-    window.speechSynthesis.speak(utterance);
+    if (window.speechSynthesis.speaking) {
+      setTimeout(() => speak(text), 500);
+    } else {
+      const utterance = new SpeechSynthesisUtterance(
+        text.replace(/[0-9]/g, '$& ')
+      );
+      utterance.volume = 0.01;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.3;
+      window.speechSynthesis.speak(utterance);
+    }
   } else {
     console.log("Sorry, your browser doesn't support text to speech!");
   }
@@ -155,16 +159,23 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
 const chatbox = document.getElementById('chatbox');
 const messageTemplate = document.getElementById('message-template');
 
-function speakAsAircraft(aircraft: Aircraft, reply: string, tasks: Task[]) {
+function callsignString(id: string): string {
+  return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
+}
+
+function speakAsAircraft(
+  aircraft: Aircraft,
+  reply: string,
+  tasks: Task[],
+  withCallsign?: boolean
+) {
   if (
     chatbox instanceof HTMLDivElement &&
     messageTemplate instanceof HTMLTemplateElement
   ) {
-    let callsignString = `${
-      airlines[aircraft.callsign.slice(0, 3)]
-    } ${aircraft.callsign.slice(3, 7)}`;
-
-    let fullReply = `${reply}, ${callsignString}`;
+    let fullReply = withCallsign
+      ? `${reply}, ${callsignString(aircraft.callsign)}`
+      : reply;
 
     let message = messageTemplate.innerHTML
       .replace('{{callsign}}', aircraft.callsign)
@@ -239,7 +250,7 @@ Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
 
     let aircraft = aircrafts.find((el) => el?.callsign === json.id);
     if (aircraft) {
-      speakAsAircraft(aircraft, json.reply, json.tasks);
+      speakAsAircraft(aircraft, json.reply, json.tasks, true);
       console.log({ text, json });
 
       for (let task of json.tasks) {
@@ -328,7 +339,7 @@ function loopMain(canvas: HTMLCanvasElement, init: boolean) {
   loopUpdate(dts);
 
   let deltaDrawTime = Date.now() - lastDraw;
-  if (lastDraw === 0 || deltaDrawTime >= 1000 / 1) {
+  if (lastDraw === 0 || deltaDrawTime >= 1000 / 3) {
     lastDraw = Date.now();
     loopDraw(canvas, airspace, dts);
   }
@@ -345,7 +356,7 @@ function loopInit(width: number, height: number, airspace: Airspace) {
   runways.push(runway);
 
   for (let i = 0; i < 2; i++) {
-    spawnRandomAircraft(airspace);
+    setTimeout(() => spawnRandomAircraft(airspace), 1000 * i);
   }
 }
 
@@ -426,7 +437,8 @@ function updateAircraftILS(aircraft: Aircraft) {
           speakAsAircraft(
             aircraft,
             `We've lost the localizer. Requesting vectors to re-intercept.`,
-            [[TaskType.GOAROUND, 0]]
+            [[TaskType.GOAROUND, 0]],
+            true
           );
 
           return;
@@ -533,6 +545,14 @@ function spawnRandomAircraft(airspace: Airspace) {
   };
 
   aircrafts.push(aircraft);
+
+  speakAsAircraft(
+    aircraft,
+    `Tower, ${callsignString(
+      aircraft.callsign
+    )} is at ${altitude} feet, with you.`,
+    []
+  );
 }
 
 function calcAirspace(width: number, height: number): Airspace {
