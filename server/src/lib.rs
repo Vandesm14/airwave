@@ -7,7 +7,7 @@ pub mod structs;
 
 pub fn move_point(point: Vec2, degrees: f32, length: f32) -> Vec2 {
   // Convert degrees to radians
-  let radians = degrees * PI / 180.0;
+  let radians = degrees * (PI / 180.0);
 
   // Calculate x and y components
   let x = length * radians.cos();
@@ -31,4 +31,11 @@ pub fn delta_angle(current: f32, target: f32) -> f32 {
 
 pub fn inverse_degrees(degrees: f32) -> f32 {
   (degrees + 180.0) % 360.0
+}
+
+pub fn angle_between_points(a: Vec2, b: Vec2) -> f32 {
+  let dx = b.x - a.x;
+  let dy = b.y - a.y;
+
+  (dy.atan2(dx).to_degrees() + 360.0) % 360.0
 }

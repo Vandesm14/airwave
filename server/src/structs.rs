@@ -1,21 +1,34 @@
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
-use crate::{delta_angle, heading_to_degrees, inverse_degrees, move_point};
+use crate::{
+  angle_between_points, delta_angle, heading_to_degrees, inverse_degrees,
+  move_point,
+};
 
-const TIME_SCALE: f32 = 1.0;
+const TIME_SCALE: f32 = 2.0;
 
 const NAUTICALMILES_TO_FEET: f32 = 6076.115;
 const FEET_PER_UNIT: f32 = 0.005;
 const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781 * TIME_SCALE;
 const MILES_TO_FEET: f32 = 6076.12;
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "state", content = "value")]
+pub enum AircraftState {
+  Approach,
+  Landing(Runway),
+  WillDepart(Runway),
+  Departing,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Aircraft {
   pub callsign: String,
 
   pub is_colliding: bool,
-  pub is_active: bool,
+  pub state: AircraftState,
 
   pub pos: Vec2,
   pub heading: f32,
@@ -35,7 +48,7 @@ impl Aircraft {
   }
 
   pub fn go_around(&mut self) {
-    self.target.runway = None;
+    self.state = AircraftState::Approach;
     self.target.speed = 220.0;
 
     if self.target.altitude < 2000.0 {
@@ -53,9 +66,9 @@ impl Aircraft {
   }
 
   fn update_ils(&mut self) {
-    if let Some(runway) = &self.target.runway {
+    if let AircraftState::Landing(runway) = &self.state {
       let delta_angle = delta_angle(
-        runway.start().angle_to(self.pos).to_degrees(),
+        angle_between_points(runway.start(), self.pos),
         inverse_degrees(heading_to_degrees(runway.heading)),
       );
 
@@ -64,14 +77,14 @@ impl Aircraft {
       let start_decrease_speed = MILES_TO_FEET * FEET_PER_UNIT * 5.0;
 
       // If we are on approach to the runway
-      if delta_angle.abs() <= 10.0 {
+      if delta_angle.abs() <= 45.0 {
         let turn_amount = 30.0_f32.min(delta_angle.abs() * 6.0);
 
         // If we have passed the threshold for 4000 feet, go around
         if self.altitude > 4000.0
           && distance_to_runway <= start_decrease_altitude.powf(2.0)
         {
-          return todo!("go around");
+          return self.go_around();
         } else if (distance_to_runway <= start_decrease_altitude.powf(2.0)) {
           self.target.altitude = 0.0;
         }
@@ -151,8 +164,6 @@ pub struct AircraftTargets {
   pub heading: f32,
   pub speed: f32,
   pub altitude: f32,
-
-  pub runway: Option<Runway>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]

@@ -14,7 +14,7 @@ use tower_http::services::ServeDir;
 
 use server::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  structs::{Aircraft, AircraftTargets, Command},
+  structs::{Aircraft, AircraftState, AircraftTargets, Command, Runway},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -41,21 +41,30 @@ async fn main() {
 
   let mut engine = Engine::new(command_receiver, update_sender);
   let engine_handle = tokio::spawn(async move {
+    let runway = Runway {
+      id: "20".into(),
+      pos: Vec2::new(500.0, 500.0),
+      heading: 200.0,
+      length: 7000,
+    };
+
     engine.aircraft.push(Aircraft {
       callsign: "SKW1234".into(),
       is_colliding: false,
-      is_active: true,
-      pos: Vec2::new(0.0, 0.0),
+      state: AircraftState::Landing(runway.clone()),
+      pos: Vec2::new(600.0, 200.0),
       heading: 135.0,
       speed: 250.0,
-      altitude: 8000.0,
+      altitude: 4000.0,
       target: AircraftTargets {
         heading: 135.0,
         speed: 250.0,
-        altitude: 8000.0,
-        runway: None,
+        altitude: 4000.0,
       },
     });
+
+    engine.runways.push(runway);
+
     engine.begin_loop();
   });
 

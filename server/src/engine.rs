@@ -5,7 +5,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::structs::{Aircraft, Command, Runway, Task};
+use crate::structs::{Aircraft, AircraftState, Command, Runway, Task};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -109,7 +109,7 @@ impl Engine {
           Task::Land(runway) => {
             let target = self.runways.iter().find(|r| r.id == runway);
             if let Some(target) = target {
-              aircraft.target.runway = Some(target.clone());
+              aircraft.state = AircraftState::Landing(target.clone());
             }
           }
           Task::GoAround => aircraft.go_around(),

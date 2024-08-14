@@ -79,6 +79,7 @@ type Airspace = {
 
 type Runway = {
   id: string;
+  pos: [number, number];
   x: number;
   y: number;
   /** In Degrees (0 is north; up) */
@@ -86,14 +87,6 @@ type Runway = {
   /** In Feet */
   length: number;
 };
-
-enum TaskType {
-  LAND = 'land',
-  GOAROUND = 'go-around',
-  ALTITUDE = 'altitude',
-  HEADING = 'heading',
-  SPEED = 'speed',
-}
 
 let aircrafts: Array<Aircraft> = [];
 let runways: Array<Runway> = [];
@@ -148,7 +141,7 @@ function speakAsAircraft(
 
 let socket = new WebSocket(`ws://${window.location.hostname}:9001`);
 
-socket.onopen = function (e) {
+socket.onopen = function (_) {
   console.log('[open] Connection established');
   console.log('Sending to server');
 
@@ -162,26 +155,30 @@ type Event =
     }
   | { type: 'runways'; value: Runway[] };
 
+function posToXY<T extends { pos: [number, number]; x: number; y: number }>(
+  obj: T
+): T {
+  obj.x = obj.pos[0];
+  obj.y = obj.pos[1];
+
+  return obj;
+}
+
 socket.onmessage = function (event) {
   console.log(`[message] Data received from server: ${event.data}`);
 
   let json: Event = JSON.parse(event.data);
   switch (json.type) {
     case 'aircraft':
-      aircrafts = json.value.map((a) => {
-        a.x = a.pos[0];
-        a.y = a.pos[0];
-
-        return a;
-      });
+      aircrafts = json.value.map(posToXY);
       break;
     case 'runways':
-      runways = json.value;
+      runways = json.value.map(posToXY);
       break;
   }
 };
 
-socket.onclose = function (event) {
+socket.onclose = function (event: { wasClean: any; code: any; reason: any }) {
   if (event.wasClean) {
     console.log(
       `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`
@@ -193,7 +190,7 @@ socket.onclose = function (event) {
   }
 };
 
-socket.onerror = function (error) {
+socket.onerror = function () {
   console.log(`[error]`);
 };
 
@@ -467,20 +464,6 @@ function getRandomPointOnCircle(cx: number, cy: number, r: number) {
   return { x, y, angle: randomAngle };
 }
 
-function getAngle(x1: number, y1: number, x2: number, y2: number) {
-  // Calculate the difference in coordinates
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-
-  // Calculate the angle in radians
-  const angleRadians = Math.atan2(dy, dx);
-
-  // Convert the angle to degrees
-  const angleDegrees = angleRadians * (180 / Math.PI);
-
-  return angleDegrees;
-}
-
 function movePoint(
   x: number,
   y: number,
@@ -497,28 +480,8 @@ function movePoint(
   return { x: newX, y: newY };
 }
 
-function calcDeltaAngle(current: number, target: number): number {
-  return ((target - current + 540.0) % 360.0) - 180.0;
-}
-
 function inverseDegrees(degrees: number): number {
   return (degrees + 180) % 360;
-}
-
-function calculateSquaredDistance(
-  a: { x: number; y: number },
-  b: { x: number; y: number }
-): number {
-  return Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2);
-}
-
-function calculateDistance(
-  a: { x: number; y: number },
-  b: { x: number; y: number }
-): number {
-  return Math.sqrt(
-    Math.pow(b.x, 2) - Math.pow(a.x, 2) + Math.pow(b.y, 2) - Math.pow(a.y, 2)
-  );
 }
 
 function runwayInfo(runway: Runway): {
@@ -584,24 +547,4 @@ function runwayInfo(runway: Runway): {
     end,
     ils: { altitudePoints: ilsPoints, end: ilsStart, maxAngle, minAngle },
   };
-}
-
-function calculateAngleBetweenPoints(
-  point1: { x: number; y: number },
-  point2: { x: number; y: number }
-): number {
-  // Calculate the differences in coordinates
-  const dx = point2.x - point1.x;
-  const dy = point2.y - point1.y;
-
-  // Calculate the angle using Math.atan2
-  let angle = Math.atan2(dy, dx);
-
-  // Convert the angle from radians to degrees
-  angle = angle * (180 / Math.PI);
-
-  // Normalize the angle to be between 0 and 360 degrees
-  angle = (angle + 360) % 360;
-
-  return angle;
 }
