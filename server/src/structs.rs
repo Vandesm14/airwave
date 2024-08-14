@@ -13,8 +13,11 @@ const FEET_PER_UNIT: f32 = 0.005;
 const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781 * TIME_SCALE;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
 pub enum Task {
   Land(String),
+  #[serde(rename = "go-around")]
   GoAround,
   Altitude(f32),
   Heading(f32),

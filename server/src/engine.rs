@@ -13,7 +13,7 @@ use crate::structs::{Aircraft, AircraftState, Command, Runway, Task};
 pub enum OutgoingReply {
   // Partial/Small Updates
   ATCReply(String),
-  Reply(String),
+  Reply(Command),
 
   // Full State Updates
   Aircraft(Vec<Aircraft>),
@@ -60,11 +60,16 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
+        let mut commands: Vec<Command> = Vec::new();
         for incoming in self.receiver.try_iter() {
           match incoming {
-            IncomingUpdate::Command(_) => todo!("command"),
+            IncomingUpdate::Command(command) => commands.push(command),
             IncomingUpdate::Connect => self.broadcast_runways(),
           }
+        }
+
+        for command in commands {
+          self.execute_command(command);
         }
 
         self.update();

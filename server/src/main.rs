@@ -27,10 +27,8 @@ use server::{
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
 enum FrontendRequest {
-  Transcribe(Vec<u8>),
-  Complete(String),
-
-  Command(Command),
+  Voice(Vec<u8>),
+  Text(String),
   Connect,
 }
 
@@ -42,8 +40,9 @@ struct AudioResponse {
 #[tokio::main]
 async fn main() {
   dotenv().ok();
-  let api_key: Arc<str> =
-    env::var("API_KEY").expect("API_KEY must be set").into();
+  let api_key: Arc<str> = env::var("OPENAI_API_KEY")
+    .expect("OPENAI_API_KEY must be set")
+    .into();
 
   let (command_sender, command_receiver) = mpsc::channel::<IncomingUpdate>();
   let (update_sender, update_receiver) = mpsc::channel::<OutgoingReply>();
@@ -117,7 +116,7 @@ async fn main() {
                 let req =
                   serde_json::from_str::<FrontendRequest>(&string).unwrap();
                 match req {
-                  FrontendRequest::Transcribe(bytes) => {
+                  FrontendRequest::Voice(bytes) => {
                     let client = Client::new();
                     let form = reqwest::multipart::Form::new();
                     let form = form
@@ -148,46 +147,19 @@ async fn main() {
                     let reply: AudioResponse =
                       serde_json::from_str(&text).unwrap();
                     ws_sender
-                      .send(OutgoingReply::ATCReply(reply.text))
+                      .send(OutgoingReply::ATCReply(reply.text.clone()))
                       .unwrap();
-                  }
-                  FrontendRequest::Complete(string) => {
-                    let client = async_openai::Client::new();
-                    let request = CreateChatCompletionRequest {
-                      messages: vec![
-                        ChatCompletionRequestMessage::System(
-                          ChatCompletionRequestSystemMessage {
-                            content: include_str!("prompt.txt").to_owned(),
-                            name: None,
-                          },
-                        ),
-                        ChatCompletionRequestMessage::User(
-                          ChatCompletionRequestUserMessage {
-                            content:
-                              ChatCompletionRequestUserMessageContent::Text(
-                                string,
-                              ),
-                            name: None,
-                          },
-                        ),
-                      ],
-                      model: "gpt-4o-mini".into(),
-                      ..Default::default()
-                    };
 
-                    let response = client.chat().create(request).await;
-                    if let Ok(response) = response {
-                      if let Some(choice) = response.choices.first() {
-                        if let Some(ref text) = choice.message.content {
-                          ws_sender
-                            .send(OutgoingReply::Reply(text.to_owned()))
-                            .unwrap();
-                        }
-                      }
+                    if let Some(result) = complete_atc_request(reply.text).await
+                    {
+                      println!("sending result, {:?}", result);
+                      ws_sender
+                        .send(OutgoingReply::Reply(result.clone()))
+                        .unwrap();
+                      sender.send(IncomingUpdate::Command(result)).unwrap();
                     }
                   }
-
-                  FrontendRequest::Command(Command) => todo!(),
+                  FrontendRequest::Text(string) => todo!(),
                   FrontendRequest::Connect => {
                     sender.send(IncomingUpdate::Connect).unwrap();
                   }
@@ -230,23 +202,35 @@ async fn main() {
   };
 }
 
-// async fn complete(State(state): State<Arc<AppState>>, body: String) -> String {
-//   let response = state
-//     .client
-//     .post("https://api.openai.com/v1/chat/completions")
-//     .header(
-//       header::AUTHORIZATION,
-//       header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
-//         .unwrap(),
-//     )
-//     .header(
-//       header::CONTENT_TYPE,
-//       header::HeaderValue::from_str("application/json").unwrap(),
-//     )
-//     .body(body)
-//     .send()
-//     .await
-//     .unwrap();
+async fn complete_atc_request(string: String) -> Option<Command> {
+  let client = async_openai::Client::new();
+  let request = CreateChatCompletionRequest {
+    messages: vec![
+      ChatCompletionRequestMessage::System(
+        ChatCompletionRequestSystemMessage {
+          content: include_str!("prompt.txt").to_owned(),
+          name: None,
+        },
+      ),
+      ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
+        content: ChatCompletionRequestUserMessageContent::Text(string),
+        name: None,
+      }),
+    ],
+    model: "gpt-4o-mini".into(),
+    ..Default::default()
+  };
 
-//   response.text().await.unwrap()
-// }
+  let response = client.chat().create(request).await;
+  if let Ok(response) = response {
+    if let Some(choice) = response.choices.first() {
+      if let Some(ref text) = choice.message.content {
+        if let Ok(reply) = dbg!(serde_json::from_str::<Command>(dbg!(text))) {
+          return Some(reply);
+        }
+      }
+    }
+  }
+
+  None
+}

@@ -116,7 +116,7 @@ function callsignString(id: string): string {
 }
 
 function speakAsAircraft(
-  aircraft: Aircraft,
+  callsign: string,
   reply: string,
   withCallsign?: boolean
 ) {
@@ -125,11 +125,11 @@ function speakAsAircraft(
     messageTemplate instanceof HTMLTemplateElement
   ) {
     let fullReply = withCallsign
-      ? `${reply}, ${callsignString(aircraft.callsign)}`
+      ? `${reply}, ${callsignString(callsign)}`
       : reply;
 
     let message = messageTemplate.innerHTML
-      .replace('{{callsign}}', aircraft.callsign)
+      .replace('{{callsign}}', callsign)
       .replace('{{text}}', fullReply);
 
     chatbox.insertAdjacentHTML('beforeend', message);
@@ -167,7 +167,8 @@ type Event =
       value: Aircraft[];
     }
   | { type: 'runways'; value: Runway[] }
-  | { type: 'atcreply'; value: string };
+  | { type: 'atcreply'; value: string }
+  | { type: 'reply'; value: { id: string; reply: string } };
 
 function posToXY<T extends { pos: [number, number]; x: number; y: number }>(
   obj: T
@@ -191,6 +192,9 @@ socket.onmessage = function (event) {
       break;
     case 'atcreply':
       speakAsATC(json.value);
+      break;
+    case 'reply':
+      speakAsAircraft(json.value.id, json.value.reply);
       break;
   }
 };
@@ -237,7 +241,7 @@ document.addEventListener('keyup', (e) => {
       blob.arrayBuffer().then((value) => {
         socket.send(
           JSON.stringify({
-            type: 'transcribe',
+            type: 'voice',
             value: [...new Uint8Array(value)],
           })
         );
