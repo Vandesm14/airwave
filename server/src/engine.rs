@@ -8,15 +8,16 @@ use serde::{Deserialize, Serialize};
 use crate::structs::{Aircraft, Command, Runway, Task};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
 pub enum OutgoingReply {
   // Partial/Small Updates
-  RemoveAircraft(String),
   ATCReply(String),
   Reply(String),
 
   // Full State Updates
-  Aircraft(Aircraft),
-  Runway(Runway),
+  Aircraft(Vec<Aircraft>),
+  Runways(Vec<Runway>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -33,6 +34,7 @@ pub struct Engine {
   pub sender: mpsc::Sender<OutgoingReply>,
 
   last_tick: Instant,
+  rate: usize,
 }
 
 impl Engine {
@@ -47,18 +49,21 @@ impl Engine {
       sender,
 
       last_tick: Instant::now(),
+      rate: 5,
     }
   }
 
   pub fn begin_loop(&mut self) {
     loop {
-      if Instant::now() - self.last_tick >= Duration::from_secs_f32(1.0 / 2.0) {
+      if Instant::now() - self.last_tick
+        >= Duration::from_secs_f32(1.0 / self.rate as f32)
+      {
         self.last_tick = Instant::now();
 
         for incoming in self.receiver.try_iter() {
           match incoming {
             IncomingUpdate::Command(_) => todo!("command"),
-            IncomingUpdate::Connect => self.broadcast_all(),
+            IncomingUpdate::Connect => self.broadcast_runways(),
           }
         }
 
@@ -73,33 +78,26 @@ impl Engine {
   }
 
   fn broadcast_aircraft(&self) {
-    for aircraft in self.aircraft.iter() {
-      self
-        .sender
-        .send(OutgoingReply::Aircraft(aircraft.clone()))
-        .unwrap();
-    }
+    self
+      .sender
+      .send(OutgoingReply::Aircraft(self.aircraft.clone()))
+      .unwrap();
   }
 
   fn broadcast_runways(&self) {
-    for runway in self.runways.iter() {
-      self
-        .sender
-        .send(OutgoingReply::Runway(runway.clone()))
-        .unwrap();
-    }
+    self
+      .sender
+      .send(OutgoingReply::Runways(self.runways.clone()))
+      .unwrap();
   }
 
   pub fn update(&mut self) {
-    let dt = 1000.0 / 30.0;
+    let dt = 1.0 / self.rate as f32;
     for aircraft in self.aircraft.iter_mut() {
       aircraft.update(dt);
-
-      self
-        .sender
-        .send(OutgoingReply::Aircraft(aircraft.clone()))
-        .unwrap();
     }
+
+    self.broadcast_aircraft();
   }
 
   pub fn execute_command(&mut self, command: Command) {

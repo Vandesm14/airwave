@@ -8,12 +8,14 @@ use futures_util::{
 use glam::Vec2;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use server::engine::{Engine, IncomingUpdate, OutgoingReply};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use tower_http::services::ServeDir;
 
-use server::structs::{Aircraft, AircraftTargets};
+use server::{
+  engine::{Engine, IncomingUpdate, OutgoingReply},
+  structs::{Aircraft, AircraftTargets, Command},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -21,6 +23,9 @@ use server::structs::{Aircraft, AircraftTargets};
 enum FrontendRequest {
   Transcribe(String),
   Complete(String),
+
+  Command(Command),
+  Connect,
 }
 
 #[tokio::main]
@@ -73,6 +78,8 @@ async fn main() {
 
       let (write, read) = ws_stream.split();
       give_streams.send(write).unwrap();
+
+      let sender = command_sender.clone();
       tokio::spawn(async move {
         read
           .try_for_each(|message| {
@@ -83,6 +90,11 @@ async fn main() {
               match req {
                 FrontendRequest::Transcribe(string) => todo!(),
                 FrontendRequest::Complete(string) => todo!(),
+
+                FrontendRequest::Command(Command) => todo!(),
+                FrontendRequest::Connect => {
+                  sender.send(IncomingUpdate::Connect).unwrap()
+                }
               }
             }
 
@@ -105,10 +117,9 @@ async fn main() {
 
       if let Ok(update) = update_receiver.try_recv() {
         for write in streams.iter_mut() {
-          write
+          let _ = write
             .send(Message::Text(serde_json::to_string(&update).unwrap()))
-            .await
-            .expect("failed to send message");
+            .await;
         }
       }
     }
