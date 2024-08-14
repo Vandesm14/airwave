@@ -49,7 +49,7 @@ impl Engine {
       sender,
 
       last_tick: Instant::now(),
-      rate: 5,
+      rate: 30,
     }
   }
 
@@ -68,13 +68,10 @@ impl Engine {
         }
 
         self.update();
+        self.cleanup();
+        self.broadcast_aircraft();
       }
     }
-  }
-
-  fn broadcast_all(&self) {
-    self.broadcast_runways();
-    self.broadcast_aircraft();
   }
 
   fn broadcast_aircraft(&self) {
@@ -91,13 +88,24 @@ impl Engine {
       .unwrap();
   }
 
+  pub fn cleanup(&mut self) {
+    let mut indicies: Vec<usize> = Vec::new();
+    for (i, aircraft) in self.aircraft.iter().enumerate() {
+      if matches!(aircraft.state, AircraftState::Deleted) {
+        indicies.push(i);
+      }
+    }
+
+    for index in indicies {
+      self.aircraft.swap_remove(index);
+    }
+  }
+
   pub fn update(&mut self) {
     let dt = 1.0 / self.rate as f32;
     for aircraft in self.aircraft.iter_mut() {
       aircraft.update(dt);
     }
-
-    self.broadcast_aircraft();
   }
 
   pub fn execute_command(&mut self, command: Command) {

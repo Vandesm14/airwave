@@ -1,4 +1,8 @@
-use std::{env, sync::mpsc};
+use std::{
+  borrow::Borrow,
+  env,
+  sync::{mpsc, Arc},
+};
 
 use axum::Router;
 use dotenv::dotenv;
@@ -6,7 +10,7 @@ use futures_util::{
   future, stream::SplitSink, SinkExt, StreamExt, TryStreamExt,
 };
 use glam::Vec2;
-use reqwest::Client;
+use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
@@ -21,7 +25,7 @@ use server::{
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
 enum FrontendRequest {
-  Transcribe(String),
+  Transcribe(Vec<u8>),
   Complete(String),
 
   Command(Command),
@@ -31,33 +35,35 @@ enum FrontendRequest {
 #[tokio::main]
 async fn main() {
   dotenv().ok();
-  let api_key = env::var("API_KEY").expect("API_KEY must be set");
-  let client = Client::new();
+  let api_key: Arc<str> =
+    env::var("API_KEY").expect("API_KEY must be set").into();
 
   let (command_sender, command_receiver) = mpsc::channel::<IncomingUpdate>();
   let (update_sender, update_receiver) = mpsc::channel::<OutgoingReply>();
 
   let app = Router::new().nest_service("/", ServeDir::new("../dist"));
 
-  let mut engine = Engine::new(command_receiver, update_sender);
+  let size = 2000.0;
+
+  let mut engine = Engine::new(command_receiver, update_sender.clone());
   let engine_handle = tokio::spawn(async move {
     let runway = Runway {
       id: "20".into(),
-      pos: Vec2::new(500.0, 500.0),
+      pos: Vec2::new(size * 0.5, size * 0.5),
       heading: 200.0,
-      length: 7000,
+      length: 7000.0,
     };
 
     engine.aircraft.push(Aircraft {
       callsign: "SKW1234".into(),
       is_colliding: false,
       state: AircraftState::Landing(runway.clone()),
-      pos: Vec2::new(600.0, 200.0),
-      heading: 135.0,
+      pos: Vec2::new(size * 0.5 + 200.0, size * 0.5 - 400.0),
+      heading: 240.0,
       speed: 250.0,
       altitude: 4000.0,
       target: AircraftTargets {
-        heading: 135.0,
+        heading: 240.0,
         speed: 250.0,
         altitude: 4000.0,
       },
@@ -89,25 +95,62 @@ async fn main() {
       give_streams.send(write).unwrap();
 
       let sender = command_sender.clone();
+      let ws_sender = update_sender.clone();
+      let api_key = api_key.clone();
+
       tokio::spawn(async move {
         read
           .try_for_each(|message| {
-            if let Message::Text(string) = message {
-              let req =
-                serde_json::from_str::<FrontendRequest>(&string).unwrap();
+            let sender = sender.clone();
+            let api_key = api_key.clone();
 
-              match req {
-                FrontendRequest::Transcribe(string) => todo!(),
-                FrontendRequest::Complete(string) => todo!(),
+            let ws_sender = ws_sender.clone();
+            async move {
+              if let Message::Text(string) = message {
+                let req =
+                  serde_json::from_str::<FrontendRequest>(&string).unwrap();
+                match req {
+                  FrontendRequest::Transcribe(bytes) => {
+                    let client = Client::new();
+                    let form = reqwest::multipart::Form::new();
+                    let form = form
+                      .part("file", Part::bytes(bytes).file_name("audio.wav"));
+                    let form = form.text("model", "whisper-1".to_string());
 
-                FrontendRequest::Command(Command) => todo!(),
-                FrontendRequest::Connect => {
-                  sender.send(IncomingUpdate::Connect).unwrap()
+                    let response = client
+                      .post("https://api.openai.com/v1/audio/transcriptions")
+                      .multipart(form)
+                      .header(
+                        header::AUTHORIZATION,
+                        header::HeaderValue::from_str(&format!(
+                          "Bearer {}",
+                          &api_key.clone()
+                        ))
+                        .unwrap(),
+                      )
+                      .header(
+                        header::CONTENT_TYPE,
+                        header::HeaderValue::from_str("multipart/form-data")
+                          .unwrap(),
+                      )
+                      .send()
+                      .await
+                      .unwrap();
+
+                    let text = response.text().await.unwrap();
+                    ws_sender.send(OutgoingReply::ATCReply(text)).unwrap();
+                  }
+                  FrontendRequest::Complete(string) => todo!(),
+
+                  FrontendRequest::Command(Command) => todo!(),
+                  FrontendRequest::Connect => {
+                    sender.send(IncomingUpdate::Connect).unwrap();
+                  }
                 }
               }
-            }
 
-            future::ok(())
+              Ok(())
+            }
           })
           .await
           .unwrap();
@@ -141,32 +184,6 @@ async fn main() {
     _ = ws_handle => println!("ws exit"),
   };
 }
-
-// async fn transcribe(State(state): State<Arc<AppState>>, body: Bytes) -> String {
-//   let form = reqwest::multipart::Form::new();
-//   let form =
-//     form.part("file", Part::bytes(body.to_vec()).file_name("audio.wav"));
-//   let form = form.text("model", "whisper-1".to_string());
-
-//   let response = state
-//     .client
-//     .post("https://api.openai.com/v1/audio/transcriptions")
-//     .multipart(form)
-//     .header(
-//       header::AUTHORIZATION,
-//       header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
-//         .unwrap(),
-//     )
-//     .header(
-//       header::CONTENT_TYPE,
-//       header::HeaderValue::from_str("multipart/form-data").unwrap(),
-//     )
-//     .send()
-//     .await
-//     .unwrap();
-
-//   response.text().await.unwrap()
-// }
 
 // async fn complete(State(state): State<Arc<AppState>>, body: String) -> String {
 //   let response = state

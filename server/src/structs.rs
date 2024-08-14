@@ -6,21 +6,71 @@ use crate::{
   move_point,
 };
 
-const TIME_SCALE: f32 = 2.0;
+const TIME_SCALE: f32 = 1.0;
 
 const NAUTICALMILES_TO_FEET: f32 = 6076.115;
 const FEET_PER_UNIT: f32 = 0.005;
 const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781 * TIME_SCALE;
-const MILES_TO_FEET: f32 = 6076.12;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Task {
+  Land(String),
+  GoAround,
+  Altitude(f32),
+  Heading(f32),
+  Speed(f32),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Command {
+  pub id: String,
+  pub reply: String,
+  pub tasks: Vec<Task>,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct Runway {
+  pub id: String,
+  pub pos: Vec2,
+  pub heading: f32,
+  pub length: f32,
+}
+
+impl Runway {
+  pub fn start(&self) -> Vec2 {
+    move_point(
+      self.pos,
+      inverse_degrees(heading_to_degrees(self.heading)),
+      self.length * FEET_PER_UNIT * 0.5,
+    )
+  }
+
+  pub fn end(&self) -> Vec2 {
+    move_point(
+      self.pos,
+      heading_to_degrees(self.heading),
+      self.length * FEET_PER_UNIT * 0.5,
+    )
+  }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-#[serde(tag = "state", content = "value")]
+#[serde(tag = "type", content = "value")]
 pub enum AircraftState {
   Approach,
   Landing(Runway),
   WillDepart(Runway),
   Departing,
+
+  Deleted,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct AircraftTargets {
+  pub heading: f32,
+  pub speed: f32,
+  pub altitude: f32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -73,8 +123,8 @@ impl Aircraft {
       );
 
       let distance_to_runway = self.pos.distance_squared(runway.start());
-      let start_decrease_altitude = MILES_TO_FEET * FEET_PER_UNIT * 5.6;
-      let start_decrease_speed = MILES_TO_FEET * FEET_PER_UNIT * 5.0;
+      let start_decrease_altitude = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
+      let start_decrease_speed = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
 
       // If we are on approach to the runway
       if delta_angle.abs() <= 45.0 {
@@ -85,7 +135,7 @@ impl Aircraft {
           && distance_to_runway <= start_decrease_altitude.powf(2.0)
         {
           return self.go_around();
-        } else if (distance_to_runway <= start_decrease_altitude.powf(2.0)) {
+        } else if distance_to_runway <= start_decrease_altitude.powf(2.0) {
           self.target.altitude = 0.0;
         }
 
@@ -97,12 +147,12 @@ impl Aircraft {
         }
         if delta_angle < 0.0 {
           self.target.heading = runway.heading + turn_amount;
-        } else if (delta_angle > 0.0) {
+        } else if delta_angle > 0.0 {
           self.target.heading = runway.heading - turn_amount;
         }
         // Else, if we aren't on approach, check if we have landed
       } else if delta_angle.abs().round() == 180.0 && self.altitude == 0.0 {
-        todo!("landed, remove aircraft")
+        self.state = AircraftState::Deleted;
       }
     }
   }
@@ -126,23 +176,23 @@ impl Aircraft {
     }
 
     // Change based on speed if not equal
-    if (self.altitude != self.target.altitude) {
-      if (self.altitude < self.target.altitude) {
+    if self.altitude != self.target.altitude {
+      if self.altitude < self.target.altitude {
         self.altitude += climb_speed;
       } else {
         self.altitude -= climb_speed;
       }
     }
-    if (self.heading != self.target.heading) {
+    if self.heading != self.target.heading {
       let delta_angle = delta_angle(self.heading, self.target.heading);
-      if (delta_angle < 0.0) {
+      if delta_angle < 0.0 {
         self.heading -= turn_speed;
       } else {
         self.heading += turn_speed;
       }
     }
-    if (self.speed != self.target.speed) {
-      if (self.speed < self.target.speed) {
+    if self.speed != self.target.speed {
+      if self.speed < self.target.speed {
         self.speed += speed_speed;
       } else {
         self.speed -= speed_speed;
@@ -157,53 +207,4 @@ impl Aircraft {
     self.update_targets(dt);
     self.update_position(dt);
   }
-}
-
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct AircraftTargets {
-  pub heading: f32,
-  pub speed: f32,
-  pub altitude: f32,
-}
-
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct Runway {
-  pub id: String,
-  pub pos: Vec2,
-  pub heading: f32,
-  pub length: usize,
-}
-
-impl Runway {
-  pub fn start(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      inverse_degrees(heading_to_degrees(self.heading)),
-      (self.length as f32) * FEET_PER_UNIT * 0.5,
-    )
-  }
-
-  pub fn end(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      heading_to_degrees(self.heading),
-      (self.length as f32) * FEET_PER_UNIT * 0.5,
-    )
-  }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Task {
-  Land(String),
-  GoAround,
-  Altitude(f32),
-  Heading(f32),
-  Speed(f32),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Command {
-  pub id: String,
-  pub reply: String,
-  pub tasks: Vec<Task>,
 }

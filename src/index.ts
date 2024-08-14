@@ -140,7 +140,6 @@ function speakAsAircraft(
 }
 
 let socket = new WebSocket(`ws://${window.location.hostname}:9001`);
-
 socket.onopen = function (_) {
   console.log('[open] Connection established');
   console.log('Sending to server');
@@ -165,7 +164,7 @@ function posToXY<T extends { pos: [number, number]; x: number; y: number }>(
 }
 
 socket.onmessage = function (event) {
-  console.log(`[message] Data received from server: ${event.data}`);
+  // console.log(`[message] Data received from server: ${event.data}`);
 
   let json: Event = JSON.parse(event.data);
   switch (json.type) {
@@ -509,8 +508,8 @@ function runwayInfo(runway: Runway): {
 
   let maxIlsRangeMiles = 10;
   let ilsPoints: { x: number; y: number }[] = [];
-  let separate = 5.6 / 4;
-  for (let i = 0; i < 4; i += 1) {
+  let separate = 6.0 / 4;
+  for (let i = 1; i < 4; i += 1) {
     let point = i * separate + separate;
     ilsPoints.push(
       movePoint(
