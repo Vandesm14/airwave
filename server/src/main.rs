@@ -60,23 +60,9 @@ async fn main() {
       length: 7000.0,
     };
 
-    engine.aircraft.push(Aircraft {
-      callsign: "SKW1234".into(),
-      is_colliding: false,
-      state: AircraftState::Landing(runway.clone()),
-      pos: Vec2::new(size * 0.5 + 200.0, size * 0.5 - 400.0),
-      heading: 240.0,
-      speed: 250.0,
-      altitude: 4000.0,
-      target: AircraftTargets {
-        heading: 240.0,
-        speed: 250.0,
-        altitude: 4000.0,
-      },
-    });
-
     engine.runways.push(runway);
 
+    engine.spawn_random_aircraft();
     engine.begin_loop();
   });
 
@@ -152,14 +138,20 @@ async fn main() {
 
                     if let Some(result) = complete_atc_request(reply.text).await
                     {
-                      println!("sending result, {:?}", result);
                       ws_sender
                         .send(OutgoingReply::Reply(result.clone()))
                         .unwrap();
                       sender.send(IncomingUpdate::Command(result)).unwrap();
                     }
                   }
-                  FrontendRequest::Text(string) => todo!(),
+                  FrontendRequest::Text(string) => {
+                    if let Some(result) = complete_atc_request(string).await {
+                      ws_sender
+                        .send(OutgoingReply::Reply(result.clone()))
+                        .unwrap();
+                      sender.send(IncomingUpdate::Command(result)).unwrap();
+                    }
+                  }
                   FrontendRequest::Connect => {
                     sender.send(IncomingUpdate::Connect).unwrap();
                   }

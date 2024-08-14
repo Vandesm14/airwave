@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 
 use glam::Vec2;
+use rand::Rng;
 
 pub mod engine;
 pub mod structs;
@@ -38,4 +39,26 @@ pub fn angle_between_points(a: Vec2, b: Vec2) -> f32 {
   let dy = b.y - a.y;
 
   (dy.atan2(dx).to_degrees() + 360.0) % 360.0
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct CirclePoint {
+  pub position: Vec2,
+  pub angle: f32,
+}
+
+pub fn get_random_point_on_circle(center: Vec2, radius: f32) -> CirclePoint {
+  let mut rng = rand::thread_rng();
+
+  // Generate a random angle in radians
+  let random_angle = rng.r#gen::<f32>() * 2.0 * PI;
+
+  // Calculate the position of the point on the circle
+  let offset = Vec2::from_angle(random_angle) * radius;
+  let position = center + offset;
+
+  CirclePoint {
+    position,
+    angle: random_angle,
+  }
 }

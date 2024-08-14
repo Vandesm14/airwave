@@ -194,7 +194,7 @@ socket.onmessage = function (event) {
       speakAsATC(json.value);
       break;
     case 'reply':
-      speakAsAircraft(json.value.id, json.value.reply);
+      speakAsAircraft(json.value.id, json.value.reply, true);
       break;
   }
 };

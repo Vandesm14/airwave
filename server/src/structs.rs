@@ -1,9 +1,10 @@
 use glam::Vec2;
+use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  angle_between_points, delta_angle, heading_to_degrees, inverse_degrees,
-  move_point,
+  angle_between_points, degrees_to_heading, delta_angle,
+  get_random_point_on_circle, heading_to_degrees, inverse_degrees, move_point,
 };
 
 const TIME_SCALE: f32 = 1.0;
@@ -92,8 +93,48 @@ pub struct Aircraft {
 }
 
 impl Aircraft {
+  pub fn random(airspace_size: f32) -> Self {
+    let airspace_center = Vec2::new(airspace_size * 0.5, airspace_size * 0.5);
+    let point =
+      get_random_point_on_circle(airspace_center, airspace_size * 0.5);
+
+    Self {
+      callsign: Self::random_callsign(),
+      is_colliding: false,
+      state: AircraftState::Approach,
+      pos: point.position,
+      heading: degrees_to_heading(angle_between_points(
+        point.position,
+        airspace_center,
+      )),
+      speed: 250.0,
+      altitude: 8000.0,
+      target: AircraftTargets {
+        heading: degrees_to_heading(angle_between_points(
+          point.position,
+          airspace_center,
+        )),
+        speed: 250.0,
+        altitude: 8000.0,
+      },
+    }
+  }
+
   pub fn random_callsign() -> String {
-    todo!()
+    let mut string = String::new();
+    let airlines = ["AAL", "SKW", "JBL", "BAW"];
+
+    let mut rng = thread_rng();
+    let airline = airlines.choose(&mut rng).unwrap();
+
+    string.push_str(airline);
+
+    string.push_str(&rng.gen_range(0..=9).to_string());
+    string.push_str(&rng.gen_range(0..=9).to_string());
+    string.push_str(&rng.gen_range(0..=9).to_string());
+    string.push_str(&rng.gen_range(0..=9).to_string());
+
+    string
   }
 
   pub fn speed_in_pixels(&self) -> f32 {

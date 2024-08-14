@@ -34,6 +34,7 @@ pub struct Engine {
   pub sender: mpsc::Sender<OutgoingReply>,
 
   last_tick: Instant,
+  last_spawn: Instant,
   rate: usize,
 }
 
@@ -49,8 +50,25 @@ impl Engine {
       sender,
 
       last_tick: Instant::now(),
+      last_spawn: Instant::now(),
       rate: 30,
     }
+  }
+
+  pub fn spawn_random_aircraft(&mut self) {
+    let aircraft = Aircraft::random(5000.0);
+    self.aircraft.push(aircraft.clone());
+    self
+      .sender
+      .send(OutgoingReply::Reply(Command {
+        id: aircraft.callsign.clone(),
+        reply: format!(
+          "Tower, {} is at {} feet, with you.",
+          aircraft.callsign, aircraft.altitude
+        ),
+        tasks: Vec::new(),
+      }))
+      .unwrap();
   }
 
   pub fn begin_loop(&mut self) {
@@ -59,6 +77,13 @@ impl Engine {
         >= Duration::from_secs_f32(1.0 / self.rate as f32)
       {
         self.last_tick = Instant::now();
+
+        if self.aircraft.len() < 5
+          && self.last_tick.elapsed() >= Duration::from_secs(60)
+        {
+          self.last_tick = Instant::now();
+          self.spawn_random_aircraft();
+        }
 
         let mut commands: Vec<Command> = Vec::new();
         for incoming in self.receiver.try_iter() {
