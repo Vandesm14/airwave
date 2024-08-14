@@ -6,7 +6,7 @@ let isRecording = false;
 
 type Ctx = CanvasRenderingContext2D;
 
-const timeScale = 2;
+const timeScale = 1;
 
 const nauticalMilesToFeet = 6076.115;
 const feetPerPixel = 0.005;
@@ -23,7 +23,7 @@ function degreesToHeading(degrees: number) {
 
 function speak(text: string) {
   if ('speechSynthesis' in window) {
-    if (window.speechSynthesis.speaking) {
+    if (window.speechSynthesis.speaking || isRecording) {
       setTimeout(() => speak(text), 500);
     } else {
       const utterance = new SpeechSynthesisUtterance(
@@ -141,6 +141,9 @@ let runways: Array<Runway> = [];
 let lastTime = Date.now();
 let lastDraw = 0;
 
+const chatbox = document.getElementById('chatbox');
+const messageTemplate = document.getElementById('message-template');
+
 const canvas = document.getElementById('canvas');
 if (canvas instanceof HTMLCanvasElement && canvas !== null) {
   window.addEventListener('resize', () => {
@@ -155,9 +158,6 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
 
   loopMain(canvas, true);
 }
-
-const chatbox = document.getElementById('chatbox');
-const messageTemplate = document.getElementById('message-template');
 
 function callsignString(id: string): string {
   return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
@@ -199,6 +199,10 @@ function doGoAround(aircraft: Aircraft) {
   if (aircraft.target.altitude < 2000) {
     aircraft.target.altitude = 2000;
   }
+}
+
+function activeAircraft(): number {
+  return aircrafts.filter((a) => a !== undefined).length;
 }
 
 async function parseATCMessage(textRaw: string) {
@@ -355,9 +359,13 @@ function loopInit(width: number, height: number, airspace: Airspace) {
   };
   runways.push(runway);
 
-  for (let i = 0; i < 2; i++) {
-    setTimeout(() => spawnRandomAircraft(airspace), 1000 * i);
-  }
+  spawnRandomAircraft(airspace);
+
+  setInterval(() => {
+    if (activeAircraft() < 5) {
+      spawnRandomAircraft(airspace);
+    }
+  }, 1000 * 60);
 }
 
 function loopUpdate(dts: number) {
@@ -544,7 +552,12 @@ function spawnRandomAircraft(airspace: Airspace) {
     callsign: randomCallsign(),
   };
 
-  aircrafts.push(aircraft);
+  let emptyIndex = aircrafts.findIndex((a) => a === undefined);
+  if (emptyIndex >= 0) {
+    aircrafts[emptyIndex] = aircraft;
+  } else {
+    aircrafts.push(aircraft);
+  }
 
   speakAsAircraft(
     aircraft,
@@ -825,7 +838,7 @@ function runwayInfo(runway: Runway): {
     headingToDegrees(runway.heading)
   );
 
-  let maxIlsRangeMiles = 12;
+  let maxIlsRangeMiles = 10;
   let ilsPoints: { x: number; y: number }[] = [];
   let separate = 5.6 / 4;
   for (let i = 0; i < 4; i += 1) {
