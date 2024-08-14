@@ -211,12 +211,12 @@ async function parseATCMessage(textRaw: string) {
       role: 'system',
       content: `You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of tasks for your aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.
 Available Tasks: ["heading", number], ["speed", number], ["altitude", number], ["land", string], ["go-around"]
-Available Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)
+Available Callsigns: SKW (Skywest), AAL ("American Airlines" or "American"), JBL (Jet Blue)
 Examples:
 User: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.
 Assistant: {"reply": "Left turn heading 180, reduce speed to 230.", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}
-User: Skywest 5-1-3-8 climb and maintain flight level 050.
-Assistant: {"reply": "Climb and maintain flight level 050.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
+User: American 1-2-3-4 climb and maintain flight level 050.
+Assistant: {"reply": "Climb and maintain flight level 050.", "id": "AAL1234", "tasks":[["altitude", 5000]]}
 User: Skywest 5-1-3-8 descend and maintain 5,000 feet.
 Assistant: {"reply": "Descend and and maintain 5,000 feet.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
 User: Skywest 5-1-3-8 cleared to land runway 18 left.
@@ -344,29 +344,8 @@ function loopInit(width: number, height: number, airspace: Airspace) {
   };
   runways.push(runway);
 
-  for (let i = 0; i < 1; i++) {
-    // spawnRandomAircraft(airspace);
-    let spawn = movePoint(
-      runway.x,
-      runway.y,
-      runway.length * feetPerPixel + nauticalMilesToFeet * feetPerPixel * 8,
-      inverseDegrees(headingToDegrees(runway.heading))
-    );
-    let aircraft: Aircraft = {
-      x: spawn.x + 10,
-      y: spawn.y + 10,
-      target: {
-        runway: '20',
-        heading: runway.heading,
-        speed: 170,
-        altitude: 4000,
-      },
-      heading: runway.heading,
-      speed: 170,
-      altitude: 4000,
-      callsign: 'SKW9810',
-    };
-    aircrafts.push(aircraft);
+  for (let i = 0; i < 2; i++) {
+    spawnRandomAircraft(airspace);
   }
 }
 
