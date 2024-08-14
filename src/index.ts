@@ -525,6 +525,8 @@ function updateAircraftTargets(aircraft: Aircraft, dts: number) {
       aircraft.speed -= speedSpeed;
     }
   }
+
+  aircraft.heading = (360 + aircraft.heading) % 360;
 }
 
 function spawnRandomAircraft(airspace: Airspace) {
