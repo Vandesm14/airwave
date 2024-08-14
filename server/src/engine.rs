@@ -1,21 +1,86 @@
-use std::time::Instant;
+use std::{
+  sync::mpsc::{self},
+  time::{Duration, Instant},
+};
+
+use serde::{Deserialize, Serialize};
 
 use crate::structs::{Aircraft, Command, Runway, Task};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum StateUpdate {
+  Aircraft(Aircraft),
+  Runway(Runway),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum IncomingUpdate {
+  Command(Command),
+  Connect,
+}
+
+#[derive(Debug)]
 pub struct Engine {
   pub aircraft: Vec<Aircraft>,
   pub runways: Vec<Runway>,
+  pub receiver: mpsc::Receiver<IncomingUpdate>,
+  pub sender: mpsc::Sender<StateUpdate>,
 
   last_tick: Instant,
 }
 
 impl Engine {
-  pub fn new() -> Self {
+  pub fn new(
+    receiver: mpsc::Receiver<IncomingUpdate>,
+    sender: mpsc::Sender<StateUpdate>,
+  ) -> Self {
     Self {
       aircraft: Vec::new(),
       runways: Vec::new(),
+      receiver,
+      sender,
+
       last_tick: Instant::now(),
+    }
+  }
+
+  pub fn begin_loop(&mut self) {
+    loop {
+      if Instant::now() - self.last_tick >= Duration::from_secs_f32(1.0 / 5.0) {
+        self.last_tick = Instant::now();
+
+        for incoming in self.receiver.iter() {
+          match incoming {
+            IncomingUpdate::Command(_) => todo!("command"),
+            IncomingUpdate::Connect => self.broadcast_all(),
+          }
+        }
+
+        self.update();
+      }
+    }
+  }
+
+  fn broadcast_all(&self) {
+    self.broadcast_runways();
+    self.broadcast_aircraft();
+  }
+
+  fn broadcast_aircraft(&self) {
+    for aircraft in self.aircraft.iter() {
+      self
+        .sender
+        .send(StateUpdate::Aircraft(aircraft.clone()))
+        .unwrap();
+    }
+  }
+
+  fn broadcast_runways(&self) {
+    for runway in self.runways.iter() {
+      self
+        .sender
+        .send(StateUpdate::Runway(runway.clone()))
+        .unwrap();
     }
   }
 
@@ -23,6 +88,11 @@ impl Engine {
     let dt = 1000.0 / 30.0;
     for aircraft in self.aircraft.iter_mut() {
       aircraft.update(dt);
+
+      self
+        .sender
+        .send(StateUpdate::Aircraft(aircraft.clone()))
+        .unwrap();
     }
   }
 

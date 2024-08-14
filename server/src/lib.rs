@@ -2,8 +2,8 @@ use std::f32::consts::PI;
 
 use glam::Vec2;
 
-mod engine;
-mod structs;
+pub mod engine;
+pub mod structs;
 
 pub fn move_point(point: Vec2, degrees: f32, length: f32) -> Vec2 {
   // Convert degrees to radians
