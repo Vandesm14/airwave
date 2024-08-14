@@ -56,7 +56,7 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    let aircraft = Aircraft::random(5000.0);
+    let aircraft = Aircraft::random(2000.0);
     self.aircraft.push(aircraft.clone());
     self
       .sender
@@ -79,9 +79,9 @@ impl Engine {
         self.last_tick = Instant::now();
 
         if self.aircraft.len() < 5
-          && self.last_tick.elapsed() >= Duration::from_secs(60)
+          && self.last_spawn.elapsed() >= Duration::from_secs(60)
         {
-          self.last_tick = Instant::now();
+          self.last_spawn = Instant::now();
           self.spawn_random_aircraft();
         }
 
