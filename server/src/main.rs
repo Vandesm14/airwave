@@ -1,26 +1,30 @@
-use axum::body::Bytes;
 use axum::Router;
-use axum::{extract::State, routing::post};
 use dotenv::dotenv;
-use futures_util::stream::SplitSink;
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{
+  stream::SplitSink,
+  {SinkExt, StreamExt},
+};
 use glam::Vec2;
-use reqwest::multipart::Part;
-use reqwest::{header, Client};
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use server::engine::{Engine, IncomingUpdate, StateUpdate};
-use std::sync::mpsc;
-use std::{env, sync::Arc};
-use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::Mutex;
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::WebSocketStream;
+use std::{
+  sync::mpsc,
+  {env, sync::Arc},
+};
+use tokio::{
+  net::{TcpListener, TcpStream},
+  sync::Mutex,
+};
+use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use tower_http::services::ServeDir;
 
 use server::structs::{Aircraft, AircraftTargets};
 
-struct AppState {
-  client: Client,
-  api_key: String,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+enum FrontendRequest {
+  Transcribe(String),
+  Complete(String),
 }
 
 #[tokio::main]
@@ -32,13 +36,7 @@ async fn main() {
   let (command_sender, command_receiver) = mpsc::channel::<IncomingUpdate>();
   let (update_sender, update_receiver) = mpsc::channel::<StateUpdate>();
 
-  let shared_state = Arc::new(AppState { api_key, client });
-
-  let app = Router::new()
-    .nest_service("/", ServeDir::new("../dist"))
-    .route("/transcribe", post(transcribe))
-    .route("/complete", post(complete))
-    .with_state(shared_state);
+  let app = Router::new().nest_service("/", ServeDir::new("../dist"));
 
   let mut engine = Engine::new(command_receiver, update_sender);
   let engine_handle = tokio::spawn(async move {
@@ -65,10 +63,9 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
   });
 
-  let streams: Arc<Mutex<Vec<SplitSink<WebSocketStream<TcpStream>, Message>>>> =
-    Arc::new(Mutex::new(Vec::new()));
+  let (give_streams, take_streams) =
+    mpsc::channel::<SplitSink<WebSocketStream<TcpStream>, Message>>();
 
-  let ws_streams = streams.clone();
   let ws_handle = tokio::spawn(async move {
     let try_socket = TcpListener::bind("0.0.0.0:9001").await;
     let listener = try_socket.expect("ws server failed to bind");
@@ -79,22 +76,25 @@ async fn main() {
         .expect("Error during the websocket handshake occurred");
 
       let (write, _) = ws_stream.split();
-      if let Ok(mut lock) = ws_streams.try_lock() {
-        lock.push(write);
-      }
+      give_streams.send(write).unwrap();
     }
   });
 
   let broadcast_handle = tokio::spawn(async move {
+    let mut streams: Vec<SplitSink<WebSocketStream<TcpStream>, Message>> =
+      Vec::new();
+
     loop {
+      for stream in take_streams.try_iter() {
+        streams.push(stream);
+      }
+
       if let Ok(update) = update_receiver.try_recv() {
-        if let Ok(mut lock) = streams.try_lock() {
-          for write in lock.iter_mut() {
-            write
-              .send(Message::Text(serde_json::to_string(&update).unwrap()))
-              .await
-              .expect("failed to send message");
-          }
+        for write in streams.iter_mut() {
+          write
+            .send(Message::Text(serde_json::to_string(&update).unwrap()))
+            .await
+            .expect("failed to send message");
         }
       }
     }
@@ -103,54 +103,54 @@ async fn main() {
   tokio::select! {
     _ = engine_handle => println!("engine exit"),
     _ = http_handle => println!("http exit"),
+    _ = broadcast_handle => println!("broadcast exit"),
     _ = ws_handle => println!("ws exit"),
-    _ = broadcast_handle => println!("broadcast exit")
   };
 }
 
-async fn transcribe(State(state): State<Arc<AppState>>, body: Bytes) -> String {
-  let form = reqwest::multipart::Form::new();
-  let form =
-    form.part("file", Part::bytes(body.to_vec()).file_name("audio.wav"));
-  let form = form.text("model", "whisper-1".to_string());
+// async fn transcribe(State(state): State<Arc<AppState>>, body: Bytes) -> String {
+//   let form = reqwest::multipart::Form::new();
+//   let form =
+//     form.part("file", Part::bytes(body.to_vec()).file_name("audio.wav"));
+//   let form = form.text("model", "whisper-1".to_string());
 
-  let response = state
-    .client
-    .post("https://api.openai.com/v1/audio/transcriptions")
-    .multipart(form)
-    .header(
-      header::AUTHORIZATION,
-      header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
-        .unwrap(),
-    )
-    .header(
-      header::CONTENT_TYPE,
-      header::HeaderValue::from_str("multipart/form-data").unwrap(),
-    )
-    .send()
-    .await
-    .unwrap();
+//   let response = state
+//     .client
+//     .post("https://api.openai.com/v1/audio/transcriptions")
+//     .multipart(form)
+//     .header(
+//       header::AUTHORIZATION,
+//       header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
+//         .unwrap(),
+//     )
+//     .header(
+//       header::CONTENT_TYPE,
+//       header::HeaderValue::from_str("multipart/form-data").unwrap(),
+//     )
+//     .send()
+//     .await
+//     .unwrap();
 
-  response.text().await.unwrap()
-}
+//   response.text().await.unwrap()
+// }
 
-async fn complete(State(state): State<Arc<AppState>>, body: String) -> String {
-  let response = state
-    .client
-    .post("https://api.openai.com/v1/chat/completions")
-    .header(
-      header::AUTHORIZATION,
-      header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
-        .unwrap(),
-    )
-    .header(
-      header::CONTENT_TYPE,
-      header::HeaderValue::from_str("application/json").unwrap(),
-    )
-    .body(body)
-    .send()
-    .await
-    .unwrap();
+// async fn complete(State(state): State<Arc<AppState>>, body: String) -> String {
+//   let response = state
+//     .client
+//     .post("https://api.openai.com/v1/chat/completions")
+//     .header(
+//       header::AUTHORIZATION,
+//       header::HeaderValue::from_str(&format!("Bearer {}", state.api_key))
+//         .unwrap(),
+//     )
+//     .header(
+//       header::CONTENT_TYPE,
+//       header::HeaderValue::from_str("application/json").unwrap(),
+//     )
+//     .body(body)
+//     .send()
+//     .await
+//     .unwrap();
 
-  response.text().await.unwrap()
-}
+//   response.text().await.unwrap()
+// }

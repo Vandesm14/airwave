@@ -46,10 +46,10 @@ impl Engine {
 
   pub fn begin_loop(&mut self) {
     loop {
-      if Instant::now() - self.last_tick >= Duration::from_secs_f32(1.0 / 5.0) {
+      if Instant::now() - self.last_tick >= Duration::from_secs_f32(1.0 / 2.0) {
         self.last_tick = Instant::now();
 
-        for incoming in self.receiver.iter() {
+        for incoming in self.receiver.try_iter() {
           match incoming {
             IncomingUpdate::Command(_) => todo!("command"),
             IncomingUpdate::Connect => self.broadcast_all(),
