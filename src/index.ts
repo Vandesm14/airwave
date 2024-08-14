@@ -11,7 +11,7 @@ const timeScale = 2;
 const nauticalMilesToFeet = 6076.115;
 const feetPerPixel = 0.005;
 const knotToFeetPerSecond = 1.68781 * timeScale;
-const milesToFeet = 5280;
+const milesToFeet = 6076.12;
 
 function headingToDegrees(heading: number) {
   return (heading + 270) % 360;
@@ -27,7 +27,7 @@ function speak(text: string) {
       text.replace(/[0-9]/g, '$& ')
     );
     utterance.volume = 0.01;
-    utterance.rate = 1.1;
+    utterance.rate = 1.0;
     utterance.pitch = 1.3;
     window.speechSynthesis.speak(utterance);
   } else {
@@ -36,7 +36,7 @@ function speak(text: string) {
 }
 
 const airlines: Record<string, string> = {
-  AAL: 'American',
+  AAL: 'American Airlines',
   SKW: 'Sky West',
   JBL: 'Jet Blue',
 };
@@ -155,6 +155,41 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
 const chatbox = document.getElementById('chatbox');
 const messageTemplate = document.getElementById('message-template');
 
+function speakAsAircraft(aircraft: Aircraft, reply: string, tasks: Task[]) {
+  if (
+    chatbox instanceof HTMLDivElement &&
+    messageTemplate instanceof HTMLTemplateElement
+  ) {
+    let callsignString = `${
+      airlines[aircraft.callsign.slice(0, 3)]
+    } ${aircraft.callsign.slice(3, 7)}`;
+
+    let fullReply = `${reply}, ${callsignString}`;
+
+    let message = messageTemplate.innerHTML
+      .replace('{{callsign}}', aircraft.callsign)
+      .replace('{{text}}', fullReply)
+      .replace(
+        '{{tasks}}',
+        JSON.stringify(tasks, null, 0).replace(/"/g, '&quot;')
+      );
+
+    chatbox.insertAdjacentHTML('beforeend', message);
+    chatbox.scrollTo(0, chatbox.scrollHeight);
+
+    speak(fullReply);
+  }
+}
+
+function doGoAround(aircraft: Aircraft) {
+  aircraft.target.runway = null;
+  aircraft.target.speed = 220;
+
+  if (aircraft.target.altitude < 2000) {
+    aircraft.target.altitude = 2000;
+  }
+}
+
 async function parseATCMessage(textRaw: string) {
   let text = textRaw.replace(/9\sor\s?/g, '9');
 
@@ -179,13 +214,13 @@ Available Tasks: ["heading", number], ["speed", number], ["altitude", number], [
 Available Callsigns: SKW (Skywest), AAL (American Airlines), JBL (Jet Blue)
 Examples:
 User: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.
-Assistant: {"reply": "Left turn heading 180, reduce speed to 230, Skywest 5138.", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}
+Assistant: {"reply": "Left turn heading 180, reduce speed to 230.", "id": "SKW5138", "tasks":[["heading", 180], ["speed", 230]]}
 User: Skywest 5-1-3-8 climb and maintain flight level 050.
-Assistant: {"reply": "Climb and maintain flight level 050, Skywest 5138.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
+Assistant: {"reply": "Climb and maintain flight level 050.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
 User: Skywest 5-1-3-8 descend and maintain 5,000 feet.
-Assistant: {"reply": "Descend and and maintain 5,000 feet, Skywest 5138.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
+Assistant: {"reply": "Descend and and maintain 5,000 feet.", "id": "SKW5138", "tasks":[["altitude", 5000]]}
 User: Skywest 5-1-3-8 cleared to land runway 18 left.
-Assistant: {"reply": "Cleared to land runway 18 left, Skywest 5138.", "id": "SKW5138", "tasks":[["land", "18L"]]}
+Assistant: {"reply": "Cleared to land runway 18 left.", "id": "SKW5138", "tasks":[["land", "18L"]]}
 
 If you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".
 Example:
@@ -204,23 +239,7 @@ Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
 
     let aircraft = aircrafts.find((el) => el?.callsign === json.id);
     if (aircraft) {
-      if (
-        chatbox instanceof HTMLDivElement &&
-        messageTemplate instanceof HTMLTemplateElement
-      ) {
-        let message = messageTemplate.innerHTML
-          .replace('{{callsign}}', json.id)
-          .replace('{{text}}', json.reply)
-          .replace(
-            '{{tasks}}',
-            JSON.stringify(json.tasks, null, 0).replace(/"/g, '&quot;')
-          );
-
-        chatbox.insertAdjacentHTML('beforeend', message);
-        chatbox.scrollTo(0, chatbox.scrollHeight);
-      }
-
-      speak(json.reply);
+      speakAsAircraft(aircraft, json.reply, json.tasks);
       console.log({ text, json });
 
       for (let task of json.tasks) {
@@ -250,7 +269,7 @@ Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}`,
 
         switch (task[0]) {
           case TaskType.GOAROUND:
-            aircraft.target.runway = null;
+            doGoAround(aircraft);
             break;
         }
       }
@@ -326,7 +345,28 @@ function loopInit(width: number, height: number, airspace: Airspace) {
   runways.push(runway);
 
   for (let i = 0; i < 1; i++) {
-    spawnRandomAircraft(airspace);
+    // spawnRandomAircraft(airspace);
+    let spawn = movePoint(
+      runway.x,
+      runway.y,
+      runway.length * feetPerPixel + nauticalMilesToFeet * feetPerPixel * 8,
+      inverseDegrees(headingToDegrees(runway.heading))
+    );
+    let aircraft: Aircraft = {
+      x: spawn.x + 10,
+      y: spawn.y + 10,
+      target: {
+        runway: '20',
+        heading: runway.heading,
+        speed: 170,
+        altitude: 4000,
+      },
+      heading: runway.heading,
+      speed: 170,
+      altitude: 4000,
+      callsign: 'SKW9810',
+    };
+    aircrafts.push(aircraft);
   }
 }
 
@@ -392,8 +432,33 @@ function updateAircraftILS(aircraft: Aircraft) {
         inverseDegrees(headingToDegrees(runwayHeading))
       );
 
+      let distanceToRunway = calculateSquaredDistance(aircraft, info.start);
+      let decreaseAltitudeStart = milesToFeet * feetPerPixel * 5.6;
+      let decreaseSpeedStart = milesToFeet * feetPerPixel * 10;
+
       if (Math.abs(deltaAngleStart) <= 10) {
         let turnPadding = Math.min(30, Math.abs(deltaAngleStart) * 6);
+
+        if (
+          aircraft.altitude > 4000 &&
+          distanceToRunway <= Math.pow(decreaseAltitudeStart, 2)
+        ) {
+          doGoAround(aircraft);
+          speakAsAircraft(
+            aircraft,
+            `We've lost the localizer. Requesting vectors to re-intercept.`,
+            [[TaskType.GOAROUND, 0]]
+          );
+
+          return;
+        } else if (distanceToRunway <= Math.pow(decreaseAltitudeStart, 2)) {
+          aircraft.target.altitude = 0;
+        }
+
+        if (Math.round(Math.abs(deltaAngleStart)) === 0) {
+          if (distanceToRunway <= Math.pow(decreaseSpeedStart, 2))
+            aircraft.target.speed = 170;
+        }
 
         if (deltaAngleStart < 0) {
           aircraft.target.heading = runwayHeading + turnPadding;
@@ -403,7 +468,7 @@ function updateAircraftILS(aircraft: Aircraft) {
       } else {
         if (
           Math.round(Math.abs(deltaAngleStart)) === 180 &&
-          calculateSquaredDistance(aircraft, runway) <= Math.pow(10, 2)
+          aircraft.altitude === 0
         ) {
           let index = aircrafts.findIndex(
             (el) => el?.callsign === aircraft.callsign
@@ -761,13 +826,16 @@ function runwayInfo(runway: Runway): {
     headingToDegrees(runway.heading)
   );
 
+  let maxIlsRangeMiles = 12;
   let ilsPoints: { x: number; y: number }[] = [];
-  for (let i = 2; i <= 6; i += 2) {
+  let separate = 5.6 / 4;
+  for (let i = 0; i < 4; i += 1) {
+    let point = i * separate + separate;
     ilsPoints.push(
       movePoint(
         start.x,
         start.y,
-        length / 2 + milesToFeet * feetPerPixel * i,
+        length + milesToFeet * feetPerPixel * point,
         inverseDegrees(headingToDegrees(runway.heading))
       )
     );
@@ -776,20 +844,20 @@ function runwayInfo(runway: Runway): {
   let ilsStart = movePoint(
     start.x,
     start.y,
-    length / 2 + milesToFeet * feetPerPixel * 10,
+    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
     inverseDegrees(headingToDegrees(runway.heading))
   );
 
   let maxAngle = movePoint(
     start.x,
     start.y,
-    length / 2 + milesToFeet * feetPerPixel * 10,
+    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
     inverseDegrees(headingToDegrees(runway.heading + 5))
   );
   let minAngle = movePoint(
     start.x,
     start.y,
-    length / 2 + milesToFeet * feetPerPixel * 10,
+    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
     inverseDegrees(headingToDegrees((runway.heading + (360 - 5)) % 360))
   );
 
