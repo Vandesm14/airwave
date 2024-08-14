@@ -8,7 +8,13 @@ use serde::{Deserialize, Serialize};
 use crate::structs::{Aircraft, Command, Runway, Task};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum StateUpdate {
+pub enum OutgoingReply {
+  // Partial/Small Updates
+  RemoveAircraft(String),
+  ATCReply(String),
+  Reply(String),
+
+  // Full State Updates
   Aircraft(Aircraft),
   Runway(Runway),
 }
@@ -24,7 +30,7 @@ pub struct Engine {
   pub aircraft: Vec<Aircraft>,
   pub runways: Vec<Runway>,
   pub receiver: mpsc::Receiver<IncomingUpdate>,
-  pub sender: mpsc::Sender<StateUpdate>,
+  pub sender: mpsc::Sender<OutgoingReply>,
 
   last_tick: Instant,
 }
@@ -32,7 +38,7 @@ pub struct Engine {
 impl Engine {
   pub fn new(
     receiver: mpsc::Receiver<IncomingUpdate>,
-    sender: mpsc::Sender<StateUpdate>,
+    sender: mpsc::Sender<OutgoingReply>,
   ) -> Self {
     Self {
       aircraft: Vec::new(),
@@ -70,7 +76,7 @@ impl Engine {
     for aircraft in self.aircraft.iter() {
       self
         .sender
-        .send(StateUpdate::Aircraft(aircraft.clone()))
+        .send(OutgoingReply::Aircraft(aircraft.clone()))
         .unwrap();
     }
   }
@@ -79,7 +85,7 @@ impl Engine {
     for runway in self.runways.iter() {
       self
         .sender
-        .send(StateUpdate::Runway(runway.clone()))
+        .send(OutgoingReply::Runway(runway.clone()))
         .unwrap();
     }
   }
@@ -91,7 +97,7 @@ impl Engine {
 
       self
         .sender
-        .send(StateUpdate::Aircraft(aircraft.clone()))
+        .send(OutgoingReply::Aircraft(aircraft.clone()))
         .unwrap();
     }
   }

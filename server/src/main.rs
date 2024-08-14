@@ -1,27 +1,23 @@
+use std::{env, sync::mpsc};
+
 use axum::Router;
 use dotenv::dotenv;
 use futures_util::{
-  stream::SplitSink,
-  {SinkExt, StreamExt},
+  future, stream::SplitSink, SinkExt, StreamExt, TryStreamExt,
 };
 use glam::Vec2;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use server::engine::{Engine, IncomingUpdate, StateUpdate};
-use std::{
-  sync::mpsc,
-  {env, sync::Arc},
-};
-use tokio::{
-  net::{TcpListener, TcpStream},
-  sync::Mutex,
-};
+use server::engine::{Engine, IncomingUpdate, OutgoingReply};
+use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use tower_http::services::ServeDir;
 
 use server::structs::{Aircraft, AircraftTargets};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
 enum FrontendRequest {
   Transcribe(String),
   Complete(String),
@@ -34,7 +30,7 @@ async fn main() {
   let client = Client::new();
 
   let (command_sender, command_receiver) = mpsc::channel::<IncomingUpdate>();
-  let (update_sender, update_receiver) = mpsc::channel::<StateUpdate>();
+  let (update_sender, update_receiver) = mpsc::channel::<OutgoingReply>();
 
   let app = Router::new().nest_service("/", ServeDir::new("../dist"));
 
@@ -75,8 +71,26 @@ async fn main() {
         .await
         .expect("Error during the websocket handshake occurred");
 
-      let (write, _) = ws_stream.split();
+      let (write, read) = ws_stream.split();
       give_streams.send(write).unwrap();
+      tokio::spawn(async move {
+        read
+          .try_for_each(|message| {
+            if let Message::Text(string) = message {
+              let req =
+                serde_json::from_str::<FrontendRequest>(&string).unwrap();
+
+              match req {
+                FrontendRequest::Transcribe(string) => todo!(),
+                FrontendRequest::Complete(string) => todo!(),
+              }
+            }
+
+            future::ok(())
+          })
+          .await
+          .unwrap();
+      });
     }
   });
 
