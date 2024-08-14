@@ -225,7 +225,7 @@ async fn complete_atc_request(string: String) -> Option<Command> {
   if let Ok(response) = response {
     if let Some(choice) = response.choices.first() {
       if let Some(ref text) = choice.message.content {
-        if let Ok(reply) = dbg!(serde_json::from_str::<Command>(dbg!(text))) {
+        if let Ok(reply) = serde_json::from_str::<Command>(text) {
           return Some(reply);
         }
       }
