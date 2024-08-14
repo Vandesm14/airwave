@@ -1,14 +1,16 @@
 use std::{
-  borrow::Borrow,
   env,
   sync::{mpsc, Arc},
 };
 
+use async_openai::types::{
+  ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
+  ChatCompletionRequestUserMessage, ChatCompletionRequestUserMessageContent,
+  CreateChatCompletionRequest,
+};
 use axum::Router;
 use dotenv::dotenv;
-use futures_util::{
-  future, stream::SplitSink, SinkExt, StreamExt, TryStreamExt,
-};
+use futures_util::{stream::SplitSink, SinkExt, StreamExt, TryStreamExt};
 use glam::Vec2;
 use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
@@ -30,6 +32,11 @@ enum FrontendRequest {
 
   Command(Command),
   Connect,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct AudioResponse {
+  text: String,
 }
 
 #[tokio::main]
@@ -138,9 +145,47 @@ async fn main() {
                       .unwrap();
 
                     let text = response.text().await.unwrap();
-                    ws_sender.send(OutgoingReply::ATCReply(text)).unwrap();
+                    let reply: AudioResponse =
+                      serde_json::from_str(&text).unwrap();
+                    ws_sender
+                      .send(OutgoingReply::ATCReply(reply.text))
+                      .unwrap();
                   }
-                  FrontendRequest::Complete(string) => todo!(),
+                  FrontendRequest::Complete(string) => {
+                    let client = async_openai::Client::new();
+                    let request = CreateChatCompletionRequest {
+                      messages: vec![
+                        ChatCompletionRequestMessage::System(
+                          ChatCompletionRequestSystemMessage {
+                            content: include_str!("prompt.txt").to_owned(),
+                            name: None,
+                          },
+                        ),
+                        ChatCompletionRequestMessage::User(
+                          ChatCompletionRequestUserMessage {
+                            content:
+                              ChatCompletionRequestUserMessageContent::Text(
+                                string,
+                              ),
+                            name: None,
+                          },
+                        ),
+                      ],
+                      model: "gpt-4o-mini".into(),
+                      ..Default::default()
+                    };
+
+                    let response = client.chat().create(request).await;
+                    if let Ok(response) = response {
+                      if let Some(choice) = response.choices.first() {
+                        if let Some(ref text) = choice.message.content {
+                          ws_sender
+                            .send(OutgoingReply::Reply(text.to_owned()))
+                            .unwrap();
+                        }
+                      }
+                    }
+                  }
 
                   FrontendRequest::Command(Command) => todo!(),
                   FrontendRequest::Connect => {

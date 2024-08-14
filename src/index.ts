@@ -139,6 +139,20 @@ function speakAsAircraft(
   }
 }
 
+function speakAsATC(reply: string) {
+  if (
+    chatbox instanceof HTMLDivElement &&
+    messageTemplate instanceof HTMLTemplateElement
+  ) {
+    let message = messageTemplate.innerHTML
+      .replace('{{callsign}}', 'ATC')
+      .replace('{{text}}', reply);
+
+    chatbox.insertAdjacentHTML('beforeend', message);
+    chatbox.scrollTo(0, chatbox.scrollHeight);
+  }
+}
+
 let socket = new WebSocket(`ws://${window.location.hostname}:9001`);
 socket.onopen = function (_) {
   console.log('[open] Connection established');
@@ -152,7 +166,8 @@ type Event =
       type: 'aircraft';
       value: Aircraft[];
     }
-  | { type: 'runways'; value: Runway[] };
+  | { type: 'runways'; value: Runway[] }
+  | { type: 'atcreply'; value: string };
 
 function posToXY<T extends { pos: [number, number]; x: number; y: number }>(
   obj: T
@@ -173,6 +188,9 @@ socket.onmessage = function (event) {
       break;
     case 'runways':
       runways = json.value.map(posToXY);
+      break;
+    case 'atcreply':
+      speakAsATC(json.value);
       break;
   }
 };
@@ -215,7 +233,16 @@ document.addEventListener('keyup', (e) => {
   if (e.key === 'Insert' && isRecording) {
     isRecording = false;
 
-    // whisper.stopRecording(parseATCMessage);
+    whisper.stopRecording((blob) => {
+      blob.arrayBuffer().then((value) => {
+        socket.send(
+          JSON.stringify({
+            type: 'transcribe',
+            value: [...new Uint8Array(value)],
+          })
+        );
+      });
+    });
   }
 
   if (chatbox instanceof HTMLDivElement) {

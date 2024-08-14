@@ -55,7 +55,7 @@ export class WhisperSTT {
   };
 
   public stopRecording = async (
-    onFinish: (text: string) => void,
+    onFinish: (blob: Blob) => void,
   ): Promise<void> => {
     if (!this.isRecording || !this.recorder) {
       throw new Error("Cannot stop recording: no recorder");
@@ -63,7 +63,7 @@ export class WhisperSTT {
     try {
       await this.recorder.stopRecording();
       const blob = await this.recorder.getBlob();
-      this.transcribe(blob, onFinish);
+      onFinish(blob);
       this.stream?.getTracks().forEach((track) => {
         track.stop();
       });
@@ -89,26 +89,5 @@ export class WhisperSTT {
     this.isRecording = false;
     this.isStopped = true;
     this.isPaused = false;
-  };
-
-  private readonly transcribe = async (
-    audioBlob: Blob,
-    onFinish: (text: string) => void,
-  ): Promise<void> => {
-    const headers = {
-      "Content-Type": "application/octet-stream",
-    };
-    try {
-      const response = await axios.post<{ text: string }>(
-        TRANSCRIPTIONS_API_URL,
-        audioBlob,
-        {
-          headers,
-        },
-      );
-      onFinish(response.data?.text || "");
-    } catch (error: any) {
-      console.error("Error transcribing audio:", error);
-    }
   };
 }
