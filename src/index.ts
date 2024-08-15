@@ -77,12 +77,6 @@ type Aircraft = {
   callsign: string;
 };
 
-type Airspace = {
-  x: number;
-  y: number;
-  r: number;
-};
-
 type Runway = {
   id: string;
   pos: [number, number];
@@ -312,8 +306,6 @@ canvas?.addEventListener('wheel', (e) => {
 });
 
 function loopMain(canvas: HTMLCanvasElement) {
-  let airspace = calcAirspace(airspace_size, airspace_size);
-
   let dt = Date.now() - lastTime;
   lastTime = Date.now();
   let dts = dt / 1000;
@@ -321,12 +313,12 @@ function loopMain(canvas: HTMLCanvasElement) {
   let deltaDrawTime = Date.now() - lastDraw;
   if (isDragging || isZooming || lastDraw === 0 || deltaDrawTime >= 1000 / 3) {
     lastDraw = Date.now();
-    loopDraw(canvas, airspace, dts);
+    loopDraw(canvas, dts);
     isZooming = false;
   }
 }
 
-function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
+function loopDraw(canvas: HTMLCanvasElement, dts: number) {
   const width = canvas.width;
   const height = canvas.height;
 
@@ -339,7 +331,7 @@ function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
 
     ctx.translate(shiftPoint.x, shiftPoint.y);
     ctx.scale(scale, scale);
-    drawCompass(ctx, airspace);
+    drawCompass(ctx);
 
     for (let runway of runways) {
       drawRunway(ctx, runway);
@@ -356,28 +348,14 @@ function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
   }
 }
 
-function calcAirspace(width: number, height: number): Airspace {
-  let x = width / 2;
-  let y = height / 2;
-  let radius = x;
-  if (height < width) {
-    radius = y;
-  }
+function drawCompass(ctx: Ctx) {
+  let half_size = airspace_size * 0.5;
+  let airspace_radius = half_size - 50;
 
-  radius -= 50;
-
-  return {
-    x,
-    y,
-    r: radius,
-  };
-}
-
-function drawCompass(ctx: Ctx, airspace: Airspace) {
   ctx.strokeStyle = 'white';
   ctx.fillStyle = 'white';
   ctx.beginPath();
-  ctx.arc(airspace.x, airspace.y, airspace.r, 0, Math.PI * 2);
+  ctx.arc(half_size, half_size, airspace_radius, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.fillStyle = '#888';
@@ -394,11 +372,76 @@ function drawCompass(ctx: Ctx, airspace: Airspace) {
     ctx.beginPath();
     ctx.fillText(
       text,
-      Math.cos(toRadians(i * 10)) * (airspace.r + 20) + airspace.x,
-      Math.sin(toRadians(i * 10)) * (airspace.r + 20) + airspace.y
+      Math.cos(toRadians(i * 10)) * (airspace_radius + 20) + half_size,
+      Math.sin(toRadians(i * 10)) * (airspace_radius + 20) + half_size
     );
     ctx.stroke();
   }
+}
+
+function runwayInfo(runway: Runway): {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  ils: {
+    altitudePoints: { x: number; y: number }[];
+    end: { x: number; y: number };
+    maxAngle: { x: number; y: number };
+    minAngle: { x: number; y: number };
+  };
+} {
+  let start = movePoint(
+    runway.x,
+    runway.y,
+    runway.length * feetPerPixel * 0.5,
+    inverseDegrees(headingToDegrees(runway.heading))
+  );
+  let end = movePoint(
+    runway.x,
+    runway.y,
+    runway.length * feetPerPixel * 0.5,
+    headingToDegrees(runway.heading)
+  );
+
+  let maxIlsRangeMiles = 10;
+  let ilsPoints: { x: number; y: number }[] = [];
+  let separate = 6.0 / 4;
+  for (let i = 1; i < 4; i += 1) {
+    let point = i * separate + separate;
+    ilsPoints.push(
+      movePoint(
+        start.x,
+        start.y,
+        length + milesToFeet * feetPerPixel * point,
+        inverseDegrees(headingToDegrees(runway.heading))
+      )
+    );
+  }
+
+  let ilsStart = movePoint(
+    start.x,
+    start.y,
+    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
+    inverseDegrees(headingToDegrees(runway.heading))
+  );
+
+  let maxAngle = movePoint(
+    start.x,
+    start.y,
+    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
+    inverseDegrees(headingToDegrees(runway.heading + 5))
+  );
+  let minAngle = movePoint(
+    start.x,
+    start.y,
+    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
+    inverseDegrees(headingToDegrees((runway.heading + (360 - 5)) % 360))
+  );
+
+  return {
+    start,
+    end,
+    ils: { altitudePoints: ilsPoints, end: ilsStart, maxAngle, minAngle },
+  };
 }
 
 function drawRunway(ctx: Ctx, runway: Runway) {
@@ -540,17 +583,6 @@ function drawBlip(ctx: Ctx, aircraft: Aircraft) {
   drawInfo(ctx, aircraft);
 }
 
-function getRandomPointOnCircle(cx: number, cy: number, r: number) {
-  // Generate a random angle in radians
-  const randomAngle = Math.random() * 2 * Math.PI;
-
-  // Calculate the coordinates of the point on the circle
-  const x = cx + r * Math.cos(randomAngle);
-  const y = cy + r * Math.sin(randomAngle);
-
-  return { x, y, angle: randomAngle };
-}
-
 function movePoint(
   x: number,
   y: number,
@@ -569,69 +601,4 @@ function movePoint(
 
 function inverseDegrees(degrees: number): number {
   return (degrees + 180) % 360;
-}
-
-function runwayInfo(runway: Runway): {
-  start: { x: number; y: number };
-  end: { x: number; y: number };
-  ils: {
-    altitudePoints: { x: number; y: number }[];
-    end: { x: number; y: number };
-    maxAngle: { x: number; y: number };
-    minAngle: { x: number; y: number };
-  };
-} {
-  let start = movePoint(
-    runway.x,
-    runway.y,
-    runway.length * feetPerPixel * 0.5,
-    inverseDegrees(headingToDegrees(runway.heading))
-  );
-  let end = movePoint(
-    runway.x,
-    runway.y,
-    runway.length * feetPerPixel * 0.5,
-    headingToDegrees(runway.heading)
-  );
-
-  let maxIlsRangeMiles = 10;
-  let ilsPoints: { x: number; y: number }[] = [];
-  let separate = 6.0 / 4;
-  for (let i = 1; i < 4; i += 1) {
-    let point = i * separate + separate;
-    ilsPoints.push(
-      movePoint(
-        start.x,
-        start.y,
-        length + milesToFeet * feetPerPixel * point,
-        inverseDegrees(headingToDegrees(runway.heading))
-      )
-    );
-  }
-
-  let ilsStart = movePoint(
-    start.x,
-    start.y,
-    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees(runway.heading))
-  );
-
-  let maxAngle = movePoint(
-    start.x,
-    start.y,
-    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees(runway.heading + 5))
-  );
-  let minAngle = movePoint(
-    start.x,
-    start.y,
-    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees((runway.heading + (360 - 5)) % 360))
-  );
-
-  return {
-    start,
-    end,
-    ils: { altitudePoints: ilsPoints, end: ilsStart, maxAngle, minAngle },
-  };
 }
