@@ -6,11 +6,17 @@ let isRecording = false;
 type Ctx = CanvasRenderingContext2D;
 
 const timeScale = 1;
+let scale = 1;
 
+const feetPerPixel = 0.005 * scale;
 const nauticalMilesToFeet = 6076.115;
-const feetPerPixel = 0.005;
 const knotToFeetPerSecond = 1.68781 * timeScale;
 const milesToFeet = 6076.12;
+
+let shiftPoint = {
+  x: 0,
+  y: 0,
+};
 
 function headingToDegrees(heading: number) {
   return (heading + 270) % 360;
@@ -88,10 +94,22 @@ type Runway = {
   length: number;
 };
 
+let airspace_size = 1000;
 let aircrafts: Array<Aircraft> = [];
 let runways: Array<Runway> = [];
 let lastTime = Date.now();
 let lastDraw = 0;
+
+let isDragging = false;
+let isZooming = false;
+let dragStartPoint = {
+  x: 0,
+  y: 0,
+};
+let oldShiftPoint = {
+  x: 0,
+  y: 0,
+};
 
 const chatbox = document.getElementById('chatbox');
 const messageTemplate = document.getElementById('message-template');
@@ -103,12 +121,12 @@ if (canvas instanceof HTMLCanvasElement && canvas !== null) {
     canvas.height = canvas.clientHeight;
   });
 
-  setInterval(() => loopMain(canvas, false), 1000 / 30);
+  setInterval(() => loopMain(canvas), 1000 / 30);
 
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 
-  loopMain(canvas, true);
+  loopMain(canvas);
 }
 
 function callsignString(id: string): string {
@@ -168,7 +186,8 @@ type Event =
     }
   | { type: 'runways'; value: Runway[] }
   | { type: 'atcreply'; value: string }
-  | { type: 'reply'; value: { id: string; reply: string } };
+  | { type: 'reply'; value: { id: string; reply: string } }
+  | { type: 'size'; value: number };
 
 function posToXY<T extends { pos: [number, number]; x: number; y: number }>(
   obj: T
@@ -195,6 +214,10 @@ socket.onmessage = function (event) {
       break;
     case 'reply':
       speakAsAircraft(json.value.id, json.value.reply, true);
+      break;
+    case 'size':
+      console.log('size', json.value);
+      airspace_size = json.value;
       break;
   }
 };
@@ -258,20 +281,44 @@ document.addEventListener('keyup', (e) => {
   }
 });
 
-function loopMain(canvas: HTMLCanvasElement, init: boolean) {
-  const width = canvas.width;
-  const height = canvas.height;
+canvas?.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  dragStartPoint = {
+    x: e.clientX,
+    y: e.clientY,
+  };
+  oldShiftPoint = {
+    x: shiftPoint.x,
+    y: shiftPoint.y,
+  };
+});
+canvas?.addEventListener('mouseup', (e) => (isDragging = false));
+canvas?.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    let x = e.clientX - dragStartPoint.x + oldShiftPoint.x;
+    let y = e.clientY - dragStartPoint.y + oldShiftPoint.y;
 
-  let airspace = calcAirspace(width, height);
+    shiftPoint = { x, y };
+  }
+});
+canvas?.addEventListener('wheel', (e) => {
+  scale += e.deltaY * -0.0005;
+  scale = Math.max(Math.min(scale, 2), 0.6);
+  isZooming = true;
+});
+
+function loopMain(canvas: HTMLCanvasElement) {
+  let airspace = calcAirspace(airspace_size, airspace_size);
 
   let dt = Date.now() - lastTime;
   lastTime = Date.now();
   let dts = dt / 1000;
 
   let deltaDrawTime = Date.now() - lastDraw;
-  if (lastDraw === 0 || deltaDrawTime >= 1000 / 3) {
+  if (isDragging || isZooming || lastDraw === 0 || deltaDrawTime >= 1000 / 3) {
     lastDraw = Date.now();
     loopDraw(canvas, airspace, dts);
+    isZooming = false;
   }
 }
 
@@ -286,6 +333,8 @@ function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
+    ctx.translate(shiftPoint.x, shiftPoint.y);
+    ctx.scale(scale, scale);
     drawCompass(ctx, airspace);
 
     for (let runway of runways) {
@@ -295,6 +344,8 @@ function loopDraw(canvas: HTMLCanvasElement, airspace: Airspace, dts: number) {
     for (let aircraft of aircrafts) {
       drawBlip(ctx, aircraft);
     }
+
+    ctx.resetTransform();
 
     ctx.fillStyle = '#009900';
     ctx.fillText(`${Math.round(1 / dts)} fps`, 10, 20);
@@ -363,6 +414,8 @@ function drawRunway(ctx: Ctx, runway: Runway) {
   ctx.strokeStyle = '#3087f2';
 
   ctx.resetTransform();
+  ctx.translate(shiftPoint.x, shiftPoint.y);
+  ctx.scale(scale, scale);
 
   let info = runwayInfo(runway);
   ctx.beginPath();

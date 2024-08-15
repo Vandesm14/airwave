@@ -20,7 +20,8 @@ use tower_http::services::ServeDir;
 
 use server::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  structs::{Aircraft, AircraftState, AircraftTargets, Command, Runway},
+  structs::{Command, Runway},
+  FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -49,13 +50,14 @@ async fn main() {
 
   let app = Router::new().nest_service("/", ServeDir::new("../dist"));
 
-  let size = 2000.0;
+  let airspace_size = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 30.0;
 
-  let mut engine = Engine::new(command_receiver, update_sender.clone());
+  let mut engine =
+    Engine::new(command_receiver, update_sender.clone(), airspace_size);
   let engine_handle = tokio::spawn(async move {
     let runway = Runway {
       id: "20".into(),
-      pos: Vec2::new(size * 0.5, size * 0.5),
+      pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
       heading: 200.0,
       length: 7000.0,
     };

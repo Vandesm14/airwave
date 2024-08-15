@@ -18,6 +18,7 @@ pub enum OutgoingReply {
   // Full State Updates
   Aircraft(Vec<Aircraft>),
   Runways(Vec<Runway>),
+  Size(f32),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -35,6 +36,7 @@ pub struct Engine {
 
   last_tick: Instant,
   last_spawn: Instant,
+  airspace_size: f32,
   rate: usize,
 }
 
@@ -42,6 +44,7 @@ impl Engine {
   pub fn new(
     receiver: mpsc::Receiver<IncomingUpdate>,
     sender: mpsc::Sender<OutgoingReply>,
+    airspace_size: f32,
   ) -> Self {
     Self {
       aircraft: Vec::new(),
@@ -51,12 +54,13 @@ impl Engine {
 
       last_tick: Instant::now(),
       last_spawn: Instant::now(),
+      airspace_size,
       rate: 30,
     }
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    let aircraft = Aircraft::random(2000.0);
+    let aircraft = Aircraft::random(self.airspace_size);
     self.aircraft.push(aircraft.clone());
     self
       .sender
@@ -89,7 +93,7 @@ impl Engine {
         for incoming in self.receiver.try_iter() {
           match incoming {
             IncomingUpdate::Command(command) => commands.push(command),
-            IncomingUpdate::Connect => self.broadcast_runways(),
+            IncomingUpdate::Connect => self.broadcast_for_new_client(),
           }
         }
 
@@ -116,6 +120,18 @@ impl Engine {
       .sender
       .send(OutgoingReply::Runways(self.runways.clone()))
       .unwrap();
+  }
+
+  fn broadcast_size(&self) {
+    self
+      .sender
+      .send(OutgoingReply::Size(self.airspace_size))
+      .unwrap();
+  }
+
+  fn broadcast_for_new_client(&self) {
+    self.broadcast_runways();
+    self.broadcast_size();
   }
 
   pub fn cleanup(&mut self) {

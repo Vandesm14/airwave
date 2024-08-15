@@ -5,13 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, degrees_to_heading, delta_angle,
   get_random_point_on_circle, heading_to_degrees, inverse_degrees, move_point,
+  FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
-
-const TIME_SCALE: f32 = 1.0;
-
-const NAUTICALMILES_TO_FEET: f32 = 6076.115;
-const FEET_PER_UNIT: f32 = 0.005;
-const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781 * TIME_SCALE;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -122,7 +117,7 @@ impl Aircraft {
 
   pub fn random_callsign() -> String {
     let mut string = String::new();
-    let airlines = ["AAL", "SKW", "JBL", "BAW"];
+    let airlines = ["AAL", "SKW", "JBL"];
 
     let mut rng = thread_rng();
     let airline = airlines.choose(&mut rng).unwrap();
