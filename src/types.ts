@@ -34,6 +34,8 @@ export type Runway = {
   length: number;
 };
 
+export type RadioMessage = { id: string; reply: string };
+
 export type ServerEvent =
   | {
       type: 'aircraft';
@@ -41,5 +43,5 @@ export type ServerEvent =
     }
   | { type: 'runways'; value: Runway[] }
   | { type: 'atcreply'; value: string }
-  | { type: 'reply'; value: { id: string; reply: string } }
+  | { type: 'reply'; value: RadioMessage }
   | { type: 'size'; value: number };

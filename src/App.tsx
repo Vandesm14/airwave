@@ -1,14 +1,15 @@
-import { useAtom } from 'solid-jotai';
+import { atom, useAtom } from 'solid-jotai';
 import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
 import {
   aircraftsAtom,
   airspaceSizeAton as airspaceSizeAtom,
   isRecordingAtom,
+  messagesAtom,
   radarAtom,
   renderAtom,
   runwaysAtom,
 } from './atoms';
-import { Aircraft, Runway, ServerEvent } from './types';
+import { Aircraft, RadioMessage, Runway, ServerEvent } from './types';
 import {
   callsignString,
   degreesToHeading,
@@ -19,8 +20,12 @@ import {
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib';
+import Chatbox from './Chatbox';
+import { onMount } from 'solid-js';
 
-export function init() {
+export default function App() {
+  let canvas;
+
   const whisper = new WhisperSTT();
   type Ctx = CanvasRenderingContext2D;
 
@@ -49,61 +54,124 @@ export function init() {
   let [aircrafts, setAircrafts] = useAtom(aircraftsAtom);
   let [runways, setRunways] = useAtom(runwaysAtom);
   let [render, setRender] = useAtom(renderAtom);
+  let [_, setMessages] = useAtom(messagesAtom);
 
   const chatbox = document.getElementById('chatbox');
-  const messageTemplate = document.getElementById('message-template');
 
-  const canvas = document.getElementById('canvas');
-  if (canvas instanceof HTMLCanvasElement && canvas !== null) {
-    window.addEventListener('resize', () => {
+  onMount(() => {
+    if (canvas instanceof HTMLCanvasElement && canvas !== null) {
+      window.addEventListener('resize', () => {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+      });
+
+      setInterval(() => loopMain(canvas), 1000 / 30);
+
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
-    });
 
-    setInterval(() => loopMain(canvas), 1000 / 30);
+      loopMain(canvas);
 
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Insert' && !isRecording()) {
+          whisper.startRecording();
+          setIsRecording(true);
+        } else if (e.key === 'Delete' && isRecording()) {
+          whisper.abortRecording();
+          setIsRecording(false);
+        }
 
-    loopMain(canvas);
+        if (chatbox instanceof HTMLDivElement) {
+          if (isRecording()) {
+            chatbox.classList.add('live');
+          } else {
+            chatbox.classList.remove('live');
+          }
+        }
+      });
+
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Insert' && isRecording()) {
+          setIsRecording(false);
+
+          whisper.stopRecording((blob) => {
+            blob.arrayBuffer().then((value) => {
+              console.log('send voice request');
+
+              socket.send(
+                JSON.stringify({
+                  type: 'voice',
+                  value: [...new Uint8Array(value)],
+                })
+              );
+
+              console.log('sent voice request');
+            });
+          });
+        }
+
+        if (chatbox instanceof HTMLDivElement) {
+          if (isRecording()) {
+            chatbox.classList.add('live');
+          } else {
+            chatbox.classList.remove('live');
+          }
+        }
+      });
+
+      canvas.addEventListener('mousedown', (e) => {
+        setRadar((radar) => {
+          radar.isDragging = true;
+          radar.dragStartPoint = {
+            x: e.clientX,
+            y: e.clientY,
+          };
+
+          radar.lastShiftPoint.x = radar.shiftPoint.x;
+          radar.lastShiftPoint.y = radar.shiftPoint.y;
+
+          return radar;
+        });
+      });
+      canvas.addEventListener('mouseup', (_) => {
+        setRadar((radar) => {
+          radar.isDragging = false;
+          return radar;
+        });
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        if (radar().isDragging) {
+          setRadar((radar) => {
+            let x = e.clientX - radar.dragStartPoint.x + radar.lastShiftPoint.x;
+            let y = e.clientY - radar.dragStartPoint.y + radar.lastShiftPoint.y;
+
+            radar.shiftPoint.x = x;
+            radar.shiftPoint.y = y;
+
+            return radar;
+          });
+        }
+      });
+      canvas.addEventListener('wheel', (e) => {
+        setRadar((radar) => {
+          radar.scale += e.deltaY * -0.0005;
+          radar.scale = Math.max(Math.min(radar.scale, 2), 0.6);
+
+          radar.isZooming = true;
+
+          return radar;
+        });
+      });
+    }
+  });
+
+  function speakAsAircraft(message: RadioMessage) {
+    setMessages((messages) => [...messages, message]);
+    speak(message.reply);
   }
 
-  function speakAsAircraft(
-    callsign: string,
-    reply: string,
-    withCallsign?: boolean
-  ) {
-    if (
-      chatbox instanceof HTMLDivElement &&
-      messageTemplate instanceof HTMLTemplateElement
-    ) {
-      let fullReply = withCallsign
-        ? `${reply}, ${callsignString(callsign)}`
-        : reply;
-
-      let message = messageTemplate.innerHTML
-        .replace('{{callsign}}', callsign)
-        .replace('{{text}}', fullReply);
-
-      chatbox.insertAdjacentHTML('beforeend', message);
-      chatbox.scrollTo(0, chatbox.scrollHeight);
-
-      speak(fullReply);
-    }
-  }
-
-  function speakAsATC(reply: string) {
-    if (
-      chatbox instanceof HTMLDivElement &&
-      messageTemplate instanceof HTMLTemplateElement
-    ) {
-      let message = messageTemplate.innerHTML
-        .replace('{{callsign}}', 'ATC')
-        .replace('{{text}}', reply);
-
-      chatbox.insertAdjacentHTML('beforeend', message);
-      chatbox.scrollTo(0, chatbox.scrollHeight);
-    }
+  function speakAsATC(message: RadioMessage) {
+    setMessages((messages) => [...messages, message]);
   }
 
   let socket = new WebSocket(`ws://${window.location.hostname}:9001`);
@@ -135,10 +203,10 @@ export function init() {
         setRunways(json.value.map(posToXY));
         break;
       case 'atcreply':
-        speakAsATC(json.value);
+        speakAsATC({ id: 'ATC', reply: json.value });
         break;
       case 'reply':
-        speakAsAircraft(json.value.id, json.value.reply, true);
+        speakAsAircraft(json.value);
         break;
       case 'size':
         console.log('size', json.value);
@@ -162,97 +230,6 @@ export function init() {
   socket.onerror = function () {
     console.log(`[error]`);
   };
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Insert' && !isRecording()) {
-      whisper.startRecording();
-      setIsRecording(true);
-    } else if (e.key === 'Delete' && isRecording()) {
-      whisper.abortRecording();
-      setIsRecording(false);
-    }
-
-    if (chatbox instanceof HTMLDivElement) {
-      if (isRecording()) {
-        chatbox.classList.add('live');
-      } else {
-        chatbox.classList.remove('live');
-      }
-    }
-  });
-
-  document.addEventListener('keyup', (e) => {
-    if (e.key === 'Insert' && isRecording()) {
-      setIsRecording(false);
-
-      whisper.stopRecording((blob) => {
-        blob.arrayBuffer().then((value) => {
-          console.log('send voice request');
-
-          socket.send(
-            JSON.stringify({
-              type: 'voice',
-              value: [...new Uint8Array(value)],
-            })
-          );
-
-          console.log('sent voice request');
-        });
-      });
-    }
-
-    if (chatbox instanceof HTMLDivElement) {
-      if (isRecording()) {
-        chatbox.classList.add('live');
-      } else {
-        chatbox.classList.remove('live');
-      }
-    }
-  });
-
-  canvas?.addEventListener('mousedown', (e) => {
-    setRadar((radar) => {
-      radar.isDragging = true;
-      radar.dragStartPoint = {
-        x: e.clientX,
-        y: e.clientY,
-      };
-
-      radar.lastShiftPoint.x = radar.shiftPoint.x;
-      radar.lastShiftPoint.y = radar.shiftPoint.y;
-
-      return radar;
-    });
-  });
-  canvas?.addEventListener('mouseup', (_) => {
-    setRadar((radar) => {
-      radar.isDragging = false;
-      return radar;
-    });
-  });
-  canvas?.addEventListener('mousemove', (e) => {
-    if (radar().isDragging) {
-      setRadar((radar) => {
-        let x = e.clientX - radar.dragStartPoint.x + radar.lastShiftPoint.x;
-        let y = e.clientY - radar.dragStartPoint.y + radar.lastShiftPoint.y;
-
-        radar.shiftPoint.x = x;
-        radar.shiftPoint.y = y;
-
-        return radar;
-      });
-    }
-  });
-  canvas?.addEventListener('wheel', (e) => {
-    setRadar((radar) => {
-      radar.scale += e.deltaY * -0.0005;
-      radar.scale = Math.max(Math.min(radar.scale, 2), 0.6);
-
-      radar.isZooming = true;
-
-      return radar;
-    });
-  });
 
   function loopMain(canvas: HTMLCanvasElement) {
     let dt = Date.now() - render().lastTime;
@@ -485,4 +462,11 @@ export function init() {
     drawDirection(ctx, aircraft);
     drawInfo(ctx, aircraft);
   }
+
+  return (
+    <div class="radar">
+      <Chatbox></Chatbox>
+      <canvas id="canvas" ref={canvas}></canvas>
+    </div>
+  );
 }

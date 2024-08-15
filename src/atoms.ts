@@ -1,5 +1,5 @@
 import { atom } from 'solid-jotai';
-import { Aircraft, Runway } from './types';
+import { Aircraft, RadioMessage, Runway } from './types';
 
 export let radarAtom = atom({
   scale: 1,
@@ -29,3 +29,5 @@ export let renderAtom = atom({
   lastTime: Date.now(),
   lastDraw: 0,
 });
+
+export let messagesAtom = atom<Array<RadioMessage>>([]);
