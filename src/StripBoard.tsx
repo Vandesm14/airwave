@@ -1,7 +1,8 @@
-import { createEffect, createSignal } from 'solid-js';
+import { createEffect, createSignal, For } from 'solid-js';
 import { Aircraft } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { gameStore } from './lib/atoms';
+import { createStore } from 'solid-js/store';
 
 type StripType =
   | {
@@ -18,13 +19,13 @@ type StripProps = {
 const Separator = () => <div class="separator"></div>;
 
 function Strip({ strip }: StripProps) {
-  let target = '';
+  let [target, setTarget] = createSignal('');
 
   if (strip.type === 'strip') {
     if (strip.value.state.type === 'landing') {
-      target = strip.value.state.value;
+      setTarget(`RW${strip.value.state.value.id}`);
     } else if (strip.value.state.type === 'takeoff') {
-      target = strip.value.state.value;
+      setTarget(`RW${strip.value.state.value.id}`);
     }
   }
 
@@ -32,7 +33,7 @@ function Strip({ strip }: StripProps) {
     return (
       <div classList={{ strip: true }}>
         <span class="callsign">{strip.value.callsign}</span>
-        <span class="target">{target}</span>
+        <span class="target"> {target()}</span>
       </div>
     );
   } else if (strip.type === 'header') {
@@ -44,29 +45,33 @@ export default function StripBoard() {
   let [game] = gameStore;
   let [dragged, setDragged] = createSignal<string | null>(null);
   let [separator, setSeparator] = createSignal<SeparatorType | null>(null);
-  let [strips, setStrips] = createSignal<Array<StripType>>([
-    { type: 'header', value: 'Approach' },
-    { type: 'header', value: 'Landing' },
-    { type: 'header', value: 'Takeoff' },
-    { type: 'header', value: 'Departure' },
-  ]);
+  let [strips, setStrips] = createStore<{ inner: Array<StripType> }>({
+    inner: [
+      { type: 'header', value: 'Approach' },
+      { type: 'header', value: 'Landing' },
+      { type: 'header', value: 'Takeoff' },
+      { type: 'header', value: 'Departure' },
+    ],
+  });
 
   createEffect(() => {
     for (let aircraft of game.aircrafts) {
-      let index = strips().findIndex(
+      let index = strips.inner.findIndex(
         (s) => s.type === 'strip' && s.value.callsign === aircraft.callsign
       );
       if (index === -1) {
         setStrips((state) => {
-          return [
-            state[0],
-            { type: 'strip', value: aircraft },
-            ...state.slice(1),
-          ];
+          return {
+            inner: [
+              state.inner[0],
+              { type: 'strip', value: aircraft },
+              ...state.inner.slice(1),
+            ],
+          };
         });
       } else {
         setStrips((state) => {
-          state[index].value = aircraft;
+          state.inner[index].value = aircraft;
           return state;
         });
       }
@@ -75,7 +80,7 @@ export default function StripBoard() {
 
   return (
     <div id="stripboard">
-      {strips().map((s) => (
+      {strips.inner.map((s) => (
         <Strip strip={s}></Strip>
       ))}
     </div>

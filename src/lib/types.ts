@@ -22,7 +22,7 @@ export type Aircraft = {
   altitude: number;
   callsign: string;
 
-  state: { type: string; value: string };
+  state: { type: string; value: Runway };
 };
 
 export type Runway = {
