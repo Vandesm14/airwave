@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import {
-  aircraftsAtom,
+  gameStore,
   airspaceSizeAtom,
   radarAtom,
   renderAtom,
@@ -26,7 +26,7 @@ export default function Canvas() {
   let [radar, setRadar] = useAtom(radarAtom);
 
   let [airspaceSize] = useAtom(airspaceSizeAtom);
-  let [aircrafts] = useAtom(aircraftsAtom);
+  let [game] = gameStore;
   let [runways] = useAtom(runwaysAtom);
   let [render, setRender] = useAtom(renderAtom);
 
@@ -137,7 +137,7 @@ export default function Canvas() {
         drawRunway(ctx, runway);
       }
 
-      for (let aircraft of aircrafts()) {
+      for (let aircraft of game.aircrafts) {
         drawBlip(ctx, aircraft);
       }
 

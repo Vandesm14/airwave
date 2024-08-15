@@ -1,5 +1,6 @@
 import { atom } from 'solid-jotai';
 import { Aircraft, RadioMessage, Runway } from './types';
+import { createStore } from 'solid-js/store';
 
 export let radarAtom = atom({
   scale: 1,
@@ -22,7 +23,9 @@ export let radarAtom = atom({
 export let isRecordingAtom = atom(false);
 export let airspaceSizeAtom = atom(1000);
 
-export let aircraftsAtom = atom<Array<Aircraft>>([]);
+export let gameStore = createStore<{ aircrafts: Array<Aircraft> }>({
+  aircrafts: [],
+});
 export let runwaysAtom = atom<Array<Runway>>([]);
 
 export let renderAtom = atom({

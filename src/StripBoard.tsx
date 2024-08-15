@@ -1,7 +1,7 @@
 import { createEffect, createSignal } from 'solid-js';
 import { Aircraft } from './lib/types';
 import { useAtom } from 'solid-jotai';
-import { aircraftsAtom } from './lib/atoms';
+import { gameStore } from './lib/atoms';
 
 type StripType =
   | {
@@ -41,7 +41,7 @@ function Strip({ strip }: StripProps) {
 }
 
 export default function StripBoard() {
-  let [aircrafts] = useAtom(aircraftsAtom);
+  let [game] = gameStore;
   let [dragged, setDragged] = createSignal<string | null>(null);
   let [separator, setSeparator] = createSignal<SeparatorType | null>(null);
   let [strips, setStrips] = createSignal<Array<StripType>>([
@@ -52,7 +52,7 @@ export default function StripBoard() {
   ]);
 
   createEffect(() => {
-    for (let aircraft of aircrafts()) {
+    for (let aircraft of game.aircrafts) {
       let index = strips().findIndex(
         (s) => s.type === 'strip' && s.value.callsign === aircraft.callsign
       );

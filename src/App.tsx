@@ -1,7 +1,7 @@
 import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
 import {
-  aircraftsAtom,
+  gameStore,
   airspaceSizeAtom,
   isRecordingAtom,
   messagesAtom,
@@ -37,7 +37,7 @@ export default function App() {
   }
 
   let [, setAirspaceSize] = useAtom(airspaceSizeAtom);
-  let [, setAircrafts] = useAtom(aircraftsAtom);
+  let [, setGame] = gameStore;
   let [, setRunways] = useAtom(runwaysAtom);
   let [, setMessages] = useAtom(messagesAtom);
 
@@ -106,7 +106,7 @@ export default function App() {
     let json: ServerEvent = JSON.parse(event.data);
     switch (json.type) {
       case 'aircraft':
-        setAircrafts(json.value.map(posToXY));
+        setGame({ aircrafts: json.value.map(posToXY) });
         break;
       case 'runways':
         setRunways(json.value.map(posToXY));
