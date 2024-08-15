@@ -60,10 +60,7 @@ main {
     top: 10px;
     right: 10px;
     min-height: 200px;
-    max-height: 200px;
     background-color: #000000aa;
-
-    overflow-y: auto;
 
     border: 1px solid white;
     min-width: 300px;
@@ -76,6 +73,10 @@ main {
     .header {
       font-weight: bold;
       border-bottom: 1px solid white;
+    }
+
+    .separator {
+      border: 1px solid green;
     }
 
     .strip {
@@ -93,6 +94,9 @@ main {
       }
 
       &.hover {
+        border-color: red;
+      }
+      &.dragged {
         border-color: red;
       }
     }

@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal } from 'solid-js';
+import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
 import { Aircraft } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { aircraftsAtom } from './lib/atoms';
@@ -20,20 +20,23 @@ type State = Array<{
   aircraft: Aircraft;
 }>;
 
+type SeparatorType = { position: 'above' | 'below'; callsign: string };
 type StripProps = {
   strip: StripType;
-  isHovering: (position: 'above' | 'below', callsign: string) => void;
+  isHovering: (separator: SeparatorType) => void;
   onmousedown: (callsign: string) => void;
   onmouseup: () => void;
-  classList?: Record<string, boolean>;
+  dragged: Accessor<string>;
 };
+
+const Separator = () => <div class="separator"></div>;
 
 function Strip({
   strip: { aircraft },
   isHovering,
   onmousedown,
   onmouseup,
-  classList,
+  dragged,
 }: StripProps) {
   let div;
   let target = '';
@@ -48,20 +51,20 @@ function Strip({
     if (div instanceof HTMLDivElement) {
       let delta = (div.offsetHeight - e.offsetY) / div.offsetHeight;
       if (delta > 0.5) {
-        isHovering('above', aircraft.callsign);
+        isHovering({ position: 'above', callsign: aircraft.callsign });
       } else {
-        isHovering('below', aircraft.callsign);
+        isHovering({ position: 'below', callsign: aircraft.callsign });
       }
     }
   }
 
   return (
     <div
+      classList={{ strip: true, dragged: dragged() === aircraft.callsign }}
       onmousemove={onmousemove}
       onmousedown={() => onmousedown(aircraft.callsign)}
       onmouseup={onmouseup}
       ref={div}
-      classList={{ ...classList, strip: true }}
     >
       <span class="callsign">{aircraft.callsign}</span>
       <span class="target">{target}</span>
@@ -72,8 +75,8 @@ function Strip({
 export default function StripBoard() {
   let [aircrafts] = useAtom(aircraftsAtom);
   let [state, setState] = createSignal<State>([]);
-  let [isDragging, setIsDragging] = createSignal<string | null>(null);
-  let [separator, setSeparator] = createSignal<string | null>(null);
+  let [dragged, setDragged] = createSignal<string | null>(null);
+  let [separator, setSeparator] = createSignal<SeparatorType | null>(null);
 
   let sections = createMemo<Sections>(() => {
     return {
@@ -95,63 +98,89 @@ export default function StripBoard() {
     }
   });
 
-  function isHovering(position: 'above' | 'below', callsign: string) {
-    if (isDragging()) {
-      console.log({ position, callsign });
-      setSeparator(callsign);
+  function isHovering(separator: SeparatorType) {
+    if (dragged()) {
+      setSeparator(separator);
     }
   }
 
   function onmousedown(callsign: string) {
-    setIsDragging(callsign);
+    setDragged(callsign);
   }
 
   function onmouseup() {
-    setIsDragging(null);
+    setDragged(null);
     setSeparator(null);
   }
+
+  const spawnSeparator = (
+    strip: StripType,
+    position: SeparatorType['position']
+  ) => {
+    return separator() !== null &&
+      separator().callsign === strip.aircraft.callsign &&
+      separator().position === position
+      ? Separator
+      : null;
+  };
 
   return (
     <div id="stripboard">
       <div class="header">Approach</div>
       {sections().approach.map((s) => (
-        <Strip
-          strip={s}
-          isHovering={isHovering}
-          onmousedown={onmousedown}
-          onmouseup={onmouseup}
-          classList={{ hover: separator() === s.aircraft.callsign }}
-        ></Strip>
+        <>
+          {spawnSeparator(s, 'above')}
+          <Strip
+            strip={s}
+            isHovering={isHovering}
+            onmousedown={onmousedown}
+            onmouseup={onmouseup}
+            dragged={dragged}
+          ></Strip>
+          {spawnSeparator(s, 'below')}
+        </>
       ))}
       <div class="header">Landing</div>
       {sections().landing.map((s) => (
-        <Strip
-          strip={s}
-          isHovering={isHovering}
-          onmousedown={onmousedown}
-          onmouseup={onmouseup}
-          classList={{ hover: separator() === s.aircraft.callsign }}
-        ></Strip>
+        <>
+          {spawnSeparator(s, 'above')}
+          <Strip
+            strip={s}
+            isHovering={isHovering}
+            onmousedown={onmousedown}
+            onmouseup={onmouseup}
+            dragged={dragged}
+          ></Strip>
+          {spawnSeparator(s, 'below')}
+        </>
       ))}
       <div class="header">Takeoff</div>
       {sections().takeoff.map((s) => (
-        <Strip
-          strip={s}
-          isHovering={isHovering}
-          onmousedown={onmousedown}
-          onmouseup={onmouseup}
-          classList={{ hover: separator() === s.aircraft.callsign }}
-        ></Strip>
+        <>
+          {spawnSeparator(s, 'above')}
+          <Strip
+            strip={s}
+            isHovering={isHovering}
+            onmousedown={onmousedown}
+            onmouseup={onmouseup}
+            dragged={dragged}
+          ></Strip>
+          {spawnSeparator(s, 'below')}
+        </>
       ))}
       <div class="header">Departure</div>
       {sections().departure.map((s) => (
-        <Strip
-          strip={s}
-          isHovering={isHovering}
-          onmousedown={onmousedown}
-          onmouseup={onmouseup}
-          classList={{ hover: separator() === s.aircraft.callsign }}
-        ></Strip>
+        <>
+          {spawnSeparator(s, 'above')}
+          <Strip
+            strip={s}
+            isHovering={isHovering}
+            onmousedown={onmousedown}
+            onmouseup={onmouseup}
+            dragged={dragged}
+          ></Strip>
+          {spawnSeparator(s, 'below')}
+        </>
       ))}
     </div>
   );
