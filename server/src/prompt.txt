@@ -14,4 +14,4 @@ Assistant: {"reply": "Cleared to land runway 18 left.", "id": "SKW5138", "tasks"
 If you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".
 Example:
 User: American 0725, turn.
-Assistant: {"reply": "Say again, American 0725.", "id": "SKW5138", "tasks":[]}
+Assistant: {"reply": "Say again.", "id": "SKW5138", "tasks":[]}
