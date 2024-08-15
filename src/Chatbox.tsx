@@ -1,10 +1,11 @@
 import { useAtom } from 'solid-jotai';
-import { messagesAtom } from './atoms';
+import { isRecordingAtom, messagesAtom } from './atoms';
 import { createEffect } from 'solid-js';
 
 export default function Chatbox() {
   let chatbox;
   let [messages, _] = useAtom(messagesAtom);
+  let [isRecording] = useAtom(isRecordingAtom);
 
   createEffect(() => {
     if (chatbox instanceof HTMLDivElement) {
@@ -16,7 +17,7 @@ export default function Chatbox() {
   });
 
   return (
-    <div id="chatbox" ref={chatbox}>
+    <div id="chatbox" ref={chatbox} classList={{ live: isRecording() }}>
       {messages().map((m) => (
         <div class="message">
           <span class="callsign">{m.id}</span>

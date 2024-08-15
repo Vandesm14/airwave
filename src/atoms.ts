@@ -20,7 +20,7 @@ export let radarAtom = atom({
 });
 
 export let isRecordingAtom = atom(false);
-export let airspaceSizeAton = atom(1000);
+export let airspaceSizeAtom = atom(1000);
 
 export let aircraftsAtom = atom<Array<Aircraft>>([]);
 export let runwaysAtom = atom<Array<Runway>>([]);
