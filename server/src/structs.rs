@@ -137,15 +137,19 @@ impl Aircraft {
   }
 
   pub fn go_around(&mut self) {
+    if let AircraftState::Landing(runway) = &self.state {
+      if self.target.speed < 250.0 {
+        self.target.speed = 250.0;
+      }
+
+      if self.target.altitude < 2000.0 {
+        self.target.altitude = 2000.0;
+      }
+
+      self.target.heading = runway.heading;
+    }
+
     self.state = AircraftState::Approach;
-
-    if self.target.speed < 250.0 {
-      self.target.speed = 250.0;
-    }
-
-    if self.target.altitude < 2000.0 {
-      self.target.altitude = 2000.0;
-    }
   }
 
   fn update_position(&mut self, dt: f32) {
