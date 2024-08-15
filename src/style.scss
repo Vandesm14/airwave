@@ -12,6 +12,8 @@ main {
   flex-direction: column;
   height: 100%;
 
+  font: 14px monospace;
+
   #chatbox {
     display: flex;
     flex-direction: column;
@@ -31,8 +33,6 @@ main {
     min-width: 300px;
     max-width: 20%;
 
-    font: 14px monospace;
-
     .message {
       .callsign {
         color: red;
@@ -47,6 +47,54 @@ main {
 
     &.live {
       border-color: red;
+    }
+  }
+
+  #stripboard {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px;
+
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    min-height: 200px;
+    max-height: 200px;
+    background-color: #000000aa;
+
+    overflow-y: auto;
+
+    border: 1px solid white;
+    min-width: 300px;
+    max-width: 20%;
+
+    font-size: 18px;
+
+    color: white;
+
+    .header {
+      font-weight: bold;
+      border-bottom: 1px solid white;
+    }
+
+    .strip {
+      border: 1px solid grey;
+      padding: 10px 10px;
+
+      cursor: grab;
+      user-select: none;
+
+      .callsign {
+        color: #00dd00;
+      }
+
+      .target {
+      }
+
+      &.hover {
+        border-color: red;
+      }
     }
   }
 

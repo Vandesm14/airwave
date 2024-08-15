@@ -11,6 +11,7 @@ import { RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
 import { onMount } from 'solid-js';
 import Canvas from './Canvas';
+import StripBoard from './StripBoard';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -143,6 +144,7 @@ export default function App() {
     <div id="radar">
       <Chatbox></Chatbox>
       <Canvas></Canvas>
+      <StripBoard></StripBoard>
     </div>
   );
 }
