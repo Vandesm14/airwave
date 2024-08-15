@@ -105,6 +105,8 @@ async fn main() {
                   serde_json::from_str::<FrontendRequest>(&string).unwrap();
                 match req {
                   FrontendRequest::Voice(bytes) => {
+                    dbg!("received transcription request");
+
                     let client = Client::new();
                     let form = reqwest::multipart::Form::new();
                     let form = form
@@ -135,22 +137,16 @@ async fn main() {
                     let reply: AudioResponse =
                       serde_json::from_str(&text).unwrap();
                     ws_sender
-                      .send(OutgoingReply::ATCReply(reply.text.clone()))
+                      .send(OutgoingReply::ATCReply(dbg!(reply.text.clone())))
                       .unwrap();
 
                     if let Some(result) = complete_atc_request(reply.text).await
                     {
-                      ws_sender
-                        .send(OutgoingReply::Reply(result.clone()))
-                        .unwrap();
                       sender.send(IncomingUpdate::Command(result)).unwrap();
                     }
                   }
                   FrontendRequest::Text(string) => {
                     if let Some(result) = complete_atc_request(string).await {
-                      ws_sender
-                        .send(OutgoingReply::Reply(result.clone()))
-                        .unwrap();
                       sender.send(IncomingUpdate::Command(result)).unwrap();
                     }
                   }
@@ -220,7 +216,7 @@ async fn complete_atc_request(string: String) -> Option<Command> {
     if let Some(choice) = response.choices.first() {
       if let Some(ref text) = choice.message.content {
         if let Ok(reply) = serde_json::from_str::<Command>(text) {
-          return Some(reply);
+          return Some(dbg!(reply));
         }
       }
     }
