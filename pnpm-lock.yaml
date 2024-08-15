@@ -8,6 +8,12 @@ dependencies:
   axios:
     specifier: ^1.7.3
     version: 1.7.3
+  jotai:
+    specifier: ^2.9.3
+    version: 2.9.3
+  solid-jotai:
+    specifier: ^0.2.2
+    version: 0.2.2(jotai@2.9.3)(solid-js@1.8.21)
   solid-js:
     specifier: ^1.8.21
     version: 1.8.21
@@ -1101,6 +1107,19 @@ packages:
     engines: {node: '>=12.13'}
     dev: true
 
+  /jotai@2.9.3:
+    resolution: {integrity: sha512-IqMWKoXuEzWSShjd9UhalNsRGbdju5G2FrqNLQJT+Ih6p41VNYe2sav5hnwQx4HJr25jq9wRqvGSWGviGG6Gjw==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=17.0.0'
+      react: '>=17.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      react:
+        optional: true
+    dev: false
+
   /js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
     dev: true
@@ -1265,6 +1284,16 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
+
+  /solid-jotai@0.2.2(jotai@2.9.3)(solid-js@1.8.21):
+    resolution: {integrity: sha512-RuEPvvlMHjU+F/YVl2UB6FYftEYatqSytD7Ajp6KiQVIaCtpa/+pqzZKLp0NqxCQWBjyLBsipuTMrjQawTeLcA==}
+    peerDependencies:
+      jotai: '>=2.1.0'
+      solid-js: '>=1.6.0'
+    dependencies:
+      jotai: 2.9.3
+      solid-js: 1.8.21
+    dev: false
 
   /solid-js@1.8.21:
     resolution: {integrity: sha512-FHUGdoo7GVa1BTpGh/4UtwIISde0vSXoqNB6KFpHiTgkIY959tmCJ7NYQAWDfScBfnpoMGZR8lFz0DiwW/gFlw==}

@@ -1,35 +1,35 @@
+import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
+import {
+  aircraftsAtom,
+  airspaceSizeAton as airspaceSizeAtom,
+  isRecordingAtom,
+  radarAtom,
+  renderAtom,
+  runwaysAtom,
+} from './atoms';
+import { Aircraft, Runway, ServerEvent } from './types';
+import {
+  callsignString,
+  degreesToHeading,
+  toRadians,
+  headingToDegrees,
+  feetPerPixel,
+  knotToFeetPerSecond,
+  nauticalMilesToFeet,
+  runwayInfo,
+} from './lib';
 
 export function init() {
   const whisper = new WhisperSTT();
-  let isRecording = false;
-
   type Ctx = CanvasRenderingContext2D;
 
-  const timeScale = 1;
-  let scale = 1;
-
-  const feetPerPixel = 0.005 * scale;
-  const nauticalMilesToFeet = 6076.115;
-  const knotToFeetPerSecond = 1.68781 * timeScale;
-  const milesToFeet = 6076.12;
-
-  let shiftPoint = {
-    x: 0,
-    y: 0,
-  };
-
-  function headingToDegrees(heading: number) {
-    return (heading + 270) % 360;
-  }
-
-  function degreesToHeading(degrees: number) {
-    return (degrees + 360 + 90) % 360;
-  }
+  let [radar, setRadar] = useAtom(radarAtom);
+  let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
 
   function speak(text: string) {
     if ('speechSynthesis' in window) {
-      if (window.speechSynthesis.speaking || isRecording) {
+      if (window.speechSynthesis.speaking || isRecording()) {
         setTimeout(() => speak(text), 500);
       } else {
         const utterance = new SpeechSynthesisUtterance(
@@ -45,66 +45,10 @@ export function init() {
     }
   }
 
-  const airlines: Record<string, string> = {
-    AAL: 'American Airlines',
-    SKW: 'Sky West',
-    JBL: 'Jet Blue',
-  };
-
-  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-
-  type Aircraft = {
-    pos: [number, number];
-    x: number;
-    y: number;
-
-    target: {
-      /** Name of cleared runway to land on */
-      runway: null | string;
-      /** In Degrees (0 is north; up) */
-      heading: number;
-      /** In Knots */
-      speed: number;
-      /** In Feet */
-      altitude: number;
-    };
-
-    /** In Degrees (0 is north; up) */
-    heading: number;
-    /** In Knots */
-    speed: number;
-    /** In Feet */
-    altitude: number;
-    callsign: string;
-  };
-
-  type Runway = {
-    id: string;
-    pos: [number, number];
-    x: number;
-    y: number;
-    /** In Degrees (0 is north; up) */
-    heading: number;
-    /** In Feet */
-    length: number;
-  };
-
-  let airspace_size = 1000;
-  let aircrafts: Array<Aircraft> = [];
-  let runways: Array<Runway> = [];
-  let lastTime = Date.now();
-  let lastDraw = 0;
-
-  let isDragging = false;
-  let isZooming = false;
-  let dragStartPoint = {
-    x: 0,
-    y: 0,
-  };
-  let oldShiftPoint = {
-    x: 0,
-    y: 0,
-  };
+  let [airspaceSize, setAirspaceSize] = useAtom(airspaceSizeAtom);
+  let [aircrafts, setAircrafts] = useAtom(aircraftsAtom);
+  let [runways, setRunways] = useAtom(runwaysAtom);
+  let [render, setRender] = useAtom(renderAtom);
 
   const chatbox = document.getElementById('chatbox');
   const messageTemplate = document.getElementById('message-template');
@@ -122,10 +66,6 @@ export function init() {
     canvas.height = canvas.clientHeight;
 
     loopMain(canvas);
-  }
-
-  function callsignString(id: string): string {
-    return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
   }
 
   function speakAsAircraft(
@@ -174,16 +114,6 @@ export function init() {
     socket.send(JSON.stringify({ type: 'connect' }));
   };
 
-  type Event =
-    | {
-        type: 'aircraft';
-        value: Aircraft[];
-      }
-    | { type: 'runways'; value: Runway[] }
-    | { type: 'atcreply'; value: string }
-    | { type: 'reply'; value: { id: string; reply: string } }
-    | { type: 'size'; value: number };
-
   function posToXY<T extends { pos: [number, number]; x: number; y: number }>(
     obj: T
   ): T {
@@ -196,13 +126,13 @@ export function init() {
   socket.onmessage = function (event) {
     // console.log(`[message] Data received from server: ${event.data}`);
 
-    let json: Event = JSON.parse(event.data);
+    let json: ServerEvent = JSON.parse(event.data);
     switch (json.type) {
       case 'aircraft':
-        aircrafts = json.value.map(posToXY);
+        setAircrafts(json.value.map(posToXY));
         break;
       case 'runways':
-        runways = json.value.map(posToXY);
+        setRunways(json.value.map(posToXY));
         break;
       case 'atcreply':
         speakAsATC(json.value);
@@ -212,7 +142,7 @@ export function init() {
         break;
       case 'size':
         console.log('size', json.value);
-        airspace_size = json.value;
+        setAirspaceSize(json.value);
         break;
     }
   };
@@ -234,16 +164,16 @@ export function init() {
   };
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Insert' && !isRecording) {
+    if (e.key === 'Insert' && !isRecording()) {
       whisper.startRecording();
-      isRecording = true;
-    } else if (e.key === 'Delete' && isRecording) {
+      setIsRecording(true);
+    } else if (e.key === 'Delete' && isRecording()) {
       whisper.abortRecording();
-      isRecording = false;
+      setIsRecording(false);
     }
 
     if (chatbox instanceof HTMLDivElement) {
-      if (isRecording) {
+      if (isRecording()) {
         chatbox.classList.add('live');
       } else {
         chatbox.classList.remove('live');
@@ -252,8 +182,8 @@ export function init() {
   });
 
   document.addEventListener('keyup', (e) => {
-    if (e.key === 'Insert' && isRecording) {
-      isRecording = false;
+    if (e.key === 'Insert' && isRecording()) {
+      setIsRecording(false);
 
       whisper.stopRecording((blob) => {
         blob.arrayBuffer().then((value) => {
@@ -272,7 +202,7 @@ export function init() {
     }
 
     if (chatbox instanceof HTMLDivElement) {
-      if (isRecording) {
+      if (isRecording()) {
         chatbox.classList.add('live');
       } else {
         chatbox.classList.remove('live');
@@ -281,47 +211,75 @@ export function init() {
   });
 
   canvas?.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    dragStartPoint = {
-      x: e.clientX,
-      y: e.clientY,
-    };
-    oldShiftPoint = {
-      x: shiftPoint.x,
-      y: shiftPoint.y,
-    };
-  });
-  canvas?.addEventListener('mouseup', (_) => (isDragging = false));
-  canvas?.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      let x = e.clientX - dragStartPoint.x + oldShiftPoint.x;
-      let y = e.clientY - dragStartPoint.y + oldShiftPoint.y;
+    setRadar((radar) => {
+      radar.isDragging = true;
+      radar.dragStartPoint = {
+        x: e.clientX,
+        y: e.clientY,
+      };
 
-      shiftPoint = { x, y };
+      radar.lastShiftPoint.x = radar.shiftPoint.x;
+      radar.lastShiftPoint.y = radar.shiftPoint.y;
+
+      return radar;
+    });
+  });
+  canvas?.addEventListener('mouseup', (_) => {
+    setRadar((radar) => {
+      radar.isDragging = false;
+      return radar;
+    });
+  });
+  canvas?.addEventListener('mousemove', (e) => {
+    if (radar().isDragging) {
+      setRadar((radar) => {
+        let x = e.clientX - radar.dragStartPoint.x + radar.lastShiftPoint.x;
+        let y = e.clientY - radar.dragStartPoint.y + radar.lastShiftPoint.y;
+
+        radar.shiftPoint.x = x;
+        radar.shiftPoint.y = y;
+
+        return radar;
+      });
     }
   });
   canvas?.addEventListener('wheel', (e) => {
-    scale += e.deltaY * -0.0005;
-    scale = Math.max(Math.min(scale, 2), 0.6);
-    isZooming = true;
+    setRadar((radar) => {
+      radar.scale += e.deltaY * -0.0005;
+      radar.scale = Math.max(Math.min(radar.scale, 2), 0.6);
+
+      radar.isZooming = true;
+
+      return radar;
+    });
   });
 
   function loopMain(canvas: HTMLCanvasElement) {
-    let dt = Date.now() - lastTime;
-    lastTime = Date.now();
+    let dt = Date.now() - render().lastTime;
     let dts = dt / 1000;
 
-    let deltaDrawTime = Date.now() - lastDraw;
+    let deltaDrawTime = Date.now() - render().lastDraw;
     if (
-      isDragging ||
-      isZooming ||
-      lastDraw === 0 ||
+      radar().isDragging ||
+      radar().isZooming ||
+      render().lastDraw === 0 ||
       deltaDrawTime >= 1000 / 3
     ) {
-      lastDraw = Date.now();
       loopDraw(canvas, dts);
-      isZooming = false;
+      setRadar((radar) => {
+        radar.isZooming = false;
+        return radar;
+      });
+      setRender((render) => {
+        render.lastDraw = Date.now();
+        return render;
+      });
     }
+
+    setRender((render) => {
+      render.lastTime = Date.now();
+      return render;
+    });
   }
 
   function loopDraw(canvas: HTMLCanvasElement, dts: number) {
@@ -335,15 +293,15 @@ export function init() {
       ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, width, height);
 
-      ctx.translate(shiftPoint.x, shiftPoint.y);
-      ctx.scale(scale, scale);
+      ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
+      ctx.scale(radar().scale, radar().scale);
       drawCompass(ctx);
 
-      for (let runway of runways) {
+      for (let runway of runways()) {
         drawRunway(ctx, runway);
       }
 
-      for (let aircraft of aircrafts) {
+      for (let aircraft of aircrafts()) {
         drawBlip(ctx, aircraft);
       }
 
@@ -355,7 +313,7 @@ export function init() {
   }
 
   function drawCompass(ctx: Ctx) {
-    let half_size = airspace_size * 0.5;
+    let half_size = airspaceSize() * 0.5;
     let airspace_radius = half_size - 50;
 
     ctx.strokeStyle = 'white';
@@ -385,71 +343,6 @@ export function init() {
     }
   }
 
-  function runwayInfo(runway: Runway): {
-    start: { x: number; y: number };
-    end: { x: number; y: number };
-    ils: {
-      altitudePoints: { x: number; y: number }[];
-      end: { x: number; y: number };
-      maxAngle: { x: number; y: number };
-      minAngle: { x: number; y: number };
-    };
-  } {
-    let start = movePoint(
-      runway.x,
-      runway.y,
-      runway.length * feetPerPixel * 0.5,
-      inverseDegrees(headingToDegrees(runway.heading))
-    );
-    let end = movePoint(
-      runway.x,
-      runway.y,
-      runway.length * feetPerPixel * 0.5,
-      headingToDegrees(runway.heading)
-    );
-
-    let maxIlsRangeMiles = 10;
-    let ilsPoints: { x: number; y: number }[] = [];
-    let separate = 6.0 / 4;
-    for (let i = 1; i < 4; i += 1) {
-      let point = i * separate + separate;
-      ilsPoints.push(
-        movePoint(
-          start.x,
-          start.y,
-          length + milesToFeet * feetPerPixel * point,
-          inverseDegrees(headingToDegrees(runway.heading))
-        )
-      );
-    }
-
-    let ilsStart = movePoint(
-      start.x,
-      start.y,
-      length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-      inverseDegrees(headingToDegrees(runway.heading))
-    );
-
-    let maxAngle = movePoint(
-      start.x,
-      start.y,
-      length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-      inverseDegrees(headingToDegrees(runway.heading + 5))
-    );
-    let minAngle = movePoint(
-      start.x,
-      start.y,
-      length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-      inverseDegrees(headingToDegrees((runway.heading + (360 - 5)) % 360))
-    );
-
-    return {
-      start,
-      end,
-      ils: { altitudePoints: ilsPoints, end: ilsStart, maxAngle, minAngle },
-    };
-  }
-
   function drawRunway(ctx: Ctx, runway: Runway) {
     let length = feetPerPixel * runway.length;
     let width = 5;
@@ -467,8 +360,8 @@ export function init() {
     ctx.strokeStyle = '#3087f2';
 
     ctx.resetTransform();
-    ctx.translate(shiftPoint.x, shiftPoint.y);
-    ctx.scale(scale, scale);
+    ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
+    ctx.scale(radar().scale, radar().scale);
 
     let info = runwayInfo(runway);
     ctx.beginPath();
@@ -591,25 +484,5 @@ export function init() {
 
     drawDirection(ctx, aircraft);
     drawInfo(ctx, aircraft);
-  }
-
-  function movePoint(
-    x: number,
-    y: number,
-    length: number,
-    directionDegrees: number
-  ) {
-    // Convert direction from degrees to radians
-    const directionRadians = directionDegrees * (Math.PI / 180);
-
-    // Calculate the new coordinates
-    const newX = x + length * Math.cos(directionRadians);
-    const newY = y + length * Math.sin(directionRadians);
-
-    return { x: newX, y: newY };
-  }
-
-  function inverseDegrees(degrees: number): number {
-    return (degrees + 180) % 360;
   }
 }
