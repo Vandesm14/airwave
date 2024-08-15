@@ -262,12 +262,16 @@ document.addEventListener('keyup', (e) => {
 
     whisper.stopRecording((blob) => {
       blob.arrayBuffer().then((value) => {
+        console.log('send voice request');
+
         socket.send(
           JSON.stringify({
             type: 'voice',
             value: [...new Uint8Array(value)],
           })
         );
+
+        console.log('sent voice request');
       });
     });
   }

@@ -101,11 +101,12 @@ async fn main() {
             let ws_sender = ws_sender.clone();
             async move {
               if let Message::Text(string) = message {
+                dbg!("received incoming ws");
                 let req =
                   serde_json::from_str::<FrontendRequest>(&string).unwrap();
                 match req {
                   FrontendRequest::Voice(bytes) => {
-                    dbg!("received transcription request");
+                    dbg!("received transcription request", bytes.len());
 
                     let client = Client::new();
                     let form = reqwest::multipart::Form::new();
@@ -140,8 +141,10 @@ async fn main() {
                       .send(OutgoingReply::ATCReply(dbg!(reply.text.clone())))
                       .unwrap();
 
+                    dbg!("generating reply");
                     if let Some(result) = complete_atc_request(reply.text).await
                     {
+                      dbg!("sending reply");
                       sender.send(IncomingUpdate::Command(result)).unwrap();
                     }
                   }
@@ -216,7 +219,7 @@ async fn complete_atc_request(string: String) -> Option<Command> {
     if let Some(choice) = response.choices.first() {
       if let Some(ref text) = choice.message.content {
         if let Ok(reply) = serde_json::from_str::<Command>(text) {
-          return Some(dbg!(reply));
+          return Some(reply);
         }
       }
     }
