@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
+import solid from 'vite-plugin-solid';
 
 export default defineConfig({
-  plugins: [],
+  plugins: [solid()],
   build: {
     sourcemap: true,
   },
