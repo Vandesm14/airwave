@@ -1,5 +1,5 @@
 import { useAtom } from 'solid-jotai';
-import { isRecordingAtom, messagesAtom } from './atoms';
+import { isRecordingAtom, messagesAtom } from './lib/atoms';
 import { createEffect } from 'solid-js';
 
 export default function Chatbox() {

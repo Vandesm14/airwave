@@ -5,8 +5,8 @@ import {
   radarAtom,
   renderAtom,
   runwaysAtom,
-} from './atoms';
-import { Aircraft, Runway } from './types';
+} from './lib/atoms';
+import { Aircraft, Runway } from './lib/types';
 import {
   degreesToHeading,
   toRadians,
@@ -15,7 +15,7 @@ import {
   knotToFeetPerSecond,
   nauticalMilesToFeet,
   runwayInfo,
-} from './lib';
+} from './lib/lib';
 import { onMount } from 'solid-js';
 
 export default function Canvas() {
@@ -293,6 +293,13 @@ export default function Canvas() {
       );
       ctx.fill();
 
+      let targetHeadingInfo =
+        aircraft.state.type === 'landing'
+          ? 'ILS'
+          : Math.round(aircraft.target.heading)
+              .toString()
+              .padStart(3, '0')
+              .replace('360', '000');
       ctx.beginPath();
       ctx.fillText(
         Math.round(aircraft.heading)
@@ -300,10 +307,7 @@ export default function Canvas() {
           .padStart(3, '0')
           .replace('360', '000') +
           ' ' +
-          Math.round(aircraft.target.heading)
-            .toString()
-            .padStart(3, '0')
-            .replace('360', '000'),
+          targetHeadingInfo,
         aircraft.x + spacing,
         aircraft.y - spacing + fontSize * 2
       );

@@ -21,6 +21,8 @@ export type Aircraft = {
   /** In Feet */
   altitude: number;
   callsign: string;
+
+  state: { type: string; value: string };
 };
 
 export type Runway = {

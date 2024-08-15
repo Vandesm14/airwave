@@ -6,8 +6,8 @@ import {
   isRecordingAtom,
   messagesAtom,
   runwaysAtom,
-} from './atoms';
-import { RadioMessage, ServerEvent } from './types';
+} from './lib/atoms';
+import { RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
 import { onMount } from 'solid-js';
 import Canvas from './Canvas';
