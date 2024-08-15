@@ -1,7 +1,5 @@
-import { createEffect, createSignal, For } from 'solid-js';
+import { Accessor, createEffect, createSignal, For } from 'solid-js';
 import { Aircraft } from './lib/types';
-import { useAtom } from 'solid-jotai';
-import { gameStore } from './lib/atoms';
 import { createStore } from 'solid-js/store';
 
 type StripType =
@@ -41,46 +39,48 @@ function Strip({ strip }: StripProps) {
   }
 }
 
-export default function StripBoard() {
-  let [game] = gameStore;
+export default function StripBoard({
+  aircrafts,
+}: {
+  aircrafts: Accessor<Array<Aircraft>>;
+}) {
   let [dragged, setDragged] = createSignal<string | null>(null);
   let [separator, setSeparator] = createSignal<SeparatorType | null>(null);
-  let [strips, setStrips] = createStore<{ inner: Array<StripType> }>({
-    inner: [
+  let [strips, setStrips] = createSignal<Array<StripType>>(
+    [
       { type: 'header', value: 'Approach' },
       { type: 'header', value: 'Landing' },
       { type: 'header', value: 'Takeoff' },
       { type: 'header', value: 'Departure' },
     ],
-  });
+    { equals: false }
+  );
 
   createEffect(() => {
-    for (let aircraft of game.aircrafts) {
-      let index = strips.inner.findIndex(
-        (s) => s.type === 'strip' && s.value.callsign === aircraft.callsign
-      );
-      if (index === -1) {
-        setStrips((state) => {
-          return {
-            inner: [
-              state.inner[0],
-              { type: 'strip', value: aircraft },
-              ...state.inner.slice(1),
-            ],
-          };
-        });
-      } else {
-        setStrips((state) => {
-          state.inner[index].value = aircraft;
-          return state;
-        });
-      }
+    for (let aircraft of aircrafts()) {
+      setStrips((state) => {
+        let index = state.findIndex(
+          (s) => s.type === 'strip' && s.value.callsign === aircraft.callsign
+        );
+
+        if (index === -1) {
+          return [
+            state[0],
+            { type: 'strip', value: aircraft },
+            ...state.slice(1),
+          ];
+        } else {
+          return state.map((e, i) =>
+            i === index ? { type: 'strip', value: aircraft } : e
+          );
+        }
+      });
     }
   });
 
   return (
     <div id="stripboard">
-      {strips.inner.map((s) => (
+      {strips().map((s) => (
         <Strip strip={s}></Strip>
       ))}
     </div>

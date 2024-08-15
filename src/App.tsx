@@ -1,15 +1,14 @@
 import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
 import {
-  gameStore,
   airspaceSizeAtom,
   isRecordingAtom,
   messagesAtom,
   runwaysAtom,
 } from './lib/atoms';
-import { RadioMessage, ServerEvent } from './lib/types';
+import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
-import { onMount } from 'solid-js';
+import { createSignal, onMount } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 
@@ -37,7 +36,9 @@ export default function App() {
   }
 
   let [, setAirspaceSize] = useAtom(airspaceSizeAtom);
-  let [, setGame] = gameStore;
+  let [aircrafts, setAircrafts] = createSignal<Array<Aircraft>>([], {
+    equals: false,
+  });
   let [, setRunways] = useAtom(runwaysAtom);
   let [, setMessages] = useAtom(messagesAtom);
 
@@ -106,7 +107,7 @@ export default function App() {
     let json: ServerEvent = JSON.parse(event.data);
     switch (json.type) {
       case 'aircraft':
-        setGame({ aircrafts: json.value.map(posToXY) });
+        setAircrafts(json.value.map(posToXY));
         break;
       case 'runways':
         setRunways(json.value.map(posToXY));
@@ -143,8 +144,8 @@ export default function App() {
   return (
     <div id="radar">
       <Chatbox></Chatbox>
-      <Canvas></Canvas>
-      <StripBoard></StripBoard>
+      <Canvas aircrafts={aircrafts}></Canvas>
+      <StripBoard aircrafts={aircrafts}></StripBoard>
     </div>
   );
 }

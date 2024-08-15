@@ -1,6 +1,5 @@
 import { useAtom } from 'solid-jotai';
 import {
-  gameStore,
   airspaceSizeAtom,
   radarAtom,
   renderAtom,
@@ -16,9 +15,13 @@ import {
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib/lib';
-import { onMount } from 'solid-js';
+import { Accessor, onMount } from 'solid-js';
 
-export default function Canvas() {
+export default function Canvas({
+  aircrafts,
+}: {
+  aircrafts: Accessor<Array<Aircraft>>;
+}) {
   let canvas;
 
   type Ctx = CanvasRenderingContext2D;
@@ -26,7 +29,6 @@ export default function Canvas() {
   let [radar, setRadar] = useAtom(radarAtom);
 
   let [airspaceSize] = useAtom(airspaceSizeAtom);
-  let [game] = gameStore;
   let [runways] = useAtom(runwaysAtom);
   let [render, setRender] = useAtom(renderAtom);
 
@@ -137,7 +139,7 @@ export default function Canvas() {
         drawRunway(ctx, runway);
       }
 
-      for (let aircraft of game.aircrafts) {
+      for (let aircraft of aircrafts()) {
         drawBlip(ctx, aircraft);
       }
 
