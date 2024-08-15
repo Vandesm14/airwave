@@ -138,7 +138,10 @@ impl Aircraft {
 
   pub fn go_around(&mut self) {
     self.state = AircraftState::Approach;
-    self.target.speed = 220.0;
+
+    if self.target.speed < 250.0 {
+      self.target.speed = 250.0;
+    }
 
     if self.target.altitude < 2000.0 {
       self.target.altitude = 2000.0;
