@@ -103,14 +103,14 @@ impl Aircraft {
         airspace_center,
       )),
       speed: 250.0,
-      altitude: 8000.0,
+      altitude: 7000.0,
       target: AircraftTargets {
         heading: degrees_to_heading(angle_between_points(
           point.position,
           airspace_center,
         )),
         speed: 250.0,
-        altitude: 8000.0,
+        altitude: 7000.0,
       },
     }
   }
@@ -173,7 +173,7 @@ impl Aircraft {
       let start_decrease_speed = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
 
       // If we are on approach to the runway
-      if delta_angle.abs() <= 45.0 {
+      if delta_angle.abs() <= 5.0 {
         let turn_amount = 30.0_f32.min(delta_angle.abs() * 6.0);
 
         // If we have passed the threshold for 4000 feet, go around
