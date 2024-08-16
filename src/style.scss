@@ -166,10 +166,12 @@ main {
         color: white;
         font-size: inherit;
 
-        width: 100px;
+        width: 80px;
+        padding: 10px 10px;
         flex-grow: 1;
 
         &.swap {
+          width: 40px;
           font-size: 30px;
         }
       }
