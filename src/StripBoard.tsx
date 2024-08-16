@@ -19,30 +19,31 @@ type StripProps = {
 };
 
 function Strip({ strip, onmousedown, onmousemove }: StripProps) {
-  let [target, setTarget] = createSignal('');
-  let [frequency, setFequency] = createSignal<number | null>();
+  let target: string = '';
+  let frequency: number | null = null;
+  let sinceCreated: number | null = null;
   let [ourFrequency] = useAtom(frequencyAtom);
 
   if (strip.type === 'strip') {
     if (strip.value.state.type === 'landing') {
-      setTarget(`RW${strip.value.state.value.id}`);
+      target = `RW${strip.value.state.value.id}`;
     } else if (strip.value.state.type === 'takeoff') {
-      setTarget(`RW${strip.value.state.value.id}`);
+      target = `RW${strip.value.state.value.id}`;
     }
 
-    setFequency(strip.value.frequency);
+    frequency = strip.value.frequency;
   }
 
   if (strip.type === 'strip') {
     return (
       <div
-        classList={{ strip: true, theirs: frequency() !== ourFrequency() }}
+        classList={{ strip: true, theirs: frequency !== ourFrequency() }}
         onmousedown={onmousedown}
         onmousemove={onmousemove}
       >
-        <span class="frequency">{frequency()} </span>
+        <span class="frequency">{frequency} </span>
         <span class="callsign">{strip.value.callsign}</span>
-        <span class="target"> {target()}</span>
+        <span class="target"> {target}</span>
       </div>
     );
   } else if (strip.type === 'header') {
