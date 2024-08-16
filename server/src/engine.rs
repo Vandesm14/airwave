@@ -161,8 +161,7 @@ impl Engine {
   pub fn execute_command(&mut self, command: CommandWithFreq) {
     let aircraft = self.aircraft.iter_mut().find(|a| a.callsign == command.id);
     if let Some(aircraft) = aircraft {
-      dbg!(aircraft.frequency, command.frequency);
-      if (aircraft.frequency == command.frequency) {
+      if aircraft.frequency == command.frequency {
         // TODO: Do go-around first (then filter it out from the rest of the tasks)
         for task in command.tasks.iter() {
           match task {
