@@ -77,7 +77,7 @@ export default function App() {
 
   function speakAsAircraft(message: RadioMessage) {
     setMessages((messages) => [...messages, message]);
-    speak(message.reply);
+    speak(`${message.reply}, ${message.id}`);
   }
 
   function speakAsATC(message: RadioMessage) {

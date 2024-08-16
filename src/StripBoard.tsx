@@ -1,6 +1,5 @@
 import { Accessor, createEffect, createSignal, For } from 'solid-js';
 import { Aircraft } from './lib/types';
-import { createStore } from 'solid-js/store';
 
 type StripType =
   | {
@@ -9,14 +8,16 @@ type StripType =
     }
   | { type: 'strip'; value: Aircraft };
 
-type SeparatorType = { position: 'above' | 'below'; callsign: string };
-type StripProps = {
-  strip: StripType;
-};
-
 const Separator = () => <div class="separator"></div>;
 
-function Strip({ strip }: StripProps) {
+type StripProps = {
+  strip: StripType;
+  onmousedown: () => void;
+  onmouseup: () => void;
+  onmousemove: () => void;
+};
+
+function Strip({ strip, onmousedown, onmouseup, onmousemove }: StripProps) {
   let [target, setTarget] = createSignal('');
 
   if (strip.type === 'strip') {
@@ -29,13 +30,27 @@ function Strip({ strip }: StripProps) {
 
   if (strip.type === 'strip') {
     return (
-      <div classList={{ strip: true }}>
+      <div
+        classList={{ strip: true }}
+        onmousedown={onmousedown}
+        onmouseup={onmouseup}
+        onmousemove={onmousemove}
+      >
         <span class="callsign">{strip.value.callsign}</span>
         <span class="target"> {target()}</span>
       </div>
     );
   } else if (strip.type === 'header') {
-    return <div classList={{ header: true }}>{strip.value}</div>;
+    return (
+      <div
+        classList={{ header: true }}
+        onmousedown={onmousedown}
+        onmouseup={onmouseup}
+        onmousemove={onmousemove}
+      >
+        {strip.value}
+      </div>
+    );
   }
 }
 
@@ -45,7 +60,7 @@ export default function StripBoard({
   aircrafts: Accessor<Array<Aircraft>>;
 }) {
   let [dragged, setDragged] = createSignal<string | null>(null);
-  let [separator, setSeparator] = createSignal<SeparatorType | null>(null);
+  let [separator, setSeparator] = createSignal<number | null>(null);
   let [strips, setStrips] = createSignal<Array<StripType>>(
     [
       { type: 'header', value: 'Approach' },
@@ -57,6 +72,17 @@ export default function StripBoard({
   );
 
   createEffect(() => {
+    let allsigns = new Set(aircrafts().map((s) => s.callsign));
+    setStrips((state) => {
+      return state.filter((s) => {
+        if (s.type === 'header') {
+          return true;
+        } else if (s.type === 'strip') {
+          return allsigns.has(s.value.callsign);
+        }
+      });
+    });
+
     for (let aircraft of aircrafts()) {
       setStrips((state) => {
         let index = state.findIndex(
@@ -78,10 +104,68 @@ export default function StripBoard({
     }
   });
 
+  function handleMouseDown(callsign: string) {
+    setDragged(callsign);
+  }
+
+  function handleMouseUp() {
+    setStrips((strips) => {
+      let callsign = dragged();
+      let fromIndex = strips.findIndex(
+        (s) => s.type === 'strip' && s.value.callsign === callsign
+      );
+      let toIndex = separator();
+
+      if (fromIndex !== -1) {
+        let newStrips = [];
+        for (let i = 0; i < strips.length; i++) {
+          if (i !== fromIndex) {
+            newStrips.push(strips[i]);
+          }
+
+          if (i === toIndex) {
+            newStrips.push(strips[fromIndex]);
+          }
+        }
+
+        return newStrips;
+      } else {
+        return strips;
+      }
+    });
+
+    resetDrag();
+  }
+
+  function handleMouseMove(index: number) {
+    if (dragged()) {
+      setSeparator(index);
+    }
+  }
+
+  function resetDrag() {
+    setDragged(null);
+    setSeparator(null);
+  }
+
   return (
-    <div id="stripboard">
-      {strips().map((s) => (
-        <Strip strip={s}></Strip>
+    <div id="stripboard" onmouseleave={() => resetDrag()}>
+      {strips().map((s, i) => (
+        <>
+          <Strip
+            strip={s}
+            onmousedown={() => {
+              s.type === 'strip' ? handleMouseDown(s.value.callsign) : {};
+            }}
+            onmouseup={() => {
+              handleMouseUp();
+            }}
+            onmousemove={() => {
+              handleMouseMove(i);
+            }}
+          ></Strip>
+          {i === separator() ? <Separator /> : null}
+        </>
       ))}
     </div>
   );
