@@ -69,7 +69,7 @@ impl Engine {
 
   pub fn spawn_random_aircraft(&mut self) {
     let mut rng = thread_rng();
-    let should_be_takeoff = rng.gen_ratio(1, 1);
+    let should_be_takeoff = rng.gen_ratio(1, 2);
 
     let mut aircraft =
       Aircraft::random(self.airspace_size, self.default_frequency);
