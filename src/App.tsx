@@ -19,6 +19,14 @@ export default function App() {
 
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
 
+  let [, setAirspaceSize] = useAtom(airspaceSizeAtom);
+  let [aircrafts, setAircrafts] = createSignal<Array<Aircraft>>([], {
+    equals: false,
+  });
+  let [, setRunways] = useAtom(runwaysAtom);
+  let [messages, setMessages] = useAtom(messagesAtom);
+  let [frequency] = useAtom(frequencyAtom);
+
   function callsignString(id: string): string {
     const airlines: Record<string, string> = {
       AAL: 'American Airlines',
@@ -29,13 +37,13 @@ export default function App() {
     return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
   }
 
-  function speak(text: string) {
-    if ('speechSynthesis' in window) {
+  function speak(message: RadioMessage) {
+    if ('speechSynthesis' in window && frequency() === message.frequency) {
       if (window.speechSynthesis.speaking || isRecording()) {
-        setTimeout(() => speak(text), 500);
+        setTimeout(() => speak(message), 500);
       } else {
         const utterance = new SpeechSynthesisUtterance(
-          text.replace(/[0-9]/g, '$& ')
+          message.reply.replace(/[0-9]/g, '$& ')
         );
         utterance.volume = 0.01;
         utterance.rate = 1.0;
@@ -46,14 +54,6 @@ export default function App() {
       console.log("Sorry, your browser doesn't support text to speech!");
     }
   }
-
-  let [, setAirspaceSize] = useAtom(airspaceSizeAtom);
-  let [aircrafts, setAircrafts] = createSignal<Array<Aircraft>>([], {
-    equals: false,
-  });
-  let [, setRunways] = useAtom(runwaysAtom);
-  let [messages, setMessages] = useAtom(messagesAtom);
-  let [frequency] = useAtom(frequencyAtom);
 
   createEffect(() => {
     localStorage.setItem('messages', JSON.stringify(messages()));
@@ -98,7 +98,7 @@ export default function App() {
   function speakAsAircraft(message: RadioMessage) {
     message.reply = `${message.reply}, ${callsignString(message.id)}`;
     setMessages((messages) => [...messages, message]);
-    speak(message.reply);
+    speak(message);
   }
 
   function speakAsATC(message: RadioMessage) {
