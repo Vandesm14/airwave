@@ -193,10 +193,10 @@ impl Aircraft {
       self.target.heading = runway.heading;
 
       self.speed = 170.0;
-      self.target.speed = 220.0;
+      self.target.speed = 250.0;
 
       self.altitude = 500.0;
-      self.target.altitude = 2000.0;
+      self.target.altitude = 5000.0;
     }
   }
 
