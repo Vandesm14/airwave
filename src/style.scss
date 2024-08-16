@@ -168,6 +168,8 @@ $transparent-black: #000a;
       display: flex;
       flex-direction: row;
 
+      gap: 5px;
+
       input {
         background-color: $transparent-black;
         border: 1px solid white;
