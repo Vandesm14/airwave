@@ -35,7 +35,7 @@ function initMessages(): Array<RadioMessage> {
   if (json) {
     return JSON.parse(json);
   } else {
-    [];
+    return [];
   }
 }
 export let messagesAtom = atom<Array<RadioMessage>>(initMessages());
