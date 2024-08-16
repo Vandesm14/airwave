@@ -20,9 +20,15 @@ export default function FreqSelector() {
 
   return (
     <div id="freq-selector">
-      <input type="number" disabled value={frequency()} />
+      <input type="number" disabled value={frequency()} class="live" />
       <input type="button" value="⬌" class="swap" onclick={swap} />
-      <input type="number" oninput={oninput} value={secondary()} step=".1" />
+      <input
+        type="number"
+        oninput={oninput}
+        value={secondary()}
+        class="standby"
+        step=".1"
+      />
     </div>
   );
 }

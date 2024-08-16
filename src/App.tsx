@@ -9,7 +9,7 @@ import {
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
-import { createSignal, onMount } from 'solid-js';
+import { createEffect, createSignal, onMount } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
@@ -52,8 +52,12 @@ export default function App() {
     equals: false,
   });
   let [, setRunways] = useAtom(runwaysAtom);
-  let [, setMessages] = useAtom(messagesAtom);
+  let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useAtom(frequencyAtom);
+
+  createEffect(() => {
+    localStorage.setItem('messages', JSON.stringify(messages()));
+  });
 
   onMount(() => {
     document.addEventListener('keydown', (e) => {

@@ -4,7 +4,7 @@ import { createEffect, createSignal } from 'solid-js';
 
 export default function Chatbox() {
   let chatbox;
-  let [messages, _] = useAtom(messagesAtom);
+  let [messages, setMessages] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [showAll, setShowAll] = createSignal(false);
@@ -22,13 +22,25 @@ export default function Chatbox() {
     setShowAll((b) => !b);
   }
 
+  function clearAll() {
+    setMessages([]);
+  }
+
   return (
     <div id="chatbox" ref={chatbox} classList={{ live: isRecording() }}>
-      <input
-        type="button"
-        value={showAll() ? 'Show Yours' : 'Show All'}
-        onclick={toggleAll}
-      />
+      <div class="controls">
+        <input
+          type="button"
+          value="Clear All"
+          onclick={clearAll}
+          class="danger"
+        />
+        <input
+          type="button"
+          value={showAll() ? 'Show Yours' : 'Show All'}
+          onclick={toggleAll}
+        />
+      </div>
       {messages()
         .filter((m) => showAll() || m.frequency === frequency())
         .map((m) => (

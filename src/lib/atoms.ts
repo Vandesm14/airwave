@@ -30,4 +30,12 @@ export let renderAtom = atom({
   lastDraw: 0,
 });
 
-export let messagesAtom = atom<Array<RadioMessage>>([]);
+function initMessages(): Array<RadioMessage> {
+  let json = localStorage.getItem('messages');
+  if (json) {
+    return JSON.parse(json);
+  } else {
+    [];
+  }
+}
+export let messagesAtom = atom<Array<RadioMessage>>(initMessages());

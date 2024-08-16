@@ -35,6 +35,23 @@ main {
     min-width: 300px;
     max-width: 20%;
 
+    .controls {
+      display: flex;
+      gap: 5px;
+
+      input {
+        border: 1px solid white;
+        color: white;
+        background-color: black;
+        font-size: 14px;
+        padding: 4px;
+
+        &.danger {
+          color: rgb(253, 164, 164);
+        }
+      }
+    }
+
     .message {
       .callsign {
         color: red;
@@ -111,11 +128,11 @@ main {
         .target {
         }
 
-        &.hover {
-          border-color: red;
-        }
         &.dragged {
           border-color: red;
+        }
+        &.theirs {
+          opacity: 0.5;
         }
       }
     }
