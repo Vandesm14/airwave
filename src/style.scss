@@ -9,6 +9,8 @@ main {
   background-color: black;
 }
 
+$transparent-black: #000a;
+
 #radar {
   display: flex;
   flex-direction: column;
@@ -25,7 +27,7 @@ main {
     position: absolute;
     bottom: 10px;
     left: 10px;
-    background-color: black;
+    background-color: $transparent-black;
 
     border: 1px solid white;
     min-width: 600px;
@@ -35,10 +37,13 @@ main {
       display: flex;
       gap: 5px;
 
+      border-bottom: 1px solid white;
+      padding-bottom: 5px;
+
       input {
         border: 1px solid white;
         color: white;
-        background-color: black;
+        background-color: transparent;
         font-size: 14px;
         padding: 4px;
 
@@ -52,6 +57,8 @@ main {
       display: flex;
       flex-direction: column;
       gap: 5px;
+
+      padding-top: 5px;
 
       min-height: 200px;
       max-height: 200px;
@@ -82,7 +89,6 @@ main {
 
   canvas {
     flex: 1;
-    border: 1px solid black;
     height: 100%;
   }
 
@@ -104,7 +110,7 @@ main {
 
       position: relative;
       min-height: 200px;
-      background-color: #000000aa;
+      background-color: $transparent-black;
 
       border: 1px solid white;
       min-width: 300px;
@@ -162,7 +168,7 @@ main {
       flex-direction: row;
 
       input {
-        background-color: black;
+        background-color: $transparent-black;
         border: 1px solid white;
         color: white;
         font-size: inherit;
