@@ -77,7 +77,7 @@ impl Engine {
     if should_be_takeoff {
       let mut rng = thread_rng();
       let heading: f32 = rng.gen_range(1.0..36.0);
-      let heading: f32 = heading.round();
+      let heading: f32 = heading.round() * 10.0;
 
       aircraft.state = AircraftState::WillDepart {
         runway: self.runways.choose(&mut rng).unwrap().clone(),
