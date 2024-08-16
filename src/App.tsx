@@ -17,6 +17,16 @@ export default function App() {
 
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
 
+  function callsignString(id: string): string {
+    const airlines: Record<string, string> = {
+      AAL: 'American Airlines',
+      SKW: 'Sky West',
+      JBL: 'Jet Blue',
+    };
+
+    return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
+  }
+
   function speak(text: string) {
     if ('speechSynthesis' in window) {
       if (window.speechSynthesis.speaking || isRecording()) {
@@ -76,8 +86,9 @@ export default function App() {
   });
 
   function speakAsAircraft(message: RadioMessage) {
+    message.reply = `${message.reply}, ${callsignString(message.id)}`;
     setMessages((messages) => [...messages, message]);
-    speak(`${message.reply}, ${message.id}`);
+    speak(message.reply);
   }
 
   function speakAsATC(message: RadioMessage) {
