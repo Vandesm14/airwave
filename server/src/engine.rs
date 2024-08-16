@@ -82,7 +82,8 @@ impl Engine {
       aircraft.state = AircraftState::WillDepart {
         runway: self.runways.choose(&mut rng).unwrap().clone(),
         heading,
-      }
+      };
+      aircraft.frequency = 118.6;
     }
 
     self.aircraft.push(aircraft.clone());
@@ -125,7 +126,7 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        if self.aircraft.len() < 7
+        if self.aircraft.len() < 10
           && self.last_spawn.elapsed() >= Duration::from_secs(60)
         {
           self.last_spawn = Instant::now();
@@ -152,24 +153,24 @@ impl Engine {
   }
 
   fn broadcast_aircraft(&self) {
-    self
+    let _ = self
       .sender
       .send(OutgoingReply::Aircraft(self.aircraft.clone()))
-      .unwrap();
+      .inspect_err(|e| eprintln!("failed to broadcast aircraft: {}", e));
   }
 
   fn broadcast_runways(&self) {
-    self
+    let _ = self
       .sender
       .send(OutgoingReply::Runways(self.runways.clone()))
-      .unwrap();
+      .inspect_err(|e| eprintln!("failed to broadcast runways: {}", e));
   }
 
   fn broadcast_size(&self) {
-    self
+    let _ = self
       .sender
       .send(OutgoingReply::Size(self.airspace_size))
-      .unwrap();
+      .inspect_err(|e| eprintln!("failed to broadcast size: {}", e));
   }
 
   fn broadcast_for_new_client(&self) {

@@ -163,8 +163,8 @@ impl Aircraft {
         self.target.speed = 250.0;
       }
 
-      if self.target.altitude < 2000.0 {
-        self.target.altitude = 2000.0;
+      if self.target.altitude < 3000.0 {
+        self.target.altitude = 3000.0;
       }
     }
 
@@ -248,9 +248,6 @@ impl Aircraft {
         // Else, if we aren't on approach, check if we have landed
       } else if delta_angle.abs().round() == 180.0 && self.altitude == 0.0 {
         self.state = AircraftState::Deleted;
-      } else if self.altitude == 0.0 {
-        self.do_go_around();
-        return true;
       }
     }
 
