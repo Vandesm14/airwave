@@ -126,7 +126,7 @@ export default function Canvas({
 
     let ctx = canvas.getContext('2d');
     if (ctx) {
-      const fontSize = 15;
+      const fontSize = 15 * (1 / radar().scale);
       ctx.font = `900 ${fontSize}px monospace`;
       ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, width, height);
@@ -262,7 +262,7 @@ export default function Canvas({
 
     function drawInfo(ctx: Ctx, aircraft: Aircraft) {
       let spacing = 16;
-      let fontSize = 15;
+      const fontSize = 15 * (1 / radar().scale);
 
       ctx.textAlign = 'left';
       ctx.fillStyle = '#44ff44';
