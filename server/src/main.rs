@@ -50,7 +50,7 @@ async fn main() {
 
   let app = Router::new().nest_service("/", ServeDir::new("../dist"));
 
-  let airspace_size = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 50.0;
+  let airspace_size = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 40.0;
 
   let mut engine = Engine::new(
     command_receiver,
@@ -147,21 +147,23 @@ async fn main() {
                       .unwrap();
 
                     let text = response.text().await.unwrap();
-                    let reply: AudioResponse =
-                      serde_json::from_str(&text).unwrap();
-                    ws_sender
-                      .send(OutgoingReply::ATCReply(CommandWithFreq {
-                        id: "ATC".to_owned(),
-                        frequency,
-                        reply: reply.text.clone(),
-                        tasks: Vec::new(),
-                      }))
-                      .unwrap();
-
-                    if let Some(result) =
-                      complete_atc_request(reply.text, frequency).await
+                    if let Ok(reply) =
+                      serde_json::from_str::<AudioResponse>(&text)
                     {
-                      sender.send(IncomingUpdate::Command(result)).unwrap();
+                      ws_sender
+                        .send(OutgoingReply::ATCReply(CommandWithFreq {
+                          id: "ATC".to_owned(),
+                          frequency,
+                          reply: reply.text.clone(),
+                          tasks: Vec::new(),
+                        }))
+                        .unwrap();
+
+                      if let Some(result) =
+                        complete_atc_request(reply.text, frequency).await
+                      {
+                        sender.send(IncomingUpdate::Command(result)).unwrap();
+                      }
                     }
                   }
                   FrontendRequest::Text {
