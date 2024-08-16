@@ -11,9 +11,9 @@ export default function Chatbox() {
 
   createEffect(() => {
     if (chatbox instanceof HTMLDivElement) {
+      // TODO: this doesn't scroll down whenever we show all or swap frequency
+      let _ = [frequency(), showAll()];
       // Subscribe to frequency and showAll signals
-      frequency();
-      showAll();
 
       // Subscribe to messages signal
       if (messages().length > 0) {
