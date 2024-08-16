@@ -1,6 +1,6 @@
 import { Accessor, createEffect, createSignal, For, onMount } from 'solid-js';
 import { Aircraft } from './lib/types';
-import { atom, useAtom } from 'solid-jotai';
+import { useAtom } from 'solid-jotai';
 import { frequencyAtom } from './lib/atoms';
 
 type StripType =
@@ -40,6 +40,8 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
       target = `RW${strip.value.state.value.id}`;
     } else if (strip.value.state.type === 'willdepart') {
       target = `RW${strip.value.state.value.id}`;
+    } else if (strip.value.state.type === 'departing') {
+      target = `${strip.value.state.value.toString().padStart(3, '0')}&nbsp;`;
     }
 
     frequency = strip.value.frequency;

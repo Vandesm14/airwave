@@ -24,7 +24,11 @@ export type Aircraft = {
   altitude: number;
   callsign: string;
 
-  state: { type: string; value: Runway };
+  state:
+    | { type: 'approach' }
+    | { type: 'landing'; value: Runway }
+    | { type: 'willdepart'; value: Runway }
+    | { type: 'departing'; value: number };
   created: number;
 };
 

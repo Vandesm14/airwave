@@ -72,7 +72,7 @@ pub enum AircraftState {
   Approach,
   Landing(Runway),
   WillDepart(Runway),
-  Departing,
+  Departing(f32),
 
   Deleted,
 }
@@ -171,7 +171,9 @@ impl Aircraft {
 
   pub fn do_takeoff(&mut self) {
     if let AircraftState::WillDepart(_) = &self.state {
-      self.state = AircraftState::Departing;
+      let mut rng = thread_rng();
+      let heading: f32 = rng.gen_range(1.0..36.0);
+      self.state = AircraftState::Departing(heading.round() * 10.0);
     }
   }
 
