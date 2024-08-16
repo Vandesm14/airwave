@@ -18,6 +18,12 @@ export default function FreqSelector() {
     }
   }
 
+  function onkeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      swap();
+    }
+  }
+
   return (
     <div id="freq-selector">
       <input type="number" disabled value={frequency()} class="live" />
@@ -25,6 +31,7 @@ export default function FreqSelector() {
       <input
         type="number"
         oninput={oninput}
+        onkeydown={onkeydown}
         value={secondary()}
         class="standby"
         step=".1"
