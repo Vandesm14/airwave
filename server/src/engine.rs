@@ -185,7 +185,7 @@ impl Engine {
   pub fn update(&mut self) {
     let dt = 1.0 / self.rate as f32;
     for aircraft in self.aircraft.iter_mut() {
-      let went_around = aircraft.update(dt);
+      let went_around = aircraft.update(self.airspace_size, dt);
       if went_around {
         self
           .sender

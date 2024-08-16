@@ -103,7 +103,7 @@ pub struct Aircraft {
 
 impl Aircraft {
   pub fn random(airspace_size: f32, frequency: f32) -> Self {
-    let airspace_center = Vec2::new(airspace_size * 0.5, airspace_size * 0.5);
+    let airspace_center = Vec2::splat(airspace_size * 0.5);
     let point =
       get_random_point_on_circle(airspace_center, airspace_size * 0.5);
 
@@ -247,6 +247,16 @@ impl Aircraft {
     false
   }
 
+  fn update_leave_airspace(&mut self, airspace_size: f32) {
+    let airspace_center = Vec2::splat(airspace_size * 0.5);
+    let distance = self.pos.distance_squared(airspace_center);
+    let max_distance = (airspace_size * 0.5).powf(2.0);
+
+    if distance >= max_distance {
+      self.state = AircraftState::Deleted;
+    }
+  }
+
   fn update_targets(&mut self, dt: f32) {
     // Don't update aircraft waiting to depart
     if matches!(self.state, AircraftState::WillDepart(_)) {
@@ -297,12 +307,13 @@ impl Aircraft {
     self.heading = (360.0 + self.heading) % 360.0;
   }
 
-  pub fn update(&mut self, dt: f32) -> bool {
+  pub fn update(&mut self, airspace_size: f32, dt: f32) -> bool {
     self.update_takeoff();
 
     let went_around = self.update_ils();
     self.update_targets(dt);
     self.update_position(dt);
+    self.update_leave_airspace(airspace_size);
 
     went_around
   }
