@@ -31,7 +31,7 @@ export default function Chatbox() {
   }
 
   return (
-    <div id="chatbox" ref={chatbox} classList={{ live: isRecording() }}>
+    <div id="chatbox" classList={{ live: isRecording() }}>
       <div class="controls">
         <input
           type="button"
@@ -45,12 +45,12 @@ export default function Chatbox() {
           onclick={toggleAll}
         />
       </div>
-      <div class="messages">
+      <div class="messages" ref={chatbox}>
         {messages()
           .filter((m) => showAll() || m.frequency === frequency())
           .map((m) => (
             <div class="message">
-              <span class="frequency">{m.frequency}</span>
+              {showAll() ? <span class="frequency">{m.frequency}</span> : null}
               <span class="callsign">{m.id}</span>
               <span class="text">{m.reply}</span>
             </div>
