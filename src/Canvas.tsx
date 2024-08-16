@@ -264,7 +264,8 @@ export default function Canvas({
       const fontSize = 16 * (1 / radar().scale);
 
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#44ff44';
+      ctx.fillStyle =
+        aircraft.state.type === 'departing' ? '#fc67eb' : '#44ff44';
       ctx.beginPath();
       ctx.fillText(
         aircraft.callsign,
