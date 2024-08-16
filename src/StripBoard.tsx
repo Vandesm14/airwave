@@ -32,6 +32,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   let target: string = '&nbsp;'.repeat(4);
   let frequency: number | null = null;
   let sinceCreated: string | null = null;
+  let isOverTime = false;
   let [ourFrequency] = useAtom(frequencyAtom);
 
   if (strip.type === 'strip') {
@@ -43,6 +44,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
 
     frequency = strip.value.frequency;
     sinceCreated = formatTime(Date.now() - strip.value.created);
+    isOverTime = sinceCreated.startsWith('1');
   }
 
   if (strip.type === 'strip') {
@@ -53,7 +55,11 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
         : 'A';
     return (
       <div
-        classList={{ strip: true, theirs: frequency !== ourFrequency() }}
+        classList={{
+          strip: true,
+          theirs: frequency !== ourFrequency(),
+          overtime: isOverTime,
+        }}
         onmousedown={onmousedown}
         onmousemove={onmousemove}
       >

@@ -141,16 +141,16 @@ main {
           color: #fffa;
         }
 
+        &.overtime {
+          .timer {
+            color: red;
+          }
+        }
+
         .callsign {
           color: #00dd00;
         }
 
-        .target {
-        }
-
-        &.dragged {
-          border-color: red;
-        }
         &.theirs {
           opacity: 0.5;
         }
