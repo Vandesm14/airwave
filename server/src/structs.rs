@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -95,6 +97,7 @@ pub struct Aircraft {
   pub frequency: f32,
 
   pub target: AircraftTargets,
+  pub created: u128,
 }
 
 impl Aircraft {
@@ -123,6 +126,10 @@ impl Aircraft {
         speed: 250.0,
         altitude: 7000.0,
       },
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
     }
   }
 

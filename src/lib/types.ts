@@ -25,6 +25,7 @@ export type Aircraft = {
   callsign: string;
 
   state: { type: string; value: Runway };
+  created: number;
 };
 
 export type Runway = {

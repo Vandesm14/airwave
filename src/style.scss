@@ -126,11 +126,19 @@ main {
       }
 
       .strip {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+
         border: 1px solid grey;
         padding: 10px 10px;
 
         cursor: grab;
         user-select: none;
+
+        .timer {
+          color: #fffa;
+        }
 
         .callsign {
           color: #00dd00;

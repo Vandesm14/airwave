@@ -18,10 +18,20 @@ type StripProps = {
   onmousemove: () => void;
 };
 
+function formatTime(duration: number): string {
+  let durationSeconds = Math.floor(duration / 1000);
+  let seconds = (durationSeconds % 60).toString().padStart(2, '0');
+  let minutes = (Math.floor(durationSeconds / 60) % 60)
+    .toString()
+    .padStart(2, '0');
+
+  return `${minutes}:${seconds}`;
+}
+
 function Strip({ strip, onmousedown, onmousemove }: StripProps) {
-  let target: string = '';
+  let target: string = '&nbsp;'.repeat(4);
   let frequency: number | null = null;
-  let sinceCreated: number | null = null;
+  let sinceCreated: string | null = null;
   let [ourFrequency] = useAtom(frequencyAtom);
 
   if (strip.type === 'strip') {
@@ -32,6 +42,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
     }
 
     frequency = strip.value.frequency;
+    sinceCreated = formatTime(Date.now() - strip.value.created);
   }
 
   if (strip.type === 'strip') {
@@ -41,9 +52,10 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
         onmousedown={onmousedown}
         onmousemove={onmousemove}
       >
-        <span class="frequency">{frequency} </span>
         <span class="callsign">{strip.value.callsign}</span>
-        <span class="target"> {target}</span>
+        <span class="target" innerHTML={target}></span>
+        <span class="frequency">{frequency}</span>
+        <span class="timer">{sinceCreated}</span>
       </div>
     );
   } else if (strip.type === 'header') {
