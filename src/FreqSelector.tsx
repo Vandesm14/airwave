@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom } from './lib/atoms';
-import { createSignal } from 'solid-js';
+import { createSignal, onMount } from 'solid-js';
 
 export default function FreqSelector() {
   let [frequency, setFrequency] = useAtom(frequencyAtom);
@@ -18,11 +18,21 @@ export default function FreqSelector() {
     }
   }
 
-  function onkeydown(e: KeyboardEvent) {
+  function onEnter(e: KeyboardEvent) {
     if (e.key === 'Enter') {
       swap();
     }
   }
+
+  function onBackslash(e: KeyboardEvent) {
+    if (e.key === '\\') {
+      swap();
+    }
+  }
+
+  onMount(() => {
+    document.addEventListener('keydown', onBackslash);
+  });
 
   return (
     <div id="freq-selector">
@@ -31,7 +41,7 @@ export default function FreqSelector() {
       <input
         type="number"
         oninput={oninput}
-        onkeydown={onkeydown}
+        onkeydown={onEnter}
         value={secondary()}
         class="standby"
         step=".1"
