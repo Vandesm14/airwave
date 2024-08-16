@@ -82,7 +82,7 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        if self.aircraft.len() < 5
+        if self.aircraft.len() < 7
           && self.last_spawn.elapsed() >= Duration::from_secs(60)
         {
           self.last_spawn = Instant::now();

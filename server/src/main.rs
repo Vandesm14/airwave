@@ -50,19 +50,24 @@ async fn main() {
 
   let app = Router::new().nest_service("/", ServeDir::new("../dist"));
 
-  let airspace_size = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 30.0;
+  let airspace_size = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 50.0;
 
   let mut engine =
     Engine::new(command_receiver, update_sender.clone(), airspace_size);
   let engine_handle = tokio::spawn(async move {
-    let runway = Runway {
+    engine.runways.push(Runway {
       id: "20".into(),
       pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
       heading: 200.0,
       length: 7000.0,
-    };
+    });
 
-    engine.runways.push(runway);
+    engine.runways.push(Runway {
+      id: "29".into(),
+      pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
+      heading: 290.0,
+      length: 7000.0,
+    });
 
     engine.spawn_random_aircraft();
     engine.begin_loop();
