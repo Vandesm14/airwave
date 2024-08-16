@@ -69,36 +69,44 @@ impl Engine {
 
   pub fn spawn_random_aircraft(&mut self) {
     let mut rng = thread_rng();
-    let should_be_takeoff = rng.gen_ratio(1, 3);
+    let should_be_takeoff = rng.gen_ratio(1, 1);
 
     let mut aircraft =
       Aircraft::random(self.airspace_size, self.default_frequency);
 
     if should_be_takeoff {
-      aircraft.state = AircraftState::WillDepart(
-        self.runways.choose(&mut rng).unwrap().clone(),
-      )
+      let mut rng = thread_rng();
+      let heading: f32 = rng.gen_range(1.0..36.0);
+      let heading: f32 = heading.round();
+
+      aircraft.state = AircraftState::WillDepart {
+        runway: self.runways.choose(&mut rng).unwrap().clone(),
+        heading,
+      }
     }
 
     self.aircraft.push(aircraft.clone());
-    let reply = if let AircraftState::WillDepart(runway) = aircraft.state {
-      format!(
-        "Tower, {} is holding short of runway {}.",
-        aircraft.callsign, runway.id
-      )
-    } else if let AircraftState::Approach = aircraft.state {
-      let center = Vec2::splat(self.airspace_size * 0.5);
-      let heading =
-        degrees_to_heading(angle_between_points(center, aircraft.pos));
-      let direction = heading_to_direction(heading);
+    let reply =
+      if let AircraftState::WillDepart { runway, heading } = aircraft.state {
+        format!(
+          "Tower, {} is holding short of runway {}, departure to the {}.",
+          aircraft.callsign,
+          runway.id,
+          heading_to_direction(heading)
+        )
+      } else if let AircraftState::Approach = aircraft.state {
+        let center = Vec2::splat(self.airspace_size * 0.5);
+        let heading =
+          degrees_to_heading(angle_between_points(center, aircraft.pos));
+        let direction = heading_to_direction(heading);
 
-      format!(
-        "Tower, {} is {} of the airport, with you.",
-        aircraft.callsign, direction
-      )
-    } else {
-      "Error generating reply for spawned aircraft".to_owned()
-    };
+        format!(
+          "Tower, {} is {} of the airport, with you.",
+          aircraft.callsign, direction
+        )
+      } else {
+        "Error generating reply for spawned aircraft".to_owned()
+      };
     self
       .sender
       .send(OutgoingReply::Reply(CommandWithFreq {
@@ -219,6 +227,7 @@ impl Engine {
             }
             Task::GoAround => aircraft.do_go_around(),
             Task::Takeoff => aircraft.do_takeoff(),
+            Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
           }
         }
 

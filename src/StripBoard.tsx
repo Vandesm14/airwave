@@ -39,7 +39,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
     if (strip.value.state.type === 'landing') {
       target = `RW${strip.value.state.value.id}`;
     } else if (strip.value.state.type === 'willdepart') {
-      target = `RW${strip.value.state.value.id}`;
+      target = `RW${strip.value.state.value.runway.id}`;
     } else if (strip.value.state.type === 'departing') {
       target = `${strip.value.state.value.toString().padStart(3, '0')}&nbsp;`;
     }

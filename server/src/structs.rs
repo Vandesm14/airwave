@@ -22,6 +22,8 @@ pub enum Task {
   Speed(f32),
   Frequency(f32),
   Takeoff,
+  #[serde(rename = "resume")]
+  ResumeOwnNavigation,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -71,7 +73,7 @@ impl Runway {
 pub enum AircraftState {
   Approach,
   Landing(Runway),
-  WillDepart(Runway),
+  WillDepart { runway: Runway, heading: f32 },
   Departing(f32),
 
   Deleted,
@@ -170,15 +172,21 @@ impl Aircraft {
   }
 
   pub fn do_takeoff(&mut self) {
-    if let AircraftState::WillDepart(_) = &self.state {
-      let mut rng = thread_rng();
-      let heading: f32 = rng.gen_range(1.0..36.0);
-      self.state = AircraftState::Departing(heading.round() * 10.0);
+    if let AircraftState::WillDepart { heading, .. } = &self.state {
+      self.state = AircraftState::Departing(*heading);
+    }
+  }
+
+  pub fn resume_own_navigation(&mut self) {
+    if let AircraftState::Departing(heading) = &self.state {
+      self.target.heading = *heading;
+      self.target.speed = 400.0;
+      self.target.altitude = 13000.;
     }
   }
 
   fn update_takeoff(&mut self) {
-    if let AircraftState::WillDepart(runway) = &self.state {
+    if let AircraftState::WillDepart { runway, .. } = &self.state {
       self.pos = runway.start();
 
       self.heading = runway.heading;
@@ -261,7 +269,7 @@ impl Aircraft {
 
   fn update_targets(&mut self, dt: f32) {
     // Don't update aircraft waiting to depart
-    if matches!(self.state, AircraftState::WillDepart(_)) {
+    if matches!(self.state, AircraftState::WillDepart { .. }) {
       return;
     }
 

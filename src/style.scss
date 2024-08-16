@@ -48,7 +48,8 @@ $transparent-black: #000a;
         padding: 4px;
 
         &.danger {
-          color: rgb(253, 164, 164);
+          font-weight: bold;
+          color: rgb(255, 78, 78);
         }
       }
     }

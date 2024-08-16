@@ -27,7 +27,7 @@ export type Aircraft = {
   state:
     | { type: 'approach' }
     | { type: 'landing'; value: Runway }
-    | { type: 'willdepart'; value: Runway }
+    | { type: 'willdepart'; value: { runway: Runway; heading: number } }
     | { type: 'departing'; value: number };
   created: number;
 };
