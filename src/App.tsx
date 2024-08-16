@@ -95,7 +95,10 @@ export default function App() {
     setMessages((messages) => [...messages, message]);
   }
 
-  let socket = new WebSocket(`ws://${window.location.hostname}:9001`);
+  const search = new URLSearchParams(window.location.search);
+  const hostname = search.get("ws") ?? window.location.hostname;
+
+  let socket = new WebSocket(`ws://${hostname}:9001`);
   socket.onopen = function (_) {
     console.log('[open] Connection established');
     console.log('Sending to server');
