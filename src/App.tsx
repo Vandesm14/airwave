@@ -2,6 +2,7 @@ import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
 import {
   airspaceSizeAtom,
+  frequencyAtom,
   isRecordingAtom,
   messagesAtom,
   runwaysAtom,
@@ -11,6 +12,7 @@ import Chatbox from './Chatbox';
 import { createSignal, onMount } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
+import FreqSelector from './FreqSelector';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -51,6 +53,7 @@ export default function App() {
   });
   let [, setRunways] = useAtom(runwaysAtom);
   let [, setMessages] = useAtom(messagesAtom);
+  let [frequency] = useAtom(frequencyAtom);
 
   onMount(() => {
     document.addEventListener('keydown', (e) => {
@@ -74,7 +77,10 @@ export default function App() {
             socket.send(
               JSON.stringify({
                 type: 'voice',
-                value: [...new Uint8Array(value)],
+                value: {
+                  data: [...new Uint8Array(value)],
+                  frequency: frequency(),
+                },
               })
             );
 
@@ -127,7 +133,7 @@ export default function App() {
         setRunways(json.value.map(posToXY));
         break;
       case 'atcreply':
-        speakAsATC({ id: 'ATC', reply: json.value });
+        speakAsATC(json.value);
         break;
       case 'reply':
         speakAsAircraft(json.value);
@@ -158,7 +164,10 @@ export default function App() {
     <div id="radar">
       <Chatbox></Chatbox>
       <Canvas aircrafts={aircrafts}></Canvas>
-      <StripBoard aircrafts={aircrafts}></StripBoard>
+      <div class="top-right">
+        <StripBoard aircrafts={aircrafts}></StripBoard>
+        <FreqSelector></FreqSelector>
+      </div>
     </div>
   );
 }

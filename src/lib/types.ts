@@ -3,6 +3,8 @@ export type Aircraft = {
   x: number;
   y: number;
 
+  frequency: number;
+
   target: {
     /** Name of cleared runway to land on */
     runway: null | string;
@@ -36,7 +38,11 @@ export type Runway = {
   length: number;
 };
 
-export type RadioMessage = { id: string; reply: string };
+export type RadioMessage = {
+  id: string;
+  frequency: number;
+  reply: string;
+};
 
 export type ServerEvent =
   | {
@@ -44,6 +50,9 @@ export type ServerEvent =
       value: Aircraft[];
     }
   | { type: 'runways'; value: Runway[] }
-  | { type: 'atcreply'; value: string }
+  | {
+      type: 'atcreply';
+      value: { id: string; frequency: number; reply: string };
+    }
   | { type: 'reply'; value: RadioMessage }
   | { type: 'size'; value: number };

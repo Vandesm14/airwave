@@ -20,7 +20,7 @@ use tower_http::services::ServeDir;
 
 use server::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  structs::{Command, Runway},
+  structs::{Command, CommandWithFreq, Runway},
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
@@ -28,8 +28,8 @@ use server::{
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
 enum FrontendRequest {
-  Voice(Vec<u8>),
-  Text(String),
+  Voice { data: Vec<u8>, frequency: f32 },
+  Text { text: String, frequency: f32 },
   Connect,
 }
 
@@ -52,8 +52,12 @@ async fn main() {
 
   let airspace_size = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 50.0;
 
-  let mut engine =
-    Engine::new(command_receiver, update_sender.clone(), airspace_size);
+  let mut engine = Engine::new(
+    command_receiver,
+    update_sender.clone(),
+    airspace_size,
+    118.5,
+  );
   let engine_handle = tokio::spawn(async move {
     engine.runways.push(Runway {
       id: "20".into(),
@@ -110,7 +114,10 @@ async fn main() {
                 let req =
                   serde_json::from_str::<FrontendRequest>(&string).unwrap();
                 match req {
-                  FrontendRequest::Voice(bytes) => {
+                  FrontendRequest::Voice {
+                    data: bytes,
+                    frequency,
+                  } => {
                     dbg!("received transcription request", bytes.len());
 
                     let client = Client::new();
@@ -143,18 +150,27 @@ async fn main() {
                     let reply: AudioResponse =
                       serde_json::from_str(&text).unwrap();
                     ws_sender
-                      .send(OutgoingReply::ATCReply(dbg!(reply.text.clone())))
+                      .send(OutgoingReply::ATCReply(CommandWithFreq {
+                        id: "ATC".to_owned(),
+                        freq: frequency,
+                        reply: reply.text.clone(),
+                        tasks: Vec::new(),
+                      }))
                       .unwrap();
 
-                    dbg!("generating reply");
-                    if let Some(result) = complete_atc_request(reply.text).await
+                    if let Some(result) =
+                      complete_atc_request(reply.text, frequency).await
                     {
-                      dbg!("sending reply");
                       sender.send(IncomingUpdate::Command(result)).unwrap();
                     }
                   }
-                  FrontendRequest::Text(string) => {
-                    if let Some(result) = complete_atc_request(string).await {
+                  FrontendRequest::Text {
+                    text: string,
+                    frequency,
+                  } => {
+                    if let Some(result) =
+                      complete_atc_request(string, frequency).await
+                    {
                       sender.send(IncomingUpdate::Command(result)).unwrap();
                     }
                   }
@@ -200,7 +216,10 @@ async fn main() {
   };
 }
 
-async fn complete_atc_request(string: String) -> Option<Command> {
+async fn complete_atc_request(
+  string: String,
+  freq: f32,
+) -> Option<CommandWithFreq> {
   let client = async_openai::Client::new();
   let request = CreateChatCompletionRequest {
     messages: vec![
@@ -224,7 +243,12 @@ async fn complete_atc_request(string: String) -> Option<Command> {
     if let Some(choice) = response.choices.first() {
       if let Some(ref text) = choice.message.content {
         if let Ok(reply) = serde_json::from_str::<Command>(text) {
-          return Some(reply);
+          return Some(CommandWithFreq {
+            id: reply.id,
+            freq,
+            reply: reply.reply,
+            tasks: reply.tasks,
+          });
         }
       }
     }

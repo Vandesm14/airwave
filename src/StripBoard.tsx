@@ -19,6 +19,7 @@ type StripProps = {
 
 function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   let [target, setTarget] = createSignal('');
+  let [frequency, setFequency] = createSignal('');
 
   if (strip.type === 'strip') {
     if (strip.value.state.type === 'landing') {
@@ -26,6 +27,8 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
     } else if (strip.value.state.type === 'takeoff') {
       setTarget(`RW${strip.value.state.value.id}`);
     }
+
+    setFequency(strip.value.frequency.toString());
   }
 
   if (strip.type === 'strip') {
@@ -35,6 +38,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
         onmousedown={onmousedown}
         onmousemove={onmousemove}
       >
+        <span class="frequency">{frequency()} </span>
         <span class="callsign">{strip.value.callsign}</span>
         <span class="target"> {target()}</span>
       </div>

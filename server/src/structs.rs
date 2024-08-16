@@ -18,11 +18,20 @@ pub enum Task {
   Altitude(f32),
   Heading(f32),
   Speed(f32),
+  Frequency(f32),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Command {
   pub id: String,
+  pub reply: String,
+  pub tasks: Vec<Task>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CommandWithFreq {
+  pub id: String,
+  pub freq: f32,
   pub reply: String,
   pub tasks: Vec<Task>,
 }
@@ -83,12 +92,13 @@ pub struct Aircraft {
   pub heading: f32,
   pub speed: f32,
   pub altitude: f32,
+  pub frequency: f32,
 
   pub target: AircraftTargets,
 }
 
 impl Aircraft {
-  pub fn random(airspace_size: f32) -> Self {
+  pub fn random(airspace_size: f32, frequency: f32) -> Self {
     let airspace_center = Vec2::new(airspace_size * 0.5, airspace_size * 0.5);
     let point =
       get_random_point_on_circle(airspace_center, airspace_size * 0.5);
@@ -104,6 +114,7 @@ impl Aircraft {
       )),
       speed: 250.0,
       altitude: 7000.0,
+      frequency,
       target: AircraftTargets {
         heading: degrees_to_heading(angle_between_points(
           point.position,

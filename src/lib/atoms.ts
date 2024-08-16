@@ -23,6 +23,7 @@ export let radarAtom = atom({
 export let isRecordingAtom = atom(false);
 export let airspaceSizeAtom = atom(1000);
 export let runwaysAtom = atom<Array<Runway>>([]);
+export let frequencyAtom = atom(118.5);
 
 export let renderAtom = atom({
   lastTime: Date.now(),

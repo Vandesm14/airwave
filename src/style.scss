@@ -27,7 +27,7 @@ main {
     left: 10px;
     min-height: 200px;
     max-height: 200px;
-    background-color: #000000aa;
+    background-color: black;
 
     overflow-y: auto;
 
@@ -52,65 +52,91 @@ main {
     }
   }
 
-  #stripboard {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding: 5px;
-
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    min-height: 200px;
-    background-color: #000000aa;
-
-    border: 1px solid white;
-    min-width: 300px;
-    max-width: 20%;
-
-    font-size: 18px;
-
-    color: white;
-
-    .header {
-      @extend .strip;
-
-      padding: 2px 10px !important;
-      color: white;
-      font-weight: bold;
-      border-bottom: 1px solid white;
-    }
-
-    .separator {
-      border: 1px solid green;
-    }
-
-    .strip {
-      border: 1px solid grey;
-      padding: 10px 10px;
-
-      cursor: grab;
-      user-select: none;
-
-      .callsign {
-        color: #00dd00;
-      }
-
-      .target {
-      }
-
-      &.hover {
-        border-color: red;
-      }
-      &.dragged {
-        border-color: red;
-      }
-    }
-  }
-
   canvas {
     flex: 1;
     border: 1px solid black;
     height: 100%;
+  }
+
+  .top-right {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 18px;
+
+    gap: 5px;
+
+    #stripboard {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 5px;
+
+      position: relative;
+      min-height: 200px;
+      background-color: #000000aa;
+
+      border: 1px solid white;
+      min-width: 300px;
+      max-width: 20%;
+
+      color: white;
+
+      .header {
+        @extend .strip;
+
+        padding: 2px 10px !important;
+        color: white;
+        font-weight: bold;
+        border-bottom: 1px solid white;
+      }
+
+      .separator {
+        border: 1px solid green;
+      }
+
+      .strip {
+        border: 1px solid grey;
+        padding: 10px 10px;
+
+        cursor: grab;
+        user-select: none;
+
+        .callsign {
+          color: #00dd00;
+        }
+
+        .target {
+        }
+
+        &.hover {
+          border-color: red;
+        }
+        &.dragged {
+          border-color: red;
+        }
+      }
+    }
+
+    #freq-selector {
+      display: flex;
+      flex-direction: row;
+
+      input {
+        background-color: black;
+        border: 1px solid white;
+        color: white;
+        font-size: inherit;
+
+        width: 100px;
+        flex-grow: 1;
+
+        &.swap {
+          font-size: 30px;
+        }
+      }
+    }
   }
 }

@@ -5,15 +5,17 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::structs::{Aircraft, AircraftState, Command, Runway, Task};
+use crate::structs::{
+  Aircraft, AircraftState, Command, CommandWithFreq, Runway, Task,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
 pub enum OutgoingReply {
   // Partial/Small Updates
-  ATCReply(String),
-  Reply(Command),
+  ATCReply(CommandWithFreq),
+  Reply(CommandWithFreq),
 
   // Full State Updates
   Aircraft(Vec<Aircraft>),
@@ -23,7 +25,7 @@ pub enum OutgoingReply {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum IncomingUpdate {
-  Command(Command),
+  Command(CommandWithFreq),
   Connect,
 }
 
@@ -37,6 +39,7 @@ pub struct Engine {
   last_tick: Instant,
   last_spawn: Instant,
   airspace_size: f32,
+  default_frequency: f32,
   rate: usize,
 }
 
@@ -45,6 +48,7 @@ impl Engine {
     receiver: mpsc::Receiver<IncomingUpdate>,
     sender: mpsc::Sender<OutgoingReply>,
     airspace_size: f32,
+    default_frequency: f32,
   ) -> Self {
     Self {
       aircraft: Vec::new(),
@@ -55,17 +59,19 @@ impl Engine {
       last_tick: Instant::now(),
       last_spawn: Instant::now(),
       airspace_size,
+      default_frequency,
       rate: 30,
     }
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    let aircraft = Aircraft::random(self.airspace_size);
+    let aircraft = Aircraft::random(self.airspace_size, self.default_frequency);
     self.aircraft.push(aircraft.clone());
     self
       .sender
-      .send(OutgoingReply::Reply(Command {
+      .send(OutgoingReply::Reply(CommandWithFreq {
         id: aircraft.callsign.clone(),
+        freq: aircraft.frequency,
         reply: format!(
           "Tower, {} is at {} feet, with you.",
           aircraft.callsign, aircraft.altitude
@@ -82,14 +88,14 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        if self.aircraft.len() < 7
+        if self.aircraft.len() < 1
           && self.last_spawn.elapsed() >= Duration::from_secs(60)
         {
           self.last_spawn = Instant::now();
           self.spawn_random_aircraft();
         }
 
-        let mut commands: Vec<Command> = Vec::new();
+        let mut commands: Vec<CommandWithFreq> = Vec::new();
         for incoming in self.receiver.try_iter() {
           match incoming {
             IncomingUpdate::Command(command) => commands.push(command),
@@ -154,26 +160,30 @@ impl Engine {
     }
   }
 
-  pub fn execute_command(&mut self, command: Command) {
+  pub fn execute_command(&mut self, command: CommandWithFreq) {
     let aircraft = self.aircraft.iter_mut().find(|a| a.callsign == command.id);
     if let Some(aircraft) = aircraft {
-      // TODO: Do go-around first (then filter it out from the rest of the tasks)
-      for task in command.tasks.iter() {
-        match task {
-          Task::Land(runway) => {
-            let target = self.runways.iter().find(|r| &r.id == runway);
-            if let Some(target) = target {
-              aircraft.state = AircraftState::Landing(target.clone());
+      dbg!(aircraft.frequency, command.freq);
+      if (aircraft.frequency == command.freq) {
+        // TODO: Do go-around first (then filter it out from the rest of the tasks)
+        for task in command.tasks.iter() {
+          match task {
+            Task::Land(runway) => {
+              let target = self.runways.iter().find(|r| &r.id == runway);
+              if let Some(target) = target {
+                aircraft.state = AircraftState::Landing(target.clone());
+              }
             }
+            Task::GoAround => aircraft.go_around(),
+            Task::Altitude(alt) => aircraft.target.altitude = *alt,
+            Task::Heading(hdg) => aircraft.target.heading = *hdg,
+            Task::Speed(spd) => aircraft.target.speed = *spd,
+            Task::Frequency(frq) => aircraft.frequency = *frq,
           }
-          Task::GoAround => aircraft.go_around(),
-          Task::Altitude(alt) => aircraft.target.altitude = *alt,
-          Task::Heading(hdg) => aircraft.target.heading = *hdg,
-          Task::Speed(spd) => aircraft.target.speed = *spd,
         }
-      }
 
-      self.sender.send(OutgoingReply::Reply(command)).unwrap();
+        self.sender.send(OutgoingReply::Reply(command)).unwrap();
+      }
     }
   }
 }
