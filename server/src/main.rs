@@ -152,7 +152,7 @@ async fn main() {
                     ws_sender
                       .send(OutgoingReply::ATCReply(CommandWithFreq {
                         id: "ATC".to_owned(),
-                        freq: frequency,
+                        frequency,
                         reply: reply.text.clone(),
                         tasks: Vec::new(),
                       }))
@@ -245,7 +245,7 @@ async fn complete_atc_request(
         if let Ok(reply) = serde_json::from_str::<Command>(text) {
           return Some(CommandWithFreq {
             id: reply.id,
-            freq,
+            frequency: freq,
             reply: reply.reply,
             tasks: reply.tasks,
           });

@@ -5,9 +5,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::structs::{
-  Aircraft, AircraftState, Command, CommandWithFreq, Runway, Task,
-};
+use crate::structs::{Aircraft, AircraftState, CommandWithFreq, Runway, Task};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -71,7 +69,7 @@ impl Engine {
       .sender
       .send(OutgoingReply::Reply(CommandWithFreq {
         id: aircraft.callsign.clone(),
-        freq: aircraft.frequency,
+        frequency: aircraft.frequency,
         reply: format!(
           "Tower, {} is at {} feet, with you.",
           aircraft.callsign, aircraft.altitude
@@ -88,7 +86,7 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        if self.aircraft.len() < 1
+        if self.aircraft.len() < 7
           && self.last_spawn.elapsed() >= Duration::from_secs(60)
         {
           self.last_spawn = Instant::now();
@@ -163,8 +161,8 @@ impl Engine {
   pub fn execute_command(&mut self, command: CommandWithFreq) {
     let aircraft = self.aircraft.iter_mut().find(|a| a.callsign == command.id);
     if let Some(aircraft) = aircraft {
-      dbg!(aircraft.frequency, command.freq);
-      if (aircraft.frequency == command.freq) {
+      dbg!(aircraft.frequency, command.frequency);
+      if (aircraft.frequency == command.frequency) {
         // TODO: Do go-around first (then filter it out from the rest of the tasks)
         for task in command.tasks.iter() {
           match task {

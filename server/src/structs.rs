@@ -31,7 +31,7 @@ pub struct Command {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CommandWithFreq {
   pub id: String,
-  pub freq: f32,
+  pub frequency: f32,
   pub reply: String,
   pub tasks: Vec<Task>,
 }
