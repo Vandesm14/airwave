@@ -3,10 +3,14 @@ use std::{
   time::{Duration, Instant},
 };
 
+use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::structs::{Aircraft, AircraftState, CommandWithFreq, Runway, Task};
+use crate::{
+  angle_between_points, degrees_to_heading, heading_to_direction,
+  structs::{Aircraft, AircraftState, CommandWithFreq, Runway, Task},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -82,11 +86,18 @@ impl Engine {
         "Tower, {} is holding short of runway {}.",
         aircraft.callsign, runway.id
       )
-    } else {
+    } else if let AircraftState::Approach = aircraft.state {
+      let center = Vec2::splat(self.airspace_size * 0.5);
+      let heading =
+        degrees_to_heading(angle_between_points(center, aircraft.pos));
+      let direction = heading_to_direction(heading);
+
       format!(
-        "Tower, {} is at {} feet, with you.",
-        aircraft.callsign, aircraft.altitude
+        "Tower, {} is {} of the airport, with you.",
+        aircraft.callsign, direction
       )
+    } else {
+      "Error generating reply for spawned aircraft".to_owned()
     };
     self
       .sender

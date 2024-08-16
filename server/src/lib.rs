@@ -68,3 +68,31 @@ pub fn get_random_point_on_circle(center: Vec2, radius: f32) -> CirclePoint {
     angle: random_angle,
   }
 }
+
+pub fn heading_to_direction(heading: f32) -> &'static str {
+  // Normalize the heading to be between 0 and 360
+  let normalized_heading = heading.rem_euclid(360.0);
+
+  // Define the directions and their corresponding angle ranges
+  let directions = [
+    ("North", 0.0, 22.5),
+    ("Northeast", 22.5, 67.5),
+    ("East", 67.5, 112.5),
+    ("Southeast", 112.5, 157.5),
+    ("South", 157.5, 202.5),
+    ("Southwest", 202.5, 247.5),
+    ("West", 247.5, 292.5),
+    ("Northwest", 292.5, 337.5),
+    ("North", 337.5, 360.0),
+  ];
+
+  // Find the matching direction
+  for (direction, start, end) in directions.iter() {
+    if normalized_heading >= *start && normalized_heading < *end {
+      return direction;
+    }
+  }
+
+  // This should never happen, but we'll return "Unknown" just in case
+  "Unknown"
+}
