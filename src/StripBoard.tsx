@@ -46,6 +46,11 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   }
 
   if (strip.type === 'strip') {
+    let intention =
+      strip.value.state.type === 'willdepart' ||
+      strip.value.state.type === 'departing'
+        ? 'D'
+        : 'A';
     return (
       <div
         classList={{ strip: true, theirs: frequency !== ourFrequency() }}
@@ -53,6 +58,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
         onmousemove={onmousemove}
       >
         <span class="callsign">{strip.value.callsign}</span>
+        <span class="intention">{intention}</span>
         <span class="target" innerHTML={target}></span>
         <span class="frequency">{frequency}</span>
         <span class="timer">{sinceCreated}</span>
@@ -101,7 +107,7 @@ export default function StripBoard({
   );
 
   createEffect(() => {
-    // localStorage.setItem('strips', JSON.stringify(strips()));
+    localStorage.setItem('strips', JSON.stringify(strips()));
   });
 
   createEffect(() => {
