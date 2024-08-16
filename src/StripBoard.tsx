@@ -1,5 +1,6 @@
-import { Accessor, createEffect, createSignal, For } from 'solid-js';
+import { Accessor, createEffect, createSignal, For, onMount } from 'solid-js';
 import { Aircraft } from './lib/types';
+import { atom } from 'solid-jotai';
 
 type StripType =
   | {
@@ -51,6 +52,21 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   }
 }
 
+function getStripsLocalStorage() {
+  let item = localStorage.getItem('strips');
+  if (typeof item === 'string') {
+    console.log('return string');
+    return JSON.parse(item);
+  } else {
+    console.log('return default');
+    return [
+      { type: 'header', value: 'Approach' },
+      { type: 'header', value: 'Landing RW20' },
+      { type: 'header', value: 'Landing RW29' },
+    ];
+  }
+}
+
 export default function StripBoard({
   aircrafts,
 }: {
@@ -59,44 +75,53 @@ export default function StripBoard({
   let [dragged, setDragged] = createSignal<string | null>(null);
   let [separator, setSeparator] = createSignal<number | null>(null);
   let [strips, setStrips] = createSignal<Array<StripType>>(
-    [
-      { type: 'header', value: 'Approach' },
-      { type: 'header', value: 'Landing RW20' },
-      { type: 'header', value: 'Landing RW29' },
-    ],
-    { equals: false }
+    getStripsLocalStorage(),
+    {
+      equals: false,
+    }
   );
 
   createEffect(() => {
-    let allsigns = new Set(aircrafts().map((s) => s.callsign));
-    setStrips((state) => {
-      return state.filter((s) => {
-        if (s.type === 'header') {
-          return true;
-        } else if (s.type === 'strip') {
-          return allsigns.has(s.value.callsign);
-        }
-      });
-    });
+    localStorage.setItem('strips', JSON.stringify(strips()));
+  });
 
-    for (let aircraft of aircrafts()) {
+  createEffect(() => {
+    // This is to prevent initial loading state from removing saved strips.
+    //
+    // When we first load, aircrafts() will be blank, since they havent been
+    // loaded from the server yet. So, when we run the purge function to clean
+    // up nonexistent callsigns from the strips, all are cleaned up.
+    if (aircrafts().length > 0) {
+      let allsigns = new Set(aircrafts().map((s) => s.callsign));
       setStrips((state) => {
-        let index = state.findIndex(
-          (s) => s.type === 'strip' && s.value.callsign === aircraft.callsign
-        );
-
-        if (index === -1) {
-          return [
-            state[0],
-            { type: 'strip', value: aircraft },
-            ...state.slice(1),
-          ];
-        } else {
-          return state.map((e, i) =>
-            i === index ? { type: 'strip', value: aircraft } : e
-          );
-        }
+        return state.filter((s) => {
+          if (s.type === 'header') {
+            return true;
+          } else if (s.type === 'strip') {
+            return allsigns.has(s.value.callsign);
+          }
+        });
       });
+
+      for (let aircraft of aircrafts()) {
+        setStrips((state) => {
+          let index = state.findIndex(
+            (s) => s.type === 'strip' && s.value.callsign === aircraft.callsign
+          );
+
+          if (index === -1) {
+            return [
+              state[0],
+              { type: 'strip', value: aircraft },
+              ...state.slice(1),
+            ];
+          } else {
+            return state.map((e, i) =>
+              i === index ? { type: 'strip', value: aircraft } : e
+            );
+          }
+        });
+      }
     }
   });
 
