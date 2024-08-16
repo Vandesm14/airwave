@@ -13,11 +13,10 @@ const Separator = () => <div class="separator"></div>;
 type StripProps = {
   strip: StripType;
   onmousedown: () => void;
-  onmouseup: () => void;
   onmousemove: () => void;
 };
 
-function Strip({ strip, onmousedown, onmouseup, onmousemove }: StripProps) {
+function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   let [target, setTarget] = createSignal('');
 
   if (strip.type === 'strip') {
@@ -33,7 +32,6 @@ function Strip({ strip, onmousedown, onmouseup, onmousemove }: StripProps) {
       <div
         classList={{ strip: true }}
         onmousedown={onmousedown}
-        onmouseup={onmouseup}
         onmousemove={onmousemove}
       >
         <span class="callsign">{strip.value.callsign}</span>
@@ -45,7 +43,6 @@ function Strip({ strip, onmousedown, onmouseup, onmousemove }: StripProps) {
       <div
         classList={{ header: true }}
         onmousedown={onmousedown}
-        onmouseup={onmouseup}
         onmousemove={onmousemove}
       >
         {strip.value}
@@ -64,9 +61,8 @@ export default function StripBoard({
   let [strips, setStrips] = createSignal<Array<StripType>>(
     [
       { type: 'header', value: 'Approach' },
-      { type: 'header', value: 'Landing' },
-      { type: 'header', value: 'Takeoff' },
-      { type: 'header', value: 'Departure' },
+      { type: 'header', value: 'Landing RW20' },
+      { type: 'header', value: 'Landing RW29' },
     ],
     { equals: false }
   );
@@ -149,16 +145,17 @@ export default function StripBoard({
   }
 
   return (
-    <div id="stripboard" onmouseleave={() => resetDrag()}>
+    <div
+      id="stripboard"
+      onmouseleave={() => resetDrag()}
+      onmouseup={() => handleMouseUp()}
+    >
       {strips().map((s, i) => (
         <>
           <Strip
             strip={s}
             onmousedown={() => {
               s.type === 'strip' ? handleMouseDown(s.value.callsign) : {};
-            }}
-            onmouseup={() => {
-              handleMouseUp();
             }}
             onmousemove={() => {
               handleMouseMove(i);
