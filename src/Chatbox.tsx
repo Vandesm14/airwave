@@ -1,11 +1,13 @@
 import { useAtom } from 'solid-jotai';
-import { isRecordingAtom, messagesAtom } from './lib/atoms';
-import { createEffect } from 'solid-js';
+import { frequencyAtom, isRecordingAtom, messagesAtom } from './lib/atoms';
+import { createEffect, createSignal } from 'solid-js';
 
 export default function Chatbox() {
   let chatbox;
   let [messages, _] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
+  let [frequency] = useAtom(frequencyAtom);
+  let [showAll, setShowAll] = createSignal(false);
 
   createEffect(() => {
     if (chatbox instanceof HTMLDivElement) {
@@ -16,14 +18,25 @@ export default function Chatbox() {
     }
   });
 
+  function toggleAll() {
+    setShowAll((b) => !b);
+  }
+
   return (
     <div id="chatbox" ref={chatbox} classList={{ live: isRecording() }}>
-      {messages().map((m) => (
-        <div class="message">
-          <span class="callsign">{m.id}</span>
-          <span class="text">{m.reply}</span>
-        </div>
-      ))}
+      <input
+        type="button"
+        value={showAll() ? 'Show Yours' : 'Show All'}
+        onclick={toggleAll}
+      />
+      {messages()
+        .filter((m) => showAll() || m.frequency === frequency())
+        .map((m) => (
+          <div class="message">
+            <span class="callsign">{m.id}</span>
+            <span class="text">{m.reply}</span>
+          </div>
+        ))}
     </div>
   );
 }
