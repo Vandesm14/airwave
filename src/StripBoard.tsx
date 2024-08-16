@@ -55,10 +55,8 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
 function getStripsLocalStorage() {
   let item = localStorage.getItem('strips');
   if (typeof item === 'string') {
-    console.log('return string');
     return JSON.parse(item);
   } else {
-    console.log('return default');
     return [
       { type: 'header', value: 'Approach' },
       { type: 'header', value: 'Landing RW20' },

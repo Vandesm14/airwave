@@ -96,7 +96,7 @@ export default function App() {
   }
 
   const search = new URLSearchParams(window.location.search);
-  const hostname = search.get("ws") ?? window.location.hostname;
+  const hostname = search.get('ws') ?? window.location.hostname;
 
   let socket = new WebSocket(`ws://${hostname}:9001`);
   socket.onopen = function (_) {
@@ -133,7 +133,6 @@ export default function App() {
         speakAsAircraft(json.value);
         break;
       case 'size':
-        console.log('size', json.value);
         setAirspaceSize(json.value);
         break;
     }
