@@ -25,14 +25,10 @@ main {
     position: absolute;
     bottom: 10px;
     left: 10px;
-    min-height: 200px;
-    max-height: 200px;
     background-color: black;
 
-    overflow-y: auto;
-
     border: 1px solid white;
-    min-width: 300px;
+    min-width: 600px;
     max-width: 20%;
 
     .controls {
@@ -52,15 +48,30 @@ main {
       }
     }
 
-    .message {
-      .callsign {
-        color: red;
-        font-weight: bold;
-      }
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
 
-      .text {
-        margin-left: 5px;
-        color: white;
+      min-height: 200px;
+      max-height: 200px;
+      overflow-y: auto;
+      color: white;
+
+      .message {
+        .frequency {
+          color: #fffa;
+        }
+
+        .callsign {
+          color: red;
+          font-weight: bold;
+          margin-left: 5px;
+        }
+
+        .text {
+          margin-left: 5px;
+        }
       }
     }
 

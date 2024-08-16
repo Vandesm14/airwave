@@ -11,6 +11,10 @@ export default function Chatbox() {
 
   createEffect(() => {
     if (chatbox instanceof HTMLDivElement) {
+      // Subscribe to frequency and showAll signals
+      frequency();
+      showAll();
+
       // Subscribe to messages signal
       if (messages().length > 0) {
         chatbox.scrollTo(0, chatbox.scrollHeight);
@@ -41,14 +45,17 @@ export default function Chatbox() {
           onclick={toggleAll}
         />
       </div>
-      {messages()
-        .filter((m) => showAll() || m.frequency === frequency())
-        .map((m) => (
-          <div class="message">
-            <span class="callsign">{m.id}</span>
-            <span class="text">{m.reply}</span>
-          </div>
-        ))}
+      <div class="messages">
+        {messages()
+          .filter((m) => showAll() || m.frequency === frequency())
+          .map((m) => (
+            <div class="message">
+              <span class="frequency">{m.frequency}</span>
+              <span class="callsign">{m.id}</span>
+              <span class="text">{m.reply}</span>
+            </div>
+          ))}
+      </div>
     </div>
   );
 }
