@@ -46,7 +46,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
 
     frequency = strip.value.frequency;
     sinceCreated = formatTime(Date.now() - strip.value.created);
-    isOverTime = sinceCreated.startsWith('1');
+    isOverTime = !sinceCreated.startsWith('0');
   }
 
   if (strip.type === 'strip') {
