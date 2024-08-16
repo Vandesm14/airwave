@@ -1,6 +1,5 @@
 import { atom } from 'solid-jotai';
-import { Aircraft, RadioMessage, Runway } from './types';
-import { createStore } from 'solid-js/store';
+import { RadioMessage, Runway } from './types';
 
 export let radarAtom = atom({
   scale: 1,

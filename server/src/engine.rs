@@ -65,12 +65,12 @@ impl Engine {
 
   pub fn spawn_random_aircraft(&mut self) {
     let mut rng = thread_rng();
-    let should_be_takeoff = rng.gen_ratio(1, 1);
+    let should_be_takeoff = rng.gen_ratio(1, 3);
 
     let mut aircraft =
       Aircraft::random(self.airspace_size, self.default_frequency);
 
-    if should_be_takeoff {
+    if dbg!(should_be_takeoff) {
       aircraft.state = AircraftState::WillDepart(
         self.runways.choose(&mut rng).unwrap().clone(),
       )

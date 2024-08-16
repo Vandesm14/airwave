@@ -101,7 +101,7 @@ export default function StripBoard({
   );
 
   createEffect(() => {
-    localStorage.setItem('strips', JSON.stringify(strips()));
+    // localStorage.setItem('strips', JSON.stringify(strips()));
   });
 
   createEffect(() => {
@@ -129,19 +129,22 @@ export default function StripBoard({
           );
 
           if (index === -1) {
+            console.log('does not have');
             if (aircraft.state.type !== 'willdepart') {
+              console.log('not willdepart');
               return [
                 state[0],
                 { type: 'strip', value: aircraft },
                 ...state.slice(1),
               ];
             } else if (aircraft.state.type === 'willdepart') {
+              console.log('willdepart');
               let takeoffIndex = state.findIndex(
                 (s) => s.type === 'header' && s.value === 'Takeoff'
               );
               if (takeoffIndex !== -1) {
                 return [
-                  state[takeoffIndex],
+                  ...state.slice(0, takeoffIndex + 1),
                   { type: 'strip', value: aircraft },
                   ...state.slice(takeoffIndex + 1),
                 ];
