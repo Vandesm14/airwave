@@ -21,6 +21,7 @@ pub enum Task {
   Heading(f32),
   Speed(f32),
   Frequency(f32),
+  Takeoff,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -154,7 +155,7 @@ impl Aircraft {
     self.speed * KNOT_TO_FEET_PER_SECOND * FEET_PER_UNIT
   }
 
-  pub fn go_around(&mut self) {
+  pub fn do_go_around(&mut self) {
     if let AircraftState::Landing(_) = &self.state {
       if self.target.speed < 250.0 {
         self.target.speed = 250.0;
@@ -166,6 +167,27 @@ impl Aircraft {
     }
 
     self.state = AircraftState::Approach;
+  }
+
+  pub fn do_takeoff(&mut self) {
+    if let AircraftState::WillDepart(_) = &self.state {
+      self.state = AircraftState::Departing;
+    }
+  }
+
+  fn update_takeoff(&mut self) {
+    if let AircraftState::WillDepart(runway) = &self.state {
+      self.pos = runway.start();
+
+      self.heading = runway.heading;
+      self.target.heading = runway.heading;
+
+      self.speed = 170.0;
+      self.target.speed = 220.0;
+
+      self.altitude = 500.0;
+      self.target.altitude = 2000.0;
+    }
   }
 
   fn update_position(&mut self, dt: f32) {
@@ -196,7 +218,7 @@ impl Aircraft {
         if self.altitude > 4000.0
           && distance_to_runway <= start_decrease_altitude.powf(2.0)
         {
-          self.go_around();
+          self.do_go_around();
           return true;
         } else if distance_to_runway <= start_decrease_altitude.powf(2.0) {
           self.target.altitude = 0.0;
@@ -217,7 +239,7 @@ impl Aircraft {
       } else if delta_angle.abs().round() == 180.0 && self.altitude == 0.0 {
         self.state = AircraftState::Deleted;
       } else if self.altitude == 0.0 {
-        self.go_around();
+        self.do_go_around();
         return true;
       }
     }
@@ -226,6 +248,11 @@ impl Aircraft {
   }
 
   fn update_targets(&mut self, dt: f32) {
+    // Don't update aircraft waiting to depart
+    if matches!(self.state, AircraftState::WillDepart(_)) {
+      return;
+    }
+
     // In feet per second
     let climb_speed = TIME_SCALE * (2000.0_f32 / 60.0_f32).round() * dt;
     // In degrees per second
@@ -271,6 +298,8 @@ impl Aircraft {
   }
 
   pub fn update(&mut self, dt: f32) -> bool {
+    self.update_takeoff();
+
     let went_around = self.update_ils();
     self.update_targets(dt);
     self.update_position(dt);

@@ -37,7 +37,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   if (strip.type === 'strip') {
     if (strip.value.state.type === 'landing') {
       target = `RW${strip.value.state.value.id}`;
-    } else if (strip.value.state.type === 'takeoff') {
+    } else if (strip.value.state.type === 'willdepart') {
       target = `RW${strip.value.state.value.id}`;
     }
 
@@ -80,6 +80,8 @@ function getStripsLocalStorage() {
       { type: 'header', value: 'Approach' },
       { type: 'header', value: 'Landing RW20' },
       { type: 'header', value: 'Landing RW29' },
+      { type: 'header', value: 'Takeoff' },
+      { type: 'header', value: 'Departure' },
     ];
   }
 }
@@ -127,11 +129,26 @@ export default function StripBoard({
           );
 
           if (index === -1) {
-            return [
-              state[0],
-              { type: 'strip', value: aircraft },
-              ...state.slice(1),
-            ];
+            if (aircraft.state.type !== 'willdepart') {
+              return [
+                state[0],
+                { type: 'strip', value: aircraft },
+                ...state.slice(1),
+              ];
+            } else if (aircraft.state.type === 'willdepart') {
+              let takeoffIndex = state.findIndex(
+                (s) => s.type === 'header' && s.value === 'Takeoff'
+              );
+              if (takeoffIndex !== -1) {
+                return [
+                  state[takeoffIndex],
+                  { type: 'strip', value: aircraft },
+                  ...state.slice(takeoffIndex + 1),
+                ];
+              } else {
+                return [{ type: 'strip', value: aircraft }, ...state];
+              }
+            }
           } else {
             return state.map((e, i) =>
               i === index ? { type: 'strip', value: aircraft } : e

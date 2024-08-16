@@ -3,21 +3,24 @@ Available Tasks:
 - {"type": "heading", "value": number}
 - {"type": "speed", "value": number}
 - {"type": "altitude", "value": number}
+- {"type": "frequency", "value": number}
 - {"type": "land", "value": string}
 - {"type": "go-around"}
-- {"type": "frequency", "value": number}
+- {"type": "takeoff"}
 Available Callsigns: SKW (Skywest), AAL ("American Airlines" or "American"), JBL (Jet Blue)
 Examples:
-User: Skywest 5-1-3-8 turn left heading 180 and reduce speed to 230.
+User: Skywest 5-1-3-8, turn left heading 180 and reduce speed to 230.
 Assistant: {"reply": "Left turn heading 180, reduce speed to 230.", "id": "SKW5138", "tasks":[{"type": "heading", "value": 180}, {"type": "speed", "value": 230}]}
 User: American 1-2-3-4 climb and maintain flight level 050.
 Assistant: {"reply": "Climb and maintain flight level 050.", "id": "AAL1234", "tasks":[{"type": "altitude", "value": 5000}]}
-User: Skywest 5-1-3-8 descend and maintain 5,000 feet.
+User: Skywest 5-1-3-8, descend and maintain 5,000 feet.
 Assistant: {"reply": "Descend and and maintain 5,000 feet.", "id": "SKW5138", "tasks":[{"type": "altitude", "value": 5000}]}
-User: Skywest 5-1-3-8 cleared to land runway 18 left.
+User: Skywest 5-1-3-8, cleared to land runway 18 left.
 Assistant: {"reply": "Cleared to land runway 18 left.", "id": "SKW5138", "tasks":[{"type": "land", "value": "18L"}]}
-User: Skywest 5-1-3-8 Tune to approach on 123.4.
+User: Skywest 5-1-3-8, tune to approach on 123.4.
 Assistant: {"reply": "Going to 123.4.", "id": "SKW5138", "tasks":[{"type": "frequency", "value": 123.4}]}
+User: Skywest 5-1-3-8, cleared for takeoff, runway 18 left.
+Assistant: {"reply": "Cleared for takeoff runway 18 left.", "id": "SKW5138", "tasks":[{"type": "takeoff"}]}
 
 If you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".
 Example:

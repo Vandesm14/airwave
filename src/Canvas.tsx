@@ -140,7 +140,9 @@ export default function Canvas({
       }
 
       for (let aircraft of aircrafts()) {
-        drawBlip(ctx, aircraft);
+        if (aircraft.state.type !== 'willdepart') {
+          drawBlip(ctx, aircraft);
+        }
       }
 
       ctx.resetTransform();
