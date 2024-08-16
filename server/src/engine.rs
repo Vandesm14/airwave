@@ -70,7 +70,7 @@ impl Engine {
     let mut aircraft =
       Aircraft::random(self.airspace_size, self.default_frequency);
 
-    if dbg!(should_be_takeoff) {
+    if should_be_takeoff {
       aircraft.state = AircraftState::WillDepart(
         self.runways.choose(&mut rng).unwrap().clone(),
       )
