@@ -170,7 +170,7 @@ impl Aircraft {
     self.pos = pos;
   }
 
-  fn update_ils(&mut self) {
+  fn update_ils(&mut self) -> bool {
     if let AircraftState::Landing(runway) = &self.state {
       let delta_angle = delta_angle(
         angle_between_points(runway.start(), self.pos),
@@ -189,7 +189,8 @@ impl Aircraft {
         if self.altitude > 4000.0
           && distance_to_runway <= start_decrease_altitude.powf(2.0)
         {
-          return self.go_around();
+          self.go_around();
+          return true;
         } else if distance_to_runway <= start_decrease_altitude.powf(2.0) {
           self.target.altitude = 0.0;
         }
@@ -208,8 +209,13 @@ impl Aircraft {
         // Else, if we aren't on approach, check if we have landed
       } else if delta_angle.abs().round() == 180.0 && self.altitude == 0.0 {
         self.state = AircraftState::Deleted;
+      } else if self.altitude == 0.0 {
+        self.go_around();
+        return true;
       }
     }
+
+    false
   }
 
   fn update_targets(&mut self, dt: f32) {
@@ -257,9 +263,11 @@ impl Aircraft {
     self.heading = (360.0 + self.heading) % 360.0;
   }
 
-  pub fn update(&mut self, dt: f32) {
-    self.update_ils();
+  pub fn update(&mut self, dt: f32) -> bool {
+    let went_around = self.update_ils();
     self.update_targets(dt);
     self.update_position(dt);
+
+    went_around
   }
 }

@@ -154,7 +154,18 @@ impl Engine {
   pub fn update(&mut self) {
     let dt = 1.0 / self.rate as f32;
     for aircraft in self.aircraft.iter_mut() {
-      aircraft.update(dt);
+      let went_around = aircraft.update(dt);
+      if went_around {
+        self
+          .sender
+          .send(OutgoingReply::Reply(CommandWithFreq {
+            id: aircraft.callsign.clone(),
+            frequency: aircraft.frequency,
+            reply: format!("Tower, {} is going around.", aircraft.callsign),
+            tasks: Vec::new(),
+          }))
+          .unwrap();
+      }
     }
   }
 
