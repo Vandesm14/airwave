@@ -518,7 +518,7 @@ export default function Canvas({
     ctx.arc(
       pos.x,
       pos.y,
-      nauticalMilesToFeet * feetPerPixel * 0.8,
+      nauticalMilesToFeet * feetPerPixel * 0.4,
       0,
       Math.PI * 2
     );
@@ -527,7 +527,7 @@ export default function Canvas({
     function drawDirection(ctx: Ctx, aircraft: Aircraft) {
       const angleDegrees = (aircraft.heading + 270) % 360;
       const angleRadians = angleDegrees * (Math.PI / 180);
-      const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 60;
+      const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 30;
       const endX = pos.x + length * Math.cos(angleRadians);
       const endY = pos.y + length * Math.sin(angleRadians);
 
@@ -607,7 +607,7 @@ export default function Canvas({
     function drawInfo(ctx: Ctx, aircraft: Aircraft) {
       let spacing = 16;
       const fontSize = 16 * (1 / radar().scale);
-      ctx.font = `${fontSize}px monospace`;
+      ctx.font = `900 ${fontSize}px monospace`;
 
       ctx.textAlign = 'left';
       ctx.fillStyle =
