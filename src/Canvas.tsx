@@ -18,6 +18,7 @@ import {
   movePoint,
   projectPoint,
   angleBetweenPoints,
+  midpointBetweenPoints,
 } from './lib/lib';
 import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
 
@@ -209,13 +210,11 @@ export default function Canvas({
         text = '360';
       }
 
-      ctx.beginPath();
       ctx.fillText(
         text,
         Math.cos(toRadians(i * 10)) * (airspace_radius + 20) + half_size,
         Math.sin(toRadians(i * 10)) * (airspace_radius + 20) + half_size
       );
-      ctx.stroke();
     }
   }
 
@@ -387,6 +386,25 @@ export default function Canvas({
     ctx.lineTo(endLeft.x, endLeft.y);
     ctx.lineTo(startLeft.x, startLeft.y);
     ctx.fill();
+
+    let start = projectPoint(origin, taxiway.a, projectionScale);
+    let end = projectPoint(origin, taxiway.b, projectionScale);
+    let middle = midpointBetweenPoints(start, end);
+
+    let fontSize = 16;
+    ctx.font = `900 ${fontSize}px monospace`;
+    let textWidth = ctx.measureText(taxiway.id).width + 10;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(
+      middle.x - textWidth * 0.5,
+      middle.y - fontSize * 0.5,
+      textWidth,
+      fontSize
+    );
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dd9904';
+    ctx.fillText(taxiway.id, middle.x, middle.y);
   }
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
@@ -432,11 +450,14 @@ export default function Canvas({
     drawDirection(ctx, aircraft);
 
     let spacing = 16;
+    ctx.font = `900 ${spacing}px monospace`;
     ctx.textAlign = 'left';
-    ctx.fillStyle = aircraft.state.type === 'departing' ? '#fc67eb' : '#44ff44';
-    ctx.beginPath();
+    ctx.fillStyle =
+      aircraft.state.type === 'departing' ||
+      aircraft.state.type === 'willdepart'
+        ? '#fc67eb'
+        : '#44ff44';
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
-    ctx.fill();
 
     let altitudeIcon = ' ';
     if (aircraft.altitude < aircraft.target.altitude) {
@@ -445,7 +466,6 @@ export default function Canvas({
       altitudeIcon = '⬊';
     }
 
-    ctx.beginPath();
     ctx.fillText(
       Math.round(aircraft.altitude / 100)
         .toString()
@@ -457,7 +477,6 @@ export default function Canvas({
       pos.x + spacing,
       pos.y - spacing + spacing
     );
-    ctx.fill();
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
@@ -497,17 +516,16 @@ export default function Canvas({
     function drawInfo(ctx: Ctx, aircraft: Aircraft) {
       let spacing = 16;
       const fontSize = 16 * (1 / radar().scale);
+      ctx.font = `${fontSize}px monospace`;
 
       ctx.textAlign = 'left';
       ctx.fillStyle =
         aircraft.state.type === 'departing' ? '#fc67eb' : '#44ff44';
-      ctx.beginPath();
       ctx.fillText(
         aircraft.callsign,
         aircraft.x + spacing,
         aircraft.y - spacing
       );
-      ctx.fill();
 
       let altitudeIcon = ' ';
       if (aircraft.altitude < aircraft.target.altitude) {
@@ -516,7 +534,6 @@ export default function Canvas({
         altitudeIcon = '⬊';
       }
 
-      ctx.beginPath();
       ctx.fillText(
         Math.round(aircraft.altitude / 100)
           .toString()
@@ -528,7 +545,6 @@ export default function Canvas({
         aircraft.x + spacing,
         aircraft.y - spacing + fontSize
       );
-      ctx.fill();
 
       let targetHeadingInfo =
         aircraft.state.type === 'landing'
@@ -537,7 +553,6 @@ export default function Canvas({
               .toString()
               .padStart(3, '0')
               .replace('360', '000');
-      ctx.beginPath();
       ctx.fillText(
         Math.round(aircraft.heading)
           .toString()
@@ -548,15 +563,12 @@ export default function Canvas({
         aircraft.x + spacing,
         aircraft.y - spacing + fontSize * 2
       );
-      ctx.fill();
 
-      ctx.beginPath();
       ctx.fillText(
         Math.round(aircraft.speed).toString(),
         aircraft.x + spacing,
         aircraft.y - spacing + fontSize * 3
       );
-      ctx.fill();
     }
 
     drawDirection(ctx, aircraft);

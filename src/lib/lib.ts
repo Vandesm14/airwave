@@ -51,6 +51,13 @@ export function angleBetweenPoints(a: Vec2, b: Vec2): number {
   return (toDegrees(Math.atan2(dy, dx)) + 360) % 360;
 }
 
+export function midpointBetweenPoints(a: Vec2, b: Vec2): Vec2 {
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  };
+}
+
 export function projectPoint(origin: Vec2, point: Vec2, scale: number): Vec2 {
   let angle = angleBetweenPoints(origin, point);
   let distance = calculateDistance(origin, point);
