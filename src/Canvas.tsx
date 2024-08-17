@@ -17,6 +17,7 @@ import {
   runwayInfo,
   movePoint,
   projectPoint,
+  angleBetweenPoints,
 } from './lib/lib';
 import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
 
@@ -283,36 +284,51 @@ export default function Canvas({
       x: airspaceSize() * 0.5,
       y: airspaceSize() * 0.5,
     };
-    let width = airspaceSize() * 0.015;
+    let width = feetPerPixel * 250;
+    let projectionScale = 14;
 
     let info = runwayInfo(runway);
-    let start = projectPoint(origin, info.start, 14);
-    let end = projectPoint(origin, info.end, 14);
 
-    let startLeft = movePoint(
-      start.x,
-      start.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 270) % 360
+    let startLeft = projectPoint(
+      origin,
+      movePoint(
+        info.start.x,
+        info.start.y,
+        width * 0.5,
+        (headingToDegrees(runway.heading) + 270) % 360
+      ),
+      projectionScale
     );
-    let startRight = movePoint(
-      start.x,
-      start.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 90) % 360
+    let startRight = projectPoint(
+      origin,
+      movePoint(
+        info.start.x,
+        info.start.y,
+        width * 0.5,
+        (headingToDegrees(runway.heading) + 90) % 360
+      ),
+      projectionScale
     );
 
-    let endLeft = movePoint(
-      end.x,
-      end.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 270) % 360
+    let endLeft = projectPoint(
+      origin,
+      movePoint(
+        info.end.x,
+        info.end.y,
+        width * 0.5,
+        (headingToDegrees(runway.heading) + 270) % 360
+      ),
+      projectionScale
     );
-    let endRight = movePoint(
-      end.x,
-      end.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 90) % 360
+    let endRight = projectPoint(
+      origin,
+      movePoint(
+        info.end.x,
+        info.end.y,
+        width * 0.5,
+        (headingToDegrees(runway.heading) + 90) % 360
+      ),
+      projectionScale
     );
 
     ctx.fillStyle = 'grey';
@@ -326,11 +342,45 @@ export default function Canvas({
   }
 
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
-    ctx.strokeStyle = '#aaa';
+    let origin: Vec2 = {
+      x: airspaceSize() * 0.5,
+      y: airspaceSize() * 0.5,
+    };
+    let width = feetPerPixel * 200;
+    let projectionScale = 14;
+
+    let angle = angleBetweenPoints(taxiway.a, taxiway.b);
+
+    let startLeft = projectPoint(
+      origin,
+      movePoint(taxiway.a.x, taxiway.a.y, width * 0.5, (angle + 270) % 360),
+      projectionScale
+    );
+    let startRight = projectPoint(
+      origin,
+      movePoint(taxiway.a.x, taxiway.a.y, width * 0.5, (angle + 90) % 360),
+      projectionScale
+    );
+
+    let endLeft = projectPoint(
+      origin,
+      movePoint(taxiway.b.x, taxiway.b.y, width * 0.5, (angle + 270) % 360),
+      projectionScale
+    );
+    let endRight = projectPoint(
+      origin,
+      movePoint(taxiway.b.x, taxiway.b.y, width * 0.5, (angle + 90) % 360),
+      projectionScale
+    );
+
+    ctx.fillStyle = '#aaa';
     ctx.beginPath();
-    ctx.moveTo(taxiway.a.x, taxiway.a.y);
-    ctx.lineTo(taxiway.b.x, taxiway.b.y);
-    ctx.stroke();
+    ctx.moveTo(startLeft.x, startLeft.y);
+    ctx.lineTo(startRight.x, startRight.y);
+    ctx.lineTo(endRight.x, endRight.y);
+    ctx.lineTo(endLeft.x, endLeft.y);
+    ctx.lineTo(startLeft.x, startLeft.y);
+    ctx.fill();
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
