@@ -78,7 +78,7 @@ async fn main() {
       length: 7000.0,
     };
 
-    let mut taxiway_b = Taxiway {
+    let taxiway_b = Taxiway {
       id: "B".into(),
       a: move_point(
         runway_27.start(),
@@ -92,14 +92,6 @@ async fn main() {
       ),
       kind: TaxiwayKind::Normal,
     };
-    let intersection_b_r20 = find_line_intersection(
-      taxiway_b.a,
-      taxiway_b.b,
-      runway_20.start(),
-      runway_20.end(),
-    );
-    taxiway_b.a =
-      intersection_b_r20.expect("cound not find intersection for taxiway B");
 
     let taxiway_c_a = move_point(
       runway_20.start(),
@@ -125,11 +117,23 @@ async fn main() {
       kind: TaxiwayKind::Normal,
     };
 
+    let taxiway_hs_27 = Taxiway {
+      id: "HS20".into(),
+      a: runway_27.start(),
+      b: move_point(
+        runway_27.start(),
+        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+        FEET_PER_UNIT * 500.0,
+      ),
+      kind: TaxiwayKind::HoldShort,
+    };
+
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
 
     engine.taxiways.push(taxiway_b);
     engine.taxiways.push(taxiway_c);
+    engine.taxiways.push(taxiway_hs_27);
 
     engine.spawn_random_aircraft();
     engine.begin_loop();
