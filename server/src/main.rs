@@ -22,7 +22,9 @@ use server::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
   find_line_intersection, heading_to_degrees, move_point,
-  structs::{Command, CommandWithFreq, Runway, Taxiway, TaxiwayKind, Terminal},
+  structs::{
+    Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
+  },
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
@@ -143,7 +145,7 @@ async fn main() {
     let b = move_point(a, 0.0, FEET_PER_UNIT * 4000.0);
     let c = move_point(b, 270.0, FEET_PER_UNIT * 1500.0);
     let d = move_point(c, 180.0, FEET_PER_UNIT * 4000.0);
-    let terminal_a = Terminal {
+    let mut terminal_a = Terminal {
       id: 'A',
       a,
       b,
@@ -151,6 +153,23 @@ async fn main() {
       d,
       gates: Vec::new(),
     };
+
+    let gates_line_start =
+      move_point(terminal_a.a, 270.0, FEET_PER_UNIT * 500.0);
+    let gates = 5;
+    let padding = 400.0;
+    let spacing = 4000.0 / gates as f32;
+    for i in 0..gates {
+      let gate = Gate {
+        pos: move_point(
+          gates_line_start,
+          0.0,
+          spacing * i as f32 * FEET_PER_UNIT + padding * FEET_PER_UNIT,
+        ),
+        heading: 0.0,
+      };
+      terminal_a.gates.push(gate);
+    }
 
     let a = move_point(a, 0.0, FEET_PER_UNIT * 200.0);
     let taxiway_a = Taxiway {

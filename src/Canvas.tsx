@@ -7,7 +7,7 @@ import {
   taxiwaysAtom,
   terminalsAtom,
 } from './lib/atoms';
-import { Aircraft, Runway, Taxiway, Terminal, Vec2 } from './lib/types';
+import { Aircraft, Gate, Runway, Taxiway, Terminal, Vec2 } from './lib/types';
 import {
   degreesToHeading,
   toRadians,
@@ -350,6 +350,22 @@ export default function Canvas({
     ctx.lineTo(endLeft.x, endLeft.y);
     ctx.lineTo(startLeft.x, startLeft.y);
     ctx.fill();
+
+    let fontSize = 16;
+    ctx.font = `900 ${fontSize}px monospace`;
+    ctx.textAlign = 'center';
+    let middle = midpointBetweenPoints(startLeft, startRight);
+    let textWidth = ctx.measureText(runway.id).width + 10;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(
+      middle.x - textWidth * 0.5,
+      middle.y - fontSize * 0.5,
+      textWidth,
+      fontSize
+    );
+
+    ctx.fillStyle = '#dd9904';
+    ctx.fillText(runway.id, middle.x, middle.y);
   }
 
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
@@ -435,12 +451,11 @@ export default function Canvas({
     ctx.lineTo(a.x, a.y);
     ctx.fill();
 
-    let middleAB = midpointBetweenPoints(a, b);
-    let middleDC = midpointBetweenPoints(d, c);
-    let middle = midpointBetweenPoints(middleAB, middleDC);
+    let middle = midpointBetweenPoints(c, d);
 
     let fontSize = 16;
     ctx.font = `900 ${fontSize}px monospace`;
+    ctx.textAlign = 'center';
     let textWidth = ctx.measureText(terminal.id).width + 10;
     ctx.fillStyle = '#000a';
     ctx.fillRect(
@@ -450,9 +465,37 @@ export default function Canvas({
       fontSize
     );
 
-    ctx.textAlign = 'center';
     ctx.fillStyle = '#dd9904';
     ctx.fillText(terminal.id, middle.x, middle.y);
+
+    function drawGate(ctx: Ctx, gate: Gate, id: string) {
+      let pos = projectPoint(origin, gate.pos, projectionScale);
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      let fontSize = 16;
+      ctx.font = `900 ${fontSize}px monospace`;
+      ctx.textAlign = 'center';
+      let textWidth = ctx.measureText(id).width + 10;
+      ctx.fillStyle = '#000a';
+      ctx.fillRect(
+        pos.x - textWidth * 0.5,
+        pos.y - fontSize * 0.5 - fontSize,
+        textWidth,
+        fontSize
+      );
+
+      ctx.fillStyle = '#dd9904';
+      ctx.fillText(id, pos.x, pos.y - fontSize);
+    }
+
+    for (let i = 0; i < terminal.gates.length; i++) {
+      let gate = terminal.gates[i];
+      drawGate(ctx, gate, `${terminal.id}${i}`);
+    }
   }
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {

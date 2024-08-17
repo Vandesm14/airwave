@@ -61,6 +61,8 @@ export type Terminal = {
   b: Vec2;
   c: Vec2;
   d: Vec2;
+
+  gates: Array<Gate>;
 };
 
 export type RadioMessage = {
