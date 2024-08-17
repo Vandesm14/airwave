@@ -21,7 +21,7 @@ use tower_http::services::ServeDir;
 use server::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  heading_to_degrees, move_point,
+  find_line_intersection, heading_to_degrees, move_point,
   structs::{Command, CommandWithFreq, Runway, Taxiway, TaxiwayKind},
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
@@ -68,7 +68,7 @@ async fn main() {
       length: 7000.0,
     };
 
-    let runway_29: Runway = Runway {
+    let runway_27: Runway = Runway {
       id: "27".into(),
       pos: Vec2::new(
         airspace_size * 0.5 - FEET_PER_UNIT * 1000.0,
@@ -78,24 +78,57 @@ async fn main() {
       length: 7000.0,
     };
 
-    let taxiway_c = Taxiway {
-      id: "C".into(),
+    let mut taxiway_b = Taxiway {
+      id: "B".into(),
       a: move_point(
-        runway_20.start(),
-        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
-        FEET_PER_UNIT * 700.0,
+        runway_27.start(),
+        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+        FEET_PER_UNIT * 500.0,
       ),
       b: move_point(
-        runway_20.end(),
-        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
-        FEET_PER_UNIT * 700.0,
+        runway_27.end(),
+        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+        FEET_PER_UNIT * 500.0,
       ),
+      kind: TaxiwayKind::Normal,
+    };
+    let intersection_b_r20 = find_line_intersection(
+      taxiway_b.a,
+      taxiway_b.b,
+      runway_20.start(),
+      runway_20.end(),
+    );
+    taxiway_b.a =
+      intersection_b_r20.expect("cound not find intersection for taxiway B");
+
+    let taxiway_c_a = move_point(
+      runway_20.start(),
+      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+      FEET_PER_UNIT * 500.0,
+    );
+    let taxiway_c_b = move_point(
+      runway_20.end(),
+      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+      FEET_PER_UNIT * 500.0,
+    );
+    let intersection_b_c = find_line_intersection(
+      taxiway_b.a,
+      taxiway_b.b,
+      taxiway_c_a,
+      taxiway_c_b,
+    )
+    .expect("could not find intersection for taxiway C");
+    let taxiway_c = Taxiway {
+      id: "C".into(),
+      a: intersection_b_c,
+      b: taxiway_c_b,
       kind: TaxiwayKind::Normal,
     };
 
     engine.runways.push(runway_20);
-    engine.runways.push(runway_29);
+    engine.runways.push(runway_27);
 
+    engine.taxiways.push(taxiway_b);
     engine.taxiways.push(taxiway_c);
 
     engine.spawn_random_aircraft();

@@ -55,6 +55,42 @@ pub fn angle_between_points(a: Vec2, b: Vec2) -> f32 {
   add_degrees(dy.atan2(dx).to_degrees(), 360.0)
 }
 
+pub fn find_line_intersection(
+  line1_start: Vec2,
+  line1_end: Vec2,
+  line2_start: Vec2,
+  line2_end: Vec2,
+) -> Option<Vec2> {
+  // Calculate direction vectors
+  let line1_dir = line1_end - line1_start;
+  let line2_dir = line2_end - line2_start;
+
+  // Calculate the determinant
+  let det = line1_dir.x * line2_dir.y - line1_dir.y * line2_dir.x;
+
+  // Check if lines are parallel (or coincident)
+  if det.abs() < f32::EPSILON {
+    return None;
+  }
+
+  // Calculate the differences between start points
+  let dp = line2_start - line1_start;
+
+  // Calculate the parameters t and s
+  let t = (dp.x * line2_dir.y - dp.y * line2_dir.x) / det;
+  let s = (dp.x * line1_dir.y - dp.y * line1_dir.x) / det;
+
+  // Check if the intersection point lies on both line segments
+  if t < 0.0 || t > 1.0 || s < 0.0 || s > 1.0 {
+    return None;
+  }
+
+  // Calculate the intersection point
+  let intersection = line1_start + line1_dir * t;
+
+  Some(intersection)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct CirclePoint {
   pub position: Vec2,
