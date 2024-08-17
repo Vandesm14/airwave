@@ -2,7 +2,7 @@ use std::time::{Duration, SystemTime};
 
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
   angle_between_points, degrees_to_heading, delta_angle,
@@ -42,8 +42,33 @@ pub struct CommandWithFreq {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct XY {
+  pub x: f32,
+  pub y: f32,
+}
+
+fn serialize_vec2<S>(pos: &Vec2, serializer: S) -> Result<S::Ok, S::Error>
+where
+  S: Serializer,
+{
+  XY { x: pos.x, y: pos.y }.serialize(serializer)
+}
+
+fn deserialize_vec2<'de, D>(deserializer: D) -> Result<Vec2, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let xy = XY::deserialize(deserializer)?;
+
+  Ok(Vec2::new(xy.x, xy.y))
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Runway {
   pub id: String,
+  #[serde(flatten)]
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub heading: f32,
   pub length: f32,
@@ -93,6 +118,9 @@ pub struct Aircraft {
   pub is_colliding: bool,
   pub state: AircraftState,
 
+  #[serde(flatten)]
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub heading: f32,
   pub speed: f32,
@@ -101,6 +129,26 @@ pub struct Aircraft {
 
   pub target: AircraftTargets,
   pub created: u128,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Taxiway {
+  pub id: String,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub a: Vec2,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub b: Vec2,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
+pub enum TaxiwayKind {
+  Normal(Taxiway),
+  HoldShort(Taxiway),
+  Apron(Taxiway),
 }
 
 impl Aircraft {

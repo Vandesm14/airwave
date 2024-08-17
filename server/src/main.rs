@@ -20,7 +20,7 @@ use tower_http::services::ServeDir;
 
 use server::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  structs::{Command, CommandWithFreq, Runway},
+  structs::{Command, CommandWithFreq, Runway, Taxiway},
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
@@ -71,6 +71,12 @@ async fn main() {
       pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
       heading: 290.0,
       length: 7000.0,
+    });
+
+    engine.taxiways.push(Taxiway {
+      id: "A".into(),
+      a: Vec2::splat(0.0),
+      b: Vec2::splat(100.0),
     });
 
     engine.spawn_random_aircraft();

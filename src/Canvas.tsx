@@ -4,6 +4,7 @@ import {
   radarAtom,
   renderAtom,
   runwaysAtom,
+  taxiwaysAtom,
 } from './lib/atoms';
 import { Aircraft, Runway } from './lib/types';
 import {
@@ -30,6 +31,7 @@ export default function Canvas({
 
   let [airspaceSize] = useAtom(airspaceSizeAtom);
   let [runways] = useAtom(runwaysAtom);
+  let [taxiways] = useAtom(taxiwaysAtom);
   let [render, setRender] = useAtom(renderAtom);
 
   onMount(() => {

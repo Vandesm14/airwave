@@ -6,6 +6,7 @@ import {
   isRecordingAtom,
   messagesAtom,
   runwaysAtom,
+  taxiwaysAtom,
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
@@ -24,6 +25,7 @@ export default function App() {
     equals: false,
   });
   let [, setRunways] = useAtom(runwaysAtom);
+  let [, setTaxiways] = useAtom(taxiwaysAtom);
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useAtom(frequencyAtom);
 
@@ -116,25 +118,21 @@ export default function App() {
     socket.send(JSON.stringify({ type: 'connect' }));
   };
 
-  function posToXY<T extends { pos: [number, number]; x: number; y: number }>(
-    obj: T
-  ): T {
-    obj.x = obj.pos[0];
-    obj.y = obj.pos[1];
-
-    return obj;
-  }
-
   socket.onmessage = function (event) {
     // console.log(`[message] Data received from server: ${event.data}`);
 
     let json: ServerEvent = JSON.parse(event.data);
     switch (json.type) {
       case 'aircraft':
-        setAircrafts(json.value.map(posToXY));
+        setAircrafts(json.value);
         break;
       case 'runways':
-        setRunways(json.value.map(posToXY));
+        console.log(json.value);
+        setRunways(json.value);
+        break;
+      case 'taxiways':
+        console.log(json.value);
+        setTaxiways(json.value);
         break;
       case 'atcreply':
         speakAsATC(json.value);

@@ -1,5 +1,4 @@
 export type Aircraft = {
-  pos: [number, number];
   x: number;
   y: number;
 
@@ -32,15 +31,25 @@ export type Aircraft = {
   created: number;
 };
 
+type Vec2 = { x: number; y: number };
+
 export type Runway = {
   id: string;
-  pos: [number, number];
   x: number;
   y: number;
   /** In Degrees (0 is north; up) */
   heading: number;
   /** In Feet */
   length: number;
+};
+
+export type Taxiway = {
+  type: 'normal' | 'holdshort' | 'apron';
+  value: {
+    id: string;
+    a: Vec2;
+    b: Vec2;
+  };
 };
 
 export type RadioMessage = {
@@ -55,6 +64,7 @@ export type ServerEvent =
       value: Aircraft[];
     }
   | { type: 'runways'; value: Runway[] }
+  | { type: 'taxiways'; value: Taxiway[] }
   | {
       type: 'atcreply';
       value: { id: string; frequency: number; reply: string };
