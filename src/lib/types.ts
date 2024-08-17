@@ -50,6 +50,19 @@ export type Taxiway = {
   kind: { type: 'normal' | 'holdshort' | 'apron'; value: string };
 };
 
+export type Gate = {
+  pos: Vec2;
+  heading: number;
+};
+
+export type Terminal = {
+  id: string;
+  a: Vec2;
+  b: Vec2;
+  c: Vec2;
+  d: Vec2;
+};
+
 export type RadioMessage = {
   id: string;
   frequency: number;
@@ -63,6 +76,7 @@ export type ServerEvent =
     }
   | { type: 'runways'; value: Runway[] }
   | { type: 'taxiways'; value: Taxiway[] }
+  | { type: 'terminals'; value: Terminal[] }
   | {
       type: 'atcreply';
       value: { id: string; frequency: number; reply: string };

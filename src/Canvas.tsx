@@ -5,8 +5,9 @@ import {
   renderAtom,
   runwaysAtom,
   taxiwaysAtom,
+  terminalsAtom,
 } from './lib/atoms';
-import { Aircraft, Runway, Taxiway, Vec2 } from './lib/types';
+import { Aircraft, Runway, Taxiway, Terminal, Vec2 } from './lib/types';
 import {
   degreesToHeading,
   toRadians,
@@ -36,6 +37,7 @@ export default function Canvas({
   let [airspaceSize] = useAtom(airspaceSizeAtom);
   let [runways] = useAtom(runwaysAtom);
   let [taxiways] = useAtom(taxiwaysAtom);
+  let [terminals] = useAtom(terminalsAtom);
   let [render, setRender] = useAtom(renderAtom);
   let groundScale = createMemo(() => (radar().mode === 'ground' ? 10 : 1));
 
@@ -155,8 +157,8 @@ export default function Canvas({
       const fontSize = 16 * (1 / radar().scale);
       ctx.font = `900 ${fontSize}px monospace`;
       ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, width, height);
 
+      ctx.fillRect(0, 0, width, height);
       resetTransform(ctx);
       drawCompass(ctx);
 
@@ -177,6 +179,10 @@ export default function Canvas({
 
         for (let runway of runways()) {
           drawRunwayGround(ctx, runway);
+        }
+
+        for (let terminal of terminals()) {
+          drawTerminal(ctx, terminal);
         }
 
         for (let aircraft of aircrafts()) {
@@ -405,6 +411,48 @@ export default function Canvas({
     ctx.textAlign = 'center';
     ctx.fillStyle = '#dd9904';
     ctx.fillText(taxiway.id, middle.x, middle.y);
+  }
+
+  function drawTerminal(ctx: Ctx, terminal: Terminal) {
+    let origin: Vec2 = {
+      x: airspaceSize() * 0.5,
+      y: airspaceSize() * 0.5,
+    };
+    let projectionScale = 14;
+
+    let a = projectPoint(origin, terminal.a, projectionScale);
+    let b = projectPoint(origin, terminal.b, projectionScale);
+
+    let c = projectPoint(origin, terminal.c, projectionScale);
+    let d = projectPoint(origin, terminal.d, projectionScale);
+
+    ctx.fillStyle = '#999';
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.lineTo(d.x, d.y);
+    ctx.lineTo(a.x, a.y);
+    ctx.fill();
+
+    let middleAB = midpointBetweenPoints(a, b);
+    let middleDC = midpointBetweenPoints(d, c);
+    let middle = midpointBetweenPoints(middleAB, middleDC);
+
+    let fontSize = 16;
+    ctx.font = `900 ${fontSize}px monospace`;
+    let textWidth = ctx.measureText(terminal.id).width + 10;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(
+      middle.x - textWidth * 0.5,
+      middle.y - fontSize * 0.5,
+      textWidth,
+      fontSize
+    );
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dd9904';
+    ctx.fillText(terminal.id, middle.x, middle.y);
   }
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {

@@ -22,7 +22,7 @@ use server::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
   find_line_intersection, heading_to_degrees, move_point,
-  structs::{Command, CommandWithFreq, Runway, Taxiway, TaxiwayKind},
+  structs::{Command, CommandWithFreq, Runway, Taxiway, TaxiwayKind, Terminal},
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
@@ -139,13 +139,37 @@ async fn main() {
       kind: TaxiwayKind::HoldShort,
     };
 
+    let a = move_point(taxiway_b.b, 270.0, FEET_PER_UNIT * 500.0);
+    let b = move_point(a, 0.0, FEET_PER_UNIT * 4000.0);
+    let c = move_point(b, 270.0, FEET_PER_UNIT * 1500.0);
+    let d = move_point(c, 180.0, FEET_PER_UNIT * 4000.0);
+    let terminal_a = Terminal {
+      id: 'A',
+      a,
+      b,
+      c,
+      d,
+      gates: Vec::new(),
+    };
+
+    let a = move_point(a, 0.0, FEET_PER_UNIT * 200.0);
+    let taxiway_a = Taxiway {
+      id: 'A'.into(),
+      a,
+      b: move_point(a, 90.0, FEET_PER_UNIT * 500.0),
+      kind: TaxiwayKind::Normal,
+    };
+
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
 
+    engine.taxiways.push(taxiway_a);
     engine.taxiways.push(taxiway_b);
     engine.taxiways.push(taxiway_c);
     engine.taxiways.push(taxiway_hs_27);
     engine.taxiways.push(taxiway_exit_27);
+
+    engine.terminals.push(terminal_a);
 
     engine.spawn_random_aircraft();
     engine.begin_loop();

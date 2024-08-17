@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   angle_between_points, degrees_to_heading, heading_to_direction,
-  structs::{Aircraft, AircraftState, CommandWithFreq, Runway, Task, Taxiway},
+  structs::{
+    Aircraft, AircraftState, CommandWithFreq, Runway, Task, Taxiway, Terminal,
+  },
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -24,6 +26,7 @@ pub enum OutgoingReply {
   Aircraft(Vec<Aircraft>),
   Runways(Vec<Runway>),
   Taxiways(Vec<Taxiway>),
+  Terminals(Vec<Terminal>),
   Size(f32),
 }
 
@@ -38,6 +41,7 @@ pub struct Engine {
   pub aircraft: Vec<Aircraft>,
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
+  pub terminals: Vec<Terminal>,
 
   pub receiver: mpsc::Receiver<IncomingUpdate>,
   pub sender: mpsc::Sender<OutgoingReply>,
@@ -60,6 +64,8 @@ impl Engine {
       aircraft: Vec::new(),
       runways: Vec::new(),
       taxiways: Vec::new(),
+      terminals: Vec::new(),
+
       receiver,
       sender,
 
@@ -177,6 +183,13 @@ impl Engine {
       .inspect_err(|e| eprintln!("failed to broadcast taxiways: {}", e));
   }
 
+  fn broadcast_terminals(&self) {
+    let _ = self
+      .sender
+      .send(OutgoingReply::Terminals(self.terminals.clone()))
+      .inspect_err(|e| eprintln!("failed to broadcast terminals: {}", e));
+  }
+
   fn broadcast_size(&self) {
     let _ = self
       .sender
@@ -185,6 +198,7 @@ impl Engine {
   }
 
   fn broadcast_for_new_client(&self) {
+    self.broadcast_terminals();
     self.broadcast_taxiways();
     self.broadcast_runways();
     self.broadcast_size();

@@ -153,6 +153,32 @@ pub struct Taxiway {
   pub kind: TaxiwayKind,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Gate {
+  #[serde(serialize_with = "serialize_vec2")]
+  pub pos: Vec2,
+  pub heading: f32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Terminal {
+  pub id: char,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub a: Vec2,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub b: Vec2,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub c: Vec2,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub d: Vec2,
+
+  pub gates: Vec<Gate>,
+}
+
 impl Aircraft {
   pub fn random(airspace_size: f32, frequency: f32) -> Self {
     let airspace_center = Vec2::splat(airspace_size * 0.5);

@@ -7,6 +7,7 @@ import {
   messagesAtom,
   runwaysAtom,
   taxiwaysAtom,
+  terminalsAtom,
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
@@ -27,6 +28,7 @@ export default function App() {
   });
   let [, setRunways] = useAtom(runwaysAtom);
   let [, setTaxiways] = useAtom(taxiwaysAtom);
+  let [, setTerminals] = useAtom(terminalsAtom);
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useAtom(frequencyAtom);
 
@@ -132,6 +134,9 @@ export default function App() {
         break;
       case 'taxiways':
         setTaxiways(json.value);
+        break;
+      case 'terminals':
+        setTerminals(json.value);
         break;
       case 'atcreply':
         speakAsATC(json.value);
