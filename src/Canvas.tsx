@@ -177,6 +177,12 @@ export default function Canvas({
         for (let runway of runways()) {
           drawRunwayGround(ctx, runway);
         }
+
+        for (let aircraft of aircrafts()) {
+          if (aircraft.altitude < 1000) {
+            drawBlipGround(ctx, aircraft);
+          }
+        }
       }
     }
   }
@@ -380,6 +386,77 @@ export default function Canvas({
     ctx.lineTo(endRight.x, endRight.y);
     ctx.lineTo(endLeft.x, endLeft.y);
     ctx.lineTo(startLeft.x, startLeft.y);
+    ctx.fill();
+  }
+
+  function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
+    let origin: Vec2 = {
+      x: airspaceSize() * 0.5,
+      y: airspaceSize() * 0.5,
+    };
+    let projectionScale = 14;
+
+    ctx.fillStyle = '#00aa00';
+    ctx.strokeStyle = '#00aa00';
+
+    let pos = projectPoint(origin, aircraft, projectionScale);
+
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(
+      pos.x,
+      pos.y,
+      nauticalMilesToFeet * feetPerPixel * 0.8,
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
+
+    function drawDirection(ctx: Ctx, aircraft: Aircraft) {
+      const angleDegrees = (aircraft.heading + 270) % 360;
+      const angleRadians = angleDegrees * (Math.PI / 180);
+      const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 60;
+      const endX = pos.x + length * Math.cos(angleRadians);
+      const endY = pos.y + length * Math.sin(angleRadians);
+
+      ctx.strokeStyle = '#00aa00';
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    }
+
+    drawDirection(ctx, aircraft);
+
+    let spacing = 16;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = aircraft.state.type === 'departing' ? '#fc67eb' : '#44ff44';
+    ctx.beginPath();
+    ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
+    ctx.fill();
+
+    let altitudeIcon = ' ';
+    if (aircraft.altitude < aircraft.target.altitude) {
+      altitudeIcon = '⬈';
+    } else if (aircraft.altitude > aircraft.target.altitude) {
+      altitudeIcon = '⬊';
+    }
+
+    ctx.beginPath();
+    ctx.fillText(
+      Math.round(aircraft.altitude / 100)
+        .toString()
+        .padStart(3, '0') +
+        altitudeIcon +
+        Math.round(aircraft.target.altitude / 100)
+          .toString()
+          .padStart(3, '0'),
+      pos.x + spacing,
+      pos.y - spacing + spacing
+    );
     ctx.fill();
   }
 
