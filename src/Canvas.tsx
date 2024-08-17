@@ -331,7 +331,7 @@ export default function Canvas({
       projectionScale
     );
 
-    ctx.fillStyle = 'grey';
+    ctx.fillStyle = '#666';
     ctx.beginPath();
     ctx.moveTo(startLeft.x, startLeft.y);
     ctx.lineTo(startRight.x, startRight.y);
@@ -373,7 +373,7 @@ export default function Canvas({
       projectionScale
     );
 
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = '#999';
     ctx.beginPath();
     ctx.moveTo(startLeft.x, startLeft.y);
     ctx.lineTo(startRight.x, startRight.y);
