@@ -81,7 +81,7 @@ pub fn find_line_intersection(
   let s = (dp.x * line1_dir.y - dp.y * line1_dir.x) / det;
 
   // Check if the intersection point lies on both line segments
-  if t < 0.0 || t > 1.0 || s < 0.0 || s > 1.0 {
+  if !(0.0..=1.0).contains(&t) || !(0.0..=1.0).contains(&s) {
     return None;
   }
 

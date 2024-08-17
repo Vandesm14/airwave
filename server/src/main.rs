@@ -118,10 +118,21 @@ async fn main() {
     };
 
     let taxiway_hs_27 = Taxiway {
-      id: "HS20".into(),
+      id: "HS27".into(),
       a: runway_27.start(),
       b: move_point(
         runway_27.start(),
+        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+        FEET_PER_UNIT * 500.0,
+      ),
+      kind: TaxiwayKind::HoldShort,
+    };
+
+    let taxiway_exit_27 = Taxiway {
+      id: "E27-1".into(),
+      a: runway_27.end(),
+      b: move_point(
+        runway_27.end(),
         add_degrees(heading_to_degrees(runway_27.heading), 90.0),
         FEET_PER_UNIT * 500.0,
       ),
@@ -134,6 +145,7 @@ async fn main() {
     engine.taxiways.push(taxiway_b);
     engine.taxiways.push(taxiway_c);
     engine.taxiways.push(taxiway_hs_27);
+    engine.taxiways.push(taxiway_exit_27);
 
     engine.spawn_random_aircraft();
     engine.begin_loop();
