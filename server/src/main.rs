@@ -69,9 +69,12 @@ async fn main() {
     };
 
     let runway_29: Runway = Runway {
-      id: "29".into(),
-      pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
-      heading: 290.0,
+      id: "27".into(),
+      pos: Vec2::new(
+        airspace_size * 0.5 - FEET_PER_UNIT * 1000.0,
+        airspace_size * 0.5 - FEET_PER_UNIT * 2400.0,
+      ),
+      heading: 270.0,
       length: 7000.0,
     };
 

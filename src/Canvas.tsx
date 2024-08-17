@@ -6,7 +6,7 @@ import {
   runwaysAtom,
   taxiwaysAtom,
 } from './lib/atoms';
-import { Aircraft, Runway, Taxiway } from './lib/types';
+import { Aircraft, Runway, Taxiway, Vec2 } from './lib/types';
 import {
   degreesToHeading,
   toRadians,
@@ -15,6 +15,8 @@ import {
   knotToFeetPerSecond,
   nauticalMilesToFeet,
   runwayInfo,
+  movePoint,
+  projectPoint,
 } from './lib/lib';
 import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
 
@@ -96,19 +98,13 @@ export default function Canvas({
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
           radar.scale += e.deltaY * -0.0005;
-          radar.scale = Math.max(Math.min(radar.scale, 10), 0.6);
+          radar.scale = Math.max(Math.min(radar.scale, 2), 0.6);
 
           radar.isZooming = true;
 
           return { ...radar };
         });
       });
-    }
-  });
-
-  createEffect(() => {
-    if (radar()) {
-      loopMain(canvas, true);
     }
   });
 
@@ -260,19 +256,50 @@ export default function Canvas({
   }
 
   function drawRunwayGround(ctx: Ctx, runway: Runway) {
-    let length = groundScale() * feetPerPixel * runway.length;
-    let width = groundScale() * 2;
+    let origin: Vec2 = {
+      x: airspaceSize() * 0.5,
+      y: airspaceSize() * 0.5,
+    };
+    let width = airspaceSize() * 0.015;
 
-    let x1 = runway.x;
-    let y1 = runway.y;
+    let info = runwayInfo(runway);
+    let start = projectPoint(origin, info.start, 14);
+    let end = projectPoint(origin, info.end, 14);
 
-    ctx.translate(x1, y1);
-    ctx.rotate(toRadians(headingToDegrees(runway.heading)));
+    let startLeft = movePoint(
+      start.x,
+      start.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 270) % 360
+    );
+    let startRight = movePoint(
+      start.x,
+      start.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 90) % 360
+    );
+
+    let endLeft = movePoint(
+      end.x,
+      end.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 270) % 360
+    );
+    let endRight = movePoint(
+      end.x,
+      end.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 90) % 360
+    );
 
     ctx.fillStyle = 'grey';
-    ctx.fillRect(-length / 2, -width / 2, length, width);
-
-    resetTransform(ctx);
+    ctx.beginPath();
+    ctx.moveTo(startLeft.x, startLeft.y);
+    ctx.lineTo(startRight.x, startRight.y);
+    ctx.lineTo(endRight.x, endRight.y);
+    ctx.lineTo(endLeft.x, endLeft.y);
+    ctx.lineTo(startLeft.x, startLeft.y);
+    ctx.fill();
   }
 
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
