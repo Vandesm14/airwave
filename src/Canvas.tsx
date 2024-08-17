@@ -213,24 +213,47 @@ export default function Canvas({
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
-    let length = feetPerPixel * runway.length;
-    let width = 5;
+    let width = 4;
+    let info = runwayInfo(runway);
 
-    let x1 = runway.x;
-    let y1 = runway.y;
+    let startLeft = movePoint(
+      info.start.x,
+      info.start.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 270) % 360
+    );
+    let startRight = movePoint(
+      info.start.x,
+      info.start.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 90) % 360
+    );
 
-    ctx.translate(x1, y1);
-    ctx.rotate(toRadians(headingToDegrees(runway.heading)));
+    let endLeft = movePoint(
+      info.end.x,
+      info.end.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 270) % 360
+    );
+    let endRight = movePoint(
+      info.end.x,
+      info.end.y,
+      width * 0.5,
+      (headingToDegrees(runway.heading) + 90) % 360
+    );
 
     ctx.fillStyle = 'grey';
-    ctx.fillRect(-length / 2, -width / 2, length, width);
+    ctx.beginPath();
+    ctx.moveTo(startLeft.x, startLeft.y);
+    ctx.lineTo(startRight.x, startRight.y);
+    ctx.lineTo(endRight.x, endRight.y);
+    ctx.lineTo(endLeft.x, endLeft.y);
+    ctx.lineTo(startLeft.x, startLeft.y);
+    ctx.fill();
 
     ctx.fillStyle = '#3087f2';
     ctx.strokeStyle = '#3087f2';
 
-    resetTransform(ctx);
-
-    let info = runwayInfo(runway);
     ctx.beginPath();
     ctx.moveTo(info.start.x, info.start.y);
     ctx.lineTo(info.ils.end.x, info.ils.end.y);
