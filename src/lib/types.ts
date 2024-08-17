@@ -31,7 +31,7 @@ export type Aircraft = {
   created: number;
 };
 
-type Vec2 = { x: number; y: number };
+export type Vec2 = { x: number; y: number };
 
 export type Runway = {
   id: string;
