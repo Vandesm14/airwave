@@ -1,7 +1,25 @@
 import { atom } from 'solid-jotai';
 import { RadioMessage, Runway, Taxiway } from './types';
 
-export let radarAtom = atom({
+type RadarConfig = {
+  scale: number;
+  isDragging: boolean;
+  isZooming: boolean;
+  shiftPoint: {
+    x: number;
+    y: number;
+  };
+  lastShiftPoint: {
+    x: number;
+    y: number;
+  };
+  dragStartPoint: {
+    x: number;
+    y: number;
+  };
+  mode: 'tower' | 'ground';
+};
+export let radarAtom = atom<RadarConfig>({
   scale: 1,
   isDragging: false,
   isZooming: false,
@@ -17,6 +35,7 @@ export let radarAtom = atom({
     x: 0,
     y: 0,
   },
+  mode: 'tower',
 });
 
 export let isRecordingAtom = atom(false);

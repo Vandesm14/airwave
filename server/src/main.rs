@@ -19,8 +19,10 @@ use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use tower_http::services::ServeDir;
 
 use server::{
+  add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  structs::{Command, CommandWithFreq, Runway, Taxiway},
+  heading_to_degrees, move_point,
+  structs::{Command, CommandWithFreq, Runway, Taxiway, TaxiwayKind},
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
@@ -59,25 +61,39 @@ async fn main() {
     118.5,
   );
   let engine_handle = tokio::spawn(async move {
-    engine.runways.push(Runway {
+    let runway_20 = Runway {
       id: "20".into(),
       pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
       heading: 200.0,
       length: 7000.0,
-    });
+    };
 
-    engine.runways.push(Runway {
+    let runway_29: Runway = Runway {
       id: "29".into(),
       pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
       heading: 290.0,
       length: 7000.0,
-    });
+    };
 
-    engine.taxiways.push(Taxiway {
-      id: "A".into(),
-      a: Vec2::splat(0.0),
-      b: Vec2::splat(100.0),
-    });
+    let taxiway_c = Taxiway {
+      id: "C".into(),
+      a: move_point(
+        runway_20.start(),
+        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+        FEET_PER_UNIT * 700.0,
+      ),
+      b: move_point(
+        runway_20.end(),
+        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+        FEET_PER_UNIT * 700.0,
+      ),
+      kind: TaxiwayKind::Normal,
+    };
+
+    engine.runways.push(runway_20);
+    engine.runways.push(runway_29);
+
+    engine.taxiways.push(taxiway_c);
 
     engine.spawn_random_aircraft();
     engine.begin_loop();

@@ -18,6 +18,28 @@ $transparent-black: #000a;
 
   font: 14px monospace;
 
+  #radar-tabs {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    background-color: $transparent-black;
+
+    position: absolute;
+    top: 5px;
+
+    button {
+      background-color: transparent;
+      padding: 5px;
+
+      border: 1px solid white;
+      color: white;
+
+      &.selected {
+        border-color: green;
+      }
+    }
+  }
+
   #chatbox {
     display: flex;
     flex-direction: column;

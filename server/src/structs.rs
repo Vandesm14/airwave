@@ -132,6 +132,15 @@ pub struct Aircraft {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
+pub enum TaxiwayKind {
+  Normal,
+  HoldShort,
+  Apron,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Taxiway {
   pub id: String,
   #[serde(serialize_with = "serialize_vec2")]
@@ -140,15 +149,8 @@ pub struct Taxiway {
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub b: Vec2,
-}
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[serde(tag = "type", content = "value")]
-pub enum TaxiwayKind {
-  Normal(Taxiway),
-  HoldShort(Taxiway),
-  Apron(Taxiway),
+  pub kind: TaxiwayKind,
 }
 
 impl Aircraft {

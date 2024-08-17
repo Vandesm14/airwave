@@ -44,12 +44,10 @@ export type Runway = {
 };
 
 export type Taxiway = {
-  type: 'normal' | 'holdshort' | 'apron';
-  value: {
-    id: string;
-    a: Vec2;
-    b: Vec2;
-  };
+  id: string;
+  a: Vec2;
+  b: Vec2;
+  kind: { type: 'normal' | 'holdshort' | 'apron'; value: string };
 };
 
 export type RadioMessage = {

@@ -6,7 +6,7 @@ import {
   runwaysAtom,
   taxiwaysAtom,
 } from './lib/atoms';
-import { Aircraft, Runway } from './lib/types';
+import { Aircraft, Runway, Taxiway } from './lib/types';
 import {
   degreesToHeading,
   toRadians,
@@ -16,7 +16,7 @@ import {
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib/lib';
-import { Accessor, onMount } from 'solid-js';
+import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
 
 export default function Canvas({
   aircrafts,
@@ -33,6 +33,18 @@ export default function Canvas({
   let [runways] = useAtom(runwaysAtom);
   let [taxiways] = useAtom(taxiwaysAtom);
   let [render, setRender] = useAtom(renderAtom);
+  let groundScale = createMemo(() => (radar().mode === 'ground' ? 10 : 1));
+
+  createEffect(() => {
+    setRadar((radar) => {
+      radar.shiftPoint = {
+        x: airspaceSize() * 0.5,
+        y: airspaceSize() * 0.5,
+      };
+
+      return { ...radar };
+    });
+  });
 
   onMount(() => {
     if (canvas instanceof HTMLCanvasElement && canvas !== null) {
@@ -59,13 +71,13 @@ export default function Canvas({
           radar.lastShiftPoint.x = radar.shiftPoint.x;
           radar.lastShiftPoint.y = radar.shiftPoint.y;
 
-          return radar;
+          return { ...radar };
         });
       });
       canvas.addEventListener('mouseup', (_) => {
         setRadar((radar) => {
           radar.isDragging = false;
-          return radar;
+          return { ...radar };
         });
       });
       canvas.addEventListener('mousemove', (e) => {
@@ -77,29 +89,36 @@ export default function Canvas({
             radar.shiftPoint.x = x;
             radar.shiftPoint.y = y;
 
-            return radar;
+            return { ...radar };
           });
         }
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
           radar.scale += e.deltaY * -0.0005;
-          radar.scale = Math.max(Math.min(radar.scale, 2), 0.6);
+          radar.scale = Math.max(Math.min(radar.scale, 10), 0.6);
 
           radar.isZooming = true;
 
-          return radar;
+          return { ...radar };
         });
       });
     }
   });
 
-  function loopMain(canvas: HTMLCanvasElement) {
+  createEffect(() => {
+    if (radar()) {
+      loopMain(canvas, true);
+    }
+  });
+
+  function loopMain(canvas: HTMLCanvasElement, forceRender?: boolean) {
     let dt = Date.now() - render().lastTime;
     let dts = dt / 1000;
 
     let deltaDrawTime = Date.now() - render().lastDraw;
     if (
+      forceRender ||
       radar().isDragging ||
       radar().isZooming ||
       render().lastDraw === 0 ||
@@ -108,7 +127,7 @@ export default function Canvas({
       loopDraw(canvas, dts);
       setRadar((radar) => {
         radar.isZooming = false;
-        return radar;
+        return { ...radar };
       });
       setRender((render) => {
         render.lastDraw = Date.now();
@@ -122,6 +141,13 @@ export default function Canvas({
     });
   }
 
+  function resetTransform(ctx: CanvasRenderingContext2D) {
+    ctx.resetTransform();
+    ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
+    ctx.scale(radar().scale, radar().scale);
+    ctx.translate(airspaceSize() * -0.5, airspaceSize() * -0.5);
+  }
+
   function loopDraw(canvas: HTMLCanvasElement, dts: number) {
     const width = canvas.width;
     const height = canvas.height;
@@ -133,26 +159,34 @@ export default function Canvas({
       ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, width, height);
 
-      ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
-      ctx.scale(radar().scale, radar().scale);
+      resetTransform(ctx);
       drawCompass(ctx);
 
-      for (let runway of runways()) {
-        drawRunway(ctx, runway);
-      }
+      if (radar().mode === 'tower') {
+        for (let runway of runways()) {
+          drawRunway(ctx, runway);
+        }
 
-      for (let aircraft of aircrafts()) {
-        if (aircraft.state.type !== 'willdepart') {
-          drawBlip(ctx, aircraft);
+        for (let aircraft of aircrafts()) {
+          if (aircraft.state.type !== 'willdepart') {
+            drawBlip(ctx, aircraft);
+          }
+        }
+      } else if (radar().mode === 'ground') {
+        for (let taxiway of taxiways()) {
+          drawTaxiway(ctx, taxiway);
+        }
+
+        for (let runway of runways()) {
+          drawRunwayGround(ctx, runway);
         }
       }
-
-      ctx.resetTransform();
     }
   }
 
   function drawCompass(ctx: Ctx) {
     let half_size = airspaceSize() * 0.5;
+
     let airspace_radius = half_size - 50;
 
     ctx.strokeStyle = 'white';
@@ -198,9 +232,7 @@ export default function Canvas({
     ctx.fillStyle = '#3087f2';
     ctx.strokeStyle = '#3087f2';
 
-    ctx.resetTransform();
-    ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
-    ctx.scale(radar().scale, radar().scale);
+    resetTransform(ctx);
 
     let info = runwayInfo(runway);
     ctx.beginPath();
@@ -225,6 +257,30 @@ export default function Canvas({
       ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
       ctx.stroke();
     }
+  }
+
+  function drawRunwayGround(ctx: Ctx, runway: Runway) {
+    let length = groundScale() * feetPerPixel * runway.length;
+    let width = groundScale() * 2;
+
+    let x1 = runway.x;
+    let y1 = runway.y;
+
+    ctx.translate(x1, y1);
+    ctx.rotate(toRadians(headingToDegrees(runway.heading)));
+
+    ctx.fillStyle = 'grey';
+    ctx.fillRect(-length / 2, -width / 2, length, width);
+
+    resetTransform(ctx);
+  }
+
+  function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
+    ctx.strokeStyle = '#aaa';
+    ctx.beginPath();
+    ctx.moveTo(taxiway.a.x, taxiway.a.y);
+    ctx.lineTo(taxiway.b.x, taxiway.b.y);
+    ctx.stroke();
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {

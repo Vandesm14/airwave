@@ -14,6 +14,7 @@ import { createEffect, createSignal, onMount } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
+import RadarSwitch from './RadarSwitch';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -127,11 +128,9 @@ export default function App() {
         setAircrafts(json.value);
         break;
       case 'runways':
-        console.log(json.value);
         setRunways(json.value);
         break;
       case 'taxiways':
-        console.log(json.value);
         setTaxiways(json.value);
         break;
       case 'atcreply':
@@ -164,6 +163,7 @@ export default function App() {
 
   return (
     <div id="radar">
+      <RadarSwitch></RadarSwitch>
       <Chatbox></Chatbox>
       <Canvas aircrafts={aircrafts}></Canvas>
       <div class="top-right">
