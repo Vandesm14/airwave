@@ -266,6 +266,8 @@ impl Engine {
             Task::TaxiGate { gate, waypoints } => {
               todo!("taxi gate {gate:?} {waypoints:?}")
             }
+            Task::TaxiHold => todo!("taxi hold"),
+            Task::TaxiContinue => todo!("taxi continue"),
           }
         }
 
