@@ -175,8 +175,9 @@ pub struct Taxiway {
   pub kind: TaxiwayKind,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gate {
+  pub id: String,
   #[serde(serialize_with = "serialize_vec2")]
   pub pos: Vec2,
   pub heading: f32,

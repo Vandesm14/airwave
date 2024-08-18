@@ -92,7 +92,7 @@ impl Engine {
       Aircraft::random_to_takeoff(
         self.default_frequency,
         terminal.clone(),
-        *gate,
+        gate.clone(),
         departure_heading,
       )
     } else {

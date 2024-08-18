@@ -161,6 +161,7 @@ async fn main() {
     let spacing = 4000.0 / gates as f32;
     for i in 0..gates {
       let gate = Gate {
+        id: format!("A{i}"),
         pos: move_point(
           gates_line_start,
           0.0,

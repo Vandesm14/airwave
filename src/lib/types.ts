@@ -9,7 +9,7 @@ export type TaxiWaypoint =
     }
   | {
       type: 'gate';
-      value: Gate;
+      value: [Terminal, Gate];
     };
 
 export type Aircraft = {
@@ -76,6 +76,7 @@ export type Taxiway = {
 };
 
 export type Gate = {
+  id: string;
   pos: Vec2;
   heading: number;
 };
