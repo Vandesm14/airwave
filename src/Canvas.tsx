@@ -168,7 +168,7 @@ export default function Canvas({
         }
 
         for (let aircraft of aircrafts()) {
-          if (aircraft.state.type !== 'willdepart') {
+          if (aircraft.state.type !== 'taxiing') {
             drawBlip(ctx, aircraft);
           }
         }
@@ -544,10 +544,7 @@ export default function Canvas({
     ctx.font = `900 ${spacing}px monospace`;
     ctx.textAlign = 'left';
     ctx.fillStyle =
-      aircraft.state.type === 'departing' ||
-      aircraft.state.type === 'willdepart'
-        ? '#fc67eb'
-        : '#44ff44';
+      aircraft.intention.type === 'depart' ? '#fc67eb' : '#44ff44';
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
 
     let altitudeIcon = ' ';
@@ -611,7 +608,10 @@ export default function Canvas({
 
       ctx.textAlign = 'left';
       ctx.fillStyle =
-        aircraft.state.type === 'departing' ? '#fc67eb' : '#44ff44';
+        aircraft.intention.type === 'depart' ||
+        aircraft.intention.type === 'flyover'
+          ? '#fc67eb'
+          : '#44ff44';
       ctx.fillText(
         aircraft.callsign,
         aircraft.x + spacing,

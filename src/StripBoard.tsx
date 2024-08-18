@@ -38,10 +38,11 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   if (strip.type === 'strip') {
     if (strip.value.state.type === 'landing') {
       target = `RW${strip.value.state.value.id}`;
-    } else if (strip.value.state.type === 'willdepart') {
-      target = `RW${strip.value.state.value.runway.id}`;
-    } else if (strip.value.state.type === 'departing') {
-      target = `${strip.value.state.value.toString().padStart(3, '0')}&nbsp;`;
+      // TODO: update stripboard on intention/state
+      // } else if (strip.value.intention.type === 'willdepart') {
+      //   target = `RW${strip.value.state.value.runway.id}`;
+      // } else if (strip.value.intention.type === 'departing') {
+      //   target = `${strip.value.state.value.toString().padStart(3, '0')}&nbsp;`;
     }
 
     frequency = strip.value.frequency;
@@ -50,11 +51,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   }
 
   if (strip.type === 'strip') {
-    let intention =
-      strip.value.state.type === 'willdepart' ||
-      strip.value.state.type === 'departing'
-        ? 'D'
-        : 'A';
+    let intention = strip.value.intention.type === 'depart' ? 'D' : 'A';
     return (
       <div
         classList={{
@@ -143,16 +140,13 @@ export default function StripBoard({
           );
 
           if (index === -1) {
-            console.log('does not have');
-            if (aircraft.state.type !== 'willdepart') {
-              console.log('not willdepart');
+            if (aircraft.intention.type !== 'depart') {
               return [
                 state[0],
                 { type: 'strip', value: aircraft },
                 ...state.slice(1),
               ];
-            } else if (aircraft.state.type === 'willdepart') {
-              console.log('willdepart');
+            } else if (aircraft.intention.type === 'depart') {
               let takeoffIndex = state.findIndex(
                 (s) => s.type === 'header' && s.value === 'Takeoff'
               );
