@@ -22,10 +22,9 @@ use tower_http::services::ServeDir;
 use server::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  find_line_intersection, heading_to_degrees, move_point,
+  heading_to_degrees, move_point,
   structs::{
-    AircraftState, Command, CommandWithFreq, Gate, Runway, Task, TaxiPoint,
-    TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind, Terminal,
+    Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
   },
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
@@ -198,23 +197,6 @@ async fn main() {
       kind: TaxiwayKind::Normal,
     };
 
-    engine.terminals.push(terminal_a);
-    engine.spawn_random_aircraft();
-    let aircraft = engine.aircraft.last_mut().unwrap();
-    aircraft.pos = taxiway_hs_20.b;
-    aircraft.state = AircraftState::Taxiing {
-      current: TaxiWaypoint {
-        pos: taxiway_hs_20.b,
-        wp: TaxiPoint::Taxiway(taxiway_hs_20.clone()),
-        behavior: TaxiWaypointBehavior::HoldShort,
-      },
-      waypoints: vec![TaxiWaypoint {
-        pos: taxiway_hs_20.a,
-        wp: TaxiPoint::Runway(runway_20.clone()),
-        behavior: TaxiWaypointBehavior::GoTo,
-      }],
-    };
-
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
 
@@ -227,6 +209,9 @@ async fn main() {
     engine.taxiways.push(taxiway_hs_27);
     engine.taxiways.push(taxiway_exit_27);
 
+    engine.terminals.push(terminal_a);
+
+    engine.spawn_random_aircraft();
     engine.begin_loop();
   });
 

@@ -3,7 +3,6 @@ use std::time::{Duration, SystemTime};
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use tokio::runtime;
 
 use crate::{
   angle_between_points, degrees_to_heading, delta_angle,
@@ -569,8 +568,6 @@ impl Aircraft {
 
   fn update_takeoff(&mut self) {
     if let AircraftState::TakingOff(runway) = &self.state {
-      dbg!(self.pos, runway.start());
-      dbg!(self.heading, runway.heading);
       if self.pos == runway.start() && self.heading == runway.heading {
         self.heading = runway.heading;
         self.target.heading = runway.heading;
