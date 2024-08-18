@@ -524,20 +524,24 @@ impl Aircraft {
       current, waypoints, ..
     } = &mut self.state
     {
-      if matches!(current.behavior, TaxiWaypointBehavior::HoldShort)
-        || waypoints.is_empty()
-      {
-        self.do_hold_taxi()
-      } else if let TaxiWaypoint {
-        wp: TaxiPoint::Runway(r),
+      if let TaxiWaypoint {
         pos,
+        wp: TaxiPoint::Runway(r),
         behavior: TaxiWaypointBehavior::TakeOff,
         ..
       } = current
       {
-        if self.pos == *pos && self.heading == r.heading {
-          self.state = AircraftState::TakingOff(r.clone());
-        }
+        // TODO: I removed the position check from this due to floating point
+        // errors. Ideally, we should lerp position on taxiways instead of
+        // manually moving them
+        self.pos = r.start();
+        self.heading = r.heading;
+        self.target.heading = r.heading;
+        self.state = AircraftState::TakingOff(r.clone());
+      } else if matches!(current.behavior, TaxiWaypointBehavior::HoldShort)
+        || waypoints.is_empty()
+      {
+        self.do_hold_taxi()
       } else {
         let waypoint = waypoints.last().cloned();
         if let Some(waypoint) = waypoint {
@@ -565,6 +569,8 @@ impl Aircraft {
 
   fn update_takeoff(&mut self) {
     if let AircraftState::TakingOff(runway) = &self.state {
+      dbg!(self.pos, runway.start());
+      dbg!(self.heading, runway.heading);
       if self.pos == runway.start() && self.heading == runway.heading {
         self.heading = runway.heading;
         self.target.heading = runway.heading;
@@ -687,8 +693,8 @@ impl Aircraft {
     let went_around = self.update_ils();
     self.update_targets(dt);
     self.update_taxi(dt);
-    self.update_position(dt);
     self.update_takeoff();
+    self.update_position(dt);
     self.update_leave_airspace(airspace_size);
 
     went_around
