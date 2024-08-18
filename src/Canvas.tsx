@@ -527,7 +527,7 @@ export default function Canvas({
     function drawDirection(ctx: Ctx, aircraft: Aircraft) {
       const angleDegrees = (aircraft.heading + 270) % 360;
       const angleRadians = angleDegrees * (Math.PI / 180);
-      const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 30;
+      const length = 30;
       const endX = pos.x + length * Math.cos(angleRadians);
       const endY = pos.y + length * Math.sin(angleRadians);
 
