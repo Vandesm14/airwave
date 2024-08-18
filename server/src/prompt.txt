@@ -6,7 +6,7 @@ Available Tasks:
 - {"type": "frequency", "value": number}
 - {"type": "land", "value": string}
 - {"type": "go-around"}
-- {"type": "takeoff"}
+- {"type": "takeoff", "value": string}
 - {"type": "resume"}
 - {"type": "taxi-runway", "value": {"runway": string, "waypoints": Array<[string, number]>}}
 - {"type": "taxi-gate", "value": {"gate": string, "waypoints": Array<[string, number]>}}
@@ -31,7 +31,7 @@ User: Skywest 5-1-3-8, tune to approach on 123.4.
 Assistant: {"reply": "Going to 123.4.", "id": "SKW5138", "tasks":[{"type": "frequency", "value": 123.4}]}
 
 User: Skywest 5-1-3-8, cleared for takeoff, runway 18 left.
-Assistant: {"reply": "Cleared for takeoff runway 18 left.", "id": "SKW5138", "tasks":[{"type": "takeoff"}]}
+Assistant: {"reply": "Cleared for takeoff runway 18 left.", "id": "SKW5138", "tasks":[{"type": "takeoff", value: "18L"}]}
 
 User: Skywest 5-1-3-8, resume own navigation.
 Assistant: {"reply": "Resume own navigation.", "id": "SKW5138", "tasks":[{"type": "resume"}]}

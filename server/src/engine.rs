@@ -7,12 +7,9 @@ use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-  angle_between_points, degrees_to_heading, heading_to_direction,
-  structs::{
-    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Gate, Runway,
-    Task, TaxiPoint, TaxiWaypoint, Taxiway, TaxiwayKind, Terminal,
-  },
+use crate::structs::{
+  Aircraft, AircraftState, CommandWithFreq, Runway, Task, TaxiPoint,
+  TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind, Terminal,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -258,7 +255,10 @@ impl Engine {
               }
             }
             Task::GoAround => aircraft.do_go_around(),
-            Task::Takeoff => aircraft.do_takeoff(),
+            Task::Takeoff(runway) => {
+              let target = self.runways.iter().find(|r| &r.id == runway);
+              if let Some(target) = target {}
+            }
             Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
             Task::TaxiRunway {
               runway: runway_str,
@@ -281,13 +281,13 @@ impl Engine {
                   let mut taxi_instructions: Vec<TaxiWaypoint> = vec![
                     TaxiWaypoint {
                       pos: Vec2::default(),
-                      wp: TaxiPoint::Runway(runway.clone()),
-                      hold: true,
+                      wp: TaxiPoint::Runway(runway.clone(), false),
+                      behavior: TaxiWaypointBehavior::HoldShort,
                     },
                     TaxiWaypoint {
                       pos: Vec2::default(),
                       wp: TaxiPoint::Taxiway(hold_short_taxiway.clone()),
-                      hold: false,
+                      behavior: TaxiWaypointBehavior::GoTo,
                     },
                   ];
 
@@ -298,7 +298,11 @@ impl Engine {
                       taxi_instructions.push(TaxiWaypoint {
                         pos: Vec2::default(),
                         wp: TaxiPoint::Taxiway(taxiway.clone()),
-                        hold: *hold,
+                        behavior: if *hold {
+                          TaxiWaypointBehavior::HoldShort
+                        } else {
+                          TaxiWaypointBehavior::GoTo
+                        },
                       });
                     }
                   }

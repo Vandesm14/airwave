@@ -1,7 +1,4 @@
-use std::{
-  collections::btree_set::Intersection,
-  time::{Duration, SystemTime},
-};
+use std::time::{Duration, SystemTime};
 
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
@@ -57,7 +54,7 @@ impl From<TaxiPoint> for Line {
   fn from(value: TaxiPoint) -> Self {
     match value {
       TaxiPoint::Taxiway(x) => x.into(),
-      TaxiPoint::Runway(x) => x.into(),
+      TaxiPoint::Runway(x, _) => x.into(),
       TaxiPoint::Gate(x, _) => x.into(),
     }
   }
@@ -74,7 +71,7 @@ pub enum Task {
   Heading(f32),
   Speed(f32),
   Frequency(f32),
-  Takeoff,
+  Takeoff(String),
   #[serde(rename = "resume")]
   ResumeOwnNavigation,
 
@@ -162,12 +159,21 @@ impl Runway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
+pub enum TaxiWaypointBehavior {
+  GoTo,
+  HoldShort,
+  TakeOff,
+  Park,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TaxiWaypoint {
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub wp: TaxiPoint,
-  pub hold: bool,
+  pub behavior: TaxiWaypointBehavior,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -175,7 +181,7 @@ pub struct TaxiWaypoint {
 #[serde(tag = "type", content = "value")]
 pub enum TaxiPoint {
   Taxiway(Taxiway),
-  Runway(Runway),
+  Runway(Runway, bool),
   Gate(Terminal, Gate),
 }
 
@@ -189,6 +195,7 @@ pub enum AircraftState {
     current: TaxiWaypoint,
     waypoints: Vec<TaxiWaypoint>,
   },
+  TakingOff(Runway),
 
   Deleted,
 }
@@ -326,7 +333,7 @@ impl Aircraft {
         current: TaxiWaypoint {
           pos: gate.pos,
           wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
-          hold: true,
+          behavior: TaxiWaypointBehavior::HoldShort,
         },
         waypoints: Vec::new(),
       },
@@ -388,6 +395,18 @@ impl Aircraft {
     // if let AircraftState::Taxiing { heading, .. } = &self.state {
     //   self.state = AircraftState::Departing(*heading);
     // }
+
+    if let AircraftState::TakingOff(runway) = &self.state {
+      self.heading = runway.heading;
+      self.target.heading = runway.heading;
+
+      self.speed = 170.0;
+      self.target.speed = 220.0;
+
+      self.target.altitude = 3000.0;
+
+      self.state = AircraftState::Flying;
+    }
   }
 
   pub fn do_taxi(&mut self, blank_waypoints: Vec<TaxiWaypoint>) {
@@ -412,7 +431,7 @@ impl Aircraft {
         if let Some(intersection) = intersection {
           waypoint.pos = intersection;
 
-          if waypoint.hold {
+          if let TaxiWaypointBehavior::HoldShort = waypoint.behavior {
             let angle = angle_between_points(waypoint.pos, current.pos);
             let hold_point =
               move_point(waypoint.pos, angle, FEET_PER_UNIT * 250.0);
@@ -420,10 +439,10 @@ impl Aircraft {
             new_waypoints.push(TaxiWaypoint {
               pos: hold_point,
               wp: waypoint.wp.clone(),
-              hold: true,
+              behavior: TaxiWaypointBehavior::HoldShort,
             });
 
-            waypoint.hold = false;
+            waypoint.behavior = TaxiWaypointBehavior::GoTo;
           }
 
           new_waypoints.push(waypoint.clone());
@@ -435,7 +454,7 @@ impl Aircraft {
 
       *waypoints = new_waypoints;
       waypoints.reverse();
-      current_pos.hold = false;
+      current_pos.behavior = TaxiWaypointBehavior::GoTo;
     }
 
     if let AircraftState::Taxiing { .. } = self.state {
@@ -451,7 +470,7 @@ impl Aircraft {
   pub fn do_continue_taxi(&mut self) {
     if let AircraftState::Taxiing { current, .. } = &mut self.state {
       if current.pos == self.pos {
-        current.hold = false;
+        current.behavior = TaxiWaypointBehavior::GoTo;
       }
     }
 
@@ -482,7 +501,9 @@ impl Aircraft {
       current, waypoints, ..
     } = &mut self.state
     {
-      if current.hold || waypoints.is_empty() {
+      if matches!(current.behavior, TaxiWaypointBehavior::HoldShort)
+        || waypoints.is_empty()
+      {
         self.do_hold_taxi()
       } else {
         let waypoint = waypoints.last().cloned();
@@ -500,7 +521,7 @@ impl Aircraft {
             *current = waypoints.pop().unwrap();
             self.pos = waypoint.pos;
 
-            if waypoint.hold {
+            if let TaxiWaypointBehavior::HoldShort = current.behavior {
               self.do_hold_taxi();
             }
           }
@@ -552,6 +573,17 @@ impl Aircraft {
     }
 
     false
+  }
+
+  fn update_takeoff(&mut self) {
+    if let AircraftState::TakingOff(runway) = &self.state {
+      if self.pos == runway.start() {
+        self.do_takeoff();
+      }
+    } else if let AircraftState::Taxiing { current, waypoints } =
+      &mut self.state
+    {
+    }
   }
 
   fn update_leave_airspace(&mut self, airspace_size: f32) {
@@ -616,6 +648,7 @@ impl Aircraft {
     self.update_targets(dt);
     self.update_taxi(dt);
     self.update_position(dt);
+    self.update_takeoff();
     self.update_leave_airspace(airspace_size);
 
     went_around

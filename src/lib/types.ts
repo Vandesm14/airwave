@@ -12,10 +12,14 @@ export type TaxiPoint =
       value: [Terminal, Gate];
     };
 
+export type TaxiWaypointBehavior = {
+  type: 'goto' | 'holdshort' | 'takeoff' | 'park';
+};
+
 export type TaxiWaypoint = {
   pos: Vec2;
   wp: TaxiPoint;
-  hold: boolean;
+  behavior: TaxiWaypointBehavior;
 };
 
 export type Aircraft = {

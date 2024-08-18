@@ -22,7 +22,7 @@ use tower_http::services::ServeDir;
 use server::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  find_line_intersection, heading_to_degrees, move_point,
+  heading_to_degrees, move_point,
   structs::{
     Command, CommandWithFreq, Gate, Runway, Task, Taxiway, TaxiwayKind,
     Terminal,
