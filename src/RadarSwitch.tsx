@@ -25,10 +25,6 @@ export default function RadarSwitch() {
     });
   }
 
-  createEffect(() => {
-    console.log(radar());
-  });
-
   return (
     <div id="radar-tabs">
       <button classList={{ selected: isTower() }} onClick={setTower}>
