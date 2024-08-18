@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, degrees_to_heading, heading_to_direction,
   structs::{
-    Aircraft, AircraftState, CommandWithFreq, Runway, Task, Taxiway, Terminal,
+    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Runway, Task,
+    Taxiway, Terminal,
   },
 };
 
@@ -78,55 +79,60 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
+    // TODO: Random departures, arrivals, and passovers
     let mut rng = thread_rng();
-    let should_be_takeoff = rng.gen_ratio(1, 1);
+    // let should_be_takeoff = rng.gen_ratio(1, 1);
 
-    let mut aircraft =
-      Aircraft::random(self.airspace_size, self.default_frequency);
+    let mut aircraft = Aircraft::random(
+      self.airspace_size,
+      self.default_frequency,
+      AircraftIntention::Land,
+    );
 
-    if should_be_takeoff {
-      let mut rng = thread_rng();
-      let heading: f32 = rng.gen_range(1.0..36.0);
-      let heading: f32 = heading.round() * 10.0;
+    // if should_be_takeoff {
+    //   let mut rng = thread_rng();
+    //   let heading: f32 = rng.gen_range(1.0..36.0);
+    //   let heading: f32 = heading.round() * 10.0;
 
-      aircraft.state = AircraftState::WillDepart {
-        runway: self.runways.choose(&mut rng).unwrap().clone(),
-        heading,
-      };
-      aircraft.frequency = 118.6;
-    }
+    //   aircraft.state = AircraftState::WillDepart {
+    //     runway: self.runways.choose(&mut rng).unwrap().clone(),
+    //     heading,
+    //   };
+    //   aircraft.frequency = 118.6;
+    // }
 
     self.aircraft.push(aircraft.clone());
-    let reply =
-      if let AircraftState::WillDepart { runway, heading } = aircraft.state {
-        format!(
-          "Tower, {} is holding short of runway {}, departure to the {}.",
-          aircraft.callsign,
-          runway.id,
-          heading_to_direction(heading)
-        )
-      } else if let AircraftState::Approach = aircraft.state {
-        let center = Vec2::splat(self.airspace_size * 0.5);
-        let heading =
-          degrees_to_heading(angle_between_points(center, aircraft.pos));
-        let direction = heading_to_direction(heading);
+    // TODO: update replies
+    // let reply =
+    //   if let AircraftState::WillDepart { runway, heading } = aircraft.state {
+    //     format!(
+    //       "Tower, {} is holding short of runway {}, departure to the {}.",
+    //       aircraft.callsign,
+    //       runway.id,
+    //       heading_to_direction(heading)
+    //     )
+    //   } else if let AircraftState::Approach = aircraft.state {
+    //     let center = Vec2::splat(self.airspace_size * 0.5);
+    //     let heading =
+    //       degrees_to_heading(angle_between_points(center, aircraft.pos));
+    //     let direction = heading_to_direction(heading);
 
-        format!(
-          "Tower, {} is {} of the airport, with you.",
-          aircraft.callsign, direction
-        )
-      } else {
-        "Error generating reply for spawned aircraft".to_owned()
-      };
-    self
-      .sender
-      .send(OutgoingReply::Reply(CommandWithFreq {
-        id: aircraft.callsign.clone(),
-        frequency: aircraft.frequency,
-        reply,
-        tasks: Vec::new(),
-      }))
-      .unwrap();
+    //     format!(
+    //       "Tower, {} is {} of the airport, with you.",
+    //       aircraft.callsign, direction
+    //     )
+    //   } else {
+    //     "Error generating reply for spawned aircraft".to_owned()
+    //   };
+    // self
+    //   .sender
+    //   .send(OutgoingReply::Reply(CommandWithFreq {
+    //     id: aircraft.callsign.clone(),
+    //     frequency: aircraft.frequency,
+    //     reply,
+    //     tasks: Vec::new(),
+    //   }))
+    //   .unwrap();
   }
 
   pub fn begin_loop(&mut self) {

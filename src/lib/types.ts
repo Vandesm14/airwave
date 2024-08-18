@@ -1,3 +1,17 @@
+export type TaxiWaypoint =
+  | {
+      type: 'taxiway';
+      value: Taxiway;
+    }
+  | {
+      type: 'runway';
+      value: Runway;
+    }
+  | {
+      type: 'gate';
+      value: Gate;
+    };
+
 export type Aircraft = {
   x: number;
   y: number;
@@ -24,10 +38,21 @@ export type Aircraft = {
   callsign: string;
 
   state:
-    | { type: 'approach' }
+    | { type: 'flying' }
     | { type: 'landing'; value: Runway }
-    | { type: 'willdepart'; value: { runway: Runway; heading: number } }
-    | { type: 'departing'; value: number };
+    | {
+        type: 'taxiing';
+        value: {
+          pos: TaxiWaypoint;
+          waypoints: Array<TaxiWaypoint>;
+          hold: boolean;
+        };
+      };
+  intention:
+    | { type: 'land' }
+    | { type: 'flyover' }
+    | { type: 'depart'; value: number };
+
   created: number;
 };
 

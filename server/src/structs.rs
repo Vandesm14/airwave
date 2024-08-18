@@ -95,13 +95,34 @@ impl Runway {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
+pub enum TaxiWaypoint {
+  Taxiway(Taxiway),
+  Runway(Runway),
+  Gate(Gate),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
 pub enum AircraftState {
-  Approach,
+  Flying,
   Landing(Runway),
-  WillDepart { runway: Runway, heading: f32 },
-  Departing(f32),
+  Taxiing {
+    pos: TaxiWaypoint,
+    waypoints: TaxiWaypoint,
+    hold: bool,
+  },
 
   Deleted,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
+pub enum AircraftIntention {
+  Land,
+  Flyover,
+  Depart(f32),
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -116,6 +137,7 @@ pub struct Aircraft {
   pub callsign: String,
 
   pub is_colliding: bool,
+  pub intention: AircraftIntention,
   pub state: AircraftState,
 
   #[serde(flatten)]
@@ -180,7 +202,11 @@ pub struct Terminal {
 }
 
 impl Aircraft {
-  pub fn random(airspace_size: f32, frequency: f32) -> Self {
+  pub fn random(
+    airspace_size: f32,
+    frequency: f32,
+    intention: AircraftIntention,
+  ) -> Self {
     let airspace_center = Vec2::splat(airspace_size * 0.5);
     let point =
       get_random_point_on_circle(airspace_center, airspace_size * 0.5);
@@ -188,7 +214,8 @@ impl Aircraft {
     Self {
       callsign: Self::random_callsign(),
       is_colliding: false,
-      state: AircraftState::Approach,
+      intention,
+      state: AircraftState::Flying,
       pos: point.position,
       heading: degrees_to_heading(angle_between_points(
         point.position,
@@ -244,36 +271,24 @@ impl Aircraft {
       }
     }
 
-    self.state = AircraftState::Approach;
+    self.state = AircraftState::Flying;
   }
 
   pub fn do_takeoff(&mut self) {
-    if let AircraftState::WillDepart { heading, .. } = &self.state {
-      self.state = AircraftState::Departing(*heading);
-    }
+    // TODO: If aircraft is holding short of or lined up on a runway,
+    // let them take off.
+    // if let AircraftState::Taxiing { heading, .. } = &self.state {
+    //   self.state = AircraftState::Departing(*heading);
+    // }
   }
 
   pub fn resume_own_navigation(&mut self) {
-    if let AircraftState::Departing(heading) = &self.state {
-      self.target.heading = *heading;
-      self.target.speed = 400.0;
-      self.target.altitude = 13000.;
-    }
-  }
-
-  fn update_takeoff(&mut self) {
-    if let AircraftState::WillDepart { runway, .. } = &self.state {
-      self.pos = runway.start();
-
-      self.heading = runway.heading;
-      self.target.heading = runway.heading;
-
-      self.speed = 170.0;
-      self.target.speed = 250.0;
-
-      self.altitude = 500.0;
-      self.target.altitude = 5000.0;
-    }
+    // TODO: If aircraft intends to depart, they can resume their navigation
+    // if let AircraftState::Departing(heading) = &self.state {
+    //   self.target.heading = *heading;
+    //   self.target.speed = 400.0;
+    //   self.target.altitude = 13000.;
+    // }
   }
 
   fn update_position(&mut self, dt: f32) {
@@ -341,10 +356,7 @@ impl Aircraft {
   }
 
   fn update_targets(&mut self, dt: f32) {
-    // Don't update aircraft waiting to depart
-    if matches!(self.state, AircraftState::WillDepart { .. }) {
-      return;
-    }
+    // TODO: change speeds for takeoff and taxi (turn and speed speeds)
 
     // In feet per second
     let climb_speed = TIME_SCALE * (2000.0_f32 / 60.0_f32).round() * dt;
@@ -391,8 +403,6 @@ impl Aircraft {
   }
 
   pub fn update(&mut self, airspace_size: f32, dt: f32) -> bool {
-    self.update_takeoff();
-
     let went_around = self.update_ils();
     self.update_targets(dt);
     self.update_position(dt);
