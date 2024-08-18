@@ -263,10 +263,9 @@ impl Engine {
             Task::TaxiRunway {
               runway: runway_str,
               waypoints: waypoints_str,
-              hold_at,
             } => {
               if let AircraftState::Taxiing { .. } = &mut aircraft.state {
-                dbg!(runway_str, waypoints_str, hold_at);
+                dbg!(runway_str, waypoints_str);
                 let runway = self.runways.iter().find(|r| r.id == *runway_str);
                 let hold_short_taxiway = runway.and_then(|r| {
                   self.taxiways.iter().find(|t| {
@@ -293,15 +292,14 @@ impl Engine {
                     },
                   ];
 
-                  for instruction in waypoints_str.iter().rev() {
+                  for (instruction, hold) in waypoints_str.iter().rev() {
                     let taxiway =
                       self.taxiways.iter().find(|t| t.id == *instruction);
-                    let is_hold = hold_at.iter().any(|h| **h == *instruction);
                     if let Some(taxiway) = taxiway {
                       taxi_instructions.push(TaxiWaypoint {
                         pos: Vec2::default(),
                         wp: TaxiPoint::Taxiway(taxiway.clone()),
-                        hold: is_hold,
+                        hold: *hold,
                       });
                     }
                   }
@@ -310,12 +308,8 @@ impl Engine {
                 }
               }
             }
-            Task::TaxiGate {
-              gate,
-              waypoints,
-              hold_at,
-            } => {
-              todo!("taxi gate {gate:?} {waypoints:?} {hold_at:?}")
+            Task::TaxiGate { gate, waypoints } => {
+              todo!("taxi gate {gate:?} {waypoints:?}")
             }
             Task::TaxiHold => aircraft.do_hold_taxi(),
             Task::TaxiContinue => aircraft.do_continue_taxi(),

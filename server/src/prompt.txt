@@ -8,8 +8,8 @@ Available Tasks:
 - {"type": "go-around"}
 - {"type": "takeoff"}
 - {"type": "resume"}
-- {"type": "taxi-runway", "value": {"runway": string, "waypoints": Array<string>, "hold-at": Array<string>}}
-- {"type": "taxi-gate", "value": {"gate": string, "waypoints": Array<string>, "hold-at": Array<string>}}
+- {"type": "taxi-runway", "value": {"runway": string, "waypoints": Array<[string, number]>}}
+- {"type": "taxi-gate", "value": {"gate": string, "waypoints": Array<[string, number]>}}
 - {"type": "taxi-hold"}
 - {"type": "taxi-continue"}
 
@@ -37,10 +37,10 @@ User: Skywest 5-1-3-8, resume own navigation.
 Assistant: {"reply": "Resume own navigation.", "id": "SKW5138", "tasks":[{"type": "resume"}]}
 
 User: Skywest 5-1-3-8, taxi to and hold short of runway 18 left via Alpha Bravo hold at Charlie.
-Assistant: {"reply": "Taxi to and hold short of runway 18 left via Alpha Bravo hold at Charlie.", "id": "SKW5138", "tasks":[{"type": "taxi-runway", "value": {"runway": "18L", "waypoints": ["A", "B", "C"], "hold-at": ["18L", "C"]}}]}
+Assistant: {"reply": "Taxi to and hold short of runway 18 left via Alpha Bravo hold at Charlie.", "id": "SKW5138", "tasks":[{"type": "taxi-runway", "value": {"runway": "18L", "waypoints": [["A", false], ["B", false], ["C", true]]}}]}
 
 User: Skywest 5-1-3-8, taxi to gate Bravo 1 via Alpha 2 Bravo Charlie.
-Assistant: {"reply": "Taxi to gate Bravo 1 via Alpha 2 Bravo hold at Charlie.", "id": "SKW5138", "tasks":[{"type": "taxi-gate", "value": {"gate": "B1", "waypoints": ["A2", "B", "C"], "hold-at": ["C"]}}]}
+Assistant: {"reply": "Taxi to gate Bravo 1 via Alpha 2 Bravo hold at Charlie.", "id": "SKW5138", "tasks":[{"type": "taxi-gate", "value": {"gate": "B1", "waypoints": [["A2", false], ["B", false], ["C", true]]}}]}
 
 User: Skywest 5-1-3-8, hold position.
 Assistant: {"reply": "Hold position.", "id": "SKW5138", "tasks":[{"type": "taxi-hold"}]}

@@ -81,16 +81,12 @@ pub enum Task {
   #[serde(rename = "taxi-runway")]
   TaxiRunway {
     runway: String,
-    waypoints: Vec<String>,
-    #[serde(rename = "hold-at")]
-    hold_at: Vec<String>,
+    waypoints: Vec<(String, bool)>,
   },
   #[serde(rename = "taxi-gate")]
   TaxiGate {
     gate: String,
-    waypoints: Vec<String>,
-    #[serde(rename = "hold-at")]
-    hold_at: Vec<String>,
+    waypoints: Vec<(String, bool)>,
   },
   #[serde(rename = "taxi-hold")]
   TaxiHold,
@@ -419,7 +415,8 @@ impl Aircraft {
         }
       }
 
-      *waypoints = blank_waypoints;
+      *waypoints = dbg!(blank_waypoints);
+      current_pos.hold = false;
     }
 
     if let AircraftState::Taxiing { .. } = self.state {
@@ -428,10 +425,23 @@ impl Aircraft {
   }
 
   pub fn do_hold_taxi(&mut self) {
+    self.speed = 0.0;
     self.target.speed = 0.0;
   }
 
   pub fn do_continue_taxi(&mut self) {
+    if let AircraftState::Taxiing {
+      waypoints, current, ..
+    } = &mut self.state
+    {
+      let waypoint = waypoints.last_mut();
+      if let Some(waypoint) = waypoint {
+        if waypoint.pos == self.pos {
+          waypoint.hold = false;
+        }
+      }
+    }
+
     self.target.speed = 20.0;
   }
 
@@ -459,34 +469,18 @@ impl Aircraft {
       current, waypoints, ..
     } = &mut self.state
     {
-      let waypoint = waypoints.last();
-      if let Some(waypoint) = waypoint {
-        let current_line: Line = match current.wp.clone() {
-          TaxiPoint::Taxiway(x) => x.into(),
-          TaxiPoint::Runway(x) => x.into(),
-          TaxiPoint::Gate(x, _) => x.into(),
-        };
-        let next_line: Line = match waypoint.wp.clone() {
-          TaxiPoint::Taxiway(x) => x.into(),
-          TaxiPoint::Runway(x) => x.into(),
-          TaxiPoint::Gate(x, _) => x.into(),
-        };
-
-        let intersection = find_line_intersection(
-          current_line.0,
-          current_line.1,
-          next_line.0,
-          next_line.1,
-        );
-
-        if let Some(intersection) = intersection {
-          let angle = angle_between_points(self.pos, intersection);
+      if current.hold || waypoints.is_empty() {
+        self.do_hold_taxi()
+      } else {
+        let waypoint = waypoints.last();
+        if let Some(waypoint) = waypoint {
+          let angle = angle_between_points(self.pos, waypoint.pos);
           let heading = degrees_to_heading(angle);
 
           self.heading = heading;
           self.target.heading = heading;
 
-          let distance = self.pos.distance(intersection);
+          let distance = self.pos.distance(waypoint.pos);
           let distance = if waypoint.hold {
             distance + (FEET_PER_UNIT * 250.0)
           } else {
@@ -494,16 +488,12 @@ impl Aircraft {
           };
           let movement_speed = speed_in_pixels;
 
+          dbg!(movement_speed, distance);
           if movement_speed >= distance {
-            self.pos = intersection;
+            self.pos = waypoint.pos;
             *current = waypoints.pop().unwrap();
           }
         }
-      }
-
-      if waypoints.is_empty() {
-        self.speed = 0.0;
-        self.target.speed = 0.0;
       }
     }
   }
