@@ -564,6 +564,12 @@ export default function Canvas({
       pos.x + spacing,
       pos.y - spacing + spacing
     );
+
+    ctx.fillText(
+      Math.round(aircraft.speed).toString(),
+      pos.x + spacing,
+      pos.y - spacing + spacing * 2
+    );
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {

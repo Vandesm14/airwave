@@ -265,7 +265,7 @@ impl Engine {
               waypoints: waypoints_str,
             } => {
               if let AircraftState::Taxiing { .. } = &mut aircraft.state {
-                let runway = self.runways.iter().find(|r| r.id == "runway");
+                let runway = self.runways.iter().find(|r| r.id == *runway_str);
                 if let Some(runway) = runway {
                   let mut taxi_instructions: Vec<TaxiInstruction> =
                     vec![TaxiInstruction::Runway(runway.clone())];
@@ -286,8 +286,8 @@ impl Engine {
             Task::TaxiGate { gate, waypoints } => {
               todo!("taxi gate {gate:?} {waypoints:?}")
             }
-            Task::TaxiHold => todo!("taxi hold"),
-            Task::TaxiContinue => todo!("taxi continue"),
+            Task::TaxiHold => aircraft.do_hold_taxi(),
+            Task::TaxiContinue => aircraft.do_continue_taxi(),
           }
         }
 

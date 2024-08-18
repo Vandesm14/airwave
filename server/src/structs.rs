@@ -169,7 +169,6 @@ pub enum AircraftState {
     pos: TaxiInstruction,
     instructions: Vec<TaxiInstruction>,
     waypoints: Vec<Vec2>,
-    hold: bool,
   },
 
   Deleted,
@@ -309,7 +308,6 @@ impl Aircraft {
         pos: TaxiInstruction::Gate(terminal.clone(), gate.clone()),
         instructions: Vec::new(),
         waypoints: Vec::new(),
-        hold: false,
       },
       pos: gate.pos,
       heading: gate.heading,
@@ -372,44 +370,22 @@ impl Aircraft {
   }
 
   pub fn do_taxi(&mut self, taxi_instructions: Vec<TaxiInstruction>) {
-    if let AircraftState::Taxiing {
-      pos,
-      instructions,
-      waypoints,
-      hold,
-    } = &mut self.state
-    {
+    if let AircraftState::Taxiing { instructions, .. } = &mut self.state {
       *instructions = taxi_instructions;
-
-      let instruction = instructions.pop();
-      if let Some(instruction) = instruction {
-        let current_line: Line = match pos {
-          TaxiInstruction::Taxiway(x) => x.clone().into(),
-          TaxiInstruction::Runway(x) => x.clone().into(),
-          TaxiInstruction::Gate(x, _) => x.clone().into(),
-        };
-        let next_line: Line = match instruction {
-          TaxiInstruction::Taxiway(x) => x.into(),
-          TaxiInstruction::Runway(x) => x.into(),
-          TaxiInstruction::Gate(x, _) => x.into(),
-        };
-
-        let intersection = find_line_intersection(
-          current_line.0,
-          current_line.1,
-          next_line.0,
-          next_line.1,
-        );
-
-        if let Some(intersection) = intersection {
-          let angle = angle_between_points(self.pos, intersection);
-          let heading = degrees_to_heading(angle);
-
-          self.heading = heading;
-          self.target.heading = heading;
-        }
-      }
+      self.target.speed = 20.0;
     }
+
+    if let AircraftState::Taxiing { .. } = self.state {
+      self.do_continue_taxi()
+    }
+  }
+
+  pub fn do_hold_taxi(&mut self) {
+    self.target.speed = 0.0;
+  }
+
+  pub fn do_continue_taxi(&mut self) {
+    self.target.speed = 20.0;
   }
 
   pub fn resume_own_navigation(&mut self) {
@@ -428,6 +404,42 @@ impl Aircraft {
       self.speed_in_pixels() * dt,
     );
     self.pos = pos;
+  }
+
+  fn update_taxi(&mut self) {
+    if let AircraftState::Taxiing {
+      pos, instructions, ..
+    } = &mut self.state
+    {
+      let instruction = instructions.last();
+      if let Some(instruction) = instruction {
+        let current_line: Line = match pos {
+          TaxiInstruction::Taxiway(x) => x.clone().into(),
+          TaxiInstruction::Runway(x) => x.clone().into(),
+          TaxiInstruction::Gate(x, _) => x.clone().into(),
+        };
+        let next_line: Line = match instruction {
+          TaxiInstruction::Taxiway(x) => x.clone().into(),
+          TaxiInstruction::Runway(x) => x.clone().into(),
+          TaxiInstruction::Gate(x, _) => x.clone().into(),
+        };
+
+        let intersection = find_line_intersection(
+          current_line.0,
+          current_line.1,
+          next_line.0,
+          next_line.1,
+        );
+
+        if let Some(intersection) = intersection {
+          let angle = angle_between_points(self.pos, intersection);
+          let heading = degrees_to_heading(angle);
+
+          self.heading = heading;
+          self.target.heading = heading;
+        }
+      }
+    }
   }
 
   fn update_ils(&mut self) -> bool {
@@ -535,6 +547,7 @@ impl Aircraft {
   pub fn update(&mut self, airspace_size: f32, dt: f32) -> bool {
     let went_around = self.update_ils();
     self.update_targets(dt);
+    self.update_taxi();
     self.update_position(dt);
     self.update_leave_airspace(airspace_size);
 

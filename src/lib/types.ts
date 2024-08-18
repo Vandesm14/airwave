@@ -46,7 +46,6 @@ export type Aircraft = {
           pos: TaxiInstruction;
           instructions: Array<TaxiInstruction>;
           waypoints: Array<Vec2>;
-          hold: boolean;
         };
       };
   intention:
