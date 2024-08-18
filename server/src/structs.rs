@@ -163,6 +163,8 @@ impl Runway {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub struct TaxiWaypoint {
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub wp: TaxiPoint,
   pub hold: bool,
@@ -410,20 +412,22 @@ impl Aircraft {
 
         if let Some(intersection) = intersection {
           waypoint.pos = intersection;
-          new_waypoints.push(waypoint.clone());
 
           if waypoint.hold {
-            let angle = angle_between_points(waypoint.pos, current.pos);
+            let angle = angle_between_points(current.pos, waypoint.pos);
             let hold_point =
-              move_point(waypoint.pos, angle, FEET_PER_UNIT * 250.0);
+              move_point(waypoint.pos, angle, FEET_PER_UNIT * 500.0);
+
+            dbg!(angle);
 
             new_waypoints.push(TaxiWaypoint {
               pos: hold_point,
               wp: waypoint.wp.clone(),
-              hold: false,
+              hold: true,
             });
           }
 
+          new_waypoints.push(waypoint.clone());
           current = waypoint.clone();
         } else {
           todo!("handle no intersection {current:#?}, {waypoint:#?}");
@@ -447,17 +451,11 @@ impl Aircraft {
   }
 
   pub fn do_continue_taxi(&mut self) {
-    // if let AircraftState::Taxiing {
-    //   waypoints, current, ..
-    // } = &mut self.state
-    // {
-    //   let waypoint = waypoints.last_mut();
-    //   if let Some(waypoint) = waypoint {
-    //     if waypoint.pos == self.pos {
-    //       waypoint.hold = false;
-    //     }
-    //   }
-    // }
+    if let AircraftState::Taxiing { current, .. } = &mut self.state {
+      if current.pos == self.pos {
+        current.hold = false;
+      }
+    }
 
     self.target.speed = 20.0;
   }
@@ -497,17 +495,14 @@ impl Aircraft {
           self.heading = heading;
           self.target.heading = heading;
 
-          let distance = self.pos.distance(waypoint.pos);
-          let distance = if waypoint.hold {
-            (distance - (FEET_PER_UNIT * 250.0)).max(0.0)
-          } else {
-            distance
-          };
-          let movement_speed = speed_in_pixels;
+          let distance = self.pos.distance_squared(waypoint.pos);
+          let movement_speed = speed_in_pixels.powf(2.0);
 
           if movement_speed >= distance {
             *current = waypoints.pop().unwrap();
             self.pos = waypoint.pos;
+
+            dbg!(current.clone());
 
             if waypoint.hold {
               self.do_hold_taxi();

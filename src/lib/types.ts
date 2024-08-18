@@ -50,6 +50,7 @@ export type Aircraft = {
         type: 'taxiing';
         value: {
           current: TaxiWaypoint;
+          waypoints: Array<TaxiWaypoint>;
         };
       };
   intention:

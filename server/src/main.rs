@@ -1,6 +1,7 @@
 use std::{
   env,
   sync::{mpsc, Arc},
+  vec,
 };
 
 use async_openai::types::{
@@ -23,7 +24,8 @@ use server::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
   find_line_intersection, heading_to_degrees, move_point,
   structs::{
-    Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
+    Command, CommandWithFreq, Gate, Runway, Task, Taxiway, TaxiwayKind,
+    Terminal,
   },
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
@@ -209,6 +211,20 @@ async fn main() {
     engine.terminals.push(terminal_a);
 
     engine.spawn_random_aircraft();
+    let aircraft = engine.aircraft.last().unwrap();
+    engine.execute_command(CommandWithFreq {
+      id: aircraft.callsign.clone(),
+      frequency: aircraft.frequency,
+      reply: "Doing the thing.".into(),
+      tasks: vec![Task::TaxiRunway {
+        runway: "20".into(),
+        waypoints: vec![
+          ("A3".into(), false),
+          ("B".into(), false),
+          ("C".into(), true),
+        ],
+      }],
+    });
     engine.begin_loop();
   });
 

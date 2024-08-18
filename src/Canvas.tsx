@@ -555,6 +555,17 @@ export default function Canvas({
       pos.x + spacing,
       pos.y - spacing + spacing * 2
     );
+
+    if (aircraft.state.type === 'taxiing') {
+      ctx.strokeStyle = 'red';
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+        let point = projectPoint(origin, wp.pos, projectionScale);
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.stroke();
+    }
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
