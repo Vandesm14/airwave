@@ -77,7 +77,9 @@ impl Engine {
 
   pub fn spawn_random_aircraft(&mut self) {
     let mut rng = thread_rng();
-    let should_be_takeoff = rng.gen_ratio(1, 1);
+    // TODO: random departures
+    // let should_be_takeoff = rng.gen_ratio(1, 1);
+    let should_be_takeoff = false;
 
     let terminal = self.terminals.choose(&mut rng).unwrap();
     let gate = terminal
@@ -86,12 +88,8 @@ impl Engine {
       .expect("terminal has no gates to choose from");
     let departure_heading = (rng.gen_range(0..36) * 10) as f32;
     let aircraft = if should_be_takeoff {
-      Aircraft::random_to_takeoff(
-        self.default_frequency,
-        terminal.clone(),
-        gate.clone(),
-        departure_heading,
-      )
+      todo!("random departure")
+      // Aircraft::departure_from_arrival(departure_heading);
     } else {
       Aircraft::random_to_land(self.airspace_size, self.default_frequency)
     };

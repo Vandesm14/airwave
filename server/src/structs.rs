@@ -1,4 +1,7 @@
-use std::time::{Duration, SystemTime};
+use std::{
+  ops::Add,
+  time::{Duration, SystemTime},
+};
 
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
@@ -207,7 +210,7 @@ pub enum AircraftState {
 pub enum AircraftIntention {
   Land,
   Flyover,
-  Depart(f32),
+  Depart { has_notified: bool, heading: f32 },
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -320,39 +323,16 @@ impl Aircraft {
     }
   }
 
-  pub fn random_to_takeoff(
-    frequency: f32,
-    terminal: Terminal,
-    gate: Gate,
-    departure_heading: f32,
-  ) -> Self {
-    Self {
-      callsign: Self::random_callsign(),
-      is_colliding: false,
-      intention: AircraftIntention::Depart(departure_heading),
-      state: AircraftState::Taxiing {
-        current: TaxiWaypoint {
-          pos: gate.pos,
-          wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
-          behavior: TaxiWaypointBehavior::HoldShort,
-        },
-        waypoints: Vec::new(),
-      },
-      pos: gate.pos,
-      heading: gate.heading,
-      speed: 0.0,
-      altitude: 0.0,
-      frequency,
-      target: AircraftTargets {
-        heading: gate.heading,
-        speed: 0.0,
-        altitude: 0.0,
-      },
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .as_millis(),
-    }
+  pub fn departure_from_arrival(&mut self, departure_heading: f32) {
+    self.intention = AircraftIntention::Depart {
+      has_notified: false,
+      heading: departure_heading,
+    };
+    self.created = SystemTime::now()
+      .duration_since(SystemTime::UNIX_EPOCH)
+      .unwrap_or(Duration::from_millis(0))
+      .add(Duration::from_secs(120))
+      .as_millis();
   }
 
   pub fn random_callsign() -> String {
@@ -584,45 +564,35 @@ impl Aircraft {
     }
   }
 
-  fn update_ils(&mut self) -> bool {
+  fn update_ils(&mut self, dt: f32) -> bool {
     if let AircraftState::Landing(runway) = &self.state {
       let delta_angle = delta_angle(
-        angle_between_points(runway.start(), self.pos),
+        angle_between_points(runway.end(), self.pos),
         inverse_degrees(heading_to_degrees(runway.heading)),
       );
 
-      let distance_to_runway = self.pos.distance_squared(runway.start());
-      let start_decrease_altitude = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
-      let start_decrease_speed = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
+      let distance_to_runway = self.pos.distance(runway.start());
+
+      let climb_speed = self.dt_climb_speed(dt);
+      let seconds_for_descent = self.altitude / (climb_speed / dt);
+      // let distance_for_descent = self.speed_in_pixels() * seconds_for_descent;
+
+      let target_speed_ft_s = distance_to_runway / seconds_for_descent;
+      let target_knots =
+        target_speed_ft_s / KNOT_TO_FEET_PER_SECOND / FEET_PER_UNIT;
+
+      self.target.speed = target_knots;
+      self.target.altitude = 0.0;
 
       // If we are on approach to the runway
       if delta_angle.abs() <= 5.0 {
         let turn_amount = 30.0_f32.min(delta_angle.abs() * 6.0);
 
-        // If we have passed the threshold for 4000 feet, go around
-        if self.altitude > 4000.0
-          && distance_to_runway <= start_decrease_altitude.powf(2.0)
-        {
-          self.do_go_around();
-          return true;
-        } else if distance_to_runway <= start_decrease_altitude.powf(2.0) {
-          self.target.altitude = 0.0;
-        }
-
-        // If we are inline with the runway, decrease speed
-        if delta_angle.abs().round() == 0.0
-          && distance_to_runway <= start_decrease_speed.powf(2.0)
-        {
-          self.target.speed = 170.0;
-        }
         if delta_angle < 0.0 {
           self.target.heading = runway.heading + turn_amount;
         } else if delta_angle > 0.0 {
           self.target.heading = runway.heading - turn_amount;
         }
-        // Else, if we aren't on approach, check if we have landed
-      } else if delta_angle.abs().round() == 180.0 && self.altitude == 0.0 {
-        self.state = AircraftState::Deleted;
       }
     }
 
@@ -639,15 +609,27 @@ impl Aircraft {
     }
   }
 
+  fn dt_climb_speed(&self, dt: f32) -> f32 {
+    TIME_SCALE * (2000.0_f32 / 60.0_f32).round() * dt
+  }
+
+  fn dt_turn_speed(&self, dt: f32) -> f32 {
+    TIME_SCALE * 2.0 * dt
+  }
+
+  fn dt_speed_speed(&self, dt: f32) -> f32 {
+    TIME_SCALE * 1.0 * dt
+  }
+
   fn update_targets(&mut self, dt: f32) {
     // TODO: change speeds for takeoff and taxi (turn and speed speeds)
 
     // In feet per second
-    let climb_speed = TIME_SCALE * (2000.0_f32 / 60.0_f32).round() * dt;
+    let climb_speed = self.dt_climb_speed(dt);
     // In degrees per second
-    let turn_speed = TIME_SCALE * 2.0 * dt;
+    let turn_speed = self.dt_turn_speed(dt);
     // In knots per second
-    let speed_speed = TIME_SCALE * 1.0 * dt;
+    let speed_speed = self.dt_speed_speed(dt);
 
     if (self.altitude - self.target.altitude).abs() < climb_speed {
       self.altitude = self.target.altitude;
@@ -687,7 +669,7 @@ impl Aircraft {
   }
 
   pub fn update(&mut self, airspace_size: f32, dt: f32) -> bool {
-    let went_around = self.update_ils();
+    let went_around = self.update_ils(dt);
     self.update_targets(dt);
     self.update_taxi(dt);
     self.update_takeoff();

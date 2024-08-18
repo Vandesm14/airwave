@@ -158,6 +158,7 @@ export default function Canvas({
       ctx.font = `900 ${fontSize}px monospace`;
       ctx.fillStyle = 'black';
 
+      ctx.resetTransform();
       ctx.fillRect(0, 0, width, height);
       resetTransform(ctx);
       drawCompass(ctx);

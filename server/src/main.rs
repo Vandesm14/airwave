@@ -1,6 +1,7 @@
 use std::{
   env,
   sync::{mpsc, Arc},
+  time::{Duration, SystemTime},
   vec,
 };
 
@@ -22,9 +23,10 @@ use tower_http::services::ServeDir;
 use server::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  heading_to_degrees, move_point,
+  heading_to_degrees, inverse_degrees, move_point,
   structs::{
-    Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
+    Aircraft, AircraftIntention, AircraftState, AircraftTargets, Command,
+    CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
   },
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
@@ -197,6 +199,31 @@ async fn main() {
       kind: TaxiwayKind::Normal,
     };
 
+    engine.aircraft.push(Aircraft {
+      callsign: "SKW1234".into(),
+      is_colliding: false,
+      intention: AircraftIntention::Land,
+      state: AircraftState::Landing(runway_27.clone()),
+      pos: move_point(
+        runway_27.start(),
+        inverse_degrees(heading_to_degrees(runway_27.heading)) + 2.0,
+        NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 8.0,
+      ),
+      heading: runway_27.heading,
+      speed: 200.0,
+      altitude: 5000.0,
+      frequency: 118.5,
+      target: AircraftTargets {
+        heading: runway_27.heading,
+        speed: 170.0,
+        altitude: 4000.0,
+      },
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
+    });
+
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
 
@@ -210,8 +237,6 @@ async fn main() {
     engine.taxiways.push(taxiway_exit_27);
 
     engine.terminals.push(terminal_a);
-
-    engine.spawn_random_aircraft();
     engine.begin_loop();
   });
 
