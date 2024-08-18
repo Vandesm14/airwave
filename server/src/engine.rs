@@ -304,6 +304,7 @@ impl Engine {
                     }
                   }
 
+                  taxi_instructions.reverse();
                   aircraft.do_taxi(taxi_instructions);
                 }
               }

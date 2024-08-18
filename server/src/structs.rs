@@ -389,15 +389,16 @@ impl Aircraft {
   }
 
   pub fn do_taxi(&mut self, blank_waypoints: Vec<TaxiWaypoint>) {
+    dbg!(blank_waypoints.clone());
     if let AircraftState::Taxiing {
       waypoints,
       current: current_pos,
       ..
     } = &mut self.state
     {
-      let mut blank_waypoints = blank_waypoints;
       let mut current = current_pos.clone();
-      for waypoint in blank_waypoints.iter_mut().rev() {
+      let mut new_waypoints: Vec<TaxiWaypoint> = Vec::new();
+      for mut waypoint in blank_waypoints.into_iter() {
         let current_line: Line = current.wp.clone().into();
         let waypoint_line: Line = waypoint.wp.clone().into();
         let intersection = find_line_intersection(
@@ -409,13 +410,29 @@ impl Aircraft {
 
         if let Some(intersection) = intersection {
           waypoint.pos = intersection;
+          new_waypoints.push(waypoint.clone());
+
+          if waypoint.hold {
+            let angle = angle_between_points(waypoint.pos, current.pos);
+            let hold_point =
+              move_point(waypoint.pos, angle, FEET_PER_UNIT * 250.0);
+
+            new_waypoints.push(TaxiWaypoint {
+              pos: hold_point,
+              wp: waypoint.wp.clone(),
+              hold: false,
+            });
+          }
+
           current = waypoint.clone();
         } else {
-          todo!("handle no intersection");
+          todo!("handle no intersection {current:#?}, {waypoint:#?}");
         }
       }
 
-      *waypoints = dbg!(blank_waypoints);
+      *waypoints = new_waypoints;
+      waypoints.reverse();
+      dbg!(waypoints);
       current_pos.hold = false;
     }
 
@@ -430,17 +447,17 @@ impl Aircraft {
   }
 
   pub fn do_continue_taxi(&mut self) {
-    if let AircraftState::Taxiing {
-      waypoints, current, ..
-    } = &mut self.state
-    {
-      let waypoint = waypoints.last_mut();
-      if let Some(waypoint) = waypoint {
-        if waypoint.pos == self.pos {
-          waypoint.hold = false;
-        }
-      }
-    }
+    // if let AircraftState::Taxiing {
+    //   waypoints, current, ..
+    // } = &mut self.state
+    // {
+    //   let waypoint = waypoints.last_mut();
+    //   if let Some(waypoint) = waypoint {
+    //     if waypoint.pos == self.pos {
+    //       waypoint.hold = false;
+    //     }
+    //   }
+    // }
 
     self.target.speed = 20.0;
   }
@@ -472,7 +489,7 @@ impl Aircraft {
       if current.hold || waypoints.is_empty() {
         self.do_hold_taxi()
       } else {
-        let waypoint = waypoints.last();
+        let waypoint = waypoints.last().cloned();
         if let Some(waypoint) = waypoint {
           let angle = angle_between_points(self.pos, waypoint.pos);
           let heading = degrees_to_heading(angle);
@@ -489,11 +506,11 @@ impl Aircraft {
           let movement_speed = speed_in_pixels;
 
           if movement_speed >= distance {
+            *current = waypoints.pop().unwrap();
+            self.pos = waypoint.pos;
+
             if waypoint.hold {
-              self.do_hold_taxi()
-            } else {
-              self.pos = waypoint.pos;
-              *current = waypoints.pop().unwrap();
+              self.do_hold_taxi();
             }
           }
         }
