@@ -241,9 +241,13 @@ async fn main() {
     let listener = try_socket.expect("ws server failed to bind");
 
     while let Ok((stream, _)) = listener.accept().await {
-      let ws_stream = tokio_tungstenite::accept_async(stream)
-        .await
-        .expect("Error during the websocket handshake occurred");
+      let ws_stream = tokio_tungstenite::accept_async(stream).await;
+      if let Err(e) = ws_stream {
+        eprintln!("Error during the websocket handshake occurred: {e}");
+        return;
+      }
+
+      let ws_stream = ws_stream.unwrap();
 
       let (write, read) = ws_stream.split();
       give_streams.send(write).unwrap();

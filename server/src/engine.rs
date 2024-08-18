@@ -257,7 +257,9 @@ impl Engine {
             Task::GoAround => aircraft.do_go_around(),
             Task::Takeoff(runway) => {
               let target = self.runways.iter().find(|r| &r.id == runway);
-              if let Some(target) = target {}
+              if let Some(target) = target {
+                aircraft.do_takeoff(target);
+              }
             }
             Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
             Task::TaxiRunway {
@@ -281,7 +283,7 @@ impl Engine {
                   let mut taxi_instructions: Vec<TaxiWaypoint> = vec![
                     TaxiWaypoint {
                       pos: Vec2::default(),
-                      wp: TaxiPoint::Runway(runway.clone(), false),
+                      wp: TaxiPoint::Runway(runway.clone()),
                       behavior: TaxiWaypointBehavior::HoldShort,
                     },
                     TaxiWaypoint {

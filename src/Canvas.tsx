@@ -570,6 +570,8 @@ export default function Canvas({
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
         let point = projectPoint(origin, wp.pos, projectionScale);
         ctx.fillStyle = wp.behavior.type === 'holdshort' ? 'red' : '#00ff00';
+        ctx.fillStyle =
+          wp.behavior.type === 'takeoff' ? '#0000ff' : ctx.fillStyle;
         ctx.beginPath();
         ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
         ctx.fill();

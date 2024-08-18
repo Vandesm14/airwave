@@ -3,6 +3,7 @@ use std::time::{Duration, SystemTime};
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use tokio::runtime;
 
 use crate::{
   angle_between_points, degrees_to_heading, delta_angle,
@@ -54,7 +55,7 @@ impl From<TaxiPoint> for Line {
   fn from(value: TaxiPoint) -> Self {
     match value {
       TaxiPoint::Taxiway(x) => x.into(),
-      TaxiPoint::Runway(x, _) => x.into(),
+      TaxiPoint::Runway(x) => x.into(),
       TaxiPoint::Gate(x, _) => x.into(),
     }
   }
@@ -181,7 +182,7 @@ pub struct TaxiWaypoint {
 #[serde(tag = "type", content = "value")]
 pub enum TaxiPoint {
   Taxiway(Taxiway),
-  Runway(Runway, bool),
+  Runway(Runway),
   Gate(Terminal, Gate),
 }
 
@@ -389,23 +390,44 @@ impl Aircraft {
     self.state = AircraftState::Flying;
   }
 
-  pub fn do_takeoff(&mut self) {
-    // TODO: If aircraft is holding short of or lined up on a runway,
-    // let them take off.
-    // if let AircraftState::Taxiing { heading, .. } = &self.state {
-    //   self.state = AircraftState::Departing(*heading);
-    // }
+  pub fn do_takeoff(&mut self, runway: &Runway) {
+    if let AircraftState::Taxiing { current, waypoints } = &mut self.state {
+      // If we are currently holding short, continue our taxi
+      if let TaxiPoint::Taxiway(Taxiway {
+        kind: TaxiwayKind::HoldShort(r),
+        ..
+      }) = &current.wp
+      {
+        if let Some(TaxiWaypoint {
+          wp: TaxiPoint::Runway(r),
+          behavior,
+          ..
+        }) = &mut waypoints.first_mut()
+        {
+          if runway.id == r.id {
+            *behavior = TaxiWaypointBehavior::TakeOff;
 
-    if let AircraftState::TakingOff(runway) = &self.state {
-      self.heading = runway.heading;
-      self.target.heading = runway.heading;
+            self.do_continue_taxi();
+            return;
+          } else {
+            todo!("cleared for wrong runway (holding short)")
+          }
+        }
+      }
 
-      self.speed = 170.0;
-      self.target.speed = 220.0;
-
-      self.target.altitude = 3000.0;
-
-      self.state = AircraftState::Flying;
+      // If we are lined up and waiting, take off
+      if let TaxiWaypoint {
+        wp: TaxiPoint::Runway(r),
+        behavior,
+        ..
+      } = current
+      {
+        if runway.id == r.id {
+          *behavior = TaxiWaypointBehavior::TakeOff;
+        } else {
+          todo!("cleared for wrong runway (lined up)")
+        }
+      }
     }
   }
 
@@ -505,6 +527,16 @@ impl Aircraft {
         || waypoints.is_empty()
       {
         self.do_hold_taxi()
+      } else if let TaxiWaypoint {
+        wp: TaxiPoint::Runway(r),
+        pos,
+        behavior: TaxiWaypointBehavior::TakeOff,
+        ..
+      } = current
+      {
+        if self.pos == *pos && self.heading == r.heading {
+          self.state = AircraftState::TakingOff(r.clone());
+        }
       } else {
         let waypoint = waypoints.last().cloned();
         if let Some(waypoint) = waypoint {
@@ -526,6 +558,24 @@ impl Aircraft {
             }
           }
         }
+      }
+    }
+  }
+
+  fn update_takeoff(&mut self) {
+    if let AircraftState::TakingOff(runway) = &self.state {
+      if self.pos == runway.start() && self.heading == runway.heading {
+        self.heading = runway.heading;
+        self.target.heading = runway.heading;
+
+        self.speed = 170.0;
+        self.target.speed = 220.0;
+
+        self.target.altitude = 3000.0;
+
+        self.state = AircraftState::Flying;
+      } else {
+        todo!("not at or lined up to runway {}", runway.id)
       }
     }
   }
@@ -573,17 +623,6 @@ impl Aircraft {
     }
 
     false
-  }
-
-  fn update_takeoff(&mut self) {
-    if let AircraftState::TakingOff(runway) = &self.state {
-      if self.pos == runway.start() {
-        self.do_takeoff();
-      }
-    } else if let AircraftState::Taxiing { current, waypoints } =
-      &mut self.state
-    {
-    }
   }
 
   fn update_leave_airspace(&mut self, airspace_size: f32) {
