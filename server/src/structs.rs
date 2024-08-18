@@ -1,5 +1,6 @@
 use std::{
   ops::Add,
+  sync::mpsc::Sender,
   time::{Duration, SystemTime},
 };
 
@@ -8,7 +9,7 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-  angle_between_points, degrees_to_heading, delta_angle,
+  angle_between_points, degrees_to_heading, delta_angle, engine::OutgoingReply,
   find_line_intersection, get_random_point_on_circle, heading_to_degrees,
   inverse_degrees, move_point, FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND,
   NAUTICALMILES_TO_FEET, TIME_SCALE,
@@ -356,7 +357,7 @@ impl Aircraft {
     self.speed * KNOT_TO_FEET_PER_SECOND * FEET_PER_UNIT
   }
 
-  pub fn do_go_around(&mut self) {
+  pub fn do_go_around(&mut self, sender: &Sender<OutgoingReply>) {
     if let AircraftState::Landing(_) = &self.state {
       if self.target.speed < 250.0 {
         self.target.speed = 250.0;
@@ -368,6 +369,15 @@ impl Aircraft {
     }
 
     self.state = AircraftState::Flying;
+
+    sender
+      .send(OutgoingReply::Reply(CommandWithFreq {
+        id: self.callsign.clone(),
+        frequency: self.frequency,
+        reply: format!("Tower, {} is going around.", self.callsign),
+        tasks: Vec::new(),
+      }))
+      .unwrap()
   }
 
   pub fn do_takeoff(&mut self, runway: &Runway) {
@@ -564,9 +574,9 @@ impl Aircraft {
     }
   }
 
-  fn update_ils(&mut self, dt: f32) -> bool {
+  fn update_landing(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     if let AircraftState::Landing(runway) = &self.state {
-      let delta_angle = delta_angle(
+      let d_angle = delta_angle(
         angle_between_points(runway.end(), self.pos),
         inverse_degrees(heading_to_degrees(runway.heading)),
       );
@@ -581,22 +591,32 @@ impl Aircraft {
       let target_knots =
         target_speed_ft_s / KNOT_TO_FEET_PER_SECOND / FEET_PER_UNIT;
 
-      self.target.speed = target_knots;
+      let runway_angle = heading_to_degrees(runway.heading);
+      let self_angle = heading_to_degrees(self.heading);
+      let turn_angle = delta_angle(self_angle, runway_angle);
+
+      dbg!(runway_angle, self_angle, turn_angle);
+
+      if target_knots >= 170.0 {
+        self.target.speed = target_knots;
+      } else {
+        self.do_go_around(sender);
+        return;
+      }
+
       self.target.altitude = 0.0;
 
       // If we are on approach to the runway
-      if delta_angle.abs() <= 5.0 {
-        let turn_amount = 30.0_f32.min(delta_angle.abs() * 6.0);
+      if d_angle.abs() <= 5.0 {
+        let turn_amount = 30.0_f32.min(d_angle.abs() * 6.0);
 
-        if delta_angle < 0.0 {
+        if d_angle < 0.0 {
           self.target.heading = runway.heading + turn_amount;
-        } else if delta_angle > 0.0 {
+        } else if d_angle > 0.0 {
           self.target.heading = runway.heading - turn_amount;
         }
       }
     }
-
-    false
   }
 
   fn update_leave_airspace(&mut self, airspace_size: f32) {
@@ -668,14 +688,17 @@ impl Aircraft {
     self.heading = (360.0 + self.heading) % 360.0;
   }
 
-  pub fn update(&mut self, airspace_size: f32, dt: f32) -> bool {
-    let went_around = self.update_ils(dt);
+  pub fn update(
+    &mut self,
+    airspace_size: f32,
+    dt: f32,
+    sender: &Sender<OutgoingReply>,
+  ) {
+    self.update_landing(dt, sender);
     self.update_targets(dt);
     self.update_taxi(dt);
     self.update_takeoff();
     self.update_position(dt);
     self.update_leave_airspace(airspace_size);
-
-    went_around
   }
 }

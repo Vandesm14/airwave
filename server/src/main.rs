@@ -203,7 +203,7 @@ async fn main() {
       callsign: "SKW1234".into(),
       is_colliding: false,
       intention: AircraftIntention::Land,
-      state: AircraftState::Landing(runway_27.clone()),
+      state: AircraftState::Flying,
       pos: move_point(
         runway_27.start(),
         inverse_degrees(heading_to_degrees(runway_27.heading)) + 2.0,
@@ -211,7 +211,7 @@ async fn main() {
       ),
       heading: runway_27.heading,
       speed: 200.0,
-      altitude: 5000.0,
+      altitude: 6000.0,
       frequency: 118.5,
       target: AircraftTargets {
         heading: runway_27.heading,

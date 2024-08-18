@@ -220,18 +220,7 @@ impl Engine {
   pub fn update(&mut self) {
     let dt = 1.0 / self.rate as f32;
     for aircraft in self.aircraft.iter_mut() {
-      let went_around = aircraft.update(self.airspace_size, dt);
-      if went_around {
-        self
-          .sender
-          .send(OutgoingReply::Reply(CommandWithFreq {
-            id: aircraft.callsign.clone(),
-            frequency: aircraft.frequency,
-            reply: format!("Tower, {} is going around.", aircraft.callsign),
-            tasks: Vec::new(),
-          }))
-          .unwrap();
-      }
+      aircraft.update(self.airspace_size, dt, &self.sender);
     }
   }
 
@@ -252,7 +241,7 @@ impl Engine {
                 aircraft.state = AircraftState::Landing(target.clone());
               }
             }
-            Task::GoAround => aircraft.do_go_around(),
+            Task::GoAround => aircraft.do_go_around(&self.sender),
             Task::Takeoff(runway) => {
               let target = self.runways.iter().find(|r| &r.id == runway);
               if let Some(target) = target {
