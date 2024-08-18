@@ -505,8 +505,8 @@ export default function Canvas({
     };
     let projectionScale = 14;
 
-    ctx.fillStyle = '#00aa00';
-    ctx.strokeStyle = '#00aa00';
+    ctx.fillStyle = '#ffff00';
+    ctx.strokeStyle = '#ffff00';
 
     let pos = projectPoint(origin, aircraft, projectionScale);
 
@@ -531,7 +531,7 @@ export default function Canvas({
       const endX = pos.x + length * Math.cos(angleRadians);
       const endY = pos.y + length * Math.sin(angleRadians);
 
-      ctx.strokeStyle = '#00aa00';
+      ctx.strokeStyle = '#ffff00';
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
       ctx.lineTo(endX, endY);
