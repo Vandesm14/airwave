@@ -165,6 +165,7 @@ pub enum TaxiWaypointBehavior {
   GoTo,
   HoldShort,
   TakeOff,
+  LineUp,
   Park,
 }
 
@@ -460,7 +461,7 @@ impl Aircraft {
 
             new_waypoints.push(TaxiWaypoint {
               pos: hold_point,
-              wp: waypoint.wp.clone(),
+              wp: current.wp.clone(),
               behavior: TaxiWaypointBehavior::HoldShort,
             });
 
