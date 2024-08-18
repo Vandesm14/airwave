@@ -155,7 +155,7 @@ async fn main() {
     };
 
     let gates_line_start =
-      move_point(terminal_a.a, 270.0, FEET_PER_UNIT * 500.0);
+      move_point(terminal_a.a, 270.0, FEET_PER_UNIT * 1200.0);
     let gates = 5;
     let padding = 400.0;
     let spacing = 4000.0 / gates as f32;
@@ -172,18 +172,36 @@ async fn main() {
       terminal_a.gates.push(gate);
     }
 
-    let a = move_point(a, 0.0, FEET_PER_UNIT * 200.0);
-    let taxiway_a = Taxiway {
-      id: 'A'.into(),
-      a,
-      b: move_point(a, 90.0, FEET_PER_UNIT * 500.0),
+    let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 200.0);
+    let taxiway_a1 = Taxiway {
+      id: "A1".into(),
+      a: tw_a,
+      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 500.0),
+      kind: TaxiwayKind::Normal,
+    };
+
+    let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 2000.0);
+    let taxiway_a2 = Taxiway {
+      id: "A2".into(),
+      a: tw_a,
+      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 500.0),
+      kind: TaxiwayKind::Normal,
+    };
+
+    let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 3800.0);
+    let taxiway_a3 = Taxiway {
+      id: "A3".into(),
+      a: tw_a,
+      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 500.0),
       kind: TaxiwayKind::Normal,
     };
 
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
 
-    engine.taxiways.push(taxiway_a);
+    engine.taxiways.push(taxiway_a1);
+    engine.taxiways.push(taxiway_a2);
+    engine.taxiways.push(taxiway_a3);
     engine.taxiways.push(taxiway_b);
     engine.taxiways.push(taxiway_c);
     engine.taxiways.push(taxiway_hs_27);
