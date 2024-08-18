@@ -543,8 +543,7 @@ export default function Canvas({
     let spacing = 16;
     ctx.font = `900 ${spacing}px monospace`;
     ctx.textAlign = 'left';
-    ctx.fillStyle =
-      aircraft.intention.type === 'depart' ? '#fc67eb' : '#44ff44';
+    ctx.fillStyle = '#ffff00';
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
 
     let altitudeIcon = ' ';
