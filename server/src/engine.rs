@@ -11,7 +11,7 @@ use crate::{
   angle_between_points, degrees_to_heading, heading_to_direction,
   structs::{
     Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Gate, Runway,
-    Task, Taxiway, Terminal,
+    Task, TaxiInstruction, Taxiway, Terminal,
   },
 };
 
@@ -261,7 +261,19 @@ impl Engine {
             Task::Takeoff => aircraft.do_takeoff(),
             Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
             Task::TaxiRunway { runway, waypoints } => {
-              todo!("taxi runway {runway:?} {waypoints:?}")
+              if let AircraftState::Taxiing { .. } = &mut aircraft.state {
+                let mut taxi_instructions: Vec<TaxiInstruction> = Vec::new();
+                for instruction in waypoints.iter().rev() {
+                  if let Some(taxiway) =
+                    self.taxiways.iter().find(|t| t.id == *instruction)
+                  {
+                    taxi_instructions
+                      .push(TaxiInstruction::Taxiway(taxiway.clone()));
+                  }
+                }
+
+                aircraft.do_taxi(taxi_instructions);
+              }
             }
             Task::TaxiGate { gate, waypoints } => {
               todo!("taxi gate {gate:?} {waypoints:?}")

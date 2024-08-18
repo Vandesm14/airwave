@@ -1,4 +1,4 @@
-export type TaxiWaypoint =
+export type TaxiInstruction =
   | {
       type: 'taxiway';
       value: Taxiway;
@@ -43,8 +43,9 @@ export type Aircraft = {
     | {
         type: 'taxiing';
         value: {
-          pos: TaxiWaypoint;
-          waypoints: Array<TaxiWaypoint>;
+          pos: TaxiInstruction;
+          instructions: Array<TaxiInstruction>;
+          waypoints: Array<Vec2>;
           hold: boolean;
         };
       };

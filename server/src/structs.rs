@@ -1,4 +1,7 @@
-use std::time::{Duration, SystemTime};
+use std::{
+  collections::btree_set::Intersection,
+  time::{Duration, SystemTime},
+};
 
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
@@ -6,9 +9,49 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
   angle_between_points, degrees_to_heading, delta_angle,
-  get_random_point_on_circle, heading_to_degrees, inverse_degrees, move_point,
-  FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
+  find_line_intersection, get_random_point_on_circle, heading_to_degrees,
+  inverse_degrees, move_point, FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND,
+  NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
+
+pub struct Line(Vec2, Vec2);
+
+impl Line {
+  pub fn new(a: Vec2, b: Vec2) -> Self {
+    Self(a, b)
+  }
+
+  pub fn to_feet(self) -> Self {
+    Self(self.0 * FEET_PER_UNIT, self.1 * FEET_PER_UNIT)
+  }
+}
+
+impl From<Runway> for Line {
+  fn from(value: Runway) -> Self {
+    let angle = heading_to_degrees(value.heading);
+    let inverse_angle = inverse_degrees(angle);
+    let half_length = value.length * 0.5;
+
+    let a = move_point(value.pos, angle, half_length);
+    let b = move_point(value.pos, inverse_angle, half_length);
+
+    Line::new(a, b)
+  }
+}
+
+impl From<Taxiway> for Line {
+  fn from(value: Taxiway) -> Self {
+    Line::new(value.a, value.b)
+  }
+}
+
+impl From<Terminal> for Line {
+  fn from(value: Terminal) -> Self {
+    // TODO: This means that terminals can only have one enterance, AB
+
+    Line::new(value.a, value.b)
+  }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -110,7 +153,7 @@ impl Runway {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
-pub enum TaxiWaypoint {
+pub enum TaxiInstruction {
   Taxiway(Taxiway),
   Runway(Runway),
   Gate(Terminal, Gate),
@@ -123,8 +166,9 @@ pub enum AircraftState {
   Flying,
   Landing(Runway),
   Taxiing {
-    pos: TaxiWaypoint,
-    waypoints: Vec<TaxiWaypoint>,
+    pos: TaxiInstruction,
+    instructions: Vec<TaxiInstruction>,
+    waypoints: Vec<Vec2>,
     hold: bool,
   },
 
@@ -262,7 +306,8 @@ impl Aircraft {
       is_colliding: false,
       intention: AircraftIntention::Depart(departure_heading),
       state: AircraftState::Taxiing {
-        pos: TaxiWaypoint::Gate(terminal.clone(), gate.clone()),
+        pos: TaxiInstruction::Gate(terminal.clone(), gate.clone()),
+        instructions: Vec::new(),
         waypoints: Vec::new(),
         hold: false,
       },
@@ -324,6 +369,47 @@ impl Aircraft {
     // if let AircraftState::Taxiing { heading, .. } = &self.state {
     //   self.state = AircraftState::Departing(*heading);
     // }
+  }
+
+  pub fn do_taxi(&mut self, taxi_instructions: Vec<TaxiInstruction>) {
+    if let AircraftState::Taxiing {
+      pos,
+      instructions,
+      waypoints,
+      hold,
+    } = &mut self.state
+    {
+      *instructions = taxi_instructions;
+
+      let instruction = instructions.pop();
+      if let Some(instruction) = instruction {
+        let current_line: Line = match pos {
+          TaxiInstruction::Taxiway(x) => x.clone().into(),
+          TaxiInstruction::Runway(x) => x.clone().into(),
+          TaxiInstruction::Gate(x, _) => x.clone().into(),
+        };
+        let next_line: Line = match instruction {
+          TaxiInstruction::Taxiway(x) => x.into(),
+          TaxiInstruction::Runway(x) => x.into(),
+          TaxiInstruction::Gate(x, _) => x.into(),
+        };
+
+        let intersection = find_line_intersection(
+          current_line.0,
+          current_line.1,
+          next_line.0,
+          next_line.1,
+        );
+
+        if let Some(intersection) = intersection {
+          let angle = angle_between_points(self.pos, intersection);
+          let heading = degrees_to_heading(angle);
+
+          self.heading = heading;
+          self.target.heading = heading;
+        }
+      }
+    }
   }
 
   pub fn resume_own_navigation(&mut self) {
