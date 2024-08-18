@@ -482,16 +482,19 @@ impl Aircraft {
 
           let distance = self.pos.distance(waypoint.pos);
           let distance = if waypoint.hold {
-            distance + (FEET_PER_UNIT * 250.0)
+            (distance - (FEET_PER_UNIT * 250.0)).max(0.0)
           } else {
             distance
           };
           let movement_speed = speed_in_pixels;
 
-          dbg!(movement_speed, distance);
           if movement_speed >= distance {
-            self.pos = waypoint.pos;
-            *current = waypoints.pop().unwrap();
+            if waypoint.hold {
+              self.do_hold_taxi()
+            } else {
+              self.pos = waypoint.pos;
+              *current = waypoints.pop().unwrap();
+            }
           }
         }
       }

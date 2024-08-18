@@ -409,24 +409,26 @@ export default function Canvas({
     ctx.lineTo(startLeft.x, startLeft.y);
     ctx.fill();
 
-    let start = projectPoint(origin, taxiway.a, projectionScale);
-    let end = projectPoint(origin, taxiway.b, projectionScale);
-    let middle = midpointBetweenPoints(start, end);
+    if (taxiway.kind.type === 'normal') {
+      let start = projectPoint(origin, taxiway.a, projectionScale);
+      let end = projectPoint(origin, taxiway.b, projectionScale);
+      let middle = midpointBetweenPoints(start, end);
 
-    let fontSize = 16;
-    ctx.font = `900 ${fontSize}px monospace`;
-    let textWidth = ctx.measureText(taxiway.id).width + 10;
-    ctx.fillStyle = '#000a';
-    ctx.fillRect(
-      middle.x - textWidth * 0.5,
-      middle.y - fontSize * 0.5,
-      textWidth,
-      fontSize
-    );
+      let fontSize = 16;
+      ctx.font = `900 ${fontSize}px monospace`;
+      let textWidth = ctx.measureText(taxiway.id).width + 10;
+      ctx.fillStyle = '#000a';
+      ctx.fillRect(
+        middle.x - textWidth * 0.5,
+        middle.y - fontSize * 0.5,
+        textWidth,
+        fontSize
+      );
 
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#dd9904';
-    ctx.fillText(taxiway.id, middle.x, middle.y);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#dd9904';
+      ctx.fillText(taxiway.id, middle.x, middle.y);
+    }
   }
 
   function drawTerminal(ctx: Ctx, terminal: Terminal) {
