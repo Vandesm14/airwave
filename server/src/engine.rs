@@ -260,19 +260,27 @@ impl Engine {
             Task::GoAround => aircraft.do_go_around(),
             Task::Takeoff => aircraft.do_takeoff(),
             Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
-            Task::TaxiRunway { runway, waypoints } => {
+            Task::TaxiRunway {
+              runway: runway_str,
+              waypoints: waypoints_str,
+            } => {
               if let AircraftState::Taxiing { .. } = &mut aircraft.state {
-                let mut taxi_instructions: Vec<TaxiInstruction> = Vec::new();
-                for instruction in waypoints.iter().rev() {
-                  if let Some(taxiway) =
-                    self.taxiways.iter().find(|t| t.id == *instruction)
-                  {
-                    taxi_instructions
-                      .push(TaxiInstruction::Taxiway(taxiway.clone()));
-                  }
-                }
+                let runway = self.runways.iter().find(|r| r.id == "runway");
+                if let Some(runway) = runway {
+                  let mut taxi_instructions: Vec<TaxiInstruction> =
+                    vec![TaxiInstruction::Runway(runway.clone())];
 
-                aircraft.do_taxi(taxi_instructions);
+                  for instruction in waypoints_str.iter().rev() {
+                    if let Some(taxiway) =
+                      self.taxiways.iter().find(|t| t.id == *instruction)
+                    {
+                      taxi_instructions
+                        .push(TaxiInstruction::Taxiway(taxiway.clone()));
+                    }
+                  }
+
+                  aircraft.do_taxi(taxi_instructions);
+                }
               }
             }
             Task::TaxiGate { gate, waypoints } => {
