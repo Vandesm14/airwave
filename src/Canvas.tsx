@@ -451,23 +451,6 @@ export default function Canvas({
     ctx.lineTo(a.x, a.y);
     ctx.fill();
 
-    let middle = midpointBetweenPoints(c, d);
-
-    let fontSize = 16;
-    ctx.font = `900 ${fontSize}px monospace`;
-    ctx.textAlign = 'center';
-    let textWidth = ctx.measureText(terminal.id).width + 10;
-    ctx.fillStyle = '#000a';
-    ctx.fillRect(
-      middle.x - textWidth * 0.5,
-      middle.y - fontSize * 0.5,
-      textWidth,
-      fontSize
-    );
-
-    ctx.fillStyle = '#dd9904';
-    ctx.fillText(terminal.id, middle.x, middle.y);
-
     function drawGate(ctx: Ctx, gate: Gate, id: string) {
       let pos = projectPoint(origin, gate.pos, projectionScale);
 

@@ -216,8 +216,7 @@ pub struct Aircraft {
 #[serde(tag = "type", content = "value")]
 pub enum TaxiwayKind {
   Normal,
-  HoldShort,
-  Apron,
+  HoldShort(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -406,7 +405,8 @@ impl Aircraft {
     self.pos = pos;
   }
 
-  fn update_taxi(&mut self) {
+  fn update_taxi(&mut self, dt: f32) {
+    let speed_in_pixels = self.speed_in_pixels();
     if let AircraftState::Taxiing {
       pos, instructions, ..
     } = &mut self.state
@@ -431,13 +431,29 @@ impl Aircraft {
           next_line.1,
         );
 
+        dbg!(pos.clone(), instruction, intersection);
+
         if let Some(intersection) = intersection {
           let angle = angle_between_points(self.pos, intersection);
           let heading = degrees_to_heading(angle);
 
           self.heading = heading;
           self.target.heading = heading;
+
+          let distance = self.pos.distance_squared(intersection);
+          let movement_speed = speed_in_pixels;
+
+          dbg!(movement_speed.powf(2.0), distance);
+
+          if movement_speed.powf(2.0) >= distance {
+            self.pos = intersection;
+            *pos = instructions.pop().unwrap();
+          }
         }
+      }
+
+      if instructions.is_empty() {
+        self.target.speed = 0.0;
       }
     }
   }
@@ -547,7 +563,7 @@ impl Aircraft {
   pub fn update(&mut self, airspace_size: f32, dt: f32) -> bool {
     let went_around = self.update_ils();
     self.update_targets(dt);
-    self.update_taxi();
+    self.update_taxi(dt);
     self.update_position(dt);
     self.update_leave_airspace(airspace_size);
 

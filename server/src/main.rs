@@ -127,7 +127,7 @@ async fn main() {
         add_degrees(heading_to_degrees(runway_27.heading), 90.0),
         FEET_PER_UNIT * 500.0,
       ),
-      kind: TaxiwayKind::HoldShort,
+      kind: TaxiwayKind::HoldShort("27".into()),
     };
 
     let taxiway_exit_27 = Taxiway {
@@ -138,7 +138,7 @@ async fn main() {
         add_degrees(heading_to_degrees(runway_27.heading), 90.0),
         FEET_PER_UNIT * 500.0,
       ),
-      kind: TaxiwayKind::HoldShort,
+      kind: TaxiwayKind::HoldShort("09".into()),
     };
 
     let a = move_point(taxiway_b.b, 270.0, FEET_PER_UNIT * 500.0);
