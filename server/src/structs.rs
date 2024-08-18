@@ -391,7 +391,6 @@ impl Aircraft {
   }
 
   pub fn do_taxi(&mut self, blank_waypoints: Vec<TaxiWaypoint>) {
-    dbg!(blank_waypoints.clone());
     if let AircraftState::Taxiing {
       waypoints,
       current: current_pos,
@@ -414,17 +413,17 @@ impl Aircraft {
           waypoint.pos = intersection;
 
           if waypoint.hold {
-            let angle = angle_between_points(current.pos, waypoint.pos);
+            let angle = angle_between_points(waypoint.pos, current.pos);
             let hold_point =
-              move_point(waypoint.pos, angle, FEET_PER_UNIT * 500.0);
-
-            dbg!(angle);
+              move_point(waypoint.pos, angle, FEET_PER_UNIT * 250.0);
 
             new_waypoints.push(TaxiWaypoint {
               pos: hold_point,
               wp: waypoint.wp.clone(),
               hold: true,
             });
+
+            waypoint.hold = false;
           }
 
           new_waypoints.push(waypoint.clone());
@@ -436,7 +435,6 @@ impl Aircraft {
 
       *waypoints = new_waypoints;
       waypoints.reverse();
-      dbg!(waypoints);
       current_pos.hold = false;
     }
 
@@ -501,8 +499,6 @@ impl Aircraft {
           if movement_speed >= distance {
             *current = waypoints.pop().unwrap();
             self.pos = waypoint.pos;
-
-            dbg!(current.clone());
 
             if waypoint.hold {
               self.do_hold_taxi();

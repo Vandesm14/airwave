@@ -265,7 +265,6 @@ impl Engine {
               waypoints: waypoints_str,
             } => {
               if let AircraftState::Taxiing { .. } = &mut aircraft.state {
-                dbg!(runway_str, waypoints_str);
                 let runway = self.runways.iter().find(|r| r.id == *runway_str);
                 let hold_short_taxiway = runway.and_then(|r| {
                   self.taxiways.iter().find(|t| {
@@ -283,12 +282,12 @@ impl Engine {
                     TaxiWaypoint {
                       pos: Vec2::default(),
                       wp: TaxiPoint::Runway(runway.clone()),
-                      hold: false,
+                      hold: true,
                     },
                     TaxiWaypoint {
                       pos: Vec2::default(),
                       wp: TaxiPoint::Taxiway(hold_short_taxiway.clone()),
-                      hold: true,
+                      hold: false,
                     },
                   ];
 

@@ -558,6 +558,7 @@ export default function Canvas({
 
     if (aircraft.state.type === 'taxiing') {
       ctx.strokeStyle = 'red';
+      ctx.fillStyle = 'red';
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
@@ -565,6 +566,14 @@ export default function Canvas({
         ctx.lineTo(point.x, point.y);
       }
       ctx.stroke();
+
+      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+        let point = projectPoint(origin, wp.pos, projectionScale);
+        ctx.fillStyle = wp.hold ? 'red' : '#00ff00';
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
