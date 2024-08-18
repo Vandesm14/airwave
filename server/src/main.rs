@@ -46,6 +46,8 @@ struct AudioResponse {
 
 #[tokio::main]
 async fn main() {
+  tracing_subscriber::fmt::init();
+
   dotenv().ok();
   let api_key: Arc<str> = env::var("OPENAI_API_KEY")
     .expect("OPENAI_API_KEY must be set")
@@ -243,7 +245,7 @@ async fn main() {
     while let Ok((stream, _)) = listener.accept().await {
       let ws_stream = tokio_tungstenite::accept_async(stream).await;
       if let Err(e) = ws_stream {
-        eprintln!("Error during the websocket handshake occurred: {e}");
+        tracing::error!("Error during the websocket handshake occurred: {e}");
         return;
       }
 
