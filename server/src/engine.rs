@@ -260,6 +260,12 @@ impl Engine {
             Task::GoAround => aircraft.do_go_around(),
             Task::Takeoff => aircraft.do_takeoff(),
             Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
+            Task::TaxiRunway { runway, waypoints } => {
+              todo!("taxi runway {runway:?} {waypoints:?}")
+            }
+            Task::TaxiGate { gate, waypoints } => {
+              todo!("taxi gate {gate:?} {waypoints:?}")
+            }
           }
         }
 

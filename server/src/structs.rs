@@ -24,6 +24,16 @@ pub enum Task {
   Takeoff,
   #[serde(rename = "resume")]
   ResumeOwnNavigation,
+  #[serde(rename = "taxi-runway")]
+  TaxiRunway {
+    runway: String,
+    waypoints: Vec<String>,
+  },
+  #[serde(rename = "taxi-gate")]
+  TaxiGate {
+    gate: String,
+    waypoints: Vec<String>,
+  },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
