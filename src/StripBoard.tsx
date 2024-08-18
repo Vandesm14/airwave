@@ -44,15 +44,15 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
       // } else if (strip.value.intention.type === 'departing') {
       //   target = `${strip.value.state.value.toString().padStart(3, '0')}&nbsp;`;
     } else if (strip.value.state.type === 'taxiing') {
-      switch (strip.value.state.value.pos.type) {
+      switch (strip.value.state.value.current.wp.type) {
         case 'gate':
-          target = `&nbsp;&nbsp;${strip.value.state.value.pos.value[1].id}`;
+          target = `&nbsp;&nbsp;${strip.value.state.value.current.wp.value[1].id}`;
           break;
         case 'runway':
-          target = `RW${strip.value.state.value.pos.value.id}`;
+          target = `RW${strip.value.state.value.current.wp.value.id}`;
           break;
         case 'taxiway':
-          target = `T ${strip.value.state.value.pos.value.id}`;
+          target = `T ${strip.value.state.value.current.wp.value.id}`;
           break;
       }
     }

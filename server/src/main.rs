@@ -95,28 +95,26 @@ async fn main() {
       kind: TaxiwayKind::Normal,
     };
 
-    let taxiway_c_a = move_point(
-      runway_20.start(),
-      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
-      FEET_PER_UNIT * 500.0,
-    );
-    let taxiway_c_b = move_point(
-      runway_20.end(),
-      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
-      FEET_PER_UNIT * 500.0,
-    );
-    let intersection_b_c = find_line_intersection(
-      taxiway_b.a,
-      taxiway_b.b,
-      taxiway_c_a,
-      taxiway_c_b,
-    )
-    .expect("could not find intersection for taxiway C");
     let taxiway_c = Taxiway {
       id: "C".into(),
-      a: intersection_b_c,
-      b: taxiway_c_b,
+      a: move_point(
+        runway_20.start(),
+        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+        FEET_PER_UNIT * 500.0,
+      ),
+      b: move_point(
+        runway_20.end(),
+        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+        FEET_PER_UNIT * 500.0,
+      ),
       kind: TaxiwayKind::Normal,
+    };
+
+    let taxiway_hs_20 = Taxiway {
+      id: "HS20".into(),
+      a: runway_20.start(),
+      b: taxiway_c.a,
+      kind: TaxiwayKind::HoldShort("20".into()),
     };
 
     let taxiway_hs_27 = Taxiway {
@@ -204,6 +202,7 @@ async fn main() {
     engine.taxiways.push(taxiway_a3);
     engine.taxiways.push(taxiway_b);
     engine.taxiways.push(taxiway_c);
+    engine.taxiways.push(taxiway_hs_20);
     engine.taxiways.push(taxiway_hs_27);
     engine.taxiways.push(taxiway_exit_27);
 

@@ -53,6 +53,16 @@ impl From<Terminal> for Line {
   }
 }
 
+impl From<TaxiPoint> for Line {
+  fn from(value: TaxiPoint) -> Self {
+    match value {
+      TaxiPoint::Taxiway(x) => x.into(),
+      TaxiPoint::Runway(x) => x.into(),
+      TaxiPoint::Gate(x, _) => x.into(),
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
@@ -72,11 +82,15 @@ pub enum Task {
   TaxiRunway {
     runway: String,
     waypoints: Vec<String>,
+    #[serde(rename = "hold-at")]
+    hold_at: Vec<String>,
   },
   #[serde(rename = "taxi-gate")]
   TaxiGate {
     gate: String,
     waypoints: Vec<String>,
+    #[serde(rename = "hold-at")]
+    hold_at: Vec<String>,
   },
   #[serde(rename = "taxi-hold")]
   TaxiHold,
@@ -152,8 +166,16 @@ impl Runway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+pub struct TaxiWaypoint {
+  pub pos: Vec2,
+  pub wp: TaxiPoint,
+  pub hold: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
-pub enum TaxiInstruction {
+pub enum TaxiPoint {
   Taxiway(Taxiway),
   Runway(Runway),
   Gate(Terminal, Gate),
@@ -166,9 +188,8 @@ pub enum AircraftState {
   Flying,
   Landing(Runway),
   Taxiing {
-    pos: TaxiInstruction,
-    instructions: Vec<TaxiInstruction>,
-    waypoints: Vec<Vec2>,
+    current: TaxiWaypoint,
+    waypoints: Vec<TaxiWaypoint>,
   },
 
   Deleted,
@@ -304,8 +325,11 @@ impl Aircraft {
       is_colliding: false,
       intention: AircraftIntention::Depart(departure_heading),
       state: AircraftState::Taxiing {
-        pos: TaxiInstruction::Gate(terminal.clone(), gate.clone()),
-        instructions: Vec::new(),
+        current: TaxiWaypoint {
+          pos: gate.pos,
+          wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
+          hold: true,
+        },
         waypoints: Vec::new(),
       },
       pos: gate.pos,
@@ -368,10 +392,34 @@ impl Aircraft {
     // }
   }
 
-  pub fn do_taxi(&mut self, taxi_instructions: Vec<TaxiInstruction>) {
-    if let AircraftState::Taxiing { instructions, .. } = &mut self.state {
-      *instructions = taxi_instructions;
-      self.target.speed = 20.0;
+  pub fn do_taxi(&mut self, blank_waypoints: Vec<TaxiWaypoint>) {
+    if let AircraftState::Taxiing {
+      waypoints,
+      current: current_pos,
+      ..
+    } = &mut self.state
+    {
+      let mut blank_waypoints = blank_waypoints;
+      let mut current = current_pos.clone();
+      for waypoint in blank_waypoints.iter_mut().rev() {
+        let current_line: Line = current.wp.clone().into();
+        let waypoint_line: Line = waypoint.wp.clone().into();
+        let intersection = find_line_intersection(
+          current_line.0,
+          current_line.1,
+          waypoint_line.0,
+          waypoint_line.1,
+        );
+
+        if let Some(intersection) = intersection {
+          waypoint.pos = intersection;
+          current = waypoint.clone();
+        } else {
+          todo!("handle no intersection");
+        }
+      }
+
+      *waypoints = blank_waypoints;
     }
 
     if let AircraftState::Taxiing { .. } = self.state {
@@ -408,20 +456,20 @@ impl Aircraft {
   fn update_taxi(&mut self, dt: f32) {
     let speed_in_pixels = self.speed_in_pixels();
     if let AircraftState::Taxiing {
-      pos, instructions, ..
+      current, waypoints, ..
     } = &mut self.state
     {
-      let instruction = instructions.last();
-      if let Some(instruction) = instruction {
-        let current_line: Line = match pos {
-          TaxiInstruction::Taxiway(x) => x.clone().into(),
-          TaxiInstruction::Runway(x) => x.clone().into(),
-          TaxiInstruction::Gate(x, _) => x.clone().into(),
+      let waypoint = waypoints.last();
+      if let Some(waypoint) = waypoint {
+        let current_line: Line = match current.wp.clone() {
+          TaxiPoint::Taxiway(x) => x.into(),
+          TaxiPoint::Runway(x) => x.into(),
+          TaxiPoint::Gate(x, _) => x.into(),
         };
-        let next_line: Line = match instruction {
-          TaxiInstruction::Taxiway(x) => x.clone().into(),
-          TaxiInstruction::Runway(x) => x.clone().into(),
-          TaxiInstruction::Gate(x, _) => x.clone().into(),
+        let next_line: Line = match waypoint.wp.clone() {
+          TaxiPoint::Taxiway(x) => x.into(),
+          TaxiPoint::Runway(x) => x.into(),
+          TaxiPoint::Gate(x, _) => x.into(),
         };
 
         let intersection = find_line_intersection(
@@ -431,8 +479,6 @@ impl Aircraft {
           next_line.1,
         );
 
-        dbg!(pos.clone(), instruction, intersection);
-
         if let Some(intersection) = intersection {
           let angle = angle_between_points(self.pos, intersection);
           let heading = degrees_to_heading(angle);
@@ -440,19 +486,23 @@ impl Aircraft {
           self.heading = heading;
           self.target.heading = heading;
 
-          let distance = self.pos.distance_squared(intersection);
+          let distance = self.pos.distance(intersection);
+          let distance = if waypoint.hold {
+            distance + (FEET_PER_UNIT * 250.0)
+          } else {
+            distance
+          };
           let movement_speed = speed_in_pixels;
 
-          dbg!(movement_speed.powf(2.0), distance);
-
-          if movement_speed.powf(2.0) >= distance {
+          if movement_speed >= distance {
             self.pos = intersection;
-            *pos = instructions.pop().unwrap();
+            *current = waypoints.pop().unwrap();
           }
         }
       }
 
-      if instructions.is_empty() {
+      if waypoints.is_empty() {
+        self.speed = 0.0;
         self.target.speed = 0.0;
       }
     }

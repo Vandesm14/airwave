@@ -1,4 +1,4 @@
-export type TaxiInstruction =
+export type TaxiPoint =
   | {
       type: 'taxiway';
       value: Taxiway;
@@ -11,6 +11,12 @@ export type TaxiInstruction =
       type: 'gate';
       value: [Terminal, Gate];
     };
+
+export type TaxiWaypoint = {
+  pos: Vec2;
+  wp: TaxiPoint;
+  hold: boolean;
+};
 
 export type Aircraft = {
   x: number;
@@ -43,9 +49,7 @@ export type Aircraft = {
     | {
         type: 'taxiing';
         value: {
-          pos: TaxiInstruction;
-          instructions: Array<TaxiInstruction>;
-          waypoints: Array<Vec2>;
+          current: TaxiWaypoint;
         };
       };
   intention:

@@ -11,7 +11,7 @@ use crate::{
   angle_between_points, degrees_to_heading, heading_to_direction,
   structs::{
     Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Gate, Runway,
-    Task, TaxiInstruction, Taxiway, TaxiwayKind, Terminal,
+    Task, TaxiPoint, TaxiWaypoint, Taxiway, TaxiwayKind, Terminal,
   },
 };
 
@@ -263,8 +263,10 @@ impl Engine {
             Task::TaxiRunway {
               runway: runway_str,
               waypoints: waypoints_str,
+              hold_at,
             } => {
               if let AircraftState::Taxiing { .. } = &mut aircraft.state {
+                dbg!(runway_str, waypoints_str, hold_at);
                 let runway = self.runways.iter().find(|r| r.id == *runway_str);
                 let hold_short_taxiway = runway.and_then(|r| {
                   self.taxiways.iter().find(|t| {
@@ -278,17 +280,29 @@ impl Engine {
                 if let Some((runway, hold_short_taxiway)) =
                   runway.zip(hold_short_taxiway)
                 {
-                  let mut taxi_instructions: Vec<TaxiInstruction> = vec![
-                    TaxiInstruction::Runway(runway.clone()),
-                    TaxiInstruction::Taxiway(hold_short_taxiway.clone()),
+                  let mut taxi_instructions: Vec<TaxiWaypoint> = vec![
+                    TaxiWaypoint {
+                      pos: Vec2::default(),
+                      wp: TaxiPoint::Runway(runway.clone()),
+                      hold: false,
+                    },
+                    TaxiWaypoint {
+                      pos: Vec2::default(),
+                      wp: TaxiPoint::Taxiway(hold_short_taxiway.clone()),
+                      hold: true,
+                    },
                   ];
 
                   for instruction in waypoints_str.iter().rev() {
-                    if let Some(taxiway) =
-                      self.taxiways.iter().find(|t| t.id == *instruction)
-                    {
-                      taxi_instructions
-                        .push(TaxiInstruction::Taxiway(taxiway.clone()));
+                    let taxiway =
+                      self.taxiways.iter().find(|t| t.id == *instruction);
+                    let is_hold = hold_at.iter().any(|h| **h == *instruction);
+                    if let Some(taxiway) = taxiway {
+                      taxi_instructions.push(TaxiWaypoint {
+                        pos: Vec2::default(),
+                        wp: TaxiPoint::Taxiway(taxiway.clone()),
+                        hold: is_hold,
+                      });
                     }
                   }
 
@@ -296,8 +310,12 @@ impl Engine {
                 }
               }
             }
-            Task::TaxiGate { gate, waypoints } => {
-              todo!("taxi gate {gate:?} {waypoints:?}")
+            Task::TaxiGate {
+              gate,
+              waypoints,
+              hold_at,
+            } => {
+              todo!("taxi gate {gate:?} {waypoints:?} {hold_at:?}")
             }
             Task::TaxiHold => aircraft.do_hold_taxi(),
             Task::TaxiContinue => aircraft.do_continue_taxi(),
