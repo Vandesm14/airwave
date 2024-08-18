@@ -98,7 +98,7 @@ impl Runway {
 pub enum TaxiWaypoint {
   Taxiway(Taxiway),
   Runway(Runway),
-  Gate(Gate),
+  Gate(Terminal, Gate),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -109,7 +109,7 @@ pub enum AircraftState {
   Landing(Runway),
   Taxiing {
     pos: TaxiWaypoint,
-    waypoints: TaxiWaypoint,
+    waypoints: Vec<TaxiWaypoint>,
     hold: bool,
   },
 
@@ -175,7 +175,7 @@ pub struct Taxiway {
   pub kind: TaxiwayKind,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gate {
   #[serde(serialize_with = "serialize_vec2")]
   pub pos: Vec2,
@@ -202,11 +202,7 @@ pub struct Terminal {
 }
 
 impl Aircraft {
-  pub fn random(
-    airspace_size: f32,
-    frequency: f32,
-    intention: AircraftIntention,
-  ) -> Self {
+  pub fn random_to_land(airspace_size: f32, frequency: f32) -> Self {
     let airspace_center = Vec2::splat(airspace_size * 0.5);
     let point =
       get_random_point_on_circle(airspace_center, airspace_size * 0.5);
@@ -214,7 +210,7 @@ impl Aircraft {
     Self {
       callsign: Self::random_callsign(),
       is_colliding: false,
-      intention,
+      intention: AircraftIntention::Land,
       state: AircraftState::Flying,
       pos: point.position,
       heading: degrees_to_heading(angle_between_points(
@@ -231,6 +227,38 @@ impl Aircraft {
         )),
         speed: 250.0,
         altitude: 7000.0,
+      },
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
+    }
+  }
+
+  pub fn random_to_takeoff(
+    frequency: f32,
+    terminal: Terminal,
+    gate: Gate,
+    departure_heading: f32,
+  ) -> Self {
+    Self {
+      callsign: Self::random_callsign(),
+      is_colliding: false,
+      intention: AircraftIntention::Depart(departure_heading),
+      state: AircraftState::Taxiing {
+        pos: TaxiWaypoint::Gate(terminal.clone(), gate.clone()),
+        waypoints: Vec::new(),
+        hold: false,
+      },
+      pos: gate.pos,
+      heading: gate.heading,
+      speed: 0.0,
+      altitude: 0.0,
+      frequency,
+      target: AircraftTargets {
+        heading: gate.heading,
+        speed: 0.0,
+        altitude: 0.0,
       },
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)

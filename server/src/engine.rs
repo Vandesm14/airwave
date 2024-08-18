@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, degrees_to_heading, heading_to_direction,
   structs::{
-    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Runway, Task,
-    Taxiway, Terminal,
+    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Gate, Runway,
+    Task, Taxiway, Terminal,
   },
 };
 
@@ -79,29 +79,28 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    // TODO: Random departures, arrivals, and passovers
     let mut rng = thread_rng();
-    // let should_be_takeoff = rng.gen_ratio(1, 1);
+    let should_be_takeoff = rng.gen_ratio(1, 1);
 
-    let mut aircraft = Aircraft::random(
-      self.airspace_size,
-      self.default_frequency,
-      AircraftIntention::Land,
-    );
-
-    // if should_be_takeoff {
-    //   let mut rng = thread_rng();
-    //   let heading: f32 = rng.gen_range(1.0..36.0);
-    //   let heading: f32 = heading.round() * 10.0;
-
-    //   aircraft.state = AircraftState::WillDepart {
-    //     runway: self.runways.choose(&mut rng).unwrap().clone(),
-    //     heading,
-    //   };
-    //   aircraft.frequency = 118.6;
-    // }
+    let terminal = self.terminals.choose(&mut rng).unwrap();
+    let gate = terminal
+      .gates
+      .choose(&mut rng)
+      .expect("terminal has no gates to choose from");
+    let departure_heading = (rng.gen_range(0..36) * 10) as f32;
+    let aircraft = if should_be_takeoff {
+      Aircraft::random_to_takeoff(
+        self.default_frequency,
+        terminal.clone(),
+        *gate,
+        departure_heading,
+      )
+    } else {
+      Aircraft::random_to_land(self.airspace_size, self.default_frequency)
+    };
 
     self.aircraft.push(aircraft.clone());
+
     // TODO: update replies
     // let reply =
     //   if let AircraftState::WillDepart { runway, heading } = aircraft.state {
