@@ -91,7 +91,7 @@ function getStripsLocalStorage() {
       { type: 'header', value: 'Approach' },
       { type: 'header', value: 'Landing RW20' },
       { type: 'header', value: 'Landing RW29' },
-      { type: 'header', value: 'Takeoff' },
+      { type: 'header', value: 'Ground' },
       { type: 'header', value: 'Departure' },
     ];
   }
@@ -148,7 +148,7 @@ export default function StripBoard({
               ];
             } else if (aircraft.intention.type === 'depart') {
               let takeoffIndex = state.findIndex(
-                (s) => s.type === 'header' && s.value === 'Takeoff'
+                (s) => s.type === 'header' && s.value === 'Ground'
               );
               if (takeoffIndex !== -1) {
                 return [
