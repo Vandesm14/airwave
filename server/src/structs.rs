@@ -1,4 +1,5 @@
 use std::{
+  f32::consts::PI,
   ops::Add,
   sync::mpsc::Sender,
   time::{Duration, SystemTime},
@@ -9,10 +10,10 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-  angle_between_points, degrees_to_heading, delta_angle, engine::OutgoingReply,
-  find_line_intersection, get_random_point_on_circle, heading_to_degrees,
-  inverse_degrees, move_point, FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND,
-  NAUTICALMILES_TO_FEET, TIME_SCALE,
+  angle_between_points, closest_point_on_line, degrees_to_heading, delta_angle,
+  engine::OutgoingReply, find_line_intersection, get_random_point_on_circle,
+  heading_to_degrees, inverse_degrees, move_point, FEET_PER_UNIT,
+  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
 pub struct Line(Vec2, Vec2);
@@ -272,6 +273,14 @@ pub struct Gate {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum GoAroundReason {
+  TooHigh,
+  WrongAngle,
+
+  None,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Terminal {
   pub id: char,
   #[serde(serialize_with = "serialize_vec2")]
@@ -357,7 +366,11 @@ impl Aircraft {
     self.speed * KNOT_TO_FEET_PER_SECOND * FEET_PER_UNIT
   }
 
-  pub fn do_go_around(&mut self, sender: &Sender<OutgoingReply>) {
+  pub fn do_go_around(
+    &mut self,
+    sender: &Sender<OutgoingReply>,
+    reason: GoAroundReason,
+  ) {
     if let AircraftState::Landing(_) = &self.state {
       if self.target.speed < 250.0 {
         self.target.speed = 250.0;
@@ -370,11 +383,20 @@ impl Aircraft {
 
     self.state = AircraftState::Flying;
 
+    let text = match reason {
+      GoAroundReason::TooHigh => {
+        format!("Tower, {} is going around, too high.", self.callsign)
+      }
+      GoAroundReason::WrongAngle => {
+        format!("Tower, {} is going around, missed approach.", self.callsign)
+      }
+      GoAroundReason::None => return,
+    };
     sender
       .send(OutgoingReply::Reply(CommandWithFreq {
         id: self.callsign.clone(),
         frequency: self.frequency,
-        reply: format!("Tower, {} is going around.", self.callsign),
+        reply: text,
         tasks: Vec::new(),
       }))
       .unwrap()
@@ -576,46 +598,74 @@ impl Aircraft {
 
   fn update_landing(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     if let AircraftState::Landing(runway) = &self.state {
-      let d_angle = delta_angle(
-        angle_between_points(runway.end(), self.pos),
-        inverse_degrees(heading_to_degrees(runway.heading)),
+      let ils_line = Line::new(
+        move_point(
+          runway.start(),
+          heading_to_degrees(runway.heading),
+          FEET_PER_UNIT * 500.0,
+        ),
+        move_point(
+          runway.start(),
+          inverse_degrees(heading_to_degrees(runway.heading)),
+          NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 10.0,
+        ),
       );
+      let start_descent_distance = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
 
       let distance_to_runway = self.pos.distance(runway.start());
 
       let climb_speed = self.dt_climb_speed(dt);
       let seconds_for_descent = self.altitude / (climb_speed / dt);
-      // let distance_for_descent = self.speed_in_pixels() * seconds_for_descent;
 
       let target_speed_ft_s = distance_to_runway / seconds_for_descent;
       let target_knots =
         target_speed_ft_s / KNOT_TO_FEET_PER_SECOND / FEET_PER_UNIT;
 
-      let runway_angle = heading_to_degrees(runway.heading);
-      let self_angle = heading_to_degrees(self.heading);
-      let turn_angle = delta_angle(self_angle, runway_angle);
+      self.target.altitude =
+        4000.0 * (distance_to_runway / start_descent_distance).min(1.0);
 
-      dbg!(runway_angle, self_angle, turn_angle);
+      if distance_to_runway <= 1.0 {
+        self.altitude = 0.0;
+        self.target.altitude = 0.0;
 
-      if target_knots >= 170.0 {
-        self.target.speed = target_knots;
-      } else {
-        self.do_go_around(sender);
+        self.heading = runway.heading;
+        self.target.heading = runway.heading;
+
+        self.state = AircraftState::Taxiing {
+          current: TaxiWaypoint {
+            pos: runway.start(),
+            wp: TaxiPoint::Runway(runway.clone()),
+            behavior: TaxiWaypointBehavior::GoTo,
+          },
+          waypoints: vec![TaxiWaypoint {
+            pos: runway.end(),
+            wp: TaxiPoint::Runway(runway.clone()),
+            behavior: TaxiWaypointBehavior::GoTo,
+          }],
+        };
+
         return;
       }
 
-      self.target.altitude = 0.0;
-
-      // If we are on approach to the runway
-      if d_angle.abs() <= 5.0 {
-        let turn_amount = 30.0_f32.min(d_angle.abs() * 6.0);
-
-        if d_angle < 0.0 {
-          self.target.heading = runway.heading + turn_amount;
-        } else if d_angle > 0.0 {
-          self.target.heading = runway.heading - turn_amount;
-        }
+      if (165.0..=175.0).contains(&target_knots) {
+        self.target.speed = target_knots;
+      } else if target_knots < 165.0 {
+        self.do_go_around(sender, GoAroundReason::TooHigh);
+        return;
       }
+
+      let closest_point =
+        closest_point_on_line(self.pos, ils_line.0, ils_line.1);
+
+      let landing_point = move_point(
+        closest_point,
+        heading_to_degrees(runway.heading),
+        NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 0.4,
+      );
+
+      let heading_to_point =
+        degrees_to_heading(angle_between_points(self.pos, landing_point));
+      self.target.heading = heading_to_point;
     }
   }
 
@@ -638,7 +688,15 @@ impl Aircraft {
   }
 
   fn dt_speed_speed(&self, dt: f32) -> f32 {
-    TIME_SCALE * 1.0 * dt
+    if self.altitude == 0.0 {
+      if self.speed > 20.0 {
+        TIME_SCALE * 4.0 * dt
+      } else {
+        TIME_SCALE * 8.0 * dt
+      }
+    } else {
+      TIME_SCALE * 2.0 * dt
+    }
   }
 
   fn update_targets(&mut self, dt: f32) {

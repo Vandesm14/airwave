@@ -241,7 +241,8 @@ impl Engine {
                 aircraft.state = AircraftState::Landing(target.clone());
               }
             }
-            Task::GoAround => aircraft.do_go_around(&self.sender),
+            Task::GoAround => aircraft
+              .do_go_around(&self.sender, crate::structs::GoAroundReason::None),
             Task::Takeoff(runway) => {
               let target = self.runways.iter().find(|r| &r.id == runway);
               if let Some(target) = target {

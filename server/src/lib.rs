@@ -140,3 +140,26 @@ pub fn heading_to_direction(heading: f32) -> &'static str {
   // This should never happen, but we'll return "Unknown" just in case
   "Unknown"
 }
+
+fn closest_point_on_line(
+  point: Vec2,
+  line_start: Vec2,
+  line_end: Vec2,
+) -> Vec2 {
+  // Calculate the direction vector of the line
+  let line_dir = line_end - line_start;
+
+  // Normalize the direction vector
+  let line_dir_normalized = line_dir.normalize();
+
+  // Calculate the vector from line_start to the point
+  let point_vector = point - line_start;
+
+  // Calculate the projection of point_vector onto the line direction
+  let projection = point_vector.dot(line_dir_normalized);
+
+  // Calculate the closest point on the line
+  let closest_point = line_start + line_dir_normalized * projection;
+
+  closest_point
+}
