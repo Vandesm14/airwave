@@ -357,7 +357,7 @@ impl Aircraft {
       is_colliding: false,
       intention: AircraftIntention::Depart {
         has_notified: false,
-        heading: 0.0,
+        heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
       },
       state: AircraftState::Taxiing {
         current: TaxiWaypoint {
