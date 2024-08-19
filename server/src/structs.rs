@@ -494,7 +494,7 @@ impl Aircraft {
           new_waypoints.push(waypoint.clone());
           current = waypoint.clone();
         } else {
-          eprintln!("handle no intersection");
+          eprintln!("handle no intersection {current:#?}, {waypoint:#?}");
           return;
         }
       }
@@ -511,9 +511,10 @@ impl Aircraft {
 
   pub fn do_hold_taxi(&mut self, fast: bool) {
     self.target.speed = 0.0;
-    if fast {
-      self.speed = 0.0;
-    }
+    // TODO: holding short breaks things
+    // if fast {
+    self.speed = 0.0;
+    // }
   }
 
   pub fn do_continue_taxi(&mut self) {
@@ -527,12 +528,13 @@ impl Aircraft {
   }
 
   pub fn resume_own_navigation(&mut self) {
-    // TODO: If aircraft intends to depart, they can resume their navigation
-    // if let AircraftState::Departing(heading) = &self.state {
-    //   self.target.heading = *heading;
-    //   self.target.speed = 400.0;
-    //   self.target.altitude = 13000.;
-    // }
+    if let AircraftState::Flying = &self.state {
+      if let AircraftIntention::Depart { heading, .. } = &self.intention {
+        self.target.heading = *heading;
+        self.target.speed = 400.0;
+        self.target.altitude = 13000.0;
+      }
+    }
   }
 
   fn update_position(&mut self, dt: f32) {
@@ -657,14 +659,16 @@ impl Aircraft {
 
         self.target.speed = 0.0;
 
-        self.state = AircraftState::Taxiing {
-          current: TaxiWaypoint {
-            pos: runway.end(),
-            wp: TaxiPoint::Runway(runway.clone()),
-            behavior: TaxiWaypointBehavior::GoTo,
-          },
-          waypoints: Vec::new(),
-        };
+        if self.speed == 0.0 {
+          self.state = AircraftState::Taxiing {
+            current: TaxiWaypoint {
+              pos: runway.end(),
+              wp: TaxiPoint::Runway(runway.clone()),
+              behavior: TaxiWaypointBehavior::GoTo,
+            },
+            waypoints: Vec::new(),
+          };
+        }
 
         return;
       }
