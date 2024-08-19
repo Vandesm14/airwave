@@ -497,7 +497,6 @@ impl Aircraft {
   }
 
   pub fn do_hold_taxi(&mut self) {
-    self.speed = 0.0;
     self.target.speed = 0.0;
   }
 
@@ -631,17 +630,15 @@ impl Aircraft {
         self.heading = runway.heading;
         self.target.heading = runway.heading;
 
+        self.target.speed = 0.0;
+
         self.state = AircraftState::Taxiing {
           current: TaxiWaypoint {
-            pos: runway.start(),
-            wp: TaxiPoint::Runway(runway.clone()),
-            behavior: TaxiWaypointBehavior::GoTo,
-          },
-          waypoints: vec![TaxiWaypoint {
             pos: runway.end(),
             wp: TaxiPoint::Runway(runway.clone()),
             behavior: TaxiWaypointBehavior::GoTo,
-          }],
+          },
+          waypoints: Vec::new(),
         };
 
         return;

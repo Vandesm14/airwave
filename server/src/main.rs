@@ -133,17 +133,6 @@ async fn main() {
       kind: TaxiwayKind::HoldShort("27".into()),
     };
 
-    let taxiway_exit_27 = Taxiway {
-      id: "E27-1".into(),
-      a: runway_27.end(),
-      b: move_point(
-        runway_27.end(),
-        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
-        FEET_PER_UNIT * 500.0,
-      ),
-      kind: TaxiwayKind::HoldShort("09".into()),
-    };
-
     let a = move_point(taxiway_b.b, 270.0, FEET_PER_UNIT * 500.0);
     let b = move_point(a, 0.0, FEET_PER_UNIT * 4000.0);
     let c = move_point(b, 270.0, FEET_PER_UNIT * 1500.0);
@@ -179,7 +168,7 @@ async fn main() {
     let taxiway_a1 = Taxiway {
       id: "A1".into(),
       a: tw_a,
-      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 500.0),
+      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
       kind: TaxiwayKind::Normal,
     };
 
@@ -187,7 +176,7 @@ async fn main() {
     let taxiway_a2 = Taxiway {
       id: "A2".into(),
       a: tw_a,
-      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 500.0),
+      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
       kind: TaxiwayKind::Normal,
     };
 
@@ -195,7 +184,7 @@ async fn main() {
     let taxiway_a3 = Taxiway {
       id: "A3".into(),
       a: tw_a,
-      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 500.0),
+      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
       kind: TaxiwayKind::Normal,
     };
 
@@ -234,7 +223,6 @@ async fn main() {
     engine.taxiways.push(taxiway_c);
     engine.taxiways.push(taxiway_hs_20);
     engine.taxiways.push(taxiway_hs_27);
-    engine.taxiways.push(taxiway_exit_27);
 
     engine.terminals.push(terminal_a);
     engine.begin_loop();
