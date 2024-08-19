@@ -153,7 +153,7 @@ async fn main() {
     let spacing = 4000.0 / gates as f32;
     for i in 0..gates {
       let gate = Gate {
-        id: format!("A{i}"),
+        id: format!("A{}", i + 1),
         pos: move_point(
           gates_line_start,
           0.0,
@@ -225,30 +225,30 @@ async fn main() {
       kind: TaxiwayKind::Normal,
     };
 
-    engine.aircraft.push(Aircraft {
-      callsign: "SKW1234".into(),
-      is_colliding: false,
-      intention: AircraftIntention::Land,
-      state: AircraftState::Landing(runway_20.clone()),
-      pos: move_point(
-        runway_20.start(),
-        inverse_degrees(heading_to_degrees(runway_20.heading)),
-        NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 1.0,
-      ),
-      heading: runway_20.heading,
-      speed: 170.0,
-      altitude: 500.0,
-      frequency: 118.5,
-      target: AircraftTargets {
-        heading: runway_20.heading,
-        speed: 170.0,
-        altitude: 500.0,
-      },
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .as_millis(),
-    });
+    // engine.aircraft.push(Aircraft {
+    //   callsign: "SKW1234".into(),
+    //   is_colliding: false,
+    //   intention: AircraftIntention::Land,
+    //   state: AircraftState::Landing(runway_20.clone()),
+    //   pos: move_point(
+    //     runway_20.start(),
+    //     inverse_degrees(heading_to_degrees(runway_20.heading)),
+    //     NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 1.0,
+    //   ),
+    //   heading: runway_20.heading,
+    //   speed: 170.0,
+    //   altitude: 500.0,
+    //   frequency: 118.5,
+    //   target: AircraftTargets {
+    //     heading: runway_20.heading,
+    //     speed: 170.0,
+    //     altitude: 500.0,
+    //   },
+    //   created: SystemTime::now()
+    //     .duration_since(SystemTime::UNIX_EPOCH)
+    //     .unwrap_or(Duration::from_millis(0))
+    //     .as_millis(),
+    // });
 
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
@@ -264,6 +264,7 @@ async fn main() {
     engine.add_taxiway(taxiway_hs_20);
     engine.add_taxiway(taxiway_hs_27);
 
+    engine.spawn_random_aircraft();
     engine.terminals.push(terminal_a);
     engine.begin_loop();
   });

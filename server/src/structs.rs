@@ -1,5 +1,4 @@
 use std::{
-  f32::consts::PI,
   ops::Add,
   sync::mpsc::Sender,
   time::{Duration, SystemTime},
@@ -420,7 +419,7 @@ impl Aircraft {
     if let AircraftState::Taxiing { current, waypoints } = &mut self.state {
       // If we are currently holding short, continue our taxi
       if let TaxiPoint::Taxiway(Taxiway {
-        kind: TaxiwayKind::HoldShort(r),
+        kind: TaxiwayKind::HoldShort(_),
         ..
       }) = &current.wp
       {
@@ -491,7 +490,7 @@ impl Aircraft {
             });
 
             waypoint.behavior = TaxiWaypointBehavior::GoTo;
-          } else if let TaxiPoint::Gate(terminal, gate) = &waypoint.wp {
+          } else if let TaxiPoint::Gate(_, gate) = &waypoint.wp {
             new_waypoints.push(waypoint.clone());
             current = waypoint.clone();
 
@@ -522,7 +521,7 @@ impl Aircraft {
     }
   }
 
-  pub fn do_hold_taxi(&mut self, fast: bool) {
+  pub fn do_hold_taxi(&mut self, _fast: bool) {
     // TODO: if we don't do a fast stop for taxiing, holding short won't hold
     // short of the waypoint since we slow *after* reaching it, such that
     // we will overshoot and won't be directly over our destination.
@@ -577,7 +576,7 @@ impl Aircraft {
     }
   }
 
-  fn update_taxi(&mut self, dt: f32) {
+  fn update_taxi(&mut self) {
     let speed_in_pixels = self.speed_in_pixels();
     if let AircraftState::Taxiing { current, waypoints } = &mut self.state {
       if let TaxiWaypoint {
@@ -804,7 +803,7 @@ impl Aircraft {
   ) {
     self.update_landing(dt, sender);
     self.update_targets(dt);
-    self.update_taxi(dt);
+    self.update_taxi();
     self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);

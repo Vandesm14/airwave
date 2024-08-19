@@ -4,13 +4,14 @@ use std::{
 };
 
 use glam::Vec2;
-use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+  angle_between_points, degrees_to_heading, heading_to_direction,
   structs::{
-    Aircraft, AircraftState, CommandWithFreq, Runway, Task, TaxiPoint,
-    TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind, Terminal,
+    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Runway, Task,
+    TaxiPoint, TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind,
+    Terminal,
   },
   FEET_PER_UNIT,
 };
@@ -84,58 +85,34 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    let mut rng = thread_rng();
-    // TODO: random departures
-    // let should_be_takeoff = rng.gen_ratio(1, 1);
-    let should_be_takeoff = false;
-
-    let terminal = self.terminals.choose(&mut rng).unwrap();
-    let gate = terminal
-      .gates
-      .choose(&mut rng)
-      .expect("terminal has no gates to choose from");
-    let departure_heading = (rng.gen_range(0..36) * 10) as f32;
-    let aircraft = if should_be_takeoff {
-      todo!("random departure")
-      // Aircraft::departure_from_arrival(departure_heading);
-    } else {
-      Aircraft::random_to_land(self.airspace_size, self.default_frequency)
-    };
-
+    let aircraft =
+      Aircraft::random_to_land(self.airspace_size, self.default_frequency);
     self.aircraft.push(aircraft.clone());
 
     // TODO: update replies
-    // let reply =
-    //   if let AircraftState::WillDepart { runway, heading } = aircraft.state {
-    //     format!(
-    //       "Tower, {} is holding short of runway {}, departure to the {}.",
-    //       aircraft.callsign,
-    //       runway.id,
-    //       heading_to_direction(heading)
-    //     )
-    //   } else if let AircraftState::Approach = aircraft.state {
-    //     let center = Vec2::splat(self.airspace_size * 0.5);
-    //     let heading =
-    //       degrees_to_heading(angle_between_points(center, aircraft.pos));
-    //     let direction = heading_to_direction(heading);
+    let reply = if let AircraftIntention::Land = aircraft.intention {
+      let center = Vec2::splat(self.airspace_size * 0.5);
+      let heading =
+        degrees_to_heading(angle_between_points(center, aircraft.pos));
+      let direction = heading_to_direction(heading);
 
-    //     format!(
-    //       "Tower, {} is {} of the airport, with you.",
-    //       aircraft.callsign, direction
-    //     )
-    //   } else {
-    //     "Error generating reply for spawned aircraft".to_owned()
-    //   };
-    // self
-    //   .sender
-    //   .send(OutgoingReply::Reply(CommandWithFreq {
-    //     id: aircraft.callsign.clone(),
+      format!(
+        "Tower, {} is {} of the airport, with you.",
+        aircraft.callsign, direction
+      )
+    } else {
+      "Error generating reply for spawned aircraft".to_owned()
+    };
+    self
+      .sender
+      .send(OutgoingReply::Reply(CommandWithFreq {
+        id: aircraft.callsign.clone(),
 
-    //     frequency: aircraft.frequency,
-    //     reply,
-    //     tasks: Vec::new(),
-    //   }))
-    //   .unwrap();
+        frequency: aircraft.frequency,
+        reply,
+        tasks: Vec::new(),
+      }))
+      .unwrap();
   }
 
   pub fn begin_loop(&mut self) {
@@ -145,7 +122,7 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        if self.aircraft.len() < 1
+        if self.aircraft.len() < 10
           && self.last_spawn.elapsed() >= Duration::from_secs(60)
         {
           self.last_spawn = Instant::now();
