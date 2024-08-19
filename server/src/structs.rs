@@ -416,44 +416,11 @@ impl Aircraft {
   }
 
   pub fn do_takeoff(&mut self, runway: &Runway) {
-    if let AircraftState::Taxiing { current, waypoints } = &mut self.state {
-      // If we are currently holding short, continue our taxi
-      if let TaxiPoint::Taxiway(Taxiway {
-        kind: TaxiwayKind::HoldShort(_),
-        ..
-      }) = &current.wp
-      {
-        if let Some(TaxiWaypoint {
-          wp: TaxiPoint::Runway(r),
-          behavior,
-          ..
-        }) = &mut waypoints.first_mut()
-        {
-          if runway.id == r.id {
-            *behavior = TaxiWaypointBehavior::TakeOff;
+    self.pos = runway.start();
+    self.heading = runway.heading;
+    self.target.heading = runway.heading;
 
-            self.do_continue_taxi();
-            return;
-          } else {
-            eprintln!("cleared for wrong runway (holding short)")
-          }
-        }
-      }
-
-      // If we are lined up and waiting, take off
-      if let TaxiWaypoint {
-        wp: TaxiPoint::Runway(r),
-        behavior,
-        ..
-      } = current
-      {
-        if runway.id == r.id {
-          *behavior = TaxiWaypointBehavior::TakeOff;
-        } else {
-          eprintln!("cleared for wrong runway (lined up)")
-        }
-      }
-    }
+    self.state = AircraftState::TakingOff(runway.clone());
   }
 
   pub fn do_taxi(&mut self, blank_waypoints: Vec<TaxiWaypoint>) {
