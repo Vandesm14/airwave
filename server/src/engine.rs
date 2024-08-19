@@ -341,7 +341,7 @@ impl Engine {
                 aircraft.do_taxi(taxi_instructions);
               }
             }
-            Task::TaxiHold => aircraft.do_hold_taxi(),
+            Task::TaxiHold => aircraft.do_hold_taxi(false),
             Task::TaxiContinue => aircraft.do_continue_taxi(),
           }
         }

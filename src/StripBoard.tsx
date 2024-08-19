@@ -19,13 +19,19 @@ type StripProps = {
 };
 
 function formatTime(duration: number): string {
-  let durationSeconds = Math.floor(duration / 1000);
+  const isNegative = duration < 0;
+  let absDuration = Math.abs(duration);
+  let durationSeconds = Math.floor(absDuration / 1000);
   let seconds = (durationSeconds % 60).toString().padStart(2, '0');
-  let minutes = (Math.floor(durationSeconds / 60) % 60)
+  let minutes = Math.floor(durationSeconds / 60)
     .toString()
     .padStart(2, '0');
+  let timeString = `${minutes}:${seconds}`;
+  if (isNegative) {
+    timeString = `-${timeString}`;
+  }
 
-  return `${minutes}:${seconds}`;
+  return timeString;
 }
 
 function Strip({ strip, onmousedown, onmousemove }: StripProps) {
@@ -59,7 +65,9 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
 
     frequency = strip.value.frequency;
     sinceCreated = formatTime(Date.now() - strip.value.created);
-    isOverTime = !sinceCreated.startsWith('0');
+    isOverTime = !(
+      sinceCreated.startsWith('0') || sinceCreated.startsWith('-')
+    );
   }
 
   if (strip.type === 'strip') {

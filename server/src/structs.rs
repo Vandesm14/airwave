@@ -333,15 +333,16 @@ impl Aircraft {
     }
   }
 
-  pub fn departure_from_arrival(&mut self, departure_heading: f32) {
+  pub fn departure_from_arrival(&mut self) {
+    let mut rng = thread_rng();
     self.intention = AircraftIntention::Depart {
       has_notified: false,
-      heading: departure_heading,
+      heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
     };
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)
       .unwrap_or(Duration::from_millis(0))
-      .add(Duration::from_secs(120))
+      .add(Duration::from_secs(rng.gen_range(60..=180)))
       .as_millis();
   }
 
@@ -422,7 +423,7 @@ impl Aircraft {
             self.do_continue_taxi();
             return;
           } else {
-            todo!("cleared for wrong runway (holding short)")
+            eprintln!("cleared for wrong runway (holding short)")
           }
         }
       }
@@ -437,7 +438,7 @@ impl Aircraft {
         if runway.id == r.id {
           *behavior = TaxiWaypointBehavior::TakeOff;
         } else {
-          todo!("cleared for wrong runway (lined up)")
+          eprintln!("cleared for wrong runway (lined up)")
         }
       }
     }
@@ -468,7 +469,7 @@ impl Aircraft {
           if let TaxiWaypointBehavior::HoldShort = waypoint.behavior {
             let angle = angle_between_points(waypoint.pos, current.pos);
             let hold_point =
-              move_point(waypoint.pos, angle, FEET_PER_UNIT * 250.0);
+              move_point(waypoint.pos, angle, FEET_PER_UNIT * 300.0);
 
             new_waypoints.push(TaxiWaypoint {
               pos: hold_point,
@@ -508,8 +509,11 @@ impl Aircraft {
     }
   }
 
-  pub fn do_hold_taxi(&mut self) {
+  pub fn do_hold_taxi(&mut self, fast: bool) {
     self.target.speed = 0.0;
+    if fast {
+      self.speed = 0.0;
+    }
   }
 
   pub fn do_continue_taxi(&mut self) {
@@ -545,7 +549,8 @@ impl Aircraft {
       if let AircraftState::Taxiing { current, .. } = &self.state {
         if let TaxiPoint::Gate(_, gate) = &current.wp {
           if self.pos == gate.pos {
-            todo!("make departure");
+            self.departure_from_arrival();
+            self.do_hold_taxi(true);
           }
         }
       }
@@ -571,7 +576,7 @@ impl Aircraft {
       } else if matches!(current.behavior, TaxiWaypointBehavior::HoldShort)
         || waypoints.is_empty()
       {
-        self.do_hold_taxi()
+        self.do_hold_taxi(false)
       } else {
         let waypoint = waypoints.last().cloned();
         if let Some(waypoint) = waypoint {
@@ -589,7 +594,7 @@ impl Aircraft {
             self.pos = waypoint.pos;
 
             if let TaxiWaypointBehavior::HoldShort = current.behavior {
-              self.do_hold_taxi();
+              self.do_hold_taxi(false);
             }
           }
         }
