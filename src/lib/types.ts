@@ -60,7 +60,7 @@ export type Aircraft = {
   intention:
     | { type: 'land' }
     | { type: 'flyover' }
-    | { type: 'depart'; value: number };
+    | { type: 'depart'; value: { heading: number } };
 
   created: number;
 };
