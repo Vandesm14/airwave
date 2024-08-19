@@ -520,11 +520,14 @@ impl Aircraft {
   }
 
   pub fn do_continue_taxi(&mut self) {
-    if let AircraftState::Taxiing { current, .. } = &mut self.state {
-      if current.pos == self.pos {
-        current.behavior = TaxiWaypointBehavior::GoTo;
-      }
-    }
+    // TODO: Both hold and continue should modify speed only. Once an aircraft
+    // passes a HoldShort waypoint, it should be deleted such that even if it
+    // passes the waypoint, it can still continue.
+    // if let AircraftState::Taxiing { current, .. } = &mut self.state {
+    //   if current.pos == self.pos {
+    //     current.behavior = TaxiWaypointBehavior::GoTo;
+    //   }
+    // }
 
     self.target.speed = 20.0;
   }
@@ -598,6 +601,10 @@ impl Aircraft {
             self.pos = waypoint.pos;
 
             if let TaxiWaypointBehavior::HoldShort = current.behavior {
+              // TODO: This solution seems to break holding short of a runway
+              // if let Some(popped) = waypoints.pop() {
+              //   *current = popped;
+              // }
               self.do_hold_taxi(false);
             }
           }
@@ -721,7 +728,7 @@ impl Aircraft {
         TIME_SCALE * 6.0 * dt
         // If taxiing
       } else {
-        TIME_SCALE * 4.0 * dt
+        TIME_SCALE * 5.0 * dt
       }
       // Air speed
     } else {
