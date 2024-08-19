@@ -492,7 +492,7 @@ export default function Canvas({
 
     for (let i = 0; i < terminal.gates.length; i++) {
       let gate = terminal.gates[i];
-      drawGate(ctx, gate, `${terminal.id}${i}`);
+      drawGate(ctx, gate, gate.id);
     }
   }
 
