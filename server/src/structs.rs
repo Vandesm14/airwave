@@ -512,7 +512,7 @@ impl Aircraft {
           new_waypoints.push(waypoint.clone());
           current = waypoint.clone();
         } else {
-          eprintln!("handle no intersection {current:#?}, {waypoint:#?}");
+          tracing::warn!("handle no intersection {current:#?}, {waypoint:#?}");
           return;
         }
       }

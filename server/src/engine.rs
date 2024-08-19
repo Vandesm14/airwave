@@ -152,35 +152,35 @@ impl Engine {
     let _ = self
       .sender
       .send(OutgoingReply::Aircraft(self.aircraft.clone()))
-      .inspect_err(|e| eprintln!("failed to broadcast aircraft: {}", e));
+      .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
   }
 
   fn broadcast_runways(&self) {
     let _ = self
       .sender
       .send(OutgoingReply::Runways(self.runways.clone()))
-      .inspect_err(|e| eprintln!("failed to broadcast runways: {}", e));
+      .inspect_err(|e| tracing::warn!("failed to broadcast runways: {}", e));
   }
 
   fn broadcast_taxiways(&self) {
     let _ = self
       .sender
       .send(OutgoingReply::Taxiways(self.taxiways.clone()))
-      .inspect_err(|e| eprintln!("failed to broadcast taxiways: {}", e));
+      .inspect_err(|e| tracing::warn!("failed to broadcast taxiways: {}", e));
   }
 
   fn broadcast_terminals(&self) {
     let _ = self
       .sender
       .send(OutgoingReply::Terminals(self.terminals.clone()))
-      .inspect_err(|e| eprintln!("failed to broadcast terminals: {}", e));
+      .inspect_err(|e| tracing::warn!("failed to broadcast terminals: {}", e));
   }
 
   fn broadcast_size(&self) {
     let _ = self
       .sender
       .send(OutgoingReply::Size(self.airspace_size))
-      .inspect_err(|e| eprintln!("failed to broadcast size: {}", e));
+      .inspect_err(|e| tracing::warn!("failed to broadcast size: {}", e));
   }
 
   fn broadcast_for_new_client(&self) {

@@ -44,8 +44,7 @@ struct AudioResponse {
   text: String,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
   tracing_subscriber::fmt::init();
 
   dotenv().ok();
@@ -66,345 +65,363 @@ async fn main() {
     airspace_size,
     118.5,
   );
-  let engine_handle = tokio::spawn(async move {
-    let runway_20 = Runway {
-      id: "20".into(),
-      pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
-      heading: 200.0,
-      length: 7000.0,
-    };
 
-    let runway_27: Runway = Runway {
-      id: "27".into(),
-      pos: Vec2::new(
-        airspace_size * 0.5 - FEET_PER_UNIT * 1000.0,
-        airspace_size * 0.5 - FEET_PER_UNIT * 2400.0,
+  let runway_20 = Runway {
+    id: "20".into(),
+    pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
+    heading: 200.0,
+    length: 7000.0,
+  };
+
+  let runway_27: Runway = Runway {
+    id: "27".into(),
+    pos: Vec2::new(
+      airspace_size * 0.5 - FEET_PER_UNIT * 1000.0,
+      airspace_size * 0.5 - FEET_PER_UNIT * 2400.0,
+    ),
+    heading: 270.0,
+    length: 7000.0,
+  };
+
+  let taxiway_b = Taxiway {
+    id: "B".into(),
+    a: move_point(
+      runway_27.start(),
+      add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+      FEET_PER_UNIT * 500.0,
+    ),
+    b: move_point(
+      runway_27.end(),
+      add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+      FEET_PER_UNIT * 500.0,
+    ),
+    kind: TaxiwayKind::Normal,
+  };
+
+  let taxiway_c = Taxiway {
+    id: "C".into(),
+    a: move_point(
+      runway_20.start(),
+      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+      FEET_PER_UNIT * 500.0,
+    ),
+    b: move_point(
+      runway_20.end(),
+      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+      FEET_PER_UNIT * 500.0,
+    ),
+    kind: TaxiwayKind::Normal,
+  };
+
+  let taxiway_hs_20 = Taxiway {
+    id: "HS20".into(),
+    a: runway_20.start(),
+    b: taxiway_c.a,
+    kind: TaxiwayKind::HoldShort("20".into()),
+  };
+
+  let taxiway_hs_27 = Taxiway {
+    id: "HS27".into(),
+    a: runway_27.start(),
+    b: move_point(
+      runway_27.start(),
+      add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+      FEET_PER_UNIT * 500.0,
+    ),
+    kind: TaxiwayKind::HoldShort("27".into()),
+  };
+
+  let a = move_point(taxiway_b.b, 270.0, FEET_PER_UNIT * 500.0);
+  let b = move_point(a, 0.0, FEET_PER_UNIT * 4000.0);
+  let c = move_point(b, 270.0, FEET_PER_UNIT * 1500.0);
+  let d = move_point(c, 180.0, FEET_PER_UNIT * 4000.0);
+  let mut terminal_a = Terminal {
+    id: 'A',
+    a,
+    b,
+    c,
+    d,
+    gates: Vec::new(),
+  };
+
+  let gates_line_start =
+    move_point(terminal_a.a, 270.0, FEET_PER_UNIT * 1200.0);
+  let gates = 5;
+  let padding = 400.0;
+  let spacing = 4000.0 / gates as f32;
+  for i in 0..gates {
+    let gate = Gate {
+      id: format!("A{}", i + 1),
+      pos: move_point(
+        gates_line_start,
+        0.0,
+        spacing * i as f32 * FEET_PER_UNIT + padding * FEET_PER_UNIT,
       ),
-      heading: 270.0,
-      length: 7000.0,
+      heading: 0.0,
     };
+    terminal_a.gates.push(gate);
+  }
 
-    let taxiway_b = Taxiway {
-      id: "B".into(),
-      a: move_point(
-        runway_27.start(),
-        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
-        FEET_PER_UNIT * 500.0,
-      ),
-      b: move_point(
-        runway_27.end(),
-        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
-        FEET_PER_UNIT * 500.0,
-      ),
-      kind: TaxiwayKind::Normal,
-    };
+  let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 200.0);
+  let taxiway_a1 = Taxiway {
+    id: "A1".into(),
+    a: tw_a,
+    b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
+    kind: TaxiwayKind::Normal,
+  };
 
-    let taxiway_c = Taxiway {
-      id: "C".into(),
-      a: move_point(
-        runway_20.start(),
-        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
-        FEET_PER_UNIT * 500.0,
-      ),
-      b: move_point(
-        runway_20.end(),
-        add_degrees(heading_to_degrees(runway_20.heading), 90.0),
-        FEET_PER_UNIT * 500.0,
-      ),
-      kind: TaxiwayKind::Normal,
-    };
+  let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 2000.0);
+  let taxiway_a2 = Taxiway {
+    id: "A2".into(),
+    a: tw_a,
+    b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
+    kind: TaxiwayKind::Normal,
+  };
 
-    let taxiway_hs_20 = Taxiway {
-      id: "HS20".into(),
-      a: runway_20.start(),
-      b: taxiway_c.a,
-      kind: TaxiwayKind::HoldShort("20".into()),
-    };
+  let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 3800.0);
+  let taxiway_a3 = Taxiway {
+    id: "A3".into(),
+    a: tw_a,
+    b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
+    kind: TaxiwayKind::Normal,
+  };
 
-    let taxiway_hs_27 = Taxiway {
-      id: "HS27".into(),
-      a: runway_27.start(),
-      b: move_point(
-        runway_27.start(),
-        add_degrees(heading_to_degrees(runway_27.heading), 90.0),
-        FEET_PER_UNIT * 500.0,
-      ),
-      kind: TaxiwayKind::HoldShort("27".into()),
-    };
+  let taxiway_d1 = Taxiway {
+    id: "D1".into(),
+    a: taxiway_c.b,
+    b: runway_20.end(),
+    kind: TaxiwayKind::Normal,
+  };
 
-    let a = move_point(taxiway_b.b, 270.0, FEET_PER_UNIT * 500.0);
-    let b = move_point(a, 0.0, FEET_PER_UNIT * 4000.0);
-    let c = move_point(b, 270.0, FEET_PER_UNIT * 1500.0);
-    let d = move_point(c, 180.0, FEET_PER_UNIT * 4000.0);
-    let mut terminal_a = Terminal {
-      id: 'A',
-      a,
-      b,
-      c,
-      d,
-      gates: Vec::new(),
-    };
+  let taxiway_d2 = Taxiway {
+    id: "D2".into(),
+    a: move_point(
+      taxiway_c.b,
+      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      FEET_PER_UNIT * 1000.0,
+    ),
+    b: move_point(
+      runway_20.end(),
+      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      FEET_PER_UNIT * 1000.0,
+    ),
+    kind: TaxiwayKind::Normal,
+  };
 
-    let gates_line_start =
-      move_point(terminal_a.a, 270.0, FEET_PER_UNIT * 1200.0);
-    let gates = 5;
-    let padding = 400.0;
-    let spacing = 4000.0 / gates as f32;
-    for i in 0..gates {
-      let gate = Gate {
-        id: format!("A{}", i + 1),
-        pos: move_point(
-          gates_line_start,
-          0.0,
-          spacing * i as f32 * FEET_PER_UNIT + padding * FEET_PER_UNIT,
-        ),
-        heading: 0.0,
-      };
-      terminal_a.gates.push(gate);
-    }
+  let taxiway_d3 = Taxiway {
+    id: "D3".into(),
+    a: move_point(
+      taxiway_c.b,
+      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      FEET_PER_UNIT * 2500.0,
+    ),
+    b: move_point(
+      runway_20.end(),
+      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      FEET_PER_UNIT * 2500.0,
+    ),
+    kind: TaxiwayKind::Normal,
+  };
 
-    let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 200.0);
-    let taxiway_a1 = Taxiway {
-      id: "A1".into(),
-      a: tw_a,
-      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
-      kind: TaxiwayKind::Normal,
-    };
+  engine.aircraft.push(Aircraft::random_to_depart(
+    118.6,
+    terminal_a.clone(),
+    terminal_a.gates.clone(),
+  ));
 
-    let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 2000.0);
-    let taxiway_a2 = Taxiway {
-      id: "A2".into(),
-      a: tw_a,
-      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
-      kind: TaxiwayKind::Normal,
-    };
+  engine.aircraft.push(Aircraft::random_to_depart(
+    118.6,
+    terminal_a.clone(),
+    terminal_a.gates.clone(),
+  ));
 
-    let tw_a = move_point(a, 0.0, FEET_PER_UNIT * 3800.0);
-    let taxiway_a3 = Taxiway {
-      id: "A3".into(),
-      a: tw_a,
-      b: move_point(tw_a, 90.0, FEET_PER_UNIT * 1000.0),
-      kind: TaxiwayKind::Normal,
-    };
+  engine.aircraft.push(Aircraft::random_to_depart(
+    118.6,
+    terminal_a.clone(),
+    terminal_a.gates.clone(),
+  ));
 
-    let taxiway_d1 = Taxiway {
-      id: "D1".into(),
-      a: taxiway_c.b,
-      b: runway_20.end(),
-      kind: TaxiwayKind::Normal,
-    };
+  engine.runways.push(runway_20);
+  engine.runways.push(runway_27);
 
-    let taxiway_d2 = Taxiway {
-      id: "D2".into(),
-      a: move_point(
-        taxiway_c.b,
-        inverse_degrees(heading_to_degrees(runway_20.heading)),
-        FEET_PER_UNIT * 1000.0,
-      ),
-      b: move_point(
-        runway_20.end(),
-        inverse_degrees(heading_to_degrees(runway_20.heading)),
-        FEET_PER_UNIT * 1000.0,
-      ),
-      kind: TaxiwayKind::Normal,
-    };
+  engine.add_taxiway(taxiway_a1);
+  engine.add_taxiway(taxiway_a2);
+  engine.add_taxiway(taxiway_a3);
+  engine.add_taxiway(taxiway_b);
+  engine.add_taxiway(taxiway_c);
+  engine.add_taxiway(taxiway_d1);
+  engine.add_taxiway(taxiway_d2);
+  engine.add_taxiway(taxiway_d3);
+  engine.add_taxiway(taxiway_hs_20);
+  engine.add_taxiway(taxiway_hs_27);
 
-    let taxiway_d3 = Taxiway {
-      id: "D3".into(),
-      a: move_point(
-        taxiway_c.b,
-        inverse_degrees(heading_to_degrees(runway_20.heading)),
-        FEET_PER_UNIT * 2500.0,
-      ),
-      b: move_point(
-        runway_20.end(),
-        inverse_degrees(heading_to_degrees(runway_20.heading)),
-        FEET_PER_UNIT * 2500.0,
-      ),
-      kind: TaxiwayKind::Normal,
-    };
+  engine.spawn_random_aircraft();
 
-    engine.aircraft.push(Aircraft::random_to_depart(
-      118.6,
-      terminal_a.clone(),
-      terminal_a.gates.clone(),
-    ));
+  engine.terminals.push(terminal_a);
 
-    engine.aircraft.push(Aircraft::random_to_depart(
-      118.6,
-      terminal_a.clone(),
-      terminal_a.gates.clone(),
-    ));
+  std::thread::spawn(move || {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+      .enable_all()
+      .build()
+      .unwrap();
 
-    engine.aircraft.push(Aircraft::random_to_depart(
-      118.6,
-      terminal_a.clone(),
-      terminal_a.gates.clone(),
-    ));
+    runtime.block_on(async move {
+      let listener = TcpListener::bind("0.0.0.0:8000").await.unwrap();
+      let http_handle = tokio::spawn(async move {
+        axum::serve(listener, app).await.unwrap();
+      });
 
-    engine.runways.push(runway_20);
-    engine.runways.push(runway_27);
+      let (give_streams, take_streams) =
+        mpsc::channel::<SplitSink<WebSocketStream<TcpStream>, Message>>();
 
-    engine.add_taxiway(taxiway_a1);
-    engine.add_taxiway(taxiway_a2);
-    engine.add_taxiway(taxiway_a3);
-    engine.add_taxiway(taxiway_b);
-    engine.add_taxiway(taxiway_c);
-    engine.add_taxiway(taxiway_d1);
-    engine.add_taxiway(taxiway_d2);
-    engine.add_taxiway(taxiway_d3);
-    engine.add_taxiway(taxiway_hs_20);
-    engine.add_taxiway(taxiway_hs_27);
+      let ws_handle = tokio::spawn(async move {
+        let try_socket = TcpListener::bind("0.0.0.0:9001").await;
+        let listener = try_socket.expect("ws server failed to bind");
 
-    engine.spawn_random_aircraft();
+        while let Ok((stream, _)) = listener.accept().await {
+          let ws_stream = tokio_tungstenite::accept_async(stream).await;
+          if let Err(e) = ws_stream {
+            tracing::error!(
+              "Error during the websocket handshake occurred: {e}"
+            );
+            return;
+          }
 
-    engine.terminals.push(terminal_a);
-    engine.begin_loop();
-  });
+          let ws_stream = ws_stream.unwrap();
 
-  let listener = TcpListener::bind("0.0.0.0:8000").await.unwrap();
-  let http_handle = tokio::spawn(async move {
-    axum::serve(listener, app).await.unwrap();
-  });
+          let (write, read) = ws_stream.split();
+          give_streams.send(write).unwrap();
 
-  let (give_streams, take_streams) =
-    mpsc::channel::<SplitSink<WebSocketStream<TcpStream>, Message>>();
+          let sender = command_sender.clone();
+          let ws_sender = update_sender.clone();
+          let api_key = api_key.clone();
 
-  let ws_handle = tokio::spawn(async move {
-    let try_socket = TcpListener::bind("0.0.0.0:9001").await;
-    let listener = try_socket.expect("ws server failed to bind");
+          tokio::spawn(async move {
+            read
+              .try_for_each(|message| {
+                let sender = sender.clone();
+                let api_key = api_key.clone();
 
-    while let Ok((stream, _)) = listener.accept().await {
-      let ws_stream = tokio_tungstenite::accept_async(stream).await;
-      if let Err(e) = ws_stream {
-        tracing::error!("Error during the websocket handshake occurred: {e}");
-        return;
-      }
+                let ws_sender = ws_sender.clone();
+                async move {
+                  if let Message::Text(string) = message {
+                    dbg!("received incoming ws");
+                    let req =
+                      serde_json::from_str::<FrontendRequest>(&string).unwrap();
+                    match req {
+                      FrontendRequest::Voice {
+                        data: bytes,
+                        frequency,
+                      } => {
+                        dbg!("received transcription request", bytes.len());
 
-      let ws_stream = ws_stream.unwrap();
+                        let client = Client::new();
+                        let form = reqwest::multipart::Form::new();
+                        let form = form.part(
+                          "file",
+                          Part::bytes(bytes).file_name("audio.wav"),
+                        );
+                        let form = form.text("model", "whisper-1".to_string());
 
-      let (write, read) = ws_stream.split();
-      give_streams.send(write).unwrap();
+                        let response = client
+                          .post(
+                            "https://api.openai.com/v1/audio/transcriptions",
+                          )
+                          .multipart(form)
+                          .header(
+                            header::AUTHORIZATION,
+                            header::HeaderValue::from_str(&format!(
+                              "Bearer {}",
+                              &api_key.clone()
+                            ))
+                            .unwrap(),
+                          )
+                          .header(
+                            header::CONTENT_TYPE,
+                            header::HeaderValue::from_str(
+                              "multipart/form-data",
+                            )
+                            .unwrap(),
+                          )
+                          .send()
+                          .await
+                          .unwrap();
 
-      let sender = command_sender.clone();
-      let ws_sender = update_sender.clone();
-      let api_key = api_key.clone();
+                        let text = response.text().await.unwrap();
+                        if let Ok(reply) =
+                          serde_json::from_str::<AudioResponse>(&text)
+                        {
+                          ws_sender
+                            .send(OutgoingReply::ATCReply(CommandWithFreq {
+                              id: "ATC".to_owned(),
+                              frequency,
+                              reply: reply.text.clone(),
+                              tasks: Vec::new(),
+                            }))
+                            .unwrap();
 
-      tokio::spawn(async move {
-        read
-          .try_for_each(|message| {
-            let sender = sender.clone();
-            let api_key = api_key.clone();
-
-            let ws_sender = ws_sender.clone();
-            async move {
-              if let Message::Text(string) = message {
-                dbg!("received incoming ws");
-                let req =
-                  serde_json::from_str::<FrontendRequest>(&string).unwrap();
-                match req {
-                  FrontendRequest::Voice {
-                    data: bytes,
-                    frequency,
-                  } => {
-                    dbg!("received transcription request", bytes.len());
-
-                    let client = Client::new();
-                    let form = reqwest::multipart::Form::new();
-                    let form = form
-                      .part("file", Part::bytes(bytes).file_name("audio.wav"));
-                    let form = form.text("model", "whisper-1".to_string());
-
-                    let response = client
-                      .post("https://api.openai.com/v1/audio/transcriptions")
-                      .multipart(form)
-                      .header(
-                        header::AUTHORIZATION,
-                        header::HeaderValue::from_str(&format!(
-                          "Bearer {}",
-                          &api_key.clone()
-                        ))
-                        .unwrap(),
-                      )
-                      .header(
-                        header::CONTENT_TYPE,
-                        header::HeaderValue::from_str("multipart/form-data")
-                          .unwrap(),
-                      )
-                      .send()
-                      .await
-                      .unwrap();
-
-                    let text = response.text().await.unwrap();
-                    if let Ok(reply) =
-                      serde_json::from_str::<AudioResponse>(&text)
-                    {
-                      ws_sender
-                        .send(OutgoingReply::ATCReply(CommandWithFreq {
-                          id: "ATC".to_owned(),
-                          frequency,
-                          reply: reply.text.clone(),
-                          tasks: Vec::new(),
-                        }))
-                        .unwrap();
-
-                      if let Some(result) =
-                        complete_atc_request(reply.text, frequency).await
-                      {
-                        sender.send(IncomingUpdate::Command(result)).unwrap();
+                          if let Some(result) =
+                            complete_atc_request(reply.text, frequency).await
+                          {
+                            sender
+                              .send(IncomingUpdate::Command(result))
+                              .unwrap();
+                          }
+                        }
+                      }
+                      FrontendRequest::Text {
+                        text: string,
+                        frequency,
+                      } => {
+                        if let Some(result) =
+                          complete_atc_request(string, frequency).await
+                        {
+                          sender.send(IncomingUpdate::Command(result)).unwrap();
+                        }
+                      }
+                      FrontendRequest::Connect => {
+                        sender.send(IncomingUpdate::Connect).unwrap();
                       }
                     }
                   }
-                  FrontendRequest::Text {
-                    text: string,
-                    frequency,
-                  } => {
-                    if let Some(result) =
-                      complete_atc_request(string, frequency).await
-                    {
-                      sender.send(IncomingUpdate::Command(result)).unwrap();
-                    }
-                  }
-                  FrontendRequest::Connect => {
-                    sender.send(IncomingUpdate::Connect).unwrap();
-                  }
+
+                  Ok(())
                 }
-              }
-
-              Ok(())
-            }
-          })
-          .await
-          .unwrap();
-      });
-    }
-  });
-
-  let broadcast_handle = tokio::spawn(async move {
-    let mut streams: Vec<SplitSink<WebSocketStream<TcpStream>, Message>> =
-      Vec::new();
-
-    loop {
-      for stream in take_streams.try_iter() {
-        streams.push(stream);
-      }
-
-      if let Ok(update) = update_receiver.try_recv() {
-        for write in streams.iter_mut() {
-          let _ = write
-            .send(Message::Text(serde_json::to_string(&update).unwrap()))
-            .await;
+              })
+              .await
+              .unwrap();
+          });
         }
-      }
-    }
+      });
+
+      let broadcast_handle = tokio::spawn(async move {
+        let mut streams: Vec<SplitSink<WebSocketStream<TcpStream>, Message>> =
+          Vec::new();
+
+        loop {
+          for stream in take_streams.try_iter() {
+            streams.push(stream);
+          }
+
+          if let Ok(update) = update_receiver.try_recv() {
+            for write in streams.iter_mut() {
+              let _ = write
+                .send(Message::Text(serde_json::to_string(&update).unwrap()))
+                .await;
+            }
+          }
+        }
+      });
+
+      tokio::select! {
+        _ = http_handle => tracing::debug!("http exit"),
+            _ = broadcast_handle => tracing::debug!("broadcast exit"),
+            _ = ws_handle => tracing::debug!("ws exit"),
+      };
+    });
   });
 
-  tokio::select! {
-    _ = engine_handle => println!("engine exit"),
-    _ = http_handle => println!("http exit"),
-    _ = broadcast_handle => println!("broadcast exit"),
-    _ = ws_handle => println!("ws exit"),
-  };
+  engine.begin_loop();
 }
 
 async fn complete_atc_request(
