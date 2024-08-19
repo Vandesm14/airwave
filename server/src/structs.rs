@@ -345,6 +345,45 @@ impl Aircraft {
     }
   }
 
+  pub fn random_to_depart(
+    frequency: f32,
+    terminal: Terminal,
+    gates: Vec<Gate>,
+  ) -> Self {
+    let mut rng = thread_rng();
+    let gate = gates.choose(&mut rng).unwrap();
+    Self {
+      callsign: Self::random_callsign(),
+      is_colliding: false,
+      intention: AircraftIntention::Depart {
+        has_notified: false,
+        heading: 0.0,
+      },
+      state: AircraftState::Taxiing {
+        current: TaxiWaypoint {
+          pos: gate.pos,
+          wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
+          behavior: TaxiWaypointBehavior::GoTo,
+        },
+        waypoints: Vec::new(),
+      },
+      pos: gate.pos,
+      heading: 0.0,
+      speed: 0.0,
+      altitude: 0.0,
+      frequency,
+      target: AircraftTargets {
+        heading: 0.0,
+        speed: 0.0,
+        altitude: 0.0,
+      },
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
+    }
+  }
+
   pub fn departure_from_arrival(&mut self) {
     let mut rng = thread_rng();
     self.intention = AircraftIntention::Depart {

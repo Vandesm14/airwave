@@ -159,7 +159,5 @@ fn closest_point_on_line(
   let projection = point_vector.dot(line_dir_normalized);
 
   // Calculate the closest point on the line
-  let closest_point = line_start + line_dir_normalized * projection;
-
-  closest_point
+  line_start + line_dir_normalized * projection
 }

@@ -24,7 +24,8 @@ use server::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
   heading_to_degrees, inverse_degrees, move_point,
   structs::{
-    Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
+    Aircraft, Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind,
+    Terminal,
   },
   FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
@@ -223,30 +224,23 @@ async fn main() {
       kind: TaxiwayKind::Normal,
     };
 
-    // engine.aircraft.push(Aircraft {
-    //   callsign: "SKW1234".into(),
-    //   is_colliding: false,
-    //   intention: AircraftIntention::Land,
-    //   state: AircraftState::Landing(runway_20.clone()),
-    //   pos: move_point(
-    //     runway_20.start(),
-    //     inverse_degrees(heading_to_degrees(runway_20.heading)),
-    //     NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 1.0,
-    //   ),
-    //   heading: runway_20.heading,
-    //   speed: 170.0,
-    //   altitude: 500.0,
-    //   frequency: 118.5,
-    //   target: AircraftTargets {
-    //     heading: runway_20.heading,
-    //     speed: 170.0,
-    //     altitude: 500.0,
-    //   },
-    //   created: SystemTime::now()
-    //     .duration_since(SystemTime::UNIX_EPOCH)
-    //     .unwrap_or(Duration::from_millis(0))
-    //     .as_millis(),
-    // });
+    engine.aircraft.push(Aircraft::random_to_depart(
+      118.6,
+      terminal_a.clone(),
+      terminal_a.gates.clone(),
+    ));
+
+    engine.aircraft.push(Aircraft::random_to_depart(
+      118.6,
+      terminal_a.clone(),
+      terminal_a.gates.clone(),
+    ));
+
+    engine.aircraft.push(Aircraft::random_to_depart(
+      118.6,
+      terminal_a.clone(),
+      terminal_a.gates.clone(),
+    ));
 
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
@@ -263,6 +257,7 @@ async fn main() {
     engine.add_taxiway(taxiway_hs_27);
 
     engine.spawn_random_aircraft();
+
     engine.terminals.push(terminal_a);
     engine.begin_loop();
   });
