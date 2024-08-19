@@ -477,12 +477,24 @@ impl Aircraft {
             });
 
             waypoint.behavior = TaxiWaypointBehavior::GoTo;
+          } else if let TaxiPoint::Gate(terminal, gate) = &waypoint.wp {
+            new_waypoints.push(waypoint.clone());
+            current = waypoint.clone();
+
+            new_waypoints.push(TaxiWaypoint {
+              pos: gate.pos,
+              wp: waypoint.wp.clone(),
+              behavior: TaxiWaypointBehavior::GoTo,
+            });
+
+            continue;
           }
 
           new_waypoints.push(waypoint.clone());
           current = waypoint.clone();
         } else {
-          todo!("handle no intersection {current:#?}, {waypoint:#?}");
+          eprintln!("handle no intersection");
+          return;
         }
       }
 
@@ -528,14 +540,22 @@ impl Aircraft {
     self.pos = pos;
   }
 
+  fn update_to_departure(&mut self) {
+    if let AircraftIntention::Land = self.intention {
+      if let AircraftState::Taxiing { current, .. } = &self.state {
+        if let TaxiPoint::Gate(_, gate) = &current.wp {
+          if self.pos == gate.pos {
+            todo!("make departure");
+          }
+        }
+      }
+    }
+  }
+
   fn update_taxi(&mut self, dt: f32) {
     let speed_in_pixels = self.speed_in_pixels();
-    if let AircraftState::Taxiing {
-      current, waypoints, ..
-    } = &mut self.state
-    {
+    if let AircraftState::Taxiing { current, waypoints } = &mut self.state {
       if let TaxiWaypoint {
-        pos,
         wp: TaxiPoint::Runway(r),
         behavior: TaxiWaypointBehavior::TakeOff,
         ..
@@ -685,12 +705,16 @@ impl Aircraft {
   }
 
   fn dt_speed_speed(&self, dt: f32) -> f32 {
+    // Taxi speed
     if self.altitude == 0.0 {
+      // If landing
       if self.speed > 20.0 {
-        TIME_SCALE * 4.0 * dt
-      } else {
         TIME_SCALE * 8.0 * dt
+        // If taxiing
+      } else {
+        TIME_SCALE * 4.0 * dt
       }
+      // Air speed
     } else {
       TIME_SCALE * 2.0 * dt
     }
@@ -752,6 +776,7 @@ impl Aircraft {
     self.update_landing(dt, sender);
     self.update_targets(dt);
     self.update_taxi(dt);
+    self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);
     self.update_leave_airspace(airspace_size);

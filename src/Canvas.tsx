@@ -178,6 +178,10 @@ export default function Canvas({
           drawTaxiway(ctx, taxiway);
         }
 
+        for (let taxiway of taxiways()) {
+          drawTaxiwayLabel(ctx, taxiway);
+        }
+
         for (let runway of runways()) {
           drawRunwayGround(ctx, runway);
         }
@@ -409,6 +413,14 @@ export default function Canvas({
     ctx.lineTo(endLeft.x, endLeft.y);
     ctx.lineTo(startLeft.x, startLeft.y);
     ctx.fill();
+  }
+
+  function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
+    let origin: Vec2 = {
+      x: airspaceSize() * 0.5,
+      y: airspaceSize() * 0.5,
+    };
+    let projectionScale = 14;
 
     if (taxiway.kind.type === 'normal') {
       let start = projectPoint(origin, taxiway.a, projectionScale);
@@ -494,6 +506,11 @@ export default function Canvas({
     ctx.fillStyle = '#ffff00';
     ctx.strokeStyle = '#ffff00';
 
+    if (aircraft.state.type !== 'taxiing') {
+      ctx.fillStyle = '#00aa00';
+      ctx.strokeStyle = '#00aa00';
+    }
+
     let pos = projectPoint(origin, aircraft, projectionScale);
 
     ctx.beginPath();
@@ -518,6 +535,9 @@ export default function Canvas({
       const endY = pos.y + length * Math.sin(angleRadians);
 
       ctx.strokeStyle = '#ffff00';
+      if (aircraft.state.type !== 'taxiing') {
+        ctx.strokeStyle = '#00aa00';
+      }
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
       ctx.lineTo(endX, endY);
@@ -529,6 +549,9 @@ export default function Canvas({
     let spacing = 16;
     ctx.font = `900 ${spacing}px monospace`;
     ctx.textAlign = 'left';
+    if (aircraft.state.type !== 'taxiing') {
+      ctx.fillStyle = '#00aa00';
+    }
     ctx.fillStyle = '#ffff00';
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
 

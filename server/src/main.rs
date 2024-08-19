@@ -195,17 +195,17 @@ async fn main() {
       state: AircraftState::Landing(runway_27.clone()),
       pos: move_point(
         runway_27.start(),
-        inverse_degrees(heading_to_degrees(runway_27.heading)) + 2.0,
-        NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 8.0,
+        inverse_degrees(heading_to_degrees(runway_27.heading)),
+        NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 1.0,
       ),
       heading: runway_27.heading,
-      speed: 200.0,
-      altitude: 4000.0,
+      speed: 170.0,
+      altitude: 500.0,
       frequency: 118.5,
       target: AircraftTargets {
         heading: runway_27.heading,
-        speed: 200.0,
-        altitude: 4000.0,
+        speed: 170.0,
+        altitude: 500.0,
       },
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)

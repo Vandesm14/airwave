@@ -302,8 +302,44 @@ impl Engine {
                 }
               }
             }
-            Task::TaxiGate { gate, waypoints } => {
-              todo!("taxi gate {gate:?} {waypoints:?}")
+            Task::TaxiGate {
+              gate: gate_str,
+              waypoints: waypoints_str,
+            } => {
+              let terminal = self
+                .terminals
+                .iter()
+                .find(|t| t.id == gate_str.chars().next().unwrap());
+              let gate = terminal
+                .and_then(|t| t.gates.iter().find(|g| g.id == *gate_str));
+
+              if let Some((terminal, gate)) = terminal.zip(gate) {
+                let mut taxi_instructions: Vec<TaxiWaypoint> =
+                  vec![TaxiWaypoint {
+                    pos: Vec2::default(),
+                    wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
+                    behavior: TaxiWaypointBehavior::GoTo,
+                  }];
+
+                for (instruction, hold) in waypoints_str.iter().rev() {
+                  let taxiway =
+                    self.taxiways.iter().find(|t| t.id == *instruction);
+                  if let Some(taxiway) = taxiway {
+                    taxi_instructions.push(TaxiWaypoint {
+                      pos: Vec2::default(),
+                      wp: TaxiPoint::Taxiway(taxiway.clone()),
+                      behavior: if *hold {
+                        TaxiWaypointBehavior::HoldShort
+                      } else {
+                        TaxiWaypointBehavior::GoTo
+                      },
+                    });
+                  }
+                }
+
+                taxi_instructions.reverse();
+                aircraft.do_taxi(taxi_instructions);
+              }
             }
             Task::TaxiHold => aircraft.do_hold_taxi(),
             Task::TaxiContinue => aircraft.do_continue_taxi(),
