@@ -510,11 +510,13 @@ impl Aircraft {
   }
 
   pub fn do_hold_taxi(&mut self, fast: bool) {
+    // TODO: if we don't do a fast stop for taxiing, holding short won't hold
+    // short of the waypoint since we slow *after* reaching it, such that
+    // we will overshoot and won't be directly over our destination.
     self.target.speed = 0.0;
-    // TODO: holding short breaks things
-    // if fast {
-    self.speed = 0.0;
-    // }
+    if self.speed <= 20.0 {
+      self.speed = 0.0;
+    }
   }
 
   pub fn do_continue_taxi(&mut self) {
@@ -647,9 +649,6 @@ impl Aircraft {
       let target_knots =
         target_speed_ft_s / KNOT_TO_FEET_PER_SECOND / FEET_PER_UNIT;
 
-      self.target.altitude =
-        4000.0 * (distance_to_runway / start_descent_distance).min(1.0);
-
       if distance_to_runway <= 1.0 {
         self.altitude = 0.0;
         self.target.altitude = 0.0;
@@ -659,19 +658,20 @@ impl Aircraft {
 
         self.target.speed = 0.0;
 
-        if self.speed == 0.0 {
-          self.state = AircraftState::Taxiing {
-            current: TaxiWaypoint {
-              pos: runway.end(),
-              wp: TaxiPoint::Runway(runway.clone()),
-              behavior: TaxiWaypointBehavior::GoTo,
-            },
-            waypoints: Vec::new(),
-          };
-        }
+        self.state = AircraftState::Taxiing {
+          current: TaxiWaypoint {
+            pos: runway.end(),
+            wp: TaxiPoint::Runway(runway.clone()),
+            behavior: TaxiWaypointBehavior::GoTo,
+          },
+          waypoints: Vec::new(),
+        };
 
         return;
       }
+
+      self.target.altitude =
+        4000.0 * (distance_to_runway / start_descent_distance).min(1.0);
 
       if (165.0..=175.0).contains(&target_knots) {
         self.target.speed = target_knots;
@@ -718,7 +718,7 @@ impl Aircraft {
     if self.altitude == 0.0 {
       // If landing
       if self.speed > 20.0 {
-        TIME_SCALE * 8.0 * dt
+        TIME_SCALE * 6.0 * dt
         // If taxiing
       } else {
         TIME_SCALE * 4.0 * dt
