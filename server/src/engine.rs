@@ -7,9 +7,12 @@ use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::structs::{
-  Aircraft, AircraftState, CommandWithFreq, Runway, Task, TaxiPoint,
-  TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind, Terminal,
+use crate::{
+  structs::{
+    Aircraft, AircraftState, CommandWithFreq, Runway, Task, TaxiPoint,
+    TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind, Terminal,
+  },
+  FEET_PER_UNIT,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -75,6 +78,11 @@ impl Engine {
     }
   }
 
+  pub fn add_taxiway(&mut self, taxiway: Taxiway) {
+    let taxiway = taxiway.extend_ends_by(FEET_PER_UNIT * 100.0);
+    self.taxiways.push(taxiway);
+  }
+
   pub fn spawn_random_aircraft(&mut self) {
     let mut rng = thread_rng();
     // TODO: random departures
@@ -122,6 +130,7 @@ impl Engine {
     //   .sender
     //   .send(OutgoingReply::Reply(CommandWithFreq {
     //     id: aircraft.callsign.clone(),
+
     //     frequency: aircraft.frequency,
     //     reply,
     //     tasks: Vec::new(),

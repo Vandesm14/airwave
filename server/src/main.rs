@@ -28,7 +28,7 @@ use server::{
     Aircraft, AircraftIntention, AircraftState, AircraftTargets, Command,
     CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
   },
-  FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
+  subtract_degrees, FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -188,22 +188,59 @@ async fn main() {
       kind: TaxiwayKind::Normal,
     };
 
+    let taxiway_d1 = Taxiway {
+      id: "D1".into(),
+      a: taxiway_c.b,
+      b: runway_20.end(),
+      kind: TaxiwayKind::Normal,
+    };
+
+    let taxiway_d2 = Taxiway {
+      id: "D2".into(),
+      a: move_point(
+        taxiway_c.b,
+        inverse_degrees(heading_to_degrees(runway_20.heading)),
+        FEET_PER_UNIT * 1000.0,
+      ),
+      b: move_point(
+        runway_20.end(),
+        inverse_degrees(heading_to_degrees(runway_20.heading)),
+        FEET_PER_UNIT * 1000.0,
+      ),
+      kind: TaxiwayKind::Normal,
+    };
+
+    let taxiway_d3 = Taxiway {
+      id: "D3".into(),
+      a: move_point(
+        taxiway_c.b,
+        inverse_degrees(heading_to_degrees(runway_20.heading)),
+        FEET_PER_UNIT * 2500.0,
+      ),
+      b: move_point(
+        runway_20.end(),
+        inverse_degrees(heading_to_degrees(runway_20.heading)),
+        FEET_PER_UNIT * 2500.0,
+      ),
+      kind: TaxiwayKind::Normal,
+    };
+
     engine.aircraft.push(Aircraft {
       callsign: "SKW1234".into(),
       is_colliding: false,
       intention: AircraftIntention::Land,
-      state: AircraftState::Landing(runway_27.clone()),
+      state: AircraftState::Landing(runway_20.clone()),
       pos: move_point(
-        runway_27.start(),
-        inverse_degrees(heading_to_degrees(runway_27.heading)),
+        runway_20.start(),
+        inverse_degrees(heading_to_degrees(runway_20.heading)),
         NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 1.0,
       ),
-      heading: runway_27.heading,
+      heading: runway_20.heading,
       speed: 170.0,
       altitude: 500.0,
       frequency: 118.5,
       target: AircraftTargets {
-        heading: runway_27.heading,
+        heading: runway_20.heading,
         speed: 170.0,
         altitude: 500.0,
       },
@@ -216,13 +253,16 @@ async fn main() {
     engine.runways.push(runway_20);
     engine.runways.push(runway_27);
 
-    engine.taxiways.push(taxiway_a1);
-    engine.taxiways.push(taxiway_a2);
-    engine.taxiways.push(taxiway_a3);
-    engine.taxiways.push(taxiway_b);
-    engine.taxiways.push(taxiway_c);
-    engine.taxiways.push(taxiway_hs_20);
-    engine.taxiways.push(taxiway_hs_27);
+    engine.add_taxiway(taxiway_a1);
+    engine.add_taxiway(taxiway_a2);
+    engine.add_taxiway(taxiway_a3);
+    engine.add_taxiway(taxiway_b);
+    engine.add_taxiway(taxiway_c);
+    engine.add_taxiway(taxiway_d1);
+    engine.add_taxiway(taxiway_d2);
+    engine.add_taxiway(taxiway_d3);
+    engine.add_taxiway(taxiway_hs_20);
+    engine.add_taxiway(taxiway_hs_27);
 
     engine.terminals.push(terminal_a);
     engine.begin_loop();

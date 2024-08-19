@@ -264,6 +264,19 @@ pub struct Taxiway {
   pub kind: TaxiwayKind,
 }
 
+impl Taxiway {
+  pub fn new(id: String, a: Vec2, b: Vec2, kind: TaxiwayKind) -> Self {
+    Self { id, a, b, kind }
+  }
+
+  pub fn extend_ends_by(mut self, padding: f32) -> Self {
+    self.a = self.a.move_towards(self.b, -padding);
+    self.b = self.b.move_towards(self.a, -padding);
+
+    self
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gate {
   pub id: String,
