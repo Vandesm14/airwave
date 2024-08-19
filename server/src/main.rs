@@ -1,7 +1,6 @@
 use std::{
   env,
   sync::{mpsc, Arc},
-  time::{Duration, SystemTime},
   vec,
 };
 
@@ -25,10 +24,9 @@ use server::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
   heading_to_degrees, inverse_degrees, move_point,
   structs::{
-    Aircraft, AircraftIntention, AircraftState, AircraftTargets, Command,
-    CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
+    Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind, Terminal,
   },
-  subtract_degrees, FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
+  FEET_PER_UNIT, NAUTICALMILES_TO_FEET,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
