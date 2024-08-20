@@ -7,6 +7,8 @@ use shared::{
   FEET_PER_UNIT,
 };
 
+pub mod entity_constructor;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum RefType<T> {
   A(T),
@@ -15,9 +17,9 @@ pub enum RefType<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum TypeOrRef<T> {
+pub enum RefOrValue<T> {
   Action(Box<Action>),
-  Type(T),
+  Value(T),
   Ref(RefType<String>),
 }
 
@@ -30,26 +32,26 @@ pub struct Degrees {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 
 pub enum Action {
-  Move(TypeOrRef<Vec2>, TypeOrRef<Degrees>, TypeOrRef<f32>),
-  AddVec2(TypeOrRef<Vec2>, TypeOrRef<Vec2>),
-  AddDegrees(TypeOrRef<Degrees>, TypeOrRef<Degrees>),
+  Move(RefOrValue<Vec2>, RefOrValue<Degrees>, RefOrValue<f32>),
+  AddVec2(RefOrValue<Vec2>, RefOrValue<Vec2>),
+  AddDegrees(RefOrValue<Degrees>, RefOrValue<Degrees>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EntityData {
   Taxiway {
-    a: TypeOrRef<Vec2>,
-    b: TypeOrRef<Vec2>,
+    a: RefOrValue<Vec2>,
+    b: RefOrValue<Vec2>,
   },
   Runway {
-    pos: TypeOrRef<Vec2>,
-    heading: TypeOrRef<f32>,
-    length: TypeOrRef<f32>,
+    pos: RefOrValue<Vec2>,
+    heading: RefOrValue<f32>,
+    length: RefOrValue<f32>,
   },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ParsedEntity {
+pub struct Entity {
   id: String,
   data: EntityData,
 }

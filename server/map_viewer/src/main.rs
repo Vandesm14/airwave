@@ -21,11 +21,16 @@
 //   frame.clear(BLACK);
 // }
 
-use map_viewer::ParsedEntity;
+use map_viewer::{entity_constructor::EntityConstructor, Entity};
 
 fn main() {
-  let entities: Vec<ParsedEntity> =
+  let entities: Vec<Entity> =
     ron::de::from_bytes(include_bytes!("../../airport.ron")).unwrap();
 
-  println!("{:?}", entities);
+  let mut entity_constructor = EntityConstructor::new();
+  for entity in entities.into_iter() {
+    entity_constructor.add_entity(entity)
+  }
+
+  println!("{:?}", entity_constructor);
 }
