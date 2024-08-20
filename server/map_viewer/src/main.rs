@@ -32,5 +32,5 @@ fn main() {
     entity_constructor.add_entity(entity)
   }
 
-  println!("{:?}", entity_constructor);
+  println!("{:#?}", entity_constructor);
 }

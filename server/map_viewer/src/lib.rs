@@ -17,7 +17,10 @@ pub enum RefType<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum RefOrValue<T> {
+pub enum RefOrValue<T>
+where
+  T: Clone,
+{
   Action(Box<Action>),
   Value(T),
   Ref(RefType<String>),
