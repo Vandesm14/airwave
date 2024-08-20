@@ -28,9 +28,7 @@ where
 
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[repr(transparent)]
-pub struct Degrees {
-  degrees: f32,
-}
+pub struct Degrees(f32);
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 
@@ -55,16 +53,16 @@ pub enum EntityData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entity {
-  id: String,
-  data: EntityData,
+  pub id: String,
+  pub data: EntityData,
 }
 
-fn glam_to_geom(v: Vec2) -> geom::Vec2 {
+pub fn glam_to_geom(v: Vec2) -> geom::Vec2 {
   geom::Vec2::new(v.x, v.y)
 }
 
-trait Draw {
-  fn draw(&self, app: &App);
+pub trait Draw {
+  fn draw(&self, draw: &nannou::Draw, scale: f32);
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -82,35 +80,34 @@ impl Airport {
 }
 
 impl Draw for Taxiway {
-  fn draw(&self, app: &App) {
-    app
-      .draw()
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    draw
       .line()
-      .start(glam_to_geom(self.a))
-      .end(glam_to_geom(self.b))
-      .weight(FEET_PER_UNIT * 200.0)
+      .start(glam_to_geom(self.a * scale))
+      .end(glam_to_geom(self.b * scale))
+      .weight(200.0 * scale)
       .color(WHITE);
   }
 }
 
 impl Draw for Runway {
-  fn draw(&self, app: &App) {}
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {}
 }
 
 impl Draw for Terminal {
-  fn draw(&self, app: &App) {}
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {}
 }
 
 impl Draw for Airport {
-  fn draw(&self, app: &App) {
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {
     for taxiway in self.taxiways.iter() {
-      taxiway.draw(app);
+      taxiway.draw(draw, scale);
     }
     for runway in self.runways.iter() {
-      runway.draw(app);
+      runway.draw(draw, scale);
     }
     for terminal in self.terminals.iter() {
-      terminal.draw(app);
+      terminal.draw(draw, scale);
     }
   }
 }

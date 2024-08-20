@@ -18,14 +18,14 @@
     id: "A",
     data: Taxiway(
       a: Value(Vec2(0.0, 0.0)),
-      b: Value(Vec2(0.0, 1000.0)),
+      b: Value(Vec2(7000.0, 0.0)),
     )
   ),
   Entity(
     id: "B",
     data: Taxiway(
       a: Ref(A("A")),
-      b: Ref(B("A")),
+      b: Value(Vec2(0.0, 7000.0)),
     )
   )
 ]
