@@ -122,8 +122,8 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        if self.aircraft.len() < 10
-          && self.last_spawn.elapsed() >= Duration::from_secs(180)
+        if self.aircraft.len() < 20
+          && self.last_spawn.elapsed() >= Duration::from_secs(150)
         {
           self.last_spawn = Instant::now();
           self.spawn_random_aircraft();
@@ -218,7 +218,13 @@ impl Engine {
         for task in command.tasks.iter() {
           match task {
             Task::Altitude(alt) => aircraft.target.altitude = *alt,
-            Task::Heading(hdg) => aircraft.target.heading = *hdg,
+            Task::Heading(hdg) => {
+              aircraft.target.heading = *hdg;
+
+              if let AircraftState::HoldingPattern(_) = &aircraft.state {
+                aircraft.state = AircraftState::Flying;
+              }
+            }
             Task::Speed(spd) => aircraft.target.speed = *spd,
             Task::Frequency(frq) => aircraft.frequency = *frq,
             Task::Land(runway) => {
@@ -329,6 +335,9 @@ impl Engine {
             }
             Task::TaxiHold => aircraft.do_hold_taxi(false),
             Task::TaxiContinue => aircraft.do_continue_taxi(),
+            Task::HoldPattern(direction) => {
+              aircraft.do_hold_pattern(*direction)
+            }
           }
         }
 

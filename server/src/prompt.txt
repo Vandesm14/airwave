@@ -12,6 +12,7 @@ Available Tasks:
 - {"type": "taxi-gate", "value": {"gate": string, "waypoints": Array<[string, number]>}}
 - {"type": "taxi-hold"}
 - {"type": "taxi-continue"}
+- {"type": "hold", "value": string}
 
 Available Callsigns: SKW (Skywest), AAL ("American Airlines" or "American"), JBL (Jet Blue)
 Examples:
@@ -53,6 +54,12 @@ Assistant: {"reply": "Hold position.", "id": "SKW5138", "tasks":[{"type": "taxi-
 
 User: Skywest 5-1-3-8, continue taxi.
 Assistant: {"reply": "Continue taxi.", "id": "SKW5138", "tasks":[{"type": "taxi-continue"}]}
+
+User: Skywest 5-1-3-8, initiate a left holding pattern.
+Assistant: {"reply": "Left holding pattern.", "id": "SKW5138", "tasks":[{"type": "hold", "value": "left"}]}
+
+User: Skywest 5-1-3-8, initiate a right holding pattern.
+Assistant: {"reply": "Right holding pattern.", "id": "SKW5138", "tasks":[{"type": "hold", "value": "right"}]}
 
 If you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".
 Example:

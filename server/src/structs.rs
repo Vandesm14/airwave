@@ -9,10 +9,10 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-  angle_between_points, closest_point_on_line, degrees_to_heading, delta_angle,
-  engine::OutgoingReply, find_line_intersection, get_random_point_on_circle,
-  heading_to_degrees, inverse_degrees, move_point, FEET_PER_UNIT,
-  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
+  add_degrees, angle_between_points, closest_point_on_line, degrees_to_heading,
+  delta_angle, engine::OutgoingReply, find_line_intersection,
+  get_random_point_on_circle, heading_to_degrees, inverse_degrees, move_point,
+  FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
 pub struct Line(Vec2, Vec2);
@@ -64,6 +64,13 @@ impl From<TaxiPoint> for Line {
   }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HoldDirection {
+  Right,
+  Left,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
@@ -93,6 +100,9 @@ pub enum Task {
   TaxiHold,
   #[serde(rename = "taxi-continue")]
   TaxiContinue,
+
+  #[serde(rename = "hold")]
+  HoldPattern(HoldDirection),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -196,6 +206,7 @@ pub enum TaxiPoint {
 pub enum AircraftState {
   Flying,
   Landing(Runway),
+  HoldingPattern(HoldDirection),
   Taxiing {
     current: TaxiWaypoint,
     waypoints: Vec<TaxiWaypoint>,
@@ -418,6 +429,12 @@ impl Aircraft {
     self.speed * KNOT_TO_FEET_PER_SECOND * FEET_PER_UNIT
   }
 
+  pub fn do_hold_pattern(&mut self, direction: HoldDirection) {
+    if let AircraftState::Flying = self.state {
+      self.state = AircraftState::HoldingPattern(direction);
+    }
+  }
+
   pub fn do_go_around(
     &mut self,
     sender: &Sender<OutgoingReply>,
@@ -557,6 +574,19 @@ impl Aircraft {
         self.target.speed = 400.0;
         self.target.altitude = 13000.0;
       }
+    }
+  }
+
+  fn update_holding_pattern(&mut self) {
+    if let AircraftState::HoldingPattern(direction) = &mut self.state {
+      match direction {
+        HoldDirection::Right => {
+          self.target.heading = add_degrees(self.heading, 10.0)
+        }
+        HoldDirection::Left => {
+          self.target.heading = add_degrees(self.heading, -10.0)
+        }
+      };
     }
   }
 
@@ -808,6 +838,7 @@ impl Aircraft {
     sender: &Sender<OutgoingReply>,
   ) {
     self.update_landing(dt, sender);
+    self.update_holding_pattern();
     self.update_targets(dt);
     self.update_taxi();
     self.update_to_departure();
