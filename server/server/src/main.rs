@@ -19,7 +19,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use tower_http::services::ServeDir;
 
-use server::{
+use shared::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
   heading_to_degrees, inverse_degrees, move_point,

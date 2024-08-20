@@ -15,7 +15,8 @@ use crate::{
   FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
-pub struct Line(Vec2, Vec2);
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Line(pub Vec2, pub Vec2);
 
 impl Line {
   pub fn new(a: Vec2, b: Vec2) -> Self {
