@@ -1,5 +1,5 @@
 use std::{
-  env,
+  env, fs,
   sync::{mpsc, Arc},
   vec,
 };
@@ -13,8 +13,8 @@ use axum::Router;
 use dotenv::dotenv;
 use futures_util::{stream::SplitSink, SinkExt, StreamExt, TryStreamExt};
 use glam::Vec2;
-use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
+use simple_whisper::{Language, Model};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use tower_http::services::ServeDir;
@@ -126,59 +126,104 @@ fn main() {
                       } => {
                         dbg!("received transcription request", bytes.len());
 
-                        let client = Client::new();
-                        let form = reqwest::multipart::Form::new();
-                        let form = form.part(
-                          "file",
-                          Part::bytes(bytes).file_name("audio.wav"),
-                        );
-                        let form = form.text("model", "whisper-1".to_string());
+                        // fs::create_dir("whisper")
+                        //   .expect("failed to create whisper dir");
 
-                        let response = client
-                          .post(
-                            "https://api.openai.com/v1/audio/transcriptions",
-                          )
-                          .multipart(form)
-                          .header(
-                            header::AUTHORIZATION,
-                            header::HeaderValue::from_str(&format!(
-                              "Bearer {}",
-                              &api_key.clone()
-                            ))
-                            .unwrap(),
-                          )
-                          .header(
-                            header::CONTENT_TYPE,
-                            header::HeaderValue::from_str(
-                              "multipart/form-data",
-                            )
-                            .unwrap(),
-                          )
-                          .send()
-                          .await
-                          .unwrap();
+                        // let file_id =
+                        //   format!("whisper/{}", uuid::Uuid::new_v4());
+                        // let result =
+                        //   fs::write(format!("{}.ogg", file_id), bytes);
 
-                        let text = response.text().await.unwrap();
-                        if let Ok(reply) =
-                          serde_json::from_str::<AudioResponse>(&text)
-                        {
-                          ws_sender
-                            .send(OutgoingReply::ATCReply(CommandWithFreq {
-                              id: "ATC".to_owned(),
-                              frequency,
-                              reply: reply.text.clone(),
-                              tasks: Vec::new(),
-                            }))
-                            .unwrap();
+                        // if let Err(e) = result {
+                        //   tracing::error!("error writing file: {e}");
+                        // } else {
+                        //   // run ffmpeg to convert to wav
+                        //   let mut cmd = std::process::Command::new("ffmpeg");
+                        //   cmd
+                        //     .arg("-i")
+                        //     .arg(format!("{}.ogg", file_id))
+                        //     .arg("-f")
+                        //     .arg("wav")
+                        //     .arg(format!("{}.wav", file_id))
+                        //     .spawn()
+                        //     .expect("failed to spawn ffmpeg");
+                        //   let _ffmpeg =
+                        //     cmd.spawn().expect("failed to spawn ffmpeg");
 
-                          if let Some(result) =
-                            complete_atc_request(reply.text, frequency).await
-                          {
-                            sender
-                              .send(IncomingUpdate::Command(result))
-                              .unwrap();
-                          }
-                        }
+                        //   let whisper =
+                        //     simple_whisper::WhisperBuilder::default()
+                        //       .language(Language::English)
+                        //       .model(Model::TinyEn)
+                        //       .force_download(true)
+                        //       .build()
+                        //       .expect("bad whisper");
+                        //   let mut rcv =
+                        //     whisper.transcribe(format!("{}.wav", file_id));
+                        //   while let Some(result) = rcv.recv().await {
+                        //     match result {
+                        //       Ok(ok) => {
+                        //         dbg!(ok);
+                        //       }
+                        //       Err(err) => {
+                        //         dbg!(err);
+                        //       }
+                        //     }
+                        //   }
+                        // }
+
+                        // let client = Client::new();
+                        // let form = reqwest::multipart::Form::new();
+                        // let form = form.part(
+                        //   "file",
+                        //   Part::bytes(bytes).file_name("audio.wav"),
+                        // );
+                        // let form = form.text("model", "whisper-1".to_string());
+
+                        // let response = client
+                        //   .post(
+                        //     "https://api.openai.com/v1/audio/transcriptions",
+                        //   )
+                        //   .multipart(form)
+                        //   .header(
+                        //     header::AUTHORIZATION,
+                        //     header::HeaderValue::from_str(&format!(
+                        //       "Bearer {}",
+                        //       &api_key.clone()
+                        //     ))
+                        //     .unwrap(),
+                        //   )
+                        //   .header(
+                        //     header::CONTENT_TYPE,
+                        //     header::HeaderValue::from_str(
+                        //       "multipart/form-data",
+                        //     )
+                        //     .unwrap(),
+                        //   )
+                        //   .send()
+                        //   .await
+                        //   .unwrap();
+
+                        // let text = response.text().await.unwrap();
+                        // if let Ok(reply) =
+                        //   serde_json::from_str::<AudioResponse>(&text)
+                        // {
+                        //   ws_sender
+                        //     .send(OutgoingReply::ATCReply(CommandWithFreq {
+                        //       id: "ATC".to_owned(),
+                        //       frequency,
+                        //       reply: reply.text.clone(),
+                        //       tasks: Vec::new(),
+                        //     }))
+                        //     .unwrap();
+
+                        //   if let Some(result) =
+                        //     complete_atc_request(reply.text, frequency).await
+                        //   {
+                        //     sender
+                        //       .send(IncomingUpdate::Command(result))
+                        //       .unwrap();
+                        //   }
+                        // }
                       }
                       FrontendRequest::Text {
                         text: string,
