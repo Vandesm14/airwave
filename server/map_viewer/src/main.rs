@@ -23,10 +23,12 @@ fn model(_app: &App) -> Model {
     ron::de::from_bytes(include_bytes!("../../airport.ron")).unwrap();
 
   fs::write(
-    "../../airport.ron",
+    "../airport.ron",
     ron::ser::to_string_pretty(
       &parsed_entities,
-      ron::ser::PrettyConfig::default().struct_names(true),
+      ron::ser::PrettyConfig::default()
+        .struct_names(true)
+        .indentor("  ".into()),
     )
     .unwrap(),
   )
@@ -48,7 +50,7 @@ fn model(_app: &App) -> Model {
     airport.add_terminal(terminal)
   }
 
-  println!("{:#?}", entity_constructor);
+  println!("{:#?}", airport);
   Model { airport }
 }
 fn update(_app: &App, _model: &mut Model, _update: Update) {}
@@ -57,13 +59,18 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
 
   draw.background().color(BLACK);
+  let scale = 0.05;
 
   model.airport.taxiways.iter().for_each(|taxiway| {
-    taxiway.draw(&draw, 0.05);
+    taxiway.draw(&draw, scale);
+  });
+
+  model.airport.terminals.iter().for_each(|terminal| {
+    terminal.draw(&draw, scale);
   });
 
   model.airport.runways.iter().for_each(|taxiway| {
-    taxiway.draw(&draw, 0.05);
+    taxiway.draw(&draw, scale);
   });
 
   // TODO: draw a scale for 1, 10, 100, and 1000 feet

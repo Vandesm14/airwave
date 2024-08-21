@@ -5,7 +5,7 @@ use glam::Vec2;
 use serde::Serialize;
 use shared::{
   angle_between_points, degrees_to_heading, move_point,
-  structs::{Runway, Taxiway, TaxiwayKind, Terminal},
+  structs::{Gate, Runway, Taxiway, TaxiwayKind, Terminal},
 };
 use thiserror::Error;
 
@@ -75,6 +75,14 @@ impl RefOrValue<Feet> {
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
           ),
+          EntityData::Terminal { .. } => panic!(
+            "{}",
+            ValueError::InvalidRefForEntity(r.clone(), self.clone())
+          ),
+          EntityData::Gate { .. } => panic!(
+            "{}",
+            ValueError::InvalidRefForEntity(r.clone(), self.clone())
+          ),
           EntityData::Var(var) => match var {
             Var::Position(_) => panic!(
               "{}",
@@ -131,6 +139,14 @@ impl RefOrValue<Degrees> {
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
           ),
+          EntityData::Terminal { .. } => panic!(
+            "{}",
+            ValueError::InvalidRefForEntity(r.clone(), self.clone())
+          ),
+          EntityData::Gate { .. } => panic!(
+            "{}",
+            ValueError::InvalidRefForEntity(r.clone(), self.clone())
+          ),
           EntityData::Var(var) => match var {
             Var::Position(_) => panic!(
               "{}",
@@ -175,6 +191,8 @@ impl RefOrValue<Vec2> {
         RefType::A(a) => map.get(a).and_then(|entity_data| match entity_data {
           EntityData::Taxiway { a, .. } => a.only_value(),
           EntityData::Runway { a, .. } => a.only_value(),
+          EntityData::Terminal { a, .. } => a.only_value(),
+          EntityData::Gate { a, .. } => a.only_value(),
           EntityData::Var(var) => match var {
             Var::Position(v) => v.only_value(),
             Var::Degrees(_) => panic!(
@@ -190,6 +208,11 @@ impl RefOrValue<Vec2> {
         RefType::B(b) => map.get(b).and_then(|entity_data| match entity_data {
           EntityData::Taxiway { b, .. } => b.only_value(),
           EntityData::Runway { b, .. } => b.only_value(),
+          EntityData::Terminal { b, .. } => b.only_value(),
+          EntityData::Gate { .. } => panic!(
+            "{}",
+            ValueError::InvalidRefForEntity(r.clone(), self.clone())
+          ),
           EntityData::Var(_) => panic!(
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
@@ -254,6 +277,50 @@ impl EntityConstructor {
         EntityData::Runway {
           a: RefOrValue::Value(a),
           b: RefOrValue::Value(b),
+        }
+      }
+      EntityData::Gate { .. } => {
+        panic!("Gates should be added to a Terminal. Gate: {:?}", entity);
+      }
+      EntityData::Terminal { a, b, c, d, gates } => {
+        let a = a.value(&self.entities).unwrap();
+        let b = b.value(&self.entities).unwrap();
+        let c = c.value(&self.entities).unwrap();
+        let d = d.value(&self.entities).unwrap();
+
+        let mut valid_gates: Vec<Gate> = Vec::new();
+        for gate in gates.iter() {
+          if let Entity {
+            id,
+            data: EntityData::Gate { a },
+          } = gate
+          {
+            let a = a.value(&self.entities).unwrap();
+
+            valid_gates.push(Gate {
+              id: id.clone(),
+              pos: a,
+              heading: 0.0,
+            });
+          }
+        }
+
+        self.terminals.push(Terminal {
+          id: entity.id.chars().next().unwrap(),
+          a,
+          b,
+          c,
+          d,
+          gates: valid_gates,
+        });
+
+        EntityData::Terminal {
+          a: RefOrValue::Value(a),
+          b: RefOrValue::Value(b),
+          c: RefOrValue::Value(c),
+          d: RefOrValue::Value(d),
+
+          gates,
         }
       }
 

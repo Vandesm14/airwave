@@ -6,7 +6,7 @@ use nannou::{
 use serde::{Deserialize, Serialize};
 
 use shared::{
-  structs::{Runway, Taxiway, Terminal},
+  structs::{Gate, Runway, Taxiway, Terminal},
   FEET_PER_UNIT,
 };
 
@@ -63,6 +63,17 @@ pub enum EntityData {
   Runway {
     a: RefOrValue<Vec2>,
     b: RefOrValue<Vec2>,
+  },
+  Terminal {
+    a: RefOrValue<Vec2>,
+    b: RefOrValue<Vec2>,
+    c: RefOrValue<Vec2>,
+    d: RefOrValue<Vec2>,
+
+    gates: Vec<Entity>,
+  },
+  Gate {
+    a: RefOrValue<Vec2>,
   },
   Var(Var),
 }
@@ -127,7 +138,21 @@ impl Draw for Runway {
 
 impl Draw for Terminal {
   fn draw(&self, draw: &nannou::Draw, scale: f32) {
-    todo!("draw terminal")
+    for gate in self.gates.iter() {
+      gate.draw(draw, scale);
+    }
+  }
+}
+
+impl Draw for Gate {
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    let pos = self.pos * scale;
+    draw
+      .ellipse()
+      .x_y(pos.x, pos.y)
+      .width(200.0 * scale)
+      .height(200.0 * scale)
+      .color(color::rgb::<u8>(0xff, 0x00, 0x00));
   }
 }
 
