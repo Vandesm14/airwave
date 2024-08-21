@@ -26,12 +26,13 @@ address to use:
 cargo run --bin serve path/to/directory 127.0.0.1:8080
 ```
 
-You can change the log level by setting `RUST_LOG` to one or more of:
+You can change the log level by setting `RUST_LOG` to one of, which will show
+all logs for that level and above:
 
-- trace
-- debug
-- info
-- warn
 - error
+- warn
+- info
+- debug
+- trace
 
 [pnpm]: https://pnpm.io
