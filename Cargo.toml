@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["serve", "engine", "map-viewer"]
+members = ["serve", "engine", "map-viewer", "server"]
 
 [workspace.package]
 version = "0.1.0"

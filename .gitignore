@@ -9,3 +9,6 @@ client-web/dist/
 # Editors
 .vscode/
 .zed/
+
+# Environment
+.env
