@@ -2,10 +2,10 @@ use core::panic;
 use std::{collections::HashMap, ops::Deref};
 
 use glam::Vec2;
-use serde::{de, Serialize};
+use serde::Serialize;
 use shared::{
-  angle_between_points, degrees_to_heading, inverse_degrees, move_point,
-  structs::{Runway, Taxiway, TaxiwayKind},
+  angle_between_points, degrees_to_heading, move_point,
+  structs::{Runway, Taxiway, TaxiwayKind, Terminal},
 };
 use thiserror::Error;
 
@@ -21,6 +21,7 @@ pub struct EntityConstructor {
 
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
+  pub terminals: Vec<Terminal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Error)]
@@ -49,7 +50,7 @@ where
 }
 
 impl RefOrValue<Feet> {
-  pub fn value(&self, map: &EntityMap, traceback_id: &str) -> Option<Feet> {
+  pub fn value(&self, map: &EntityMap) -> Option<Feet> {
     match self {
       RefOrValue::Action(action) => match action.deref() {
         Action::Move(_, _, _) => panic!(
@@ -57,8 +58,8 @@ impl RefOrValue<Feet> {
           ValueError::InvalidActionForProperty(*action.clone(), self.clone())
         ),
         Action::Add(a, b) => {
-          let a = a.value(map, traceback_id).unwrap();
-          let b = b.value(map, traceback_id).unwrap();
+          let a = a.value(map).unwrap();
+          let b = b.value(map).unwrap();
 
           Some(Feet(a.0 + b.0))
         }
@@ -66,20 +67,20 @@ impl RefOrValue<Feet> {
       RefOrValue::Value(v) => Some(*v),
       RefOrValue::Ref(r) => match r {
         RefType::A(v) => map.get(v).and_then(|entity_data| match entity_data {
-          EntityData::Taxiway { a, .. } => panic!(
+          EntityData::Taxiway { .. } => panic!(
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
           ),
-          EntityData::Runway { a, .. } => panic!(
+          EntityData::Runway { .. } => panic!(
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
           ),
           EntityData::Var(var) => match var {
-            Var::Position(v) => panic!(
+            Var::Position(_) => panic!(
               "{}",
               ValueError::InvalidRefForEntity(r.clone(), self.clone())
             ),
-            Var::Degrees(v) => panic!(
+            Var::Degrees(_) => panic!(
               "{}",
               ValueError::InvalidRefForEntity(r.clone(), self.clone())
             ),
@@ -102,12 +103,12 @@ impl RefOrValue<Feet> {
 }
 
 impl RefOrValue<Degrees> {
-  pub fn value(&self, map: &EntityMap, traceback_id: &str) -> Option<Degrees> {
+  pub fn value(&self, map: &EntityMap) -> Option<Degrees> {
     match self {
       RefOrValue::Action(action) => match action.deref() {
         Action::Add(a, b) => {
-          let a = a.value(map, traceback_id).unwrap();
-          let b = b.value(map, traceback_id).unwrap();
+          let a = a.value(map).unwrap();
+          let b = b.value(map).unwrap();
 
           Some(Degrees(a.0 + b.0))
         }
@@ -122,21 +123,21 @@ impl RefOrValue<Degrees> {
 
         // Invalid RefType for a Degrees value.
         RefType::A(v) => map.get(v).and_then(|entity_data| match entity_data {
-          EntityData::Taxiway { a, .. } => panic!(
+          EntityData::Taxiway { .. } => panic!(
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
           ),
-          EntityData::Runway { a, .. } => panic!(
+          EntityData::Runway { .. } => panic!(
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
           ),
           EntityData::Var(var) => match var {
-            Var::Position(v) => panic!(
+            Var::Position(_) => panic!(
               "{}",
               ValueError::InvalidRefForEntity(r.clone(), self.clone())
             ),
             Var::Degrees(v) => v.only_value(),
-            Var::Feet(v) => panic!(
+            Var::Feet(_) => panic!(
               "{}",
               ValueError::InvalidRefForEntity(r.clone(), self.clone())
             ),
@@ -152,19 +153,19 @@ impl RefOrValue<Degrees> {
 }
 
 impl RefOrValue<Vec2> {
-  pub fn value(&self, map: &EntityMap, traceback_id: &str) -> Option<Vec2> {
+  pub fn value(&self, map: &EntityMap) -> Option<Vec2> {
     match self {
       RefOrValue::Action(action) => match action.deref() {
         Action::Move(pos, heading, length) => {
-          let pos = pos.value(map, traceback_id)?;
-          let heading = heading.value(map, traceback_id)?;
-          let length = length.value(map, traceback_id)?;
+          let pos = pos.value(map)?;
+          let heading = heading.value(map)?;
+          let length = length.value(map)?;
 
           Some(move_point(pos, heading.0, length.0))
         }
         Action::Add(a, b) => {
-          let a = a.value(map, traceback_id).unwrap();
-          let b = b.value(map, traceback_id).unwrap();
+          let a = a.value(map).unwrap();
+          let b = b.value(map).unwrap();
 
           Some(a + b)
         }
@@ -176,11 +177,11 @@ impl RefOrValue<Vec2> {
           EntityData::Runway { a, .. } => a.only_value(),
           EntityData::Var(var) => match var {
             Var::Position(v) => v.only_value(),
-            Var::Degrees(v) => panic!(
+            Var::Degrees(_) => panic!(
               "{}",
               ValueError::InvalidRefForEntity(r.clone(), self.clone())
             ),
-            Var::Feet(v) => panic!(
+            Var::Feet(_) => panic!(
               "{}",
               ValueError::InvalidRefForEntity(r.clone(), self.clone())
             ),
@@ -189,7 +190,7 @@ impl RefOrValue<Vec2> {
         RefType::B(b) => map.get(b).and_then(|entity_data| match entity_data {
           EntityData::Taxiway { b, .. } => b.only_value(),
           EntityData::Runway { b, .. } => b.only_value(),
-          EntityData::Var(var) => panic!(
+          EntityData::Var(_) => panic!(
             "{}",
             ValueError::InvalidRefForEntity(r.clone(), self.clone())
           ),
@@ -212,6 +213,7 @@ impl EntityConstructor {
 
       runways: Vec::new(),
       taxiways: Vec::new(),
+      terminals: Vec::new(),
     }
   }
 
@@ -219,8 +221,8 @@ impl EntityConstructor {
     let data: EntityData = match entity.data {
       // Airport Objects
       EntityData::Taxiway { a, b } => {
-        let a = a.value(&self.entities, &entity.id).unwrap();
-        let b = b.value(&self.entities, &entity.id).unwrap();
+        let a = a.value(&self.entities).unwrap();
+        let b = b.value(&self.entities).unwrap();
 
         self.taxiways.push(Taxiway {
           id: entity.id.clone(),
@@ -235,8 +237,8 @@ impl EntityConstructor {
         }
       }
       EntityData::Runway { a, b } => {
-        let a = a.value(&self.entities, &entity.id).unwrap();
-        let b = b.value(&self.entities, &entity.id).unwrap();
+        let a = a.value(&self.entities).unwrap();
+        let b = b.value(&self.entities).unwrap();
 
         let pos = a.midpoint(b);
         let heading = degrees_to_heading(angle_between_points(a, b));
@@ -257,17 +259,17 @@ impl EntityConstructor {
 
       // Variables
       EntityData::Var(Var::Degrees(degrees)) => {
-        let degrees = degrees.value(&self.entities, &entity.id).unwrap();
+        let degrees = degrees.value(&self.entities).unwrap();
 
         EntityData::Var(Var::Degrees(RefOrValue::Value(degrees)))
       }
       EntityData::Var(Var::Feet(feet)) => {
-        let feet = feet.value(&self.entities, &entity.id).unwrap();
+        let feet = feet.value(&self.entities).unwrap();
 
         EntityData::Var(Var::Feet(RefOrValue::Value(feet)))
       }
       EntityData::Var(Var::Position(position)) => {
-        let position = position.value(&self.entities, &entity.id).unwrap();
+        let position = position.value(&self.entities).unwrap();
 
         EntityData::Var(Var::Position(RefOrValue::Value(position)))
       }

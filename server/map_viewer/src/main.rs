@@ -5,7 +5,9 @@ use nannou::{
   prelude::{App, Frame, Update},
 };
 
-use map_viewer::{entity_constructor::EntityConstructor, Draw, Entity};
+use map_viewer::{
+  entity_constructor::EntityConstructor, Airport, Draw, Entity,
+};
 
 fn main() {
   nannou::app(model).update(update).simple_window(view).run();
@@ -13,7 +15,7 @@ fn main() {
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Model {
-  entity_constructor: EntityConstructor,
+  airport: Airport,
 }
 
 fn model(_app: &App) -> Model {
@@ -35,8 +37,19 @@ fn model(_app: &App) -> Model {
     entity_constructor.add_entity(entity)
   }
 
+  let mut airport = Airport::default();
+  for taxiway in entity_constructor.taxiways.drain(..) {
+    airport.add_taxiway(taxiway)
+  }
+  for runway in entity_constructor.runways.drain(..) {
+    airport.add_runway(runway)
+  }
+  for terminal in entity_constructor.terminals.drain(..) {
+    airport.add_terminal(terminal)
+  }
+
   println!("{:#?}", entity_constructor);
-  Model { entity_constructor }
+  Model { airport }
 }
 fn update(_app: &App, _model: &mut Model, _update: Update) {}
 
@@ -45,15 +58,11 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
   draw.background().color(BLACK);
 
-  model
-    .entity_constructor
-    .taxiways
-    .iter()
-    .for_each(|taxiway| {
-      taxiway.draw(&draw, 0.05);
-    });
+  model.airport.taxiways.iter().for_each(|taxiway| {
+    taxiway.draw(&draw, 0.05);
+  });
 
-  model.entity_constructor.runways.iter().for_each(|taxiway| {
+  model.airport.runways.iter().for_each(|taxiway| {
     taxiway.draw(&draw, 0.05);
   });
 

@@ -82,16 +82,24 @@ pub trait Draw {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
-struct Airport {
-  taxiways: Vec<Taxiway>,
-  runways: Vec<Runway>,
-  terminals: Vec<Terminal>,
+pub struct Airport {
+  pub taxiways: Vec<Taxiway>,
+  pub runways: Vec<Runway>,
+  pub terminals: Vec<Terminal>,
 }
 
 impl Airport {
   pub fn add_taxiway(&mut self, taxiway: Taxiway) {
     let taxiway = taxiway.extend_ends_by(FEET_PER_UNIT * 100.0);
     self.taxiways.push(taxiway);
+  }
+
+  pub fn add_runway(&mut self, runway: Runway) {
+    self.runways.push(runway);
+  }
+
+  pub fn add_terminal(&mut self, terminal: Terminal) {
+    self.terminals.push(terminal);
   }
 }
 
@@ -118,7 +126,9 @@ impl Draw for Runway {
 }
 
 impl Draw for Terminal {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {}
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    todo!("draw terminal")
+  }
 }
 
 impl Draw for Airport {
