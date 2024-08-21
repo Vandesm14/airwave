@@ -51,8 +51,8 @@ export default function App() {
           message.reply.replace(/[0-9]/g, '$& ')
         );
         utterance.volume = 0.01;
-        utterance.rate = 1.0;
-        utterance.pitch = 1.3;
+        utterance.rate = 1.15;
+        utterance.pitch = 1.1;
         window.speechSynthesis.speak(utterance);
       }
     } else {

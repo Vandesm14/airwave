@@ -71,7 +71,6 @@ fn main() {
 
   engine.spawn_random_aircraft();
 
-  fs::remove_dir_all("whisper").expect("failed to remove dir");
   fs::create_dir_all("whisper").expect("failed to create whisper dir");
 
   std::thread::spawn(move || {
@@ -130,10 +129,17 @@ fn main() {
                       } => {
                         dbg!("received transcription request", bytes.len());
 
-                        let file_id =
-                          format!("whisper/{}", uuid::Uuid::new_v4());
-                        let result =
-                          fs::write(format!("{}.ogg", file_id), bytes);
+                        let file_id_ogg =
+                          format!("whisper/{}.ogg", uuid::Uuid::new_v4());
+
+                        let format = "mp3";
+                        let file_id = format!(
+                          "whisper/{}.{}",
+                          uuid::Uuid::new_v4(),
+                          format
+                        );
+
+                        let result = fs::write(file_id_ogg.clone(), bytes);
 
                         if let Err(e) = result {
                           tracing::error!("error writing file: {e}");
@@ -142,12 +148,14 @@ fn main() {
                           let mut cmd = std::process::Command::new("ffmpeg");
                           cmd
                             .arg("-i")
-                            .arg(format!("{}.ogg", file_id))
+                            .arg(file_id_ogg.clone())
                             .arg("-f")
-                            .arg("wav")
-                            .arg(format!("{}.wav", file_id));
+                            .arg(format)
+                            .arg(file_id.clone());
                           let _ffmpeg =
                             cmd.spawn().expect("failed to spawn ffmpeg").wait();
+                          fs::remove_file(file_id_ogg)
+                            .expect("failed to remove ogg");
 
                           let whisper =
                             simple_whisper::WhisperBuilder::default()
@@ -156,9 +164,7 @@ fn main() {
                               .build()
                               .expect("bad whisper");
 
-                          let mut rcv =
-                            whisper.transcribe(format!("{}.wav", file_id));
-
+                          let mut rcv = whisper.transcribe(file_id.clone());
                           while let Some(result) = rcv.recv().await {
                             match result {
                               Ok(ok) => {
@@ -166,6 +172,9 @@ fn main() {
                                   transcription, ..
                                 } = ok
                                 {
+                                  fs::remove_file(file_id.clone())
+                                    .expect("failed to remove wav");
+
                                   ws_sender
                                     .send(OutgoingReply::ATCReply(
                                       CommandWithFreq {
