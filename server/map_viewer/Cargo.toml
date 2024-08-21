@@ -12,3 +12,4 @@ glam.workspace = true
 serde.workspace = true
 
 shared.path = "../shared"
+thiserror = "1.0.63"

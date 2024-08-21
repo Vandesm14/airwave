@@ -22,9 +22,9 @@ pub enum RefType<T> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum RefOrValue<T>
 where
-  T: Clone,
+  T: Clone + Serialize,
 {
-  Action(Box<Action>),
+  Action(Box<Action<T>>),
   Value(T),
   Ref(RefType<String>),
 }
@@ -39,10 +39,12 @@ pub struct Feet(f32);
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 
-pub enum Action {
+pub enum Action<T>
+where
+  T: Clone + Serialize,
+{
   Move(RefOrValue<Vec2>, RefOrValue<Degrees>, RefOrValue<Feet>),
-  AddVec2(RefOrValue<Vec2>, RefOrValue<Vec2>),
-  AddDegrees(RefOrValue<Degrees>, RefOrValue<Degrees>),
+  Add(RefOrValue<T>, RefOrValue<T>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -1,12 +1,5 @@
 [
   Entity(
-    id: "A",
-    data: Taxiway(
-      a: Value(Vec2(0.0, 0.0)),
-      b: Value(Vec2(7000.0, 0.0)),
-    )
-  ),
-  Entity(
     id: "20",
     data: Runway(
       a: Value(Vec2(0.0, 0.0)),
@@ -16,8 +9,8 @@
   Entity(
     id: "B",
     data: Taxiway(
-      a: Action(Move(Ref(A("20")), Value(Degrees(135.0)), Value(Feet(500.0)))),
-      b: Action(Move(Ref(B("20")), Value(Degrees(135.0)), Value(Feet(500.0)))),
+      a: Action(Move(Ref(A("20")), Action(Add(Value(Degrees(45.0)), Value(Degrees(90.0)))), Value(Feet(500.0)))),
+      b: Action(Move(Ref(B("20")), Action(Add(Value(Degrees(45.0)), Value(Degrees(90.0)))), Value(Feet(500.0)))),
     )
   ),
 ]

@@ -2,10 +2,12 @@ use core::panic;
 use std::{collections::HashMap, ops::Deref};
 
 use glam::Vec2;
+use serde::Serialize;
 use shared::{
   angle_between_points, degrees_to_heading, inverse_degrees, move_point,
   structs::{Runway, Taxiway, TaxiwayKind},
 };
+use thiserror::Error;
 
 use crate::{Action, Degrees, Entity, EntityData, Feet, RefOrValue, RefType};
 
@@ -19,9 +21,21 @@ pub struct EntityConstructor {
   pub taxiways: Vec<Taxiway>,
 }
 
+#[derive(Debug, Clone, PartialEq, Error)]
+pub enum ValueError<T, R>
+where
+  T: Clone + Serialize,
+  R: Clone + Serialize,
+{
+  #[error("Cannot call action: {0:?} for value type: {1:?}")]
+  InvalidActionForProperty(Action<T>, RefOrValue<R>),
+  #[error("Invalid ref call on entity: {0:?} for value type: {1:?}")]
+  InvalidRefForEntity(RefType<T>, RefOrValue<R>),
+}
+
 impl<T> RefOrValue<T>
 where
-  T: Clone,
+  T: Clone + Serialize,
 {
   pub fn only_value(&self) -> Option<T> {
     if let RefOrValue::Value(v) = self {
@@ -36,15 +50,30 @@ impl RefOrValue<Feet> {
   pub fn value(&self, map: &EntityMap, traceback_id: &str) -> Option<Feet> {
     match self {
       RefOrValue::Action(action) => match action.deref() {
-        Action::AddDegrees(_, _) => panic!("Cannot get a Feet value from an AddDegrees action. Entity: {traceback_id}"),
-        Action::Move(_, _, _) => panic!("Cannot get a Feet value from a Move action. Entity: {traceback_id}"),
-        Action::AddVec2(_, _) => panic!("Cannot get a Feet value from an AddVec2 action. Entity: {traceback_id}"),
+        Action::Move(_, _, _) => panic!(
+          "{}",
+          ValueError::InvalidActionForProperty(*action.clone(), self.clone())
+        ),
+        Action::Add(a, b) => {
+          let a = a.value(map, traceback_id).unwrap();
+          let b = b.value(map, traceback_id).unwrap();
+
+          Some(Feet(a.0 + b.0))
+        }
       },
       RefOrValue::Value(v) => Some(*v),
       RefOrValue::Ref(r) => match r {
         RefType::A(v) => todo!(),
-        RefType::R(_) => panic!("Cannot get an Degrees value from a Ref type of R (rotation). Entity: {traceback_id}"),
-        RefType::B(_) => panic!("Cannot get an Degrees value from a Ref type of B (Vec2). Entity: {traceback_id}"),
+
+        // Invalid RefType for a Feet value.
+        RefType::R(_) => panic!(
+          "{}",
+          ValueError::InvalidRefForEntity(r.clone(), self.clone())
+        ),
+        RefType::B(_) => panic!(
+          "{}",
+          ValueError::InvalidRefForEntity(r.clone(), self.clone())
+        ),
       },
     }
   }
@@ -54,21 +83,30 @@ impl RefOrValue<Degrees> {
   pub fn value(&self, map: &EntityMap, traceback_id: &str) -> Option<Degrees> {
     match self {
       RefOrValue::Action(action) => match action.deref() {
-        Action::AddDegrees(a, b) => {
-          todo!()
-        }
+        Action::Add(a, b) => {
+          let a = a.value(map, traceback_id).unwrap();
+          let b = b.value(map, traceback_id).unwrap();
 
-        // Move and AddVec2 are only for Vec2 values.
-        Action::Move(_, _, _) => todo!(),
-        Action::AddVec2(_, _) => todo!(),
+          Some(Degrees(a.0 + b.0))
+        }
+        Action::Move(_, _, _) => panic!(
+          "{}",
+          ValueError::InvalidActionForProperty(*action.clone(), self.clone())
+        ),
       },
       RefOrValue::Value(v) => Some(*v),
       RefOrValue::Ref(r) => match r {
         RefType::R(_) => todo!(),
 
-        // A and B (Vec2) aren't Degrees values.
-        RefType::A(_) => panic!("Cannot get an Degrees value from a Ref type of A (Vec2). Entity: {traceback_id}"),
-        RefType::B(_) => panic!("Cannot get an Degrees value from a Ref type of B (Vec2). Entity: {traceback_id}"),
+        // Invalid RefType for a Degrees value.
+        RefType::A(_) => panic!(
+          "{}",
+          ValueError::InvalidRefForEntity(r.clone(), self.clone())
+        ),
+        RefType::B(_) => panic!(
+          "{}",
+          ValueError::InvalidRefForEntity(r.clone(), self.clone())
+        ),
       },
     }
   }
@@ -83,32 +121,31 @@ impl RefOrValue<Vec2> {
           let heading = heading.value(map, traceback_id)?;
           let length = length.value(map, traceback_id)?;
 
-          Some(move_point(pos, heading.0, length.0)) 
-        },
-        Action::AddVec2(_, _) => todo!(),
+          Some(move_point(pos, heading.0, length.0))
+        }
+        Action::Add(a, b) => {
+          let a = a.value(map, traceback_id).unwrap();
+          let b = b.value(map, traceback_id).unwrap();
 
-        // AddDegrees is only for angles (f32).
-        Action::AddDegrees(_, _) => {
-          panic!("Cannot AddDegrees to a Vec2 value. Entity: {traceback_id}")
+          Some(a + b)
         }
       },
       RefOrValue::Value(v) => Some(*v),
       RefOrValue::Ref(r) => match r {
         RefType::A(a) => map.get(a).and_then(|entity_data| match entity_data {
           EntityData::Taxiway { a, .. } => a.only_value(),
-          EntityData::Runway {
-            a, ..
-          } => a.only_value()
+          EntityData::Runway { a, .. } => a.only_value(),
         }),
         RefType::B(b) => map.get(b).and_then(|entity_data| match entity_data {
           EntityData::Taxiway { b, .. } => b.only_value(),
-          EntityData::Runway {
-            b, ..
-          } => b.only_value()
+          EntityData::Runway { b, .. } => b.only_value(),
         }),
 
-        // R (f32) isn't a Vec2 value.
-        RefType::R(_) => panic!("Cannot get a Vec2 value from a Ref type of R (rotation). Entity: {traceback_id}"),
+        // Invalid RefType for a Vec2 value.
+        RefType::R(_) => panic!(
+          "{}",
+          ValueError::InvalidRefForEntity(r.clone(), self.clone())
+        ),
       },
     }
   }
