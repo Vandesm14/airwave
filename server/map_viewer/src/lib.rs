@@ -138,6 +138,16 @@ impl Draw for Runway {
 
 impl Draw for Terminal {
   fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    draw
+      .quad()
+      .points(
+        glam_to_geom(self.a * scale),
+        glam_to_geom(self.b * scale),
+        glam_to_geom(self.c * scale),
+        glam_to_geom(self.d * scale),
+      )
+      .color(color::rgb::<u8>(0x99, 0x99, 0x99));
+
     for gate in self.gates.iter() {
       gate.draw(draw, scale);
     }

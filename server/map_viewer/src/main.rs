@@ -23,11 +23,11 @@ fn model(_app: &App) -> Model {
     ron::de::from_bytes(include_bytes!("../../airport.ron")).unwrap();
 
   fs::write(
-    "../airport.ron",
+    "airport.ron",
     ron::ser::to_string_pretty(
       &parsed_entities,
       ron::ser::PrettyConfig::default()
-        .struct_names(true)
+        .struct_names(false)
         .indentor("  ".into()),
     )
     .unwrap(),

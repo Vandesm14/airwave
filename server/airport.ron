@@ -1,40 +1,40 @@
 [
-  Entity(
+  (
     id: "20",
     data: Runway(
-      a: Value(Vec2(0.0, 0.0)),
-      b: Action(Move(Value(Vec2(0.0, 0.0)), Value(Degrees(45.0)), Value(Feet(7000.0)))),
+      a: Value((0.0, 0.0)),
+      b: Action(Move(Value((0.0, 0.0)), Value((45.0)), Value((7000.0)))),
     ),
   ),
-  Entity(
+  (
     id: "B-start",
-    data: Var(Position(Action(Move(Ref(A("20")), Action(Add(Value(Degrees(45.0)), Value(Degrees(90.0)))), Value(Feet(500.0)))))),
+    data: Var(Position(Action(Move(Ref(A("20")), Action(Add(Value((45.0)), Value((90.0)))), Value((500.0)))))),
   ),
-  Entity(
+  (
     id: "B",
     data: Taxiway(
       a: Ref(A("B-start")),
-      b: Action(Move(Ref(B("20")), Action(Add(Value(Degrees(45.0)), Value(Degrees(90.0)))), Value(Feet(500.0)))),
+      b: Action(Move(Ref(B("20")), Action(Add(Value((45.0)), Value((90.0)))), Value((500.0)))),
     ),
   ),
-  Entity(
+  (
     id: "A",
     data: Terminal(
-      a: Ref(A("B")),
-      b: Ref(B("B")),
-      c: Action(Move(Ref(A("B")), Value(Degrees(45.0)), Value(Feet(1000.0)))),
-      d: Action(Move(Ref(B("B")), Value(Degrees(45.0)), Value(Feet(1000.0)))),
+      a: Value((0.0, 0.0)),
+      b: Value((1000.0, 0.0)),
+      c: Value((1000.0, 1000.0)),
+      d: Value((0.0, 1000.0)),
       gates: [
-        Entity(
+        (
           id: "A1",
           data: Gate(
-            a: Action(Move(Ref(B("B")), Value(Degrees(135.0)), Value(Feet(600.0)))),
+            a: Action(Move(Ref(B("B")), Value((135.0)), Value((600.0)))),
           ),
         ),
-        Entity(
+        (
           id: "A2",
           data: Gate(
-            a: Action(Move(Ref(B("B")), Value(Degrees(135.0)), Value(Feet(1200.0)))),
+            a: Action(Move(Ref(B("B")), Value((135.0)), Value((1200.0)))),
           ),
         ),
       ],
