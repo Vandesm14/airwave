@@ -170,6 +170,22 @@ impl Runway {
       self.length * FEET_PER_UNIT * 0.5,
     )
   }
+
+  pub fn a(&self) -> Vec2 {
+    move_point(
+      self.pos,
+      inverse_degrees(heading_to_degrees(self.heading)),
+      self.length * 0.5,
+    )
+  }
+
+  pub fn b(&self) -> Vec2 {
+    move_point(
+      self.pos,
+      heading_to_degrees(self.heading),
+      self.length * 0.5,
+    )
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

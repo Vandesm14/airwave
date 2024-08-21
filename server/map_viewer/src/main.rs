@@ -1,14 +1,9 @@
-use glam::Vec2;
 use nannou::{
   color::*,
-  geom::pt2,
   prelude::{App, Frame, Update},
 };
 
-use map_viewer::{
-  entity_constructor::EntityConstructor, glam_to_geom, Draw, Entity,
-};
-use shared::FEET_PER_UNIT;
+use map_viewer::{entity_constructor::EntityConstructor, Draw, Entity};
 
 fn main() {
   nannou::app(model).update(update).simple_window(view).run();
@@ -45,6 +40,12 @@ fn view(app: &App, model: &Model, frame: Frame) {
     .for_each(|taxiway| {
       taxiway.draw(&draw, 0.05);
     });
+
+  model.entity_constructor.runways.iter().for_each(|taxiway| {
+    taxiway.draw(&draw, 0.05);
+  });
+
+  // TODO: draw a scale for 1, 10, 100, and 1000 feet
 
   draw.to_frame(app, &frame).unwrap();
 }

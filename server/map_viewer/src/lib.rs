@@ -1,5 +1,8 @@
 use glam::Vec2;
-use nannou::{color::*, geom, prelude::App};
+use nannou::{
+  color::{self},
+  geom,
+};
 use serde::{Deserialize, Serialize};
 
 use shared::{
@@ -30,10 +33,14 @@ where
 #[repr(transparent)]
 pub struct Degrees(f32);
 
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[repr(transparent)]
+pub struct Feet(f32);
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 
 pub enum Action {
-  Move(RefOrValue<Vec2>, RefOrValue<Degrees>, RefOrValue<f32>),
+  Move(RefOrValue<Vec2>, RefOrValue<Degrees>, RefOrValue<Feet>),
   AddVec2(RefOrValue<Vec2>, RefOrValue<Vec2>),
   AddDegrees(RefOrValue<Degrees>, RefOrValue<Degrees>),
 }
@@ -45,9 +52,8 @@ pub enum EntityData {
     b: RefOrValue<Vec2>,
   },
   Runway {
-    pos: RefOrValue<Vec2>,
-    heading: RefOrValue<f32>,
-    length: RefOrValue<f32>,
+    a: RefOrValue<Vec2>,
+    b: RefOrValue<Vec2>,
   },
 }
 
@@ -86,12 +92,19 @@ impl Draw for Taxiway {
       .start(glam_to_geom(self.a * scale))
       .end(glam_to_geom(self.b * scale))
       .weight(200.0 * scale)
-      .color(WHITE);
+      .color(color::rgb::<u8>(0x99, 0x99, 0x99));
   }
 }
 
 impl Draw for Runway {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {}
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    draw
+      .line()
+      .start(glam_to_geom(self.a() * scale))
+      .end(glam_to_geom(self.b() * scale))
+      .weight(250.0 * scale)
+      .color(color::rgb::<u8>(0x66, 0x66, 0x66));
+  }
 }
 
 impl Draw for Terminal {

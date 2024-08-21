@@ -1,19 +1,4 @@
 [
-  // Entity(
-  //   id: "20",
-  //   data: Runway(
-  //     pos: Value(Vec2(0.0, 0.0)),
-  //     heading: Value(200.0),
-  //     length: Value(7000.0),
-  //   )
-  // ),
-  // Entity(
-  //   id: "A",
-  //   data: Taxiway(
-  //     a: Action(Move(Ref(A("20")), Ref(R("20")), Value(500.0))),
-  //     b: Ref(B("20")),
-  //   )
-  // ),
   Entity(
     id: "A",
     data: Taxiway(
@@ -22,10 +7,17 @@
     )
   ),
   Entity(
+    id: "20",
+    data: Runway(
+      a: Value(Vec2(0.0, 0.0)),
+      b: Action(Move(Value(Vec2(0.0, 0.0)), Value(Degrees(45.0)), Value(Feet(7000.0)))),
+    )
+  ),
+  Entity(
     id: "B",
     data: Taxiway(
-      a: Ref(A("A")),
-      b: Value(Vec2(0.0, 7000.0)),
+      a: Action(Move(Ref(A("20")), Value(Degrees(135.0)), Value(Feet(500.0)))),
+      b: Action(Move(Ref(B("20")), Value(Degrees(135.0)), Value(Feet(500.0)))),
     )
-  )
+  ),
 ]
