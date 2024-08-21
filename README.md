@@ -1,5 +1,24 @@
 # Airwave
 
+## Server
+
+The first and main back-end of the game.
+
+Run the server:
+
+```bash
+cargo run --bin server
+```
+
+You can change the log level by setting `RUST_LOG` to one of the following,
+which will show all logs for that level and above:
+
+- error
+- warn
+- info
+- debug
+- trace
+
 ## Web Client
 
 The first and most feature-complete front-end.
@@ -22,12 +41,12 @@ A simple website server that hosts a directory.
 Simply run the `serve` binary with the directory to serve, with an optional
 address to use:
 
-```sh
+```bash
 cargo run --bin serve path/to/directory 127.0.0.1:8080
 ```
 
-You can change the log level by setting `RUST_LOG` to one of, which will show
-all logs for that level and above:
+You can change the log level by setting `RUST_LOG` to one of the following,
+which will show all logs for that level and above:
 
 - error
 - warn
