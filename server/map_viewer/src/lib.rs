@@ -48,6 +48,13 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Var {
+  Position(RefOrValue<Vec2>),
+  Degrees(RefOrValue<Degrees>),
+  Feet(RefOrValue<Feet>),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EntityData {
   Taxiway {
     a: RefOrValue<Vec2>,
@@ -57,6 +64,7 @@ pub enum EntityData {
     a: RefOrValue<Vec2>,
     b: RefOrValue<Vec2>,
   },
+  Var(Var),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

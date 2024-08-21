@@ -1,3 +1,5 @@
+use std::fs;
+
 use nannou::{
   color::*,
   prelude::{App, Frame, Update},
@@ -17,6 +19,16 @@ pub struct Model {
 fn model(_app: &App) -> Model {
   let parsed_entities: Vec<Entity> =
     ron::de::from_bytes(include_bytes!("../../airport.ron")).unwrap();
+
+  fs::write(
+    "../../airport.ron",
+    ron::ser::to_string_pretty(
+      &parsed_entities,
+      ron::ser::PrettyConfig::default().struct_names(true),
+    )
+    .unwrap(),
+  )
+  .unwrap();
 
   let mut entity_constructor = EntityConstructor::new();
   for entity in parsed_entities.into_iter() {

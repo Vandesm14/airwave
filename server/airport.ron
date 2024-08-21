@@ -7,9 +7,17 @@
     )
   ),
   Entity(
+    id: "B-start",
+    data: Var(Position(
+      Action(
+        Move(Ref(A("20")), Action(Add(Value(Degrees(45.0)), Value(Degrees(90.0)))), Value(Feet(500.0)))
+      )
+    )),
+  ),
+  Entity(
     id: "B",
     data: Taxiway(
-      a: Action(Move(Ref(A("20")), Action(Add(Value(Degrees(45.0)), Value(Degrees(90.0)))), Value(Feet(500.0)))),
+      a: Ref(A("B-start")),
       b: Action(Move(Ref(B("20")), Action(Add(Value(Degrees(45.0)), Value(Degrees(90.0)))), Value(Feet(500.0)))),
     )
   ),
