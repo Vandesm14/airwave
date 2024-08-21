@@ -6,6 +6,7 @@ use nannou::{
 use serde::{Deserialize, Serialize};
 
 use shared::{
+  heading_to_degrees,
   structs::{Gate, Runway, Taxiway, Terminal},
   FEET_PER_UNIT,
 };
@@ -106,6 +107,8 @@ impl Airport {
   }
 
   pub fn add_runway(&mut self, runway: Runway) {
+    let mut runway = runway;
+    runway.heading = heading_to_degrees(runway.heading);
     self.runways.push(runway);
   }
 
