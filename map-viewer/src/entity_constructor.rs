@@ -1,12 +1,12 @@
 use core::panic;
 use std::{collections::HashMap, ops::Deref};
 
-use glam::Vec2;
-use serde::Serialize;
 use engine::{
   angle_between_points, degrees_to_heading, move_point,
   structs::{Gate, Runway, Taxiway, TaxiwayKind, Terminal},
 };
+use glam::Vec2;
+use serde::Serialize;
 use thiserror::Error;
 
 use crate::{
