@@ -264,7 +264,7 @@ impl EntityConstructor {
         let b = b.value(&self.entities).unwrap();
 
         let pos = a.midpoint(b);
-        let heading = degrees_to_heading(angle_between_points(a, b));
+        let heading = angle_between_points(a, b);
         let length = a.distance(b);
 
         self.runways.push(Runway {

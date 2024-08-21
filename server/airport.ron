@@ -1,24 +1,9 @@
 [
   (
-    id: "90-length",
-    data: Var(Feet(Value((7000.0)))),
-  ),
-  (
-    id: "90",
+    id: "01",
     data: Runway(
       a: Value((0.0, 0.0)),
-      b: Action(Move(Value((0.0, 0.0)), Value((90.0)), Ref(A("90-length")))),
-    ),
-  ),
-  (
-    id: "270-start",
-    data: Var(Position(Action(Move(Ref(A("90")), Value((180.0)), Value((10.0)))))),
-  ),
-  (
-    id: "270",
-    data: Runway(
-      a: Ref(A("270-start")),
-      b: Action(Move(Ref(A("270-start")), Value((270.0)), Ref(A("90-length")))),
+      b: Action(Move(Value((0.0, 0.0)), Value((10.0)), Value((7000.0)))),
     ),
   ),
 ]

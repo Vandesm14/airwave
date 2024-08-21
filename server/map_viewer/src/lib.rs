@@ -108,7 +108,7 @@ impl Airport {
 
   pub fn add_runway(&mut self, runway: Runway) {
     let mut runway = runway;
-    runway.heading = heading_to_degrees(runway.heading);
+    // runway.heading = heading_to_degrees(runway.heading);
     self.runways.push(runway);
   }
 
