@@ -1,5 +1,5 @@
 import { useAtom } from 'solid-jotai';
-import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/';
+import { WhisperSTT } from 'whisper-speech-to-text';
 import {
   airspaceSizeAtom,
   frequencyAtom,
