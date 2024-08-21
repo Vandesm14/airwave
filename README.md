@@ -1,28 +1,37 @@
-## Usage
+# Airwave
+
+## Web Client
+
+The first and most feature-complete front-end.
+
+It is recommended to use [pnpm] as this uses their workspace system. Though it
+should still be possible to build using other package managers too.
+
+Install the dependencies, build the client, and then serve the website:
 
 ```bash
-$ npm install # or pnpm install or yarn install
+pnpm i
+pnpm client-web:build
+cargo run --bin serve client-web/dist
 ```
 
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
+## Serve
 
-## Available Scripts
+A simple website server that hosts a directory.
 
-In the project directory, you can run:
+Simply run the `serve` binary with the directory to serve, with an optional
+address to use:
 
-### `npm run dev`
+```sh
+cargo run --bin serve path/to/directory 127.0.0.1:8080
+```
 
-Runs the app in the development mode.<br>
-Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
+You can change the log level by setting `RUST_LOG` to one or more of:
 
-### `npm run build`
+- trace
+- debug
+- info
+- warn
+- error
 
-Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
-## Deployment
-
-Learn more about deploying your application with the [documentations](https://vitejs.dev/guide/static-deploy.html)
+[pnpm]: https://pnpm.io

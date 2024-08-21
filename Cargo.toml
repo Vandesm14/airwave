@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["serve"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+
+[workspace.dependencies.clap]
+version = "4"
+default-features = false
+features = ["std", "help", "usage", "error-context", "suggestions", "derive"]
