@@ -42,7 +42,7 @@ Simply run the `serve` binary with the directory to serve, with an optional
 address to use:
 
 ```bash
-cargo run --bin serve path/to/directory 127.0.0.1:8080
+cargo run --bin serve path/to/directory --address 127.0.0.1:8080
 ```
 
 You can change the log level by setting `RUST_LOG` to one of the following,
