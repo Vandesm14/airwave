@@ -26,6 +26,10 @@ export default function App() {
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useAtom(frequencyAtom);
 
+  async function getMedia(constraints) {
+    await navigator.mediaDevices.getUserMedia(constraints);
+  }
+
   function callsignString(id: string): string {
     const airlines: Record<string, string> = {
       AAL: 'American Airlines',
@@ -58,7 +62,9 @@ export default function App() {
     localStorage.setItem('messages', JSON.stringify(messages()));
   });
 
-  onMount(() => {
+  onMount(async () => {
+    await getMedia({ audio: true, video: false });
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Insert' && !isRecording()) {
         whisper.startRecording();
