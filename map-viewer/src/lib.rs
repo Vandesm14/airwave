@@ -5,17 +5,17 @@ use nannou::{
 };
 
 use engine::{
-  heading_to_degrees,
   structs::{Gate, Runway, Taxiway, Terminal},
   FEET_PER_UNIT,
 };
 
-pub fn glam_to_geom(v: Vec2) -> geom::Vec2 {
-  geom::Vec2::new(v.x, v.y)
+fn inverse_y_axis(v: Vec2) -> Vec2 {
+  Vec2::new(v.x, -v.y)
 }
 
-pub fn inverse_y_axis(v: Vec2) -> Vec2 {
-  Vec2::new(v.x, -v.y)
+fn glam_to_geom(v: Vec2) -> geom::Vec2 {
+  let v = inverse_y_axis(v);
+  geom::Vec2::new(v.x, v.y)
 }
 
 pub trait Draw {
@@ -42,8 +42,8 @@ impl Draw for Taxiway {
 
 impl Draw for Runway {
   fn draw(&self, draw: &nannou::Draw, scale: f32) {
-    let scaled_start = glam_to_geom(inverse_y_axis(self.start() * scale));
-    let scaled_end = glam_to_geom(inverse_y_axis(self.end() * scale));
+    let scaled_start = glam_to_geom(self.start() * scale);
+    let scaled_end = glam_to_geom(self.end() * scale);
 
     draw
       .line()

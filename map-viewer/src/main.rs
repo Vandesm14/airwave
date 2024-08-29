@@ -1,4 +1,4 @@
-use engine::{structs::Runway, FEET_PER_UNIT, NAUTICALMILES_TO_FEET};
+use engine::structs::Runway;
 use glam::Vec2;
 use nannou::{
   color::*,
@@ -6,19 +6,18 @@ use nannou::{
 };
 
 use map_viewer::{Airport, Draw};
+use nannou_egui::Egui;
 
 fn main() {
   nannou::app(model).update(update).simple_window(view).run();
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Model {
   airport: Airport,
+  egui: Egui,
 }
 
-fn model(_app: &App) -> Model {
-  let padding = FEET_PER_UNIT * 7000.0;
-
+fn model(app: &App) -> Model {
   let airport = Airport {
     taxiways: vec![],
     runways: vec![Runway {
@@ -30,11 +29,28 @@ fn model(_app: &App) -> Model {
     terminals: vec![],
   };
 
-  Model { airport }
+  let window_id = app
+    .new_window()
+    .view(view)
+    .raw_event(raw_window_event)
+    .build()
+    .unwrap();
+  let window = app.window(window_id).unwrap();
+
+  let egui = Egui::from_window(&window);
+
+  Model { airport, egui }
 }
-fn update(app: &App, _model: &mut Model, _update: Update) {
-  // find the cursor position and print it out
-  let cursor = app.mouse.position();
+
+fn update(_app: &App, _model: &mut Model, _update: Update) {}
+
+fn raw_window_event(
+  _app: &App,
+  model: &mut Model,
+  event: &nannou::winit::event::WindowEvent,
+) {
+  // Let egui handle things like keyboard and mouse input.
+  model.egui.handle_raw_event(event);
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
