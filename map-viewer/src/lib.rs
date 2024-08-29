@@ -3,87 +3,11 @@ use nannou::{
   color::{self},
   geom,
 };
-use serde::{Deserialize, Serialize};
 
 use engine::{
-  heading_to_degrees,
   structs::{Gate, Runway, Taxiway, Terminal},
   FEET_PER_UNIT,
 };
-
-pub mod entity_constructor;
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum RefType<T> {
-  A(T),
-  B(T),
-  R(T),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum RefOrValue<T>
-where
-  T: Clone + Serialize,
-{
-  Action(Box<Action<T>>),
-  Value(T),
-  Ref(RefType<String>),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
-#[repr(transparent)]
-pub struct Degrees(f32);
-
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
-#[repr(transparent)]
-pub struct Feet(f32);
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-
-pub enum Action<T>
-where
-  T: Clone + Serialize,
-{
-  Move(RefOrValue<Vec2>, RefOrValue<Degrees>, RefOrValue<Feet>),
-  Add(RefOrValue<T>, RefOrValue<T>),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Var {
-  Position(RefOrValue<Vec2>),
-  Degrees(RefOrValue<Degrees>),
-  Feet(RefOrValue<Feet>),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum EntityData {
-  Taxiway {
-    a: RefOrValue<Vec2>,
-    b: RefOrValue<Vec2>,
-  },
-  Runway {
-    a: RefOrValue<Vec2>,
-    b: RefOrValue<Vec2>,
-  },
-  Terminal {
-    a: RefOrValue<Vec2>,
-    b: RefOrValue<Vec2>,
-    c: RefOrValue<Vec2>,
-    d: RefOrValue<Vec2>,
-
-    gates: Vec<Entity>,
-  },
-  Gate {
-    a: RefOrValue<Vec2>,
-  },
-  Var(Var),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Entity {
-  pub id: String,
-  pub data: EntityData,
-}
 
 pub fn glam_to_geom(v: Vec2) -> geom::Vec2 {
   geom::Vec2::new(v.x, v.y)
@@ -130,10 +54,11 @@ impl Draw for Taxiway {
 
 impl Draw for Runway {
   fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    dbg!(self.start(), self.end());
     draw
       .line()
-      .start(glam_to_geom(self.a() * scale))
-      .end(glam_to_geom(self.b() * scale))
+      .start(glam_to_geom(dbg!(self.start() * scale)))
+      .end(glam_to_geom(dbg!(self.end() * scale)))
       .weight(250.0 * scale)
       .color(color::rgb::<u8>(0x66, 0x66, 0x66));
   }

@@ -1,13 +1,11 @@
-use std::fs;
-
+use engine::structs::Runway;
+use glam::Vec2;
 use nannou::{
   color::*,
   prelude::{App, Frame, Update},
 };
 
-use map_viewer::{
-  entity_constructor::EntityConstructor, Airport, Draw, Entity,
-};
+use map_viewer::{Airport, Draw};
 
 fn main() {
   nannou::app(model).update(update).simple_window(view).run();
@@ -19,36 +17,16 @@ pub struct Model {
 }
 
 fn model(_app: &App) -> Model {
-  let parsed_entities: Vec<Entity> =
-    ron::de::from_bytes(include_bytes!("../../assets/airport.ron")).unwrap();
-
-  fs::write(
-    "airport.ron",
-    ron::ser::to_string_pretty(
-      &parsed_entities,
-      ron::ser::PrettyConfig::default()
-        .struct_names(false)
-        .indentor("  ".into()),
-    )
-    .unwrap(),
-  )
-  .unwrap();
-
-  let mut entity_constructor = EntityConstructor::new();
-  for entity in parsed_entities.into_iter() {
-    entity_constructor.add_entity(entity)
-  }
-
-  let mut airport = Airport::default();
-  for taxiway in entity_constructor.taxiways.drain(..) {
-    airport.add_taxiway(taxiway)
-  }
-  for runway in entity_constructor.runways.drain(..) {
-    airport.add_runway(runway)
-  }
-  for terminal in entity_constructor.terminals.drain(..) {
-    airport.add_terminal(terminal)
-  }
+  let airport = Airport {
+    taxiways: vec![],
+    runways: vec![Runway {
+      id: "20".into(),
+      pos: Vec2::new(0.0, 0.0),
+      heading: 200.0,
+      length: 7000.0,
+    }],
+    terminals: vec![],
+  };
 
   println!("{:#?}", airport);
   Model { airport }
@@ -59,7 +37,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
 
   draw.background().color(BLACK);
-  let scale = 0.05;
+  let scale = 1.0;
 
   model.airport.taxiways.iter().for_each(|taxiway| {
     taxiway.draw(&draw, scale);
