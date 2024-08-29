@@ -22,7 +22,7 @@ use tower_http::services::ServeDir;
 use engine::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  heading_to_degrees, inverse_degrees, move_point,
+  inverse_degrees, move_point,
   structs::{
     Aircraft, Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind,
     Terminal,
@@ -256,12 +256,12 @@ fn cross_roads_airport(engine: &mut Engine, airspace_size: f32) {
     id: "B".into(),
     a: move_point(
       runway_14.start(),
-      add_degrees(heading_to_degrees(runway_14.heading), 90.0),
+      add_degrees(runway_14.heading, 90.0),
       -FEET_PER_UNIT * 500.0,
     ),
     b: move_point(
       runway_14.end(),
-      add_degrees(heading_to_degrees(runway_14.heading), 90.0),
+      add_degrees(runway_14.heading, 90.0),
       -FEET_PER_UNIT * 500.0,
     ),
     kind: TaxiwayKind::Normal,
@@ -407,12 +407,12 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     id: "B".into(),
     a: move_point(
       runway_27.start(),
-      add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+      add_degrees(runway_27.heading, 90.0),
       FEET_PER_UNIT * 500.0,
     ),
     b: move_point(
       runway_27.end(),
-      add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+      add_degrees(runway_27.heading, 90.0),
       FEET_PER_UNIT * 500.0,
     ),
     kind: TaxiwayKind::Normal,
@@ -422,12 +422,12 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     id: "C".into(),
     a: move_point(
       runway_20.start(),
-      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+      add_degrees(runway_20.heading, 90.0),
       FEET_PER_UNIT * 500.0,
     ),
     b: move_point(
       runway_20.end(),
-      add_degrees(heading_to_degrees(runway_20.heading), 90.0),
+      add_degrees(runway_20.heading, 90.0),
       FEET_PER_UNIT * 500.0,
     ),
     kind: TaxiwayKind::Normal,
@@ -445,7 +445,7 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     a: runway_27.start(),
     b: move_point(
       runway_27.start(),
-      add_degrees(heading_to_degrees(runway_27.heading), 90.0),
+      add_degrees(runway_27.heading, 90.0),
       FEET_PER_UNIT * 500.0,
     ),
     kind: TaxiwayKind::HoldShort("27".into()),
@@ -517,12 +517,12 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     id: "D2".into(),
     a: move_point(
       taxiway_c.b,
-      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      inverse_degrees(runway_20.heading),
       FEET_PER_UNIT * 1000.0,
     ),
     b: move_point(
       runway_20.end(),
-      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      inverse_degrees(runway_20.heading),
       FEET_PER_UNIT * 1000.0,
     ),
     kind: TaxiwayKind::Normal,
@@ -532,12 +532,12 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     id: "D3".into(),
     a: move_point(
       taxiway_c.b,
-      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      inverse_degrees(runway_20.heading),
       FEET_PER_UNIT * 2500.0,
     ),
     b: move_point(
       runway_20.end(),
-      inverse_degrees(heading_to_degrees(runway_20.heading)),
+      inverse_degrees(runway_20.heading),
       FEET_PER_UNIT * 2500.0,
     ),
     kind: TaxiwayKind::Normal,

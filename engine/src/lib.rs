@@ -17,8 +17,8 @@ pub fn move_point(point: Vec2, degrees: f32, length: f32) -> Vec2 {
   let radians = degrees * (PI / 180.0);
 
   // Calculate x and y components
-  let x = length * radians.cos();
-  let y = length * radians.sin();
+  let x = length * radians.sin();
+  let y = length * radians.cos();
 
   // Create and return the new Vec2
   point + Vec2::new(x, y)
@@ -30,10 +30,6 @@ pub fn add_degrees(degrees: f32, add: f32) -> f32 {
 
 pub fn subtract_degrees(degrees: f32, subtract: f32) -> f32 {
   (360.0 + degrees - subtract) % 360.0
-}
-
-pub fn heading_to_degrees(heading: f32) -> f32 {
-  subtract_degrees(heading, 90.0)
 }
 
 pub fn degrees_to_heading(heading: f32) -> f32 {

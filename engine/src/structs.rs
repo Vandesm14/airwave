@@ -11,8 +11,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::{
   add_degrees, angle_between_points, closest_point_on_line, degrees_to_heading,
   delta_angle, engine::OutgoingReply, find_line_intersection,
-  get_random_point_on_circle, heading_to_degrees, inverse_degrees, move_point,
-  FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
+  get_random_point_on_circle, inverse_degrees, move_point, FEET_PER_UNIT,
+  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -30,11 +30,10 @@ impl Line {
 
 impl From<Runway> for Line {
   fn from(value: Runway) -> Self {
-    let angle = heading_to_degrees(value.heading);
-    let inverse_angle = inverse_degrees(angle);
+    let inverse_angle = inverse_degrees(value.heading);
     let half_length = value.length * 0.5;
 
-    let a = move_point(value.pos, angle, half_length);
+    let a = move_point(value.pos, value.heading, half_length);
     let b = move_point(value.pos, inverse_angle, half_length);
 
     Line::new(a, b)
@@ -158,17 +157,13 @@ impl Runway {
   pub fn start(&self) -> Vec2 {
     move_point(
       self.pos,
-      inverse_degrees(heading_to_degrees(self.heading)),
+      inverse_degrees(self.heading),
       self.length * FEET_PER_UNIT * 0.5,
     )
   }
 
   pub fn end(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      heading_to_degrees(self.heading),
-      self.length * FEET_PER_UNIT * 0.5,
-    )
+    move_point(self.pos, self.heading, self.length * FEET_PER_UNIT * 0.5)
   }
 }
 
@@ -592,11 +587,7 @@ impl Aircraft {
   }
 
   fn update_position(&mut self, dt: f32) {
-    let pos = move_point(
-      self.pos,
-      heading_to_degrees(self.heading),
-      self.speed_in_pixels() * dt,
-    );
+    let pos = move_point(self.pos, self.heading, self.speed_in_pixels() * dt);
     self.pos = pos;
   }
 
@@ -683,14 +674,10 @@ impl Aircraft {
   fn update_landing(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     if let AircraftState::Landing(runway) = &self.state {
       let ils_line = Line::new(
+        move_point(runway.start(), runway.heading, FEET_PER_UNIT * 500.0),
         move_point(
           runway.start(),
-          heading_to_degrees(runway.heading),
-          FEET_PER_UNIT * 500.0,
-        ),
-        move_point(
-          runway.start(),
-          inverse_degrees(heading_to_degrees(runway.heading)),
+          inverse_degrees(runway.heading),
           NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 10.0,
         ),
       );
@@ -741,7 +728,7 @@ impl Aircraft {
 
       let landing_point = move_point(
         closest_point,
-        heading_to_degrees(runway.heading),
+        runway.heading,
         NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 0.4,
       );
 

@@ -9,12 +9,7 @@ use engine::{
   FEET_PER_UNIT,
 };
 
-fn inverse_y_axis(v: Vec2) -> Vec2 {
-  Vec2::new(v.x, -v.y)
-}
-
 fn glam_to_geom(v: Vec2) -> geom::Vec2 {
-  let v = inverse_y_axis(v);
   geom::Vec2::new(v.x, v.y)
 }
 
