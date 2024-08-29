@@ -5,12 +5,17 @@ use nannou::{
 };
 
 use engine::{
+  heading_to_degrees,
   structs::{Gate, Runway, Taxiway, Terminal},
   FEET_PER_UNIT,
 };
 
 pub fn glam_to_geom(v: Vec2) -> geom::Vec2 {
   geom::Vec2::new(v.x, v.y)
+}
+
+pub fn inverse_y_axis(v: Vec2) -> Vec2 {
+  Vec2::new(v.x, -v.y)
 }
 
 pub trait Draw {
@@ -22,23 +27,6 @@ pub struct Airport {
   pub taxiways: Vec<Taxiway>,
   pub runways: Vec<Runway>,
   pub terminals: Vec<Terminal>,
-}
-
-impl Airport {
-  pub fn add_taxiway(&mut self, taxiway: Taxiway) {
-    let taxiway = taxiway.extend_ends_by(FEET_PER_UNIT * 100.0);
-    self.taxiways.push(taxiway);
-  }
-
-  pub fn add_runway(&mut self, runway: Runway) {
-    let mut runway = runway;
-    // runway.heading = heading_to_degrees(runway.heading);
-    self.runways.push(runway);
-  }
-
-  pub fn add_terminal(&mut self, terminal: Terminal) {
-    self.terminals.push(terminal);
-  }
 }
 
 impl Draw for Taxiway {
@@ -54,13 +42,22 @@ impl Draw for Taxiway {
 
 impl Draw for Runway {
   fn draw(&self, draw: &nannou::Draw, scale: f32) {
-    dbg!(self.start(), self.end());
+    let scaled_start = glam_to_geom(inverse_y_axis(self.start() * scale));
+    let scaled_end = glam_to_geom(inverse_y_axis(self.end() * scale));
+
     draw
       .line()
-      .start(glam_to_geom(dbg!(self.start() * scale)))
-      .end(glam_to_geom(dbg!(self.end() * scale)))
-      .weight(250.0 * scale)
+      .start(scaled_start)
+      .end(scaled_end)
+      .weight(FEET_PER_UNIT * 250.0 * scale)
       .color(color::rgb::<u8>(0x66, 0x66, 0x66));
+
+    draw
+      .ellipse()
+      .x_y(scaled_start.x, scaled_start.y)
+      .width(FEET_PER_UNIT * 200.0 * scale)
+      .height(FEET_PER_UNIT * 200.0 * scale)
+      .color(color::rgb::<u8>(0xff, 0x00, 0x00));
   }
 }
 

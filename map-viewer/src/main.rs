@@ -1,4 +1,4 @@
-use engine::structs::Runway;
+use engine::{structs::Runway, FEET_PER_UNIT, NAUTICALMILES_TO_FEET};
 use glam::Vec2;
 use nannou::{
   color::*,
@@ -17,27 +17,31 @@ pub struct Model {
 }
 
 fn model(_app: &App) -> Model {
+  let padding = FEET_PER_UNIT * 7000.0;
+
   let airport = Airport {
     taxiways: vec![],
     runways: vec![Runway {
-      id: "20".into(),
+      id: "".into(),
       pos: Vec2::new(0.0, 0.0),
-      heading: 200.0,
+      heading: 090.0,
       length: 7000.0,
     }],
     terminals: vec![],
   };
 
-  println!("{:#?}", airport);
   Model { airport }
 }
-fn update(_app: &App, _model: &mut Model, _update: Update) {}
+fn update(app: &App, _model: &mut Model, _update: Update) {
+  // find the cursor position and print it out
+  let cursor = app.mouse.position();
+}
 
 fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
 
   draw.background().color(BLACK);
-  let scale = 1.0;
+  let scale = 10.0;
 
   model.airport.taxiways.iter().for_each(|taxiway| {
     taxiway.draw(&draw, scale);
