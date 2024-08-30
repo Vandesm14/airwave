@@ -57,7 +57,7 @@ fn main() {
 
   let app = Router::new().nest_service("/", ServeDir::new("../dist"));
 
-  let airspace_size = NAUTICALMILES_TO_FEET * 40.0;
+  let airspace_size = NAUTICALMILES_TO_FEET * 30.0;
 
   let mut engine = Engine::new(
     command_receiver,
@@ -67,7 +67,7 @@ fn main() {
   );
 
   let mut airport = Airport::new("KSFO".into(), Vec2::new(0.0, 0.0));
-  v_pattern_airport(&mut airport, airspace_size);
+  v_pattern_airport(&mut airport);
 
   engine.world.airports.push(airport);
   engine.world.airspaces.push(Airspace {
@@ -360,17 +360,17 @@ fn cross_roads_airport(airport: &mut Airport, airspace_size: f32) {
 }
 
 #[allow(dead_code)]
-fn v_pattern_airport(airport: &mut Airport, airspace_size: f32) {
+fn v_pattern_airport(airport: &mut Airport) {
   let runway_20 = Runway {
     id: "20".into(),
-    pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
+    pos: Vec2::new(0.0, 0.0),
     heading: 200.0,
     length: 7000.0,
   };
 
   let runway_27: Runway = Runway {
     id: "27".into(),
-    pos: Vec2::new(airspace_size * 0.5 - 1000.0, airspace_size * 0.5 + 2400.0),
+    pos: Vec2::new(-1000.0, 2400.0),
     heading: 270.0,
     length: 7000.0,
   };

@@ -64,23 +64,23 @@ export function inverseDegrees(degrees: number): number {
 }
 
 export function runwayInfo(
-  runway: Runway,
-  scale: number
+  runway: Runway
+  // scale: number
 ): {
   start: { x: number; y: number };
   end: { x: number; y: number };
-  ils: {
-    altitudePoints: { x: number; y: number }[];
-    end: { x: number; y: number };
-    maxAngle: { x: number; y: number };
-    minAngle: { x: number; y: number };
-  };
+  // ils: {
+  //   altitudePoints: { x: number; y: number }[];
+  //   end: { x: number; y: number };
+  //   maxAngle: { x: number; y: number };
+  //   minAngle: { x: number; y: number };
+  // };
 } {
   let pos: Vec2 = {
-    x: runway.x * scale,
-    y: runway.y * scale,
+    x: runway.x,
+    y: runway.y,
   };
-  let length = runway.length * scale;
+  let length = runway.length;
 
   let start = movePoint(
     pos.x,
@@ -90,45 +90,45 @@ export function runwayInfo(
   );
   let end = movePoint(pos.x, pos.y, length * 0.5, runway.heading);
 
-  let maxIlsRangeMiles = 10 * scale;
-  let ilsPoints: { x: number; y: number }[] = [];
-  let separate = (6.0 * scale) / 4;
-  for (let i = 1; i < 4; i += 1) {
-    let point = i * separate + separate;
-    ilsPoints.push(
-      movePoint(
-        start.x,
-        start.y,
-        length + milesToFeet * point,
-        inverseDegrees(runway.heading)
-      )
-    );
-  }
+  // let maxIlsRangeMiles = 10 * scale;
+  // let ilsPoints: { x: number; y: number }[] = [];
+  // let separate = (6.0 * scale) / 4;
+  // for (let i = 1; i < 4; i += 1) {
+  //   let point = i * separate + separate;
+  //   ilsPoints.push(
+  //     movePoint(
+  //       start.x,
+  //       start.y,
+  //       length + milesToFeet * point,
+  //       inverseDegrees(runway.heading)
+  //     )
+  //   );
+  // }
 
-  let ilsStart = movePoint(
-    start.x,
-    start.y,
-    length / 2 + milesToFeet * maxIlsRangeMiles,
-    inverseDegrees(runway.heading)
-  );
+  // let ilsStart = movePoint(
+  //   start.x,
+  //   start.y,
+  //   length / 2 + milesToFeet * maxIlsRangeMiles,
+  //   inverseDegrees(runway.heading)
+  // );
 
-  let maxAngle = movePoint(
-    start.x,
-    start.y,
-    length / 2 + milesToFeet * maxIlsRangeMiles,
-    inverseDegrees(runway.heading + 5)
-  );
-  let minAngle = movePoint(
-    start.x,
-    start.y,
-    length / 2 + milesToFeet * maxIlsRangeMiles,
-    inverseDegrees((runway.heading + (360 - 5)) % 360)
-  );
+  // let maxAngle = movePoint(
+  //   start.x,
+  //   start.y,
+  //   length / 2 + milesToFeet * maxIlsRangeMiles,
+  //   inverseDegrees(runway.heading + 5)
+  // );
+  // let minAngle = movePoint(
+  //   start.x,
+  //   start.y,
+  //   length / 2 + milesToFeet * maxIlsRangeMiles,
+  //   inverseDegrees((runway.heading + (360 - 5)) % 360)
+  // );
 
   return {
     start,
     end,
-    ils: { altitudePoints: ilsPoints, end: ilsStart, maxAngle, minAngle },
+    // ils: { altitudePoints: ilsPoints, end: ilsStart, maxAngle, minAngle },
   };
 }
 

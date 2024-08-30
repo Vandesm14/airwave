@@ -10,6 +10,7 @@ import {
   World,
 } from './lib/types';
 import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
+import { runwayInfo } from './lib/lib';
 
 export default function Canvas({
   aircrafts,
@@ -33,8 +34,8 @@ export default function Canvas({
   }
 
   function scalePoint(vec2: Vec2): Vec2 {
-    let x = scaleFeet(vec2.x) * radar().scale;
-    let y = scaleFeet(vec2.y) * radar().scale;
+    let x = scaleFeet(vec2.x);
+    let y = scaleFeet(vec2.y);
 
     return {
       x: x,
@@ -102,10 +103,10 @@ export default function Canvas({
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
-          let maxScale = 2.0;
+          let maxScale = 3.0;
           let minScale = 0.1;
 
-          radar.scale += e.deltaY * -0.0006;
+          radar.scale += e.deltaY * -0.001;
           radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
 
           radar.isZooming = true;
@@ -148,10 +149,15 @@ export default function Canvas({
   function resetTransform(ctx: CanvasRenderingContext2D) {
     ctx.resetTransform();
     ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
-    // ctx.translate(radar().scale * -0.5, radar().scale * -0.5);
-
     // Set 0.0 to be the center of the canvas
     ctx.translate(canvas.width * 0.5, canvas.height * 0.5);
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
+    ctx.font = `900 ${fontSize()}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
   }
 
   function loopDraw(canvas: HTMLCanvasElement, dts: number) {
@@ -166,7 +172,7 @@ export default function Canvas({
       ctx.resetTransform();
       ctx.fillRect(0, 0, width, height);
       resetTransform(ctx);
-      drawCompass(ctx);
+      // drawCompass(ctx);
 
       if (radar().mode === 'tower') {
         drawTower(ctx, world(), aircrafts());
@@ -207,7 +213,19 @@ export default function Canvas({
     ctx.arc(pos.x, pos.y, scaleFeet(airspace.size), 0, Math.PI * 2);
     ctx.stroke();
   }
-  function drawRunway(ctx: Ctx, runway: Runway) {}
+  function drawRunway(ctx: Ctx, runway: Runway) {
+    let info = runwayInfo(runway);
+    let start = scalePoint(info.start);
+    let end = scalePoint(info.end);
+
+    ctx.strokeStyle = 'grey';
+    ctx.fillStyle = 'grey';
+    ctx.lineWidth = scaleFeet(1000);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  }
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {}
 
   function drawTerminal(ctx: Ctx, terminal: Terminal) {}
