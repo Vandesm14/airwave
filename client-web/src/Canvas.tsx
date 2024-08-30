@@ -20,7 +20,6 @@ import {
   runwayInfo,
   toRadians,
 } from './lib/lib';
-import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 
 export default function Canvas({
   aircrafts,
@@ -35,9 +34,9 @@ export default function Canvas({
 
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
-  let groundScale = createMemo(() => (radar().mode === 'ground' ? 30 : 1));
+  let groundScale = createMemo(() => (radar().mode === 'ground' ? 25 : 1));
   let fontSize = createMemo(
-    () => 16 * (radar().scale * (radar().mode === 'ground' ? 1.2 : 0.6))
+    () => 16 * (radar().scale * (radar().mode === 'ground' ? 1.1 : 0.6))
   );
 
   function scaleFeet(num: number): number {
