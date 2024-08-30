@@ -24,8 +24,8 @@ use engine::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
   inverse_degrees, move_point,
   structs::{
-    Aircraft, Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind,
-    Terminal,
+    Airport, Airspace, Command, CommandWithFreq, Gate, Runway, Taxiway,
+    TaxiwayKind, Terminal,
   },
   DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
@@ -66,8 +66,15 @@ fn main() {
     118.5,
   );
 
-  v_pattern_airport(&mut engine, airspace_size);
+  let mut airport = Airport::new("KSFO".into(), Vec2::new(0.0, 0.0));
+  v_pattern_airport(&mut airport, airspace_size);
 
+  engine.world.airports.push(airport);
+  engine.world.airspaces.push(Airspace {
+    id: "KSFO".into(),
+    pos: Vec2::new(0.0, 0.0),
+    size: airspace_size,
+  });
   engine.spawn_random_aircraft();
 
   std::thread::spawn(move || {
@@ -236,7 +243,7 @@ fn main() {
 }
 
 #[allow(dead_code)]
-fn cross_roads_airport(engine: &mut Engine, airspace_size: f32) {
+fn cross_roads_airport(airport: &mut Airport, airspace_size: f32) {
   let runway_01 = Runway {
     id: "01".into(),
     pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5)
@@ -336,24 +343,24 @@ fn cross_roads_airport(engine: &mut Engine, airspace_size: f32) {
     });
   }
 
-  engine.add_taxiway(taxiway_a1);
-  engine.add_taxiway(taxiway_a2);
-  engine.add_taxiway(taxiway_a3);
+  airport.add_taxiway(taxiway_a1);
+  airport.add_taxiway(taxiway_a2);
+  airport.add_taxiway(taxiway_a3);
 
-  engine.add_taxiway(taxiway_b);
-  engine.add_taxiway(taxiway_c);
+  airport.add_taxiway(taxiway_b);
+  airport.add_taxiway(taxiway_c);
 
-  engine.add_taxiway(taxiway_hs14);
-  engine.add_taxiway(taxiway_hs01);
+  airport.add_taxiway(taxiway_hs14);
+  airport.add_taxiway(taxiway_hs01);
 
-  engine.runways.push(runway_01);
-  engine.runways.push(runway_14);
+  airport.runways.push(runway_01);
+  airport.runways.push(runway_14);
 
-  engine.terminals.push(terminal_a);
+  airport.terminals.push(terminal_a);
 }
 
 #[allow(dead_code)]
-fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
+fn v_pattern_airport(airport: &mut Airport, airspace_size: f32) {
   let runway_20 = Runway {
     id: "20".into(),
     pos: Vec2::new(airspace_size * 0.5, airspace_size * 0.5),
@@ -479,39 +486,21 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     kind: TaxiwayKind::Normal,
   };
 
-  engine.aircraft.push(Aircraft::random_to_depart(
-    118.6,
-    terminal_a.clone(),
-    terminal_a.gates.clone(),
-  ));
+  airport.runways.push(runway_20);
+  airport.runways.push(runway_27);
 
-  engine.aircraft.push(Aircraft::random_to_depart(
-    118.6,
-    terminal_a.clone(),
-    terminal_a.gates.clone(),
-  ));
+  airport.add_taxiway(taxiway_a1);
+  airport.add_taxiway(taxiway_a2);
+  airport.add_taxiway(taxiway_a3);
+  airport.add_taxiway(taxiway_b);
+  airport.add_taxiway(taxiway_c);
+  airport.add_taxiway(taxiway_d1);
+  airport.add_taxiway(taxiway_d2);
+  airport.add_taxiway(taxiway_d3);
+  airport.add_taxiway(taxiway_hs_20);
+  airport.add_taxiway(taxiway_hs_27);
 
-  engine.aircraft.push(Aircraft::random_to_depart(
-    118.6,
-    terminal_a.clone(),
-    terminal_a.gates.clone(),
-  ));
-
-  engine.runways.push(runway_20);
-  engine.runways.push(runway_27);
-
-  engine.add_taxiway(taxiway_a1);
-  engine.add_taxiway(taxiway_a2);
-  engine.add_taxiway(taxiway_a3);
-  engine.add_taxiway(taxiway_b);
-  engine.add_taxiway(taxiway_c);
-  engine.add_taxiway(taxiway_d1);
-  engine.add_taxiway(taxiway_d2);
-  engine.add_taxiway(taxiway_d3);
-  engine.add_taxiway(taxiway_hs_20);
-  engine.add_taxiway(taxiway_hs_27);
-
-  engine.terminals.push(terminal_a);
+  airport.terminals.push(terminal_a);
 }
 
 async fn complete_atc_request(

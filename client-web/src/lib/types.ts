@@ -100,6 +100,26 @@ export type Terminal = {
   gates: Array<Gate>;
 };
 
+export type Airport = {
+  id: string;
+  center: Vec2;
+  runways: Array<Runway>;
+  taxiways: Array<Taxiway>;
+  terminals: Array<Terminal>;
+  altitudeRange: [number, number];
+};
+
+export type Airspace = {
+  id: string;
+  pos: Vec2;
+  size: number;
+};
+
+export type World = {
+  airspaces: Array<Airspace>;
+  airports: Array<Airport>;
+};
+
 export type RadioMessage = {
   id: string;
   frequency: number;
@@ -111,12 +131,9 @@ export type ServerEvent =
       type: 'aircraft';
       value: Aircraft[];
     }
-  | { type: 'runways'; value: Runway[] }
-  | { type: 'taxiways'; value: Taxiway[] }
-  | { type: 'terminals'; value: Terminal[] }
+  | { type: 'world'; value: World }
   | {
       type: 'atcreply';
       value: { id: string; frequency: number; reply: string };
     }
-  | { type: 'reply'; value: RadioMessage }
-  | { type: 'size'; value: number };
+  | { type: 'reply'; value: RadioMessage };

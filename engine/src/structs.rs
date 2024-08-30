@@ -15,6 +15,51 @@ use crate::{
   TIME_SCALE,
 };
 
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct World {
+  pub airspaces: Vec<Airspace>,
+  pub airports: Vec<Airport>,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct Airspace {
+  pub id: String,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub pos: Vec2,
+  pub size: f32,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct Airport {
+  pub id: String,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub center: Vec2,
+  pub runways: Vec<Runway>,
+  pub taxiways: Vec<Taxiway>,
+  pub terminals: Vec<Terminal>,
+  pub altitude_range: [f32; 2],
+}
+
+impl Airport {
+  pub fn new(id: String, center: Vec2) -> Self {
+    Self {
+      id,
+      center,
+      runways: Vec::new(),
+      taxiways: Vec::new(),
+      terminals: Vec::new(),
+      altitude_range: [0.0, 0.0],
+    }
+  }
+
+  pub fn add_taxiway(&mut self, taxiway: Taxiway) {
+    let taxiway = taxiway.extend_ends_by(100.0);
+    self.taxiways.push(taxiway);
+  }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Line(pub Vec2, pub Vec2);
 
