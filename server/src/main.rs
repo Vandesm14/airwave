@@ -69,12 +69,12 @@ fn main() {
   let mut airport = Airport::new("KSFO".into(), Vec2::new(0.0, 0.0));
   v_pattern_airport(&mut airport);
 
-  engine.world.airports.push(airport);
   engine.world.airspaces.push(Airspace {
     id: "KSFO".into(),
-    pos: Vec2::new(0.0, 0.0),
+    pos: airport.center,
     size: airspace_size,
   });
+  engine.world.airports.push(airport);
   engine.spawn_random_aircraft();
 
   std::thread::spawn(move || {

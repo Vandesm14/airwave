@@ -10,7 +10,7 @@ import {
   World,
 } from './lib/types';
 import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
-import { runwayInfo } from './lib/lib';
+import { runwayInfo, toRadians } from './lib/lib';
 
 export default function Canvas({
   aircrafts,
@@ -166,13 +166,13 @@ export default function Canvas({
 
     let ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.font = `900 ${fontSize()}px monospace`;
+      ctx.font = `900 16px monospace`;
       ctx.fillStyle = 'black';
 
       ctx.resetTransform();
       ctx.fillRect(0, 0, width, height);
-      resetTransform(ctx);
       // drawCompass(ctx);
+      resetTransform(ctx);
 
       if (radar().mode === 'tower') {
         drawTower(ctx, world(), aircrafts());
@@ -183,25 +183,32 @@ export default function Canvas({
   }
 
   function drawCompass(ctx: Ctx) {
-    // let half_size = airspaceSize() * 0.5 * radar().scale;
-    // let airspace_radius = half_size - 50;
-    // ctx.fillStyle = '#888';
-    // ctx.textAlign = 'center';
-    // ctx.textBaseline = 'middle';
-    // let padding = radar().scale * 5000;
-    // for (let i = 0; i < 36; i++) {
-    //   let text = degreesToHeading(i * 10)
-    //     .toString()
-    //     .padStart(3, '0');
-    //   if (text === '000') {
-    //     text = '360';
-    //   }
-    //   ctx.fillText(
-    //     text,
-    //     Math.cos(toRadians(i * 10)) * (airspace_radius + padding) + half_size,
-    //     Math.sin(toRadians(i * 10)) * (airspace_radius + padding) + half_size
-    //   );
-    // }
+    let diameter = canvas.height;
+    if (canvas.width < canvas.height) {
+      diameter = canvas.width;
+    }
+
+    let radius = diameter * 0.5;
+    let origin = {
+      x: canvas.width * 0.5,
+      y: canvas.height * 0.5,
+    };
+
+    ctx.fillStyle = '#888a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    let padding = -10;
+    for (let i = 0; i < 36; i++) {
+      let text = (i * 10).toString().padStart(3, '0');
+      if (text === '000') {
+        text = '360';
+      }
+      ctx.fillText(
+        text,
+        Math.cos(toRadians(i * 10)) * (radius + padding) + origin.x,
+        Math.sin(toRadians(i * 10)) * (radius + padding) + origin.y
+      );
+    }
   }
 
   function drawAirspace(ctx: Ctx, airspace: Airspace) {
