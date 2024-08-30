@@ -1,6 +1,7 @@
 import { useAtom } from 'solid-jotai';
 import {
   airspaceSizeAtom,
+  initialRadarScale,
   radarAtom,
   renderAtom,
   runwaysAtom,
@@ -43,8 +44,8 @@ export default function Canvas({
   createEffect(() => {
     setRadar((radar) => {
       radar.shiftPoint = {
-        x: airspaceSize() * 0.5,
-        y: airspaceSize() * 0.5,
+        x: airspaceSize() * 0.5 * initialRadarScale,
+        y: airspaceSize() * 0.5 * initialRadarScale,
       };
 
       return { ...radar };
@@ -100,8 +101,9 @@ export default function Canvas({
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
-          radar.scale += e.deltaY * -0.0005;
-          radar.scale = Math.max(Math.min(radar.scale, 2), 0.6);
+          radar.scale += e.deltaY * -0.000004;
+          console.log(radar.scale);
+          radar.scale = Math.max(Math.min(radar.scale, 0.01), 0.003);
 
           radar.isZooming = true;
 
@@ -143,8 +145,7 @@ export default function Canvas({
   function resetTransform(ctx: CanvasRenderingContext2D) {
     ctx.resetTransform();
     ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
-    ctx.scale(radar().scale, radar().scale);
-    ctx.translate(airspaceSize() * -0.5, airspaceSize() * -0.5);
+    ctx.translate(airspaceSize() * radar().scale * -0.5, airspaceSize() * radar().scale * -0.5);
   }
 
   function loopDraw(canvas: HTMLCanvasElement, dts: number) {
@@ -199,7 +200,7 @@ export default function Canvas({
   }
 
   function drawCompass(ctx: Ctx) {
-    let half_size = airspaceSize() * 0.5;
+    let half_size = airspaceSize() * 0.5 * radar().scale;
 
     let airspace_radius = half_size - 50;
 
@@ -209,23 +210,23 @@ export default function Canvas({
     ctx.arc(half_size, half_size, airspace_radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = '#888';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (let i = 0; i < 36; i++) {
-      let text = degreesToHeading(i * 10)
-        .toString()
-        .padStart(3, '0');
-      if (text === '000') {
-        text = '360';
-      }
+    // ctx.fillStyle = '#888';
+    // ctx.textAlign = 'center';
+    // ctx.textBaseline = 'middle';
+    // for (let i = 0; i < 36; i++) {
+    //   let text = degreesToHeading(i * 10)
+    //     .toString()
+    //     .padStart(3, '0');
+    //   if (text === '000') {
+    //     text = '360';
+    //   }
 
-      ctx.fillText(
-        text,
-        Math.cos(toRadians(i * 10)) * (airspace_radius + 20) + half_size,
-        Math.sin(toRadians(i * 10)) * (airspace_radius + 20) + half_size
-      );
-    }
+    //   ctx.fillText(
+    //     text,
+    //     Math.cos(toRadians(i * 10)) * (airspace_radius + 20) + half_size,
+    //     Math.sin(toRadians(i * 10)) * (airspace_radius + 20) + half_size
+    //   );
+    // }
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
