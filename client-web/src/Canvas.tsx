@@ -40,6 +40,7 @@ export default function Canvas({
   let [terminals] = useAtom(terminalsAtom);
   let [render, setRender] = useAtom(renderAtom);
   let groundScale = createMemo(() => (radar().mode === 'ground' ? 10 : 1));
+  let fontSize = createMemo(() => 16 * (radar().scale * 200));
 
   createEffect(() => {
     setRadar((radar) => {
@@ -145,7 +146,10 @@ export default function Canvas({
   function resetTransform(ctx: CanvasRenderingContext2D) {
     ctx.resetTransform();
     ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
-    ctx.translate(airspaceSize() * radar().scale * -0.5, airspaceSize() * radar().scale * -0.5);
+    ctx.translate(
+      airspaceSize() * radar().scale * -0.5,
+      airspaceSize() * radar().scale * -0.5
+    );
   }
 
   function loopDraw(canvas: HTMLCanvasElement, dts: number) {
@@ -154,8 +158,7 @@ export default function Canvas({
 
     let ctx = canvas.getContext('2d');
     if (ctx) {
-      const fontSize = 16 * (radar().scale * 200);
-      ctx.font = `900 ${fontSize}px monospace`;
+      ctx.font = `900 ${fontSize()}px monospace`;
       ctx.fillStyle = 'black';
 
       ctx.resetTransform();
@@ -231,31 +234,31 @@ export default function Canvas({
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
-    let width = 4;
+    let width = 250 * radar().scale * 4;
     let info = runwayInfo(runway);
 
     let startLeft = movePoint(
-      info.start.x,
-      info.start.y,
+      info.start.x * radar().scale,
+      info.start.y * radar().scale,
       width * 0.5,
       (headingToDegrees(runway.heading) + 270) % 360
     );
     let startRight = movePoint(
-      info.start.x,
-      info.start.y,
+      info.start.x * radar().scale,
+      info.start.y * radar().scale,
       width * 0.5,
       (headingToDegrees(runway.heading) + 90) % 360
     );
 
     let endLeft = movePoint(
-      info.end.x,
-      info.end.y,
+      info.end.x * radar().scale,
+      info.end.y * radar().scale,
       width * 0.5,
       (headingToDegrees(runway.heading) + 270) % 360
     );
     let endRight = movePoint(
-      info.end.x,
-      info.end.y,
+      info.end.x * radar().scale,
+      info.end.y * radar().scale,
       width * 0.5,
       (headingToDegrees(runway.heading) + 90) % 360
     );
@@ -298,19 +301,19 @@ export default function Canvas({
 
   function drawRunwayGround(ctx: Ctx, runway: Runway) {
     let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
+      x: airspaceSize() * radar().scale * 0.5,
+      y: airspaceSize() * radar().scale * 0.5,
     };
-    let width = 250;
     let projectionScale = 14;
-
     let info = runwayInfo(runway);
+
+    let width = 250 * radar().scale;
 
     let startLeft = projectPoint(
       origin,
       movePoint(
-        info.start.x,
-        info.start.y,
+        info.start.x * radar().scale,
+        info.start.y * radar().scale,
         width * 0.5,
         (headingToDegrees(runway.heading) + 270) % 360
       ),
@@ -319,8 +322,8 @@ export default function Canvas({
     let startRight = projectPoint(
       origin,
       movePoint(
-        info.start.x,
-        info.start.y,
+        info.start.x * radar().scale,
+        info.start.y * radar().scale,
         width * 0.5,
         (headingToDegrees(runway.heading) + 90) % 360
       ),
@@ -330,8 +333,8 @@ export default function Canvas({
     let endLeft = projectPoint(
       origin,
       movePoint(
-        info.end.x,
-        info.end.y,
+        info.end.x * radar().scale,
+        info.end.y * radar().scale,
         width * 0.5,
         (headingToDegrees(runway.heading) + 270) % 360
       ),
@@ -340,8 +343,8 @@ export default function Canvas({
     let endRight = projectPoint(
       origin,
       movePoint(
-        info.end.x,
-        info.end.y,
+        info.end.x * radar().scale,
+        info.end.y * radar().scale,
         width * 0.5,
         (headingToDegrees(runway.heading) + 90) % 360
       ),
@@ -357,17 +360,16 @@ export default function Canvas({
     ctx.lineTo(startLeft.x, startLeft.y);
     ctx.fill();
 
-    let fontSize = 16;
-    ctx.font = `900 ${fontSize}px monospace`;
+    ctx.font = `900 ${fontSize()}px monospace`;
     ctx.textAlign = 'center';
     let middle = midpointBetweenPoints(startLeft, startRight);
     let textWidth = ctx.measureText(runway.id).width + 10;
     ctx.fillStyle = '#000a';
     ctx.fillRect(
       middle.x - textWidth * 0.5,
-      middle.y - fontSize * 0.5,
+      middle.y - fontSize() * 0.5,
       textWidth,
-      fontSize
+      fontSize()
     );
 
     ctx.fillStyle = '#dd9904';
@@ -428,15 +430,14 @@ export default function Canvas({
       let end = projectPoint(origin, taxiway.b, projectionScale);
       let middle = midpointBetweenPoints(start, end);
 
-      let fontSize = 16;
-      ctx.font = `900 ${fontSize}px monospace`;
+      ctx.font = `900 ${fontSize()}px monospace`;
       let textWidth = ctx.measureText(taxiway.id).width + 10;
       ctx.fillStyle = '#000a';
       ctx.fillRect(
         middle.x - textWidth * 0.5,
-        middle.y - fontSize * 0.5,
+        middle.y - fontSize() * 0.5,
         textWidth,
-        fontSize
+        fontSize()
       );
 
       ctx.textAlign = 'center';
@@ -475,20 +476,19 @@ export default function Canvas({
       ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
       ctx.fill();
 
-      let fontSize = 16;
-      ctx.font = `900 ${fontSize}px monospace`;
+      ctx.font = `900 ${fontSize()}px monospace`;
       ctx.textAlign = 'center';
       let textWidth = ctx.measureText(id).width + 10;
       ctx.fillStyle = '#000a';
       ctx.fillRect(
         pos.x - textWidth * 0.5,
-        pos.y - fontSize * 0.5 - fontSize,
+        pos.y - fontSize() * 0.5 - fontSize(),
         textWidth,
-        fontSize
+        fontSize()
       );
 
       ctx.fillStyle = '#dd9904';
-      ctx.fillText(id, pos.x, pos.y - fontSize);
+      ctx.fillText(id, pos.x, pos.y - fontSize());
     }
 
     for (let i = 0; i < terminal.gates.length; i++) {
@@ -519,13 +519,7 @@ export default function Canvas({
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(
-      pos.x,
-      pos.y,
-      nauticalMilesToFeet * 0.4,
-      0,
-      Math.PI * 2
-    );
+    ctx.arc(pos.x, pos.y, nauticalMilesToFeet * 0.4, 0, Math.PI * 2);
     ctx.stroke();
 
     function drawDirection(ctx: Ctx, aircraft: Aircraft) {
@@ -615,13 +609,7 @@ export default function Canvas({
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(
-      aircraft.x,
-      aircraft.y,
-      nauticalMilesToFeet * 0.8,
-      0,
-      Math.PI * 2
-    );
+    ctx.arc(aircraft.x, aircraft.y, nauticalMilesToFeet * 0.8, 0, Math.PI * 2);
     ctx.stroke();
 
     function drawDirection(ctx: Ctx, aircraft: Aircraft) {
@@ -640,8 +628,7 @@ export default function Canvas({
 
     function drawInfo(ctx: Ctx, aircraft: Aircraft) {
       let spacing = 16;
-      const fontSize = 16 * (1 / radar().scale);
-      ctx.font = `900 ${fontSize}px monospace`;
+      ctx.font = `900 ${fontSize()}px monospace`;
 
       ctx.textAlign = 'left';
       ctx.fillStyle =
@@ -671,7 +658,7 @@ export default function Canvas({
             .toString()
             .padStart(3, '0'),
         aircraft.x + spacing,
-        aircraft.y - spacing + fontSize
+        aircraft.y - spacing + fontSize()
       );
 
       let targetHeadingInfo =
@@ -689,13 +676,13 @@ export default function Canvas({
           ' ' +
           targetHeadingInfo,
         aircraft.x + spacing,
-        aircraft.y - spacing + fontSize * 2
+        aircraft.y - spacing + fontSize() * 2
       );
 
       ctx.fillText(
         Math.round(aircraft.speed).toString(),
         aircraft.x + spacing,
-        aircraft.y - spacing + fontSize * 3
+        aircraft.y - spacing + fontSize() * 3
       );
     }
 
