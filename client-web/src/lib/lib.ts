@@ -67,7 +67,10 @@ export function inverseDegrees(degrees: number): number {
   return (degrees + 180) % 360;
 }
 
-export function runwayInfo(runway: Runway): {
+export function runwayInfo(
+  runway: Runway,
+  scale: number
+): {
   start: { x: number; y: number };
   end: { x: number; y: number };
   ils: {
@@ -77,22 +80,28 @@ export function runwayInfo(runway: Runway): {
     minAngle: { x: number; y: number };
   };
 } {
+  let pos: Vec2 = {
+    x: runway.x * scale,
+    y: runway.y * scale,
+  };
+  let length = runway.length * scale;
+
   let start = movePoint(
-    runway.x,
-    runway.y,
-    runway.length * 0.5,
+    pos.x,
+    pos.y,
+    length * 0.5,
     inverseDegrees(headingToDegrees(runway.heading))
   );
   let end = movePoint(
-    runway.x,
-    runway.y,
-    runway.length * 0.5,
+    pos.x,
+    pos.y,
+    length * 0.5,
     headingToDegrees(runway.heading)
   );
 
-  let maxIlsRangeMiles = 10;
+  let maxIlsRangeMiles = 10 * scale;
   let ilsPoints: { x: number; y: number }[] = [];
-  let separate = 6.0 / 4;
+  let separate = (6.0 * scale) / 4;
   for (let i = 1; i < 4; i += 1) {
     let point = i * separate + separate;
     ilsPoints.push(

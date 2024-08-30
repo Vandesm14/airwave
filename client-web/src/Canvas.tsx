@@ -235,30 +235,39 @@ export default function Canvas({
 
   function drawRunway(ctx: Ctx, runway: Runway) {
     let width = 250 * radar().scale * 4;
-    let info = runwayInfo(runway);
+    let info = runwayInfo(runway, radar().scale);
+
+    let start: Vec2 = {
+      x: info.start.x,
+      y: info.start.y,
+    };
+    let end: Vec2 = {
+      x: info.end.x,
+      y: info.end.y,
+    };
 
     let startLeft = movePoint(
-      info.start.x * radar().scale,
-      info.start.y * radar().scale,
+      start.x,
+      start.y,
       width * 0.5,
       (headingToDegrees(runway.heading) + 270) % 360
     );
     let startRight = movePoint(
-      info.start.x * radar().scale,
-      info.start.y * radar().scale,
+      start.x,
+      start.y,
       width * 0.5,
       (headingToDegrees(runway.heading) + 90) % 360
     );
 
     let endLeft = movePoint(
-      info.end.x * radar().scale,
-      info.end.y * radar().scale,
+      end.x,
+      end.y,
       width * 0.5,
       (headingToDegrees(runway.heading) + 270) % 360
     );
     let endRight = movePoint(
-      info.end.x * radar().scale,
-      info.end.y * radar().scale,
+      end.x,
+      end.y,
       width * 0.5,
       (headingToDegrees(runway.heading) + 90) % 360
     );
@@ -276,18 +285,18 @@ export default function Canvas({
     ctx.strokeStyle = '#3087f2';
 
     ctx.beginPath();
-    ctx.moveTo(info.start.x, info.start.y);
+    ctx.moveTo(start.x, start.y);
     ctx.lineTo(info.ils.end.x, info.ils.end.y);
     ctx.stroke();
 
     ctx.strokeStyle = '#444444';
     ctx.beginPath();
-    ctx.moveTo(info.start.x, info.start.y);
+    ctx.moveTo(start.x, start.y);
     ctx.lineTo(info.ils.maxAngle.x, info.ils.maxAngle.y);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(info.start.x, info.start.y);
+    ctx.moveTo(start.x, start.y);
     ctx.lineTo(info.ils.minAngle.x, info.ils.minAngle.y);
     ctx.stroke();
 
@@ -304,16 +313,16 @@ export default function Canvas({
       x: airspaceSize() * radar().scale * 0.5,
       y: airspaceSize() * radar().scale * 0.5,
     };
-    let projectionScale = 14;
-    let info = runwayInfo(runway);
-
     let width = 250 * radar().scale;
+    let projectionScale = 14;
+
+    let info = runwayInfo(runway, radar().scale);
 
     let startLeft = projectPoint(
       origin,
       movePoint(
-        info.start.x * radar().scale,
-        info.start.y * radar().scale,
+        info.start.x,
+        info.start.y,
         width * 0.5,
         (headingToDegrees(runway.heading) + 270) % 360
       ),
@@ -322,8 +331,8 @@ export default function Canvas({
     let startRight = projectPoint(
       origin,
       movePoint(
-        info.start.x * radar().scale,
-        info.start.y * radar().scale,
+        info.start.x,
+        info.start.y,
         width * 0.5,
         (headingToDegrees(runway.heading) + 90) % 360
       ),
@@ -333,8 +342,8 @@ export default function Canvas({
     let endLeft = projectPoint(
       origin,
       movePoint(
-        info.end.x * radar().scale,
-        info.end.y * radar().scale,
+        info.end.x,
+        info.end.y,
         width * 0.5,
         (headingToDegrees(runway.heading) + 270) % 360
       ),
@@ -343,8 +352,8 @@ export default function Canvas({
     let endRight = projectPoint(
       origin,
       movePoint(
-        info.end.x * radar().scale,
-        info.end.y * radar().scale,
+        info.end.x,
+        info.end.y,
         width * 0.5,
         (headingToDegrees(runway.heading) + 90) % 360
       ),
@@ -378,33 +387,53 @@ export default function Canvas({
 
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
     let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
+      x: airspaceSize() * radar().scale * 0.5,
+      y: airspaceSize() * radar().scale * 0.5,
     };
-    let width = 200;
+    let width = 200 * radar().scale;
     let projectionScale = 14;
 
     let angle = angleBetweenPoints(taxiway.a, taxiway.b);
 
     let startLeft = projectPoint(
       origin,
-      movePoint(taxiway.a.x, taxiway.a.y, width * 0.5, (angle + 270) % 360),
+      movePoint(
+        taxiway.a.x * radar().scale,
+        taxiway.a.y * radar().scale,
+        width * 0.5,
+        (angle + 270) % 360
+      ),
       projectionScale
     );
     let startRight = projectPoint(
       origin,
-      movePoint(taxiway.a.x, taxiway.a.y, width * 0.5, (angle + 90) % 360),
+      movePoint(
+        taxiway.a.x * radar().scale,
+        taxiway.a.y * radar().scale,
+        width * 0.5,
+        (angle + 90) % 360
+      ),
       projectionScale
     );
 
     let endLeft = projectPoint(
       origin,
-      movePoint(taxiway.b.x, taxiway.b.y, width * 0.5, (angle + 270) % 360),
+      movePoint(
+        taxiway.b.x * radar().scale,
+        taxiway.b.y * radar().scale,
+        width * 0.5,
+        (angle + 270) % 360
+      ),
       projectionScale
     );
     let endRight = projectPoint(
       origin,
-      movePoint(taxiway.b.x, taxiway.b.y, width * 0.5, (angle + 90) % 360),
+      movePoint(
+        taxiway.b.x * radar().scale,
+        taxiway.b.y * radar().scale,
+        width * 0.5,
+        (angle + 90) % 360
+      ),
       projectionScale
     );
 
@@ -420,14 +449,28 @@ export default function Canvas({
 
   function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
     let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
+      x: airspaceSize() * radar().scale * 0.5,
+      y: airspaceSize() * radar().scale * 0.5,
     };
     let projectionScale = 14;
 
     if (taxiway.kind.type === 'normal') {
-      let start = projectPoint(origin, taxiway.a, projectionScale);
-      let end = projectPoint(origin, taxiway.b, projectionScale);
+      let start = projectPoint(
+        origin,
+        {
+          x: taxiway.a.x * radar().scale,
+          y: taxiway.a.y * radar().scale,
+        },
+        projectionScale
+      );
+      let end = projectPoint(
+        origin,
+        {
+          x: taxiway.b.x * radar().scale,
+          y: taxiway.b.y * radar().scale,
+        },
+        projectionScale
+      );
       let middle = midpointBetweenPoints(start, end);
 
       ctx.font = `900 ${fontSize()}px monospace`;
@@ -499,8 +542,8 @@ export default function Canvas({
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
+      x: airspaceSize() * radar().scale * 0.5,
+      y: airspaceSize() * radar().scale * 0.5,
     };
     let projectionScale = 14;
 
@@ -512,7 +555,14 @@ export default function Canvas({
       ctx.strokeStyle = '#00aa00';
     }
 
-    let pos = projectPoint(origin, aircraft, projectionScale);
+    let pos = projectPoint(
+      origin,
+      {
+        x: aircraft.x * radar().scale,
+        y: aircraft.y * radar().scale,
+      },
+      projectionScale
+    );
 
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
@@ -602,26 +652,37 @@ export default function Canvas({
     ctx.fillStyle = '#00aa00';
     ctx.strokeStyle = '#00aa00';
 
-    ctx.moveTo(aircraft.x, aircraft.y);
+    let pos: Vec2 = {
+      x: aircraft.x * radar().scale,
+      y: aircraft.y * radar().scale,
+    };
+
+    ctx.moveTo(pos.x, pos.y);
 
     ctx.beginPath();
-    ctx.arc(aircraft.x, aircraft.y, 3, 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(aircraft.x, aircraft.y, nauticalMilesToFeet * 0.8, 0, Math.PI * 2);
+    ctx.arc(
+      pos.x,
+      pos.y,
+      nauticalMilesToFeet * 0.8 * radar().scale,
+      0,
+      Math.PI * 2
+    );
     ctx.stroke();
 
     function drawDirection(ctx: Ctx, aircraft: Aircraft) {
       const angleDegrees = (aircraft.heading + 270) % 360;
       const angleRadians = angleDegrees * (Math.PI / 180);
-      const length = aircraft.speed * knotToFeetPerSecond * 60;
-      const endX = aircraft.x + length * Math.cos(angleRadians);
-      const endY = aircraft.y + length * Math.sin(angleRadians);
+      const length = aircraft.speed * knotToFeetPerSecond * 60 * radar().scale;
+      const endX = pos.x + length * Math.cos(angleRadians);
+      const endY = pos.y + length * Math.sin(angleRadians);
 
       ctx.strokeStyle = '#00aa00';
       ctx.beginPath();
-      ctx.moveTo(aircraft.x, aircraft.y);
+      ctx.moveTo(pos.x, pos.y);
       ctx.lineTo(endX, endY);
       ctx.stroke();
     }
@@ -636,11 +697,7 @@ export default function Canvas({
         aircraft.intention.type === 'flyover'
           ? '#fc67eb'
           : '#44ff44';
-      ctx.fillText(
-        aircraft.callsign,
-        aircraft.x + spacing,
-        aircraft.y - spacing
-      );
+      ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
 
       let altitudeIcon = ' ';
       if (aircraft.altitude < aircraft.target.altitude) {
@@ -657,8 +714,8 @@ export default function Canvas({
           Math.round(aircraft.target.altitude / 100)
             .toString()
             .padStart(3, '0'),
-        aircraft.x + spacing,
-        aircraft.y - spacing + fontSize()
+        pos.x + spacing,
+        pos.y - spacing + fontSize()
       );
 
       let targetHeadingInfo =
@@ -675,14 +732,14 @@ export default function Canvas({
           .replace('360', '000') +
           ' ' +
           targetHeadingInfo,
-        aircraft.x + spacing,
-        aircraft.y - spacing + fontSize() * 2
+        pos.x + spacing,
+        pos.y - spacing + fontSize() * 2
       );
 
       ctx.fillText(
         Math.round(aircraft.speed).toString(),
-        aircraft.x + spacing,
-        aircraft.y - spacing + fontSize() * 3
+        pos.x + spacing,
+        pos.y - spacing + fontSize() * 3
       );
     }
 

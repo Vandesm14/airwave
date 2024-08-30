@@ -66,7 +66,7 @@ fn main() {
     118.5,
   );
 
-  cross_roads_airport(&mut engine, airspace_size);
+  v_pattern_airport(&mut engine, airspace_size);
 
   engine.spawn_random_aircraft();
 
