@@ -21,7 +21,7 @@ pub struct Settings {
 impl Settings {
   pub fn new() -> Self {
     Self {
-      scale: 1.0,
+      scale: 0.05,
       pos: 0.0,
     }
   }

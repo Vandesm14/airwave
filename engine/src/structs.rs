@@ -11,7 +11,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::{
   add_degrees, angle_between_points, closest_point_on_line, degrees_to_heading,
   delta_angle, engine::OutgoingReply, find_line_intersection,
-  get_random_point_on_circle, inverse_degrees, move_point, FEET_PER_UNIT,
+  get_random_point_on_circle, inverse_degrees, move_point,
   KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
@@ -21,10 +21,6 @@ pub struct Line(pub Vec2, pub Vec2);
 impl Line {
   pub fn new(a: Vec2, b: Vec2) -> Self {
     Self(a, b)
-  }
-
-  pub fn to_feet(self) -> Self {
-    Self(self.0 * FEET_PER_UNIT, self.1 * FEET_PER_UNIT)
   }
 }
 
@@ -155,15 +151,11 @@ pub struct Runway {
 
 impl Runway {
   pub fn start(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      inverse_degrees(self.heading),
-      self.length * FEET_PER_UNIT * 0.5,
-    )
+    move_point(self.pos, inverse_degrees(self.heading), self.length * 0.5)
   }
 
   pub fn end(&self) -> Vec2 {
-    move_point(self.pos, self.heading, self.length * FEET_PER_UNIT * 0.5)
+    move_point(self.pos, self.heading, self.length * 0.5)
   }
 }
 
@@ -422,7 +414,7 @@ impl Aircraft {
   }
 
   pub fn speed_in_pixels(&self) -> f32 {
-    self.speed * KNOT_TO_FEET_PER_SECOND * FEET_PER_UNIT
+    self.speed * KNOT_TO_FEET_PER_SECOND
   }
 
   pub fn do_hold_pattern(&mut self, direction: HoldDirection) {
@@ -499,8 +491,7 @@ impl Aircraft {
 
           if let TaxiWaypointBehavior::HoldShort = waypoint.behavior {
             let angle = angle_between_points(waypoint.pos, current.pos);
-            let hold_point =
-              move_point(waypoint.pos, angle, FEET_PER_UNIT * 300.0);
+            let hold_point = move_point(waypoint.pos, angle, 300.0);
 
             new_waypoints.push(TaxiWaypoint {
               pos: hold_point,
@@ -674,14 +665,14 @@ impl Aircraft {
   fn update_landing(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     if let AircraftState::Landing(runway) = &self.state {
       let ils_line = Line::new(
-        move_point(runway.start(), runway.heading, FEET_PER_UNIT * 500.0),
+        move_point(runway.start(), runway.heading, 500.0),
         move_point(
           runway.start(),
           inverse_degrees(runway.heading),
-          NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 10.0,
+          NAUTICALMILES_TO_FEET * 10.0,
         ),
       );
-      let start_descent_distance = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
+      let start_descent_distance = NAUTICALMILES_TO_FEET * 6.0;
 
       let distance_to_runway = self.pos.distance(runway.start());
 
@@ -689,8 +680,7 @@ impl Aircraft {
       let seconds_for_descent = self.altitude / (climb_speed / dt);
 
       let target_speed_ft_s = distance_to_runway / seconds_for_descent;
-      let target_knots =
-        target_speed_ft_s / KNOT_TO_FEET_PER_SECOND / FEET_PER_UNIT;
+      let target_knots = target_speed_ft_s / KNOT_TO_FEET_PER_SECOND;
 
       if distance_to_runway <= 1.0 {
         self.altitude = 0.0;
@@ -726,11 +716,8 @@ impl Aircraft {
       let closest_point =
         closest_point_on_line(self.pos, ils_line.0, ils_line.1);
 
-      let landing_point = move_point(
-        closest_point,
-        runway.heading,
-        NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 0.4,
-      );
+      let landing_point =
+        move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.4);
 
       let heading_to_point =
         degrees_to_heading(angle_between_points(self.pos, landing_point));

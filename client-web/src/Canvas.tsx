@@ -12,7 +12,6 @@ import {
   degreesToHeading,
   toRadians,
   headingToDegrees,
-  feetPerPixel,
   knotToFeetPerSecond,
   nauticalMilesToFeet,
   runwayInfo,
@@ -300,7 +299,7 @@ export default function Canvas({
       x: airspaceSize() * 0.5,
       y: airspaceSize() * 0.5,
     };
-    let width = feetPerPixel * 250;
+    let width = 250;
     let projectionScale = 14;
 
     let info = runwayInfo(runway);
@@ -378,7 +377,7 @@ export default function Canvas({
       x: airspaceSize() * 0.5,
       y: airspaceSize() * 0.5,
     };
-    let width = feetPerPixel * 200;
+    let width = 200;
     let projectionScale = 14;
 
     let angle = angleBetweenPoints(taxiway.a, taxiway.b);
@@ -521,7 +520,7 @@ export default function Canvas({
     ctx.arc(
       pos.x,
       pos.y,
-      nauticalMilesToFeet * feetPerPixel * 0.4,
+      nauticalMilesToFeet * 0.4,
       0,
       Math.PI * 2
     );
@@ -617,7 +616,7 @@ export default function Canvas({
     ctx.arc(
       aircraft.x,
       aircraft.y,
-      nauticalMilesToFeet * feetPerPixel * 0.8,
+      nauticalMilesToFeet * 0.8,
       0,
       Math.PI * 2
     );
@@ -626,7 +625,7 @@ export default function Canvas({
     function drawDirection(ctx: Ctx, aircraft: Aircraft) {
       const angleDegrees = (aircraft.heading + 270) % 360;
       const angleRadians = angleDegrees * (Math.PI / 180);
-      const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 60;
+      const length = aircraft.speed * knotToFeetPerSecond * 60;
       const endX = aircraft.x + length * Math.cos(angleRadians);
       const endY = aircraft.y + length * Math.sin(angleRadians);
 

@@ -9,7 +9,7 @@ pub mod structs;
 pub const TIME_SCALE: f32 = 1.0;
 
 pub const NAUTICALMILES_TO_FEET: f32 = 6076.115;
-pub const FEET_PER_UNIT: f32 = 0.005;
+// pub const FEET_PER_UNIT: f32 = 0.005;
 pub const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781 * TIME_SCALE;
 
 pub fn move_point(point: Vec2, degrees: f32, length: f32) -> Vec2 {

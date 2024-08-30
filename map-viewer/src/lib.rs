@@ -4,10 +4,7 @@ use nannou::{
   geom,
 };
 
-use engine::{
-  structs::{Gate, Runway, Taxiway, Terminal},
-  FEET_PER_UNIT,
-};
+use engine::structs::{Gate, Runway, Taxiway, Terminal};
 
 fn glam_to_geom(v: Vec2) -> geom::Vec2 {
   geom::Vec2::new(v.x, v.y)
@@ -44,14 +41,14 @@ impl Draw for Runway {
       .line()
       .start(scaled_start)
       .end(scaled_end)
-      .weight(FEET_PER_UNIT * 250.0 * scale)
+      .weight(250.0 * scale)
       .color(color::rgb::<u8>(0x66, 0x66, 0x66));
 
     draw
       .ellipse()
       .x_y(scaled_start.x, scaled_start.y)
-      .width(FEET_PER_UNIT * 200.0 * scale)
-      .height(FEET_PER_UNIT * 200.0 * scale)
+      .width(200.0 * scale)
+      .height(200.0 * scale)
       .color(color::rgb::<u8>(0xff, 0x00, 0x00));
   }
 }

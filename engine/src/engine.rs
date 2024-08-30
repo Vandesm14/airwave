@@ -13,7 +13,6 @@ use crate::{
     TaxiPoint, TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind,
     Terminal,
   },
-  FEET_PER_UNIT,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -80,7 +79,7 @@ impl Engine {
   }
 
   pub fn add_taxiway(&mut self, taxiway: Taxiway) {
-    let taxiway = taxiway.extend_ends_by(FEET_PER_UNIT * 100.0);
+    let taxiway = taxiway.extend_ends_by(100.0);
     self.taxiways.push(taxiway);
   }
 
