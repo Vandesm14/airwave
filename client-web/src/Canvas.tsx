@@ -2,6 +2,7 @@ import { useAtom } from 'solid-jotai';
 import { radarAtom, renderAtom, worldAtom } from './lib/atoms';
 import {
   Aircraft,
+  Airport,
   Airspace,
   Runway,
   Taxiway,
@@ -11,12 +12,15 @@ import {
 } from './lib/types';
 import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
 import {
+  headingToDegrees,
   knotToFeetPerSecond,
+  midpointBetweenPoints,
   movePoint,
   nauticalMilesToFeet,
   runwayInfo,
   toRadians,
 } from './lib/lib';
+import { s } from 'vite/dist/node/types.d-aGj9QkWt';
 
 export default function Canvas({
   aircrafts,
@@ -31,11 +35,13 @@ export default function Canvas({
 
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
-  let groundScale = createMemo(() => (radar().mode === 'ground' ? 10 : 1));
-  let fontSize = createMemo(() => 16 * (radar().scale * 0.6));
+  let groundScale = createMemo(() => (radar().mode === 'ground' ? 30 : 1));
+  let fontSize = createMemo(
+    () => 16 * (radar().scale * (radar().mode === 'ground' ? 1.2 : 0.6))
+  );
 
   function scaleFeet(num: number): number {
-    const FEET_TO_PIXELS = 0.0025;
+    const FEET_TO_PIXELS = 0.003;
     return num * FEET_TO_PIXELS * radar().scale * groundScale();
   }
 
@@ -200,12 +206,14 @@ export default function Canvas({
       y: canvas.height * 0.5,
     };
 
-    ctx.fillStyle = '#888a';
+    ctx.fillStyle = '#8886';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let padding = -10;
     for (let i = 0; i < 36; i++) {
-      let text = (i * 10).toString().padStart(3, '0');
+      let text = headingToDegrees(i * 10)
+        .toString()
+        .padStart(3, '0');
       if (text === '000') {
         text = '360';
       }
@@ -232,7 +240,13 @@ export default function Canvas({
     let info = runwayInfo(runway);
     let start = scalePoint(info.start);
     let end = scalePoint(info.end);
+    let ils = {
+      end: scalePoint(info.ils.end),
+      maxAngle: scalePoint(info.ils.maxAngle),
+      minAngle: scalePoint(info.ils.minAngle),
+    };
 
+    // Draw the runway
     ctx.strokeStyle = 'grey';
     ctx.fillStyle = 'grey';
     ctx.lineWidth = scaleFeet(1000);
@@ -240,6 +254,36 @@ export default function Canvas({
     ctx.moveTo(start.x, start.y);
     ctx.lineTo(end.x, end.y);
     ctx.stroke();
+
+    // Draw the localizer beacon
+    ctx.fillStyle = '#3087f2';
+    ctx.strokeStyle = '#3087f2';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(ils.end.x, ils.end.y);
+    ctx.stroke();
+
+    // Draw the max and min localizer angle
+    ctx.strokeStyle = '#444444';
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(ils.maxAngle.x, ils.maxAngle.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(ils.minAngle.x, ils.minAngle.y);
+    ctx.stroke();
+
+    // Draw the localizer altitude points
+    ctx.strokeStyle = '#3087f2';
+    for (let p of info.ils.altitudePoints) {
+      let point = scalePoint(p);
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, scaleFeet(1500), 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     resetTransform(ctx);
@@ -270,7 +314,7 @@ export default function Canvas({
     ctx.stroke();
 
     // Draw info
-    let spacing = 16;
+    let spacing = scaleFeet(nauticalMilesToFeet * 0.8);
     ctx.textAlign = 'left';
     ctx.fillStyle =
       aircraft.intention.type === 'depart' ||
@@ -327,10 +371,88 @@ export default function Canvas({
     );
   }
 
-  function drawTerminal(ctx: Ctx, terminal: Terminal) {}
-  function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {}
-  function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {}
-  function drawRunwayGround(ctx: Ctx, runway: Runway) {}
+  function drawAirspaceGround(ctx: Ctx, airport: Airport) {
+    resetTransform(ctx);
+    let pos = scalePoint(airport.center);
+
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(nauticalMilesToFeet * 10), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  function drawTerminal(ctx: Ctx, terminal: Terminal) {
+    let a = scalePoint(terminal.a);
+    let b = scalePoint(terminal.b);
+    let c = scalePoint(terminal.c);
+    let d = scalePoint(terminal.d);
+
+    ctx.fillStyle = '#999';
+    ctx.lineWidth = scaleFeet(200);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.lineTo(d.x, d.y);
+    ctx.lineTo(a.x, a.y);
+    ctx.fill();
+  }
+  function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
+    resetTransform(ctx);
+    let start = scalePoint(taxiway.a);
+    let end = scalePoint(taxiway.b);
+
+    ctx.strokeStyle = '#999';
+    ctx.lineWidth = scaleFeet(200);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  }
+  function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
+    if (taxiway.kind.type === 'normal') {
+      let start = scalePoint(taxiway.a);
+      let end = scalePoint(taxiway.b);
+      let middle = midpointBetweenPoints(start, end);
+      let textWidth = ctx.measureText(taxiway.id).width + 10;
+      ctx.fillStyle = '#000a';
+      ctx.fillRect(
+        middle.x - textWidth * 0.5,
+        middle.y - fontSize() * 0.5,
+        textWidth,
+        fontSize()
+      );
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#dd9904';
+      ctx.fillText(taxiway.id, middle.x, middle.y);
+    }
+  }
+  function drawRunwayGround(ctx: Ctx, runway: Runway) {
+    resetTransform(ctx);
+    let info = runwayInfo(runway);
+    let start = scalePoint(info.start);
+    let end = scalePoint(info.end);
+
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = scaleFeet(250);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+
+    // Draw runway label
+    let textWidth = ctx.measureText(runway.id).width + 10;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(
+      start.x - textWidth * 0.5,
+      start.y - fontSize() * 0.5,
+      textWidth,
+      fontSize()
+    );
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dd9904';
+    ctx.fillText(runway.id, start.x, start.y);
+  }
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {}
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
@@ -351,6 +473,8 @@ export default function Canvas({
 
   function drawGround(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
     for (let airport of world.airports) {
+      drawAirspaceGround(ctx, airport);
+
       for (let taxiway of airport.taxiways) {
         drawTaxiway(ctx, taxiway);
       }
