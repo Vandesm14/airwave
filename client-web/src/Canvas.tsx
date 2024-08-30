@@ -154,7 +154,7 @@ export default function Canvas({
 
     let ctx = canvas.getContext('2d');
     if (ctx) {
-      const fontSize = 16 * (1 / radar().scale);
+      const fontSize = 16 * (radar().scale * 200);
       ctx.font = `900 ${fontSize}px monospace`;
       ctx.fillStyle = 'black';
 
@@ -210,23 +210,24 @@ export default function Canvas({
     ctx.arc(half_size, half_size, airspace_radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // ctx.fillStyle = '#888';
-    // ctx.textAlign = 'center';
-    // ctx.textBaseline = 'middle';
-    // for (let i = 0; i < 36; i++) {
-    //   let text = degreesToHeading(i * 10)
-    //     .toString()
-    //     .padStart(3, '0');
-    //   if (text === '000') {
-    //     text = '360';
-    //   }
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    let padding = radar().scale * 5000;
+    for (let i = 0; i < 36; i++) {
+      let text = degreesToHeading(i * 10)
+        .toString()
+        .padStart(3, '0');
+      if (text === '000') {
+        text = '360';
+      }
 
-    //   ctx.fillText(
-    //     text,
-    //     Math.cos(toRadians(i * 10)) * (airspace_radius + 20) + half_size,
-    //     Math.sin(toRadians(i * 10)) * (airspace_radius + 20) + half_size
-    //   );
-    // }
+      ctx.fillText(
+        text,
+        Math.cos(toRadians(i * 10)) * (airspace_radius + padding) + half_size,
+        Math.sin(toRadians(i * 10)) * (airspace_radius + padding) + half_size
+      );
+    }
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
