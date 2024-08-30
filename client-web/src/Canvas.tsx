@@ -10,7 +10,13 @@ import {
   World,
 } from './lib/types';
 import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
-import { runwayInfo, toRadians } from './lib/lib';
+import {
+  knotToFeetPerSecond,
+  movePoint,
+  nauticalMilesToFeet,
+  runwayInfo,
+  toRadians,
+} from './lib/lib';
 
 export default function Canvas({
   aircrafts,
@@ -212,6 +218,7 @@ export default function Canvas({
   }
 
   function drawAirspace(ctx: Ctx, airspace: Airspace) {
+    resetTransform(ctx);
     let pos = scalePoint(airspace.pos);
 
     ctx.strokeStyle = 'white';
@@ -221,6 +228,7 @@ export default function Canvas({
     ctx.stroke();
   }
   function drawRunway(ctx: Ctx, runway: Runway) {
+    resetTransform(ctx);
     let info = runwayInfo(runway);
     let start = scalePoint(info.start);
     let end = scalePoint(info.end);
@@ -233,7 +241,31 @@ export default function Canvas({
     ctx.lineTo(end.x, end.y);
     ctx.stroke();
   }
-  function drawBlip(ctx: Ctx, aircraft: Aircraft) {}
+  function drawBlip(ctx: Ctx, aircraft: Aircraft) {
+    resetTransform(ctx);
+    let pos = scalePoint(aircraft);
+
+    ctx.fillStyle = '#00aa00';
+    ctx.strokeStyle = '#00aa00';
+
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(nauticalMilesToFeet * 0.8), 0, Math.PI * 2);
+    ctx.stroke();
+
+    const length = aircraft.speed * knotToFeetPerSecond * 60;
+    const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
+    let endPos = scalePoint(end);
+
+    ctx.strokeStyle = '#00aa00';
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(endPos.x, endPos.y);
+    ctx.stroke();
+  }
 
   function drawTerminal(ctx: Ctx, terminal: Terminal) {}
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {}

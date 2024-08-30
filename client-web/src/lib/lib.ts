@@ -12,6 +12,10 @@ export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
 export const milesToFeet = 6076.12;
 
+export function headingToDegrees(heading: number) {
+  return (heading + 360 + 90) % 360;
+}
+
 export function degreesToHeading(degrees: number) {
   return (degrees + 360 + 90) % 360;
 }
@@ -23,6 +27,20 @@ export function callsignString(id: string): string {
   return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
 }
 
+export function moveNormalizedPoint(
+  x: number,
+  y: number,
+  length: number,
+  directionDegrees: number
+) {
+  // Convert direction from degrees to radians
+  const directionRadians = toRadians(directionDegrees);
+  // Calculate the new coordinates
+  const newX = x + length * Math.sin(directionRadians);
+  const newY = y - length * Math.cos(directionRadians);
+  return { x: newX, y: newY };
+}
+
 export function movePoint(
   x: number,
   y: number,
@@ -30,12 +48,10 @@ export function movePoint(
   directionDegrees: number
 ) {
   // Convert direction from degrees to radians
-  const directionRadians = directionDegrees * (Math.PI / 180);
-
+  const directionRadians = toRadians(directionDegrees);
   // Calculate the new coordinates
   const newX = x + length * Math.sin(directionRadians);
   const newY = y + length * Math.cos(directionRadians);
-
   return { x: newX, y: newY };
 }
 

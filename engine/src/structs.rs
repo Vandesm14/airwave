@@ -763,13 +763,14 @@ impl Aircraft {
   }
 
   fn update_leave_airspace(&mut self, airspace_size: f32) {
-    let airspace_center = Vec2::splat(airspace_size * 0.5);
-    let distance = self.pos.distance_squared(airspace_center);
-    let max_distance = (airspace_size * 0.5).powf(2.0);
+    // TODO: reimplement leave airspace
+    // let airspace_center = Vec2::splat(airspace_size * 0.5);
+    // let distance = self.pos.distance_squared(airspace_center);
+    // let max_distance = (airspace_size * 0.5).powf(2.0);
 
-    if distance >= max_distance {
-      self.state = AircraftState::Deleted;
-    }
+    // if distance >= max_distance {
+    //   self.state = AircraftState::Deleted;
+    // }
   }
 
   fn dt_climb_speed(&self, dt: f32) -> f32 {
