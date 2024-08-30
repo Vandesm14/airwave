@@ -9,10 +9,10 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-  add_degrees, angle_between_points, closest_point_on_line, degrees_to_heading,
-  delta_angle, engine::OutgoingReply, find_line_intersection,
-  get_random_point_on_circle, inverse_degrees, move_point,
-  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
+  add_degrees, angle_between_points, closest_point_on_line, delta_angle,
+  engine::OutgoingReply, find_line_intersection, get_random_point_on_circle,
+  inverse_degrees, move_point, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  TIME_SCALE,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -322,18 +322,12 @@ impl Aircraft {
       intention: AircraftIntention::Land,
       state: AircraftState::Flying,
       pos: point.position,
-      heading: degrees_to_heading(angle_between_points(
-        point.position,
-        airspace_center,
-      )),
+      heading: angle_between_points(point.position, airspace_center),
       speed: 250.0,
       altitude: 7000.0,
       frequency,
       target: AircraftTargets {
-        heading: degrees_to_heading(angle_between_points(
-          point.position,
-          airspace_center,
-        )),
+        heading: angle_between_points(point.position, airspace_center),
         speed: 250.0,
         altitude: 7000.0,
       },
@@ -618,8 +612,7 @@ impl Aircraft {
       } else {
         let waypoint = waypoints.last().cloned();
         if let Some(waypoint) = waypoint {
-          let angle = angle_between_points(self.pos, waypoint.pos);
-          let heading = degrees_to_heading(angle);
+          let heading = angle_between_points(self.pos, waypoint.pos);
 
           self.heading = heading;
           self.target.heading = heading;
@@ -719,8 +712,7 @@ impl Aircraft {
       let landing_point =
         move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.4);
 
-      let heading_to_point =
-        degrees_to_heading(angle_between_points(self.pos, landing_point));
+      let heading_to_point = angle_between_points(self.pos, landing_point);
       self.target.heading = heading_to_point;
     }
   }

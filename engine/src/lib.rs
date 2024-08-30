@@ -37,10 +37,6 @@ pub fn subtract_degrees(degrees: f32, subtract: f32) -> f32 {
   (360.0 + degrees - subtract) % 360.0
 }
 
-pub fn degrees_to_heading(heading: f32) -> f32 {
-  add_degrees(heading, 90.0)
-}
-
 pub fn inverse_degrees(degrees: f32) -> f32 {
   add_degrees(degrees, 180.0)
 }

@@ -12,10 +12,6 @@ export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
 export const milesToFeet = 6076.12;
 
-export function headingToDegrees(heading: number) {
-  return (heading + 270) % 360;
-}
-
 export function degreesToHeading(degrees: number) {
   return (degrees + 360 + 90) % 360;
 }
@@ -37,8 +33,8 @@ export function movePoint(
   const directionRadians = directionDegrees * (Math.PI / 180);
 
   // Calculate the new coordinates
-  const newX = x + length * Math.cos(directionRadians);
-  const newY = y + length * Math.sin(directionRadians);
+  const newX = x + length * Math.sin(directionRadians);
+  const newY = y + length * Math.cos(directionRadians);
 
   return { x: newX, y: newY };
 }
@@ -90,14 +86,9 @@ export function runwayInfo(
     pos.x,
     pos.y,
     length * 0.5,
-    inverseDegrees(headingToDegrees(runway.heading))
+    inverseDegrees(runway.heading)
   );
-  let end = movePoint(
-    pos.x,
-    pos.y,
-    length * 0.5,
-    headingToDegrees(runway.heading)
-  );
+  let end = movePoint(pos.x, pos.y, length * 0.5, runway.heading);
 
   let maxIlsRangeMiles = 10 * scale;
   let ilsPoints: { x: number; y: number }[] = [];
@@ -109,7 +100,7 @@ export function runwayInfo(
         start.x,
         start.y,
         length + milesToFeet * point,
-        inverseDegrees(headingToDegrees(runway.heading))
+        inverseDegrees(runway.heading)
       )
     );
   }
@@ -118,20 +109,20 @@ export function runwayInfo(
     start.x,
     start.y,
     length / 2 + milesToFeet * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees(runway.heading))
+    inverseDegrees(runway.heading)
   );
 
   let maxAngle = movePoint(
     start.x,
     start.y,
     length / 2 + milesToFeet * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees(runway.heading + 5))
+    inverseDegrees(runway.heading + 5)
   );
   let minAngle = movePoint(
     start.x,
     start.y,
     length / 2 + milesToFeet * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees((runway.heading + (360 - 5)) % 360))
+    inverseDegrees((runway.heading + (360 - 5)) % 360)
   );
 
   return {

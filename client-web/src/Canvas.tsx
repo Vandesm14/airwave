@@ -12,7 +12,6 @@ import { Aircraft, Gate, Runway, Taxiway, Terminal, Vec2 } from './lib/types';
 import {
   degreesToHeading,
   toRadians,
-  headingToDegrees,
   knotToFeetPerSecond,
   nauticalMilesToFeet,
   runwayInfo,
@@ -103,7 +102,6 @@ export default function Canvas({
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
           radar.scale += e.deltaY * -0.000004;
-          console.log(radar.scale);
           radar.scale = Math.max(Math.min(radar.scale, 0.01), 0.003);
 
           radar.isZooming = true;
@@ -250,26 +248,26 @@ export default function Canvas({
       start.x,
       start.y,
       width * 0.5,
-      (headingToDegrees(runway.heading) + 270) % 360
+      (runway.heading + 270) % 360
     );
     let startRight = movePoint(
       start.x,
       start.y,
       width * 0.5,
-      (headingToDegrees(runway.heading) + 90) % 360
+      (runway.heading + 90) % 360
     );
 
     let endLeft = movePoint(
       end.x,
       end.y,
       width * 0.5,
-      (headingToDegrees(runway.heading) + 270) % 360
+      (runway.heading + 270) % 360
     );
     let endRight = movePoint(
       end.x,
       end.y,
       width * 0.5,
-      (headingToDegrees(runway.heading) + 90) % 360
+      (runway.heading + 90) % 360
     );
 
     ctx.fillStyle = 'grey';
@@ -324,7 +322,7 @@ export default function Canvas({
         info.start.x,
         info.start.y,
         width * 0.5,
-        (headingToDegrees(runway.heading) + 270) % 360
+        (runway.heading + 270) % 360
       ),
       projectionScale
     );
@@ -334,7 +332,7 @@ export default function Canvas({
         info.start.x,
         info.start.y,
         width * 0.5,
-        (headingToDegrees(runway.heading) + 90) % 360
+        (runway.heading + 90) % 360
       ),
       projectionScale
     );
@@ -345,7 +343,7 @@ export default function Canvas({
         info.end.x,
         info.end.y,
         width * 0.5,
-        (headingToDegrees(runway.heading) + 270) % 360
+        (runway.heading + 270) % 360
       ),
       projectionScale
     );
@@ -355,7 +353,7 @@ export default function Canvas({
         info.end.x,
         info.end.y,
         width * 0.5,
-        (headingToDegrees(runway.heading) + 90) % 360
+        (runway.heading + 90) % 360
       ),
       projectionScale
     );

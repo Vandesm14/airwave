@@ -7,7 +7,7 @@ use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  angle_between_points, degrees_to_heading, heading_to_direction,
+  angle_between_points, heading_to_direction,
   structs::{
     Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Runway, Task,
     TaxiPoint, TaxiWaypoint, TaxiWaypointBehavior, Taxiway, TaxiwayKind,
@@ -91,8 +91,7 @@ impl Engine {
     // TODO: update replies
     let reply = if let AircraftIntention::Land = aircraft.intention {
       let center = Vec2::splat(self.airspace_size * 0.5);
-      let heading =
-        degrees_to_heading(angle_between_points(center, aircraft.pos));
+      let heading = angle_between_points(center, aircraft.pos);
       let direction = heading_to_direction(heading);
 
       format!(
