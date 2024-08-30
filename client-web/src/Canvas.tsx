@@ -32,7 +32,7 @@ export default function Canvas({
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
   let groundScale = createMemo(() => (radar().mode === 'ground' ? 10 : 1));
-  let fontSize = createMemo(() => 16 * (radar().scale * 200));
+  let fontSize = createMemo(() => 16 * (radar().scale * 0.7));
 
   function scaleFeet(num: number): number {
     const FEET_TO_PIXELS = 0.0025;
@@ -248,14 +248,17 @@ export default function Canvas({
     ctx.fillStyle = '#00aa00';
     ctx.strokeStyle = '#00aa00';
 
+    // Draw the dot
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
     ctx.fill();
 
+    // Draw the separation circle
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, scaleFeet(nauticalMilesToFeet * 0.8), 0, Math.PI * 2);
     ctx.stroke();
 
+    // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
     const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
     let endPos = scalePoint(end);
@@ -265,6 +268,63 @@ export default function Canvas({
     ctx.moveTo(pos.x, pos.y);
     ctx.lineTo(endPos.x, endPos.y);
     ctx.stroke();
+
+    // Draw info
+    let spacing = 16;
+    ctx.textAlign = 'left';
+    ctx.fillStyle =
+      aircraft.intention.type === 'depart' ||
+      aircraft.intention.type === 'flyover'
+        ? '#fc67eb'
+        : '#44ff44';
+
+    // Draw callsign
+    ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
+
+    // Draw altitude
+    let altitudeIcon = ' ';
+    if (aircraft.altitude < aircraft.target.altitude) {
+      altitudeIcon = '⬈';
+    } else if (aircraft.altitude > aircraft.target.altitude) {
+      altitudeIcon = '⬊';
+    }
+    ctx.fillText(
+      Math.round(aircraft.altitude / 100)
+        .toString()
+        .padStart(3, '0') +
+        altitudeIcon +
+        Math.round(aircraft.target.altitude / 100)
+          .toString()
+          .padStart(3, '0'),
+      pos.x + spacing,
+      pos.y - spacing + fontSize()
+    );
+
+    // Draw heading
+    let targetHeadingInfo =
+      aircraft.state.type === 'landing'
+        ? 'ILS'
+        : Math.round(aircraft.target.heading)
+            .toString()
+            .padStart(3, '0')
+            .replace('360', '000');
+    ctx.fillText(
+      Math.round(aircraft.heading)
+        .toString()
+        .padStart(3, '0')
+        .replace('360', '000') +
+        ' ' +
+        targetHeadingInfo,
+      pos.x + spacing,
+      pos.y - spacing + fontSize() * 2
+    );
+
+    // Draw speed
+    ctx.fillText(
+      Math.round(aircraft.speed).toString(),
+      pos.x + spacing,
+      pos.y - spacing + fontSize() * 3
+    );
   }
 
   function drawTerminal(ctx: Ctx, terminal: Terminal) {}
