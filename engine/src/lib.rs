@@ -12,6 +12,11 @@ pub const NAUTICALMILES_TO_FEET: f32 = 6076.115;
 // pub const FEET_PER_UNIT: f32 = 0.005;
 pub const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781 * TIME_SCALE;
 
+pub const UP: f32 = 0.0;
+pub const DOWN: f32 = 180.0;
+pub const LEFT: f32 = 270.0;
+pub const RIGHT: f32 = 90.0;
+
 pub fn move_point(point: Vec2, degrees: f32, length: f32) -> Vec2 {
   // Convert degrees to radians
   let radians = degrees * (PI / 180.0);

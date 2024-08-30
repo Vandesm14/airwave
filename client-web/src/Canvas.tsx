@@ -677,8 +677,8 @@ export default function Canvas({
       const angleDegrees = (aircraft.heading + 270) % 360;
       const angleRadians = angleDegrees * (Math.PI / 180);
       const length = aircraft.speed * knotToFeetPerSecond * 60 * radar().scale;
-      const endX = pos.x + length * Math.cos(angleRadians);
-      const endY = pos.y + length * Math.sin(angleRadians);
+      const endX = pos.x + length * Math.sin(angleRadians);
+      const endY = pos.y + length * Math.cos(angleRadians);
 
       ctx.strokeStyle = '#00aa00';
       ctx.beginPath();

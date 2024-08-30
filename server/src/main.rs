@@ -27,7 +27,7 @@ use engine::{
     Aircraft, Command, CommandWithFreq, Gate, Runway, Taxiway, TaxiwayKind,
     Terminal,
   },
-  NAUTICALMILES_TO_FEET,
+  DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -363,7 +363,7 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
 
   let runway_27: Runway = Runway {
     id: "27".into(),
-    pos: Vec2::new(airspace_size * 0.5 - 1000.0, airspace_size * 0.5 - 2400.0),
+    pos: Vec2::new(airspace_size * 0.5 - 1000.0, airspace_size * 0.5 + 2400.0),
     heading: 270.0,
     length: 7000.0,
   };
@@ -408,10 +408,10 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     kind: TaxiwayKind::HoldShort("27".into()),
   };
 
-  let a = move_point(taxiway_b.b, 270.0, 500.0);
-  let b = move_point(a, 0.0, 4000.0);
-  let c = move_point(b, 270.0, 1500.0);
-  let d = move_point(c, 180.0, 4000.0);
+  let a = move_point(taxiway_b.b, UP, 500.0);
+  let b = move_point(a, RIGHT, 4000.0);
+  let c = move_point(b, UP, 1500.0);
+  let d = move_point(c, LEFT, 4000.0);
   let mut terminal_a = Terminal {
     id: 'A',
     a,
@@ -421,40 +421,40 @@ fn v_pattern_airport(engine: &mut Engine, airspace_size: f32) {
     gates: Vec::new(),
   };
 
-  let gates_line_start = move_point(terminal_a.a, 270.0, 1200.0);
+  let gates_line_start = move_point(terminal_a.a, UP, 1200.0);
   let gates = 5;
   let padding = 400.0;
   let spacing = 4000.0 / gates as f32;
   for i in 0..gates {
     let gate = Gate {
       id: format!("A{}", i + 1),
-      pos: move_point(gates_line_start, 0.0, spacing * i as f32 + padding),
+      pos: move_point(gates_line_start, RIGHT, spacing * i as f32 + padding),
       heading: 0.0,
     };
     terminal_a.gates.push(gate);
   }
 
-  let tw_a = move_point(a, 0.0, 200.0);
+  let tw_a = move_point(a, RIGHT, 200.0);
   let taxiway_a1 = Taxiway {
     id: "A1".into(),
     a: tw_a,
-    b: move_point(tw_a, 90.0, 1000.0),
+    b: move_point(tw_a, DOWN, 1000.0),
     kind: TaxiwayKind::Normal,
   };
 
-  let tw_a = move_point(a, 0.0, 2000.0);
+  let tw_a = move_point(a, RIGHT, 2000.0);
   let taxiway_a2 = Taxiway {
     id: "A2".into(),
     a: tw_a,
-    b: move_point(tw_a, 90.0, 1000.0),
+    b: move_point(tw_a, DOWN, 1000.0),
     kind: TaxiwayKind::Normal,
   };
 
-  let tw_a = move_point(a, 0.0, 3800.0);
+  let tw_a = move_point(a, RIGHT, 3800.0);
   let taxiway_a3 = Taxiway {
     id: "A3".into(),
     a: tw_a,
-    b: move_point(tw_a, 90.0, 1000.0),
+    b: move_point(tw_a, DOWN, 1000.0),
     kind: TaxiwayKind::Normal,
   };
 

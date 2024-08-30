@@ -1,4 +1,7 @@
-use engine::structs::Runway;
+use engine::{
+  add_degrees, inverse_degrees, move_point,
+  structs::{Gate, Runway, Taxiway, TaxiwayKind, Terminal},
+};
 use glam::Vec2;
 use nannou::{
   color::*,
