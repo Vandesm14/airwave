@@ -27,20 +27,6 @@ export function callsignString(id: string): string {
   return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
 }
 
-export function moveNormalizedPoint(
-  x: number,
-  y: number,
-  length: number,
-  directionDegrees: number
-) {
-  // Convert direction from degrees to radians
-  const directionRadians = toRadians(directionDegrees);
-  // Calculate the new coordinates
-  const newX = x + length * Math.sin(directionRadians);
-  const newY = y - length * Math.cos(directionRadians);
-  return { x: newX, y: newY };
-}
-
 export function movePoint(
   x: number,
   y: number,

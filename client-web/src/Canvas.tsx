@@ -32,7 +32,7 @@ export default function Canvas({
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
   let groundScale = createMemo(() => (radar().mode === 'ground' ? 10 : 1));
-  let fontSize = createMemo(() => 16 * (radar().scale * 0.7));
+  let fontSize = createMemo(() => 16 * (radar().scale * 0.6));
 
   function scaleFeet(num: number): number {
     const FEET_TO_PIXELS = 0.0025;
@@ -67,12 +67,12 @@ export default function Canvas({
         canvas.height = canvas.clientHeight;
       });
 
-      setInterval(() => loopMain(canvas), 1000 / 30);
+      setInterval(() => doRender(canvas), 1000 / 30);
 
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
 
-      loopMain(canvas);
+      doRender(canvas);
 
       canvas.addEventListener('mousedown', (e) => {
         setRadar((radar) => {
@@ -123,7 +123,7 @@ export default function Canvas({
     }
   });
 
-  function loopMain(canvas: HTMLCanvasElement, forceRender?: boolean) {
+  function doRender(canvas: HTMLCanvasElement, forceRender?: boolean) {
     let dt = Date.now() - render().lastTime;
     let dts = dt / 1000;
 
@@ -135,7 +135,7 @@ export default function Canvas({
       render().lastDraw === 0 ||
       deltaDrawTime >= 1000 / 3
     ) {
-      loopDraw(canvas, dts);
+      doDraw(canvas, dts);
       setRadar((radar) => {
         radar.isZooming = false;
         return { ...radar };
@@ -166,7 +166,7 @@ export default function Canvas({
     ctx.textBaseline = 'middle';
   }
 
-  function loopDraw(canvas: HTMLCanvasElement, dts: number) {
+  function doDraw(canvas: HTMLCanvasElement, dts: number) {
     const width = canvas.width;
     const height = canvas.height;
 
