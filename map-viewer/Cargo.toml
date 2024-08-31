@@ -16,3 +16,4 @@ serde.workspace = true
 thiserror = "1"
 nannou_egui = "0.19.0"
 clap = { workspace = true, features = ["derive"] }
+notify = "6.1.1"

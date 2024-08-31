@@ -1,4 +1,9 @@
-use std::{io::Write, path::PathBuf};
+use std::{
+  io::Write,
+  path::{Path, PathBuf},
+  sync::mpsc::Receiver,
+  thread,
+};
 
 use clap::Parser;
 use engine::structs::World;
@@ -9,6 +14,7 @@ use nannou::{
 };
 
 use nannou_egui::{egui, Egui};
+use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -35,11 +41,46 @@ impl Settings {
   }
 }
 
+fn read_world_file(path: &Path) -> Result<World, String> {
+  match std::fs::File::open(path) {
+    Ok(file) => match serde_json::de::from_reader::<_, World>(file) {
+      Ok(world) => Ok(world),
+      Err(e) => {
+        return Err(format!(
+          "Failed to parse world file at {}: {}",
+          path.display(),
+          e
+        ))
+      }
+    },
+    Err(e) => Err(format!(
+      "Failed to open world file at {}: {}",
+      path.display(),
+      e
+    )),
+  }
+}
+
 pub struct Model {
   path: PathBuf,
   settings: Settings,
   world: World,
   egui: Egui,
+
+  update_receiver: Receiver<Result<notify::Event, notify::Error>>,
+}
+
+impl Model {
+  fn load_world(&mut self) {
+    match read_world_file(&self.path) {
+      Ok(w) => {
+        self.world = w;
+      }
+      Err(e) => {
+        eprintln!("{}", e);
+      }
+    }
+  }
 }
 
 fn model(app: &App) -> Model {
@@ -54,26 +95,53 @@ fn model(app: &App) -> Model {
 
   let args = Args::parse();
 
-  let mut world = World::default();
+  let world = World::default();
   let path = PathBuf::from(args.path);
-  if let Ok(file) = std::fs::File::open(path.clone()) {
-    match serde_json::de::from_reader::<_, World>(file) {
-      Ok(w) => world = w,
-      Err(e) => {
-        eprintln!("failed to load world: {}", e);
-      }
-    }
-  }
 
-  Model {
+  let (tx, rx) = std::sync::mpsc::channel();
+  let thread_path = path.clone();
+
+  let mut model = Model {
     path,
     settings: Settings::new(),
     world,
     egui,
-  }
+    update_receiver: rx,
+  };
+
+  model.load_world();
+
+  thread::spawn(move || {
+    let mut watcher = RecommendedWatcher::new(tx, Config::default())
+      .expect("Failed to create file watcher");
+
+    watcher
+      .watch(&thread_path, RecursiveMode::Recursive)
+      .expect("failed to watch");
+
+    println!("Watching for changes in {:?}", thread_path);
+  });
+
+  model
 }
 
 fn update(_app: &App, model: &mut Model, update: Update) {
+  match model.update_receiver.try_recv() {
+    Ok(evt) => {
+      dbg!(&evt);
+      if let Ok(notify::Event {
+        kind: notify::EventKind::Modify(..),
+        ..
+      }) = evt
+      {
+        model.load_world();
+      }
+    }
+    Err(e) => {
+      eprintln!("Error receiving event: {:?}", e);
+    }
+  };
+
   let egui = &mut model.egui;
 
   egui.set_elapsed_time(update.since_start);
