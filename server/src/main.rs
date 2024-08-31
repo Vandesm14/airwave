@@ -1,5 +1,7 @@
 use std::{
   env,
+  path::PathBuf,
+  str::FromStr,
   sync::{mpsc, Arc},
   vec,
 };
@@ -62,8 +64,7 @@ fn main() {
   let mut engine = Engine::new(
     command_receiver,
     update_sender.clone(),
-    airspace_size,
-    118.5,
+    Some(PathBuf::from_str("world.ron").unwrap()),
   );
 
   let mut airport = Airport::new("KSFO".into(), Vec2::new(0.0, 0.0));

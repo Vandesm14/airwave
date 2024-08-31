@@ -36,7 +36,7 @@ export default function Canvas({
   let [render, setRender] = useAtom(renderAtom);
   let groundScale = createMemo(() => (radar().mode === 'ground' ? 25 : 1));
   let fontSize = createMemo(
-    () => 16 * (radar().scale * (radar().mode === 'ground' ? 1.1 : 0.6))
+    () => 16 * (radar().scale * (radar().mode === 'ground' ? 1.1 : 0.9))
   );
 
   function scaleFeet(num: number): number {

@@ -19,6 +19,7 @@ use crate::{
 pub struct World {
   pub airspaces: Vec<Airspace>,
   pub airports: Vec<Airport>,
+  pub aircraft: Vec<Aircraft>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -356,10 +357,8 @@ pub struct Terminal {
 }
 
 impl Aircraft {
-  pub fn random_to_land(airspace_size: f32, frequency: f32) -> Self {
-    let airspace_center = Vec2::splat(airspace_size * 0.5);
-    let point =
-      get_random_point_on_circle(airspace_center, airspace_size * 0.5);
+  pub fn random_to_land(airspace: &Airspace, frequency: f32) -> Self {
+    let point = get_random_point_on_circle(airspace.pos, airspace.size);
 
     Self {
       callsign: Self::random_callsign(),
@@ -367,12 +366,12 @@ impl Aircraft {
       intention: AircraftIntention::Land,
       state: AircraftState::Flying,
       pos: point.position,
-      heading: angle_between_points(point.position, airspace_center),
+      heading: angle_between_points(point.position, airspace.pos),
       speed: 250.0,
       altitude: 7000.0,
       frequency,
       target: AircraftTargets {
-        heading: angle_between_points(point.position, airspace_center),
+        heading: angle_between_points(point.position, airspace.pos),
         speed: 250.0,
         altitude: 7000.0,
       },
@@ -844,12 +843,7 @@ impl Aircraft {
     self.heading = (360.0 + self.heading) % 360.0;
   }
 
-  pub fn update(
-    &mut self,
-    airspace_size: f32,
-    dt: f32,
-    sender: &Sender<OutgoingReply>,
-  ) {
+  pub fn update(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     self.update_landing(dt, sender);
     self.update_holding_pattern();
     self.update_targets(dt);
@@ -857,6 +851,6 @@ impl Aircraft {
     self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);
-    self.update_leave_airspace(airspace_size);
+    // self.update_leave_airspace(airspace_size);
   }
 }

@@ -1,4 +1,6 @@
 use std::{
+  io::Write,
+  path::PathBuf,
   sync::mpsc::{self},
   time::{Duration, Instant},
 };
@@ -35,16 +37,15 @@ pub enum IncomingUpdate {
 
 #[derive(Debug)]
 pub struct Engine {
-  pub aircraft: Vec<Aircraft>,
   pub world: World,
 
   pub receiver: mpsc::Receiver<IncomingUpdate>,
   pub sender: mpsc::Sender<OutgoingReply>,
 
+  pub save_to: Option<PathBuf>,
+
   last_tick: Instant,
   last_spawn: Instant,
-  airspace_size: f32,
-  default_frequency: f32,
   rate: usize,
 }
 
@@ -52,32 +53,33 @@ impl Engine {
   pub fn new(
     receiver: mpsc::Receiver<IncomingUpdate>,
     sender: mpsc::Sender<OutgoingReply>,
-    airspace_size: f32,
-    default_frequency: f32,
+    save_to: Option<PathBuf>,
   ) -> Self {
     Self {
-      aircraft: Vec::new(),
       world: World::default(),
 
       receiver,
       sender,
 
+      save_to,
+
       last_tick: Instant::now(),
       last_spawn: Instant::now(),
-      airspace_size,
-      default_frequency,
       rate: 30,
     }
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    let aircraft =
-      Aircraft::random_to_land(self.airspace_size, self.default_frequency);
-    self.aircraft.push(aircraft.clone());
+    // TODO: spawn aircraft
+    let airspace = self.world.airspaces.first().unwrap();
+
+    // TODO: don't hard-code this frequency
+    let aircraft = Aircraft::random_to_land(airspace, 118.5);
+    self.world.aircraft.push(aircraft.clone());
 
     // TODO: update replies
     let reply = if let AircraftIntention::Land = aircraft.intention {
-      let center = Vec2::splat(self.airspace_size * 0.5);
+      let center = Vec2::splat(airspace.size);
       let heading = angle_between_points(center, aircraft.pos);
       let direction = heading_to_direction(heading);
 
@@ -130,6 +132,19 @@ impl Engine {
         self.update();
         self.cleanup();
         self.broadcast_aircraft();
+        self.save_world();
+      }
+    }
+  }
+
+  pub fn save_world(&self) {
+    if let Some(path) = &self.save_to {
+      let world: World = self.world.clone();
+
+      let string = ron::ser::to_string(&world);
+      if let Ok(string) = string {
+        let mut file = std::fs::File::create(path).unwrap();
+        file.write_all(string.as_bytes()).unwrap();
       }
     }
   }
@@ -137,7 +152,7 @@ impl Engine {
   fn broadcast_aircraft(&self) {
     let _ = self
       .sender
-      .send(OutgoingReply::Aircraft(self.aircraft.clone()))
+      .send(OutgoingReply::Aircraft(self.world.aircraft.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
   }
 
@@ -148,40 +163,36 @@ impl Engine {
       .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
   }
 
-  fn broadcast_size(&self) {
-    let _ = self
-      .sender
-      .send(OutgoingReply::Size(self.airspace_size))
-      .inspect_err(|e| tracing::warn!("failed to broadcast size: {}", e));
-  }
-
   fn broadcast_for_new_client(&self) {
     self.broadcast_world();
-    self.broadcast_size();
   }
 
   pub fn cleanup(&mut self) {
     let mut indicies: Vec<usize> = Vec::new();
-    for (i, aircraft) in self.aircraft.iter().enumerate() {
+    for (i, aircraft) in self.world.aircraft.iter().enumerate() {
       if matches!(aircraft.state, AircraftState::Deleted) {
         indicies.push(i);
       }
     }
 
     for index in indicies {
-      self.aircraft.swap_remove(index);
+      self.world.aircraft.swap_remove(index);
     }
   }
 
   pub fn update(&mut self) {
     let dt = 1.0 / self.rate as f32;
-    for aircraft in self.aircraft.iter_mut() {
-      aircraft.update(self.airspace_size, dt, &self.sender);
+    for aircraft in self.world.aircraft.iter_mut() {
+      aircraft.update(dt, &self.sender);
     }
   }
 
   pub fn execute_command(&mut self, command: CommandWithFreq) {
-    let aircraft = self.aircraft.iter_mut().find(|a| a.callsign == command.id);
+    let aircraft = self
+      .world
+      .aircraft
+      .iter_mut()
+      .find(|a| a.callsign == command.id);
     if let Some(aircraft) = aircraft {
       if aircraft.frequency == command.frequency {
         // TODO: Do go-around first (then filter it out from the rest of the tasks)
