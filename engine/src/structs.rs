@@ -21,6 +21,23 @@ pub struct World {
   pub aircraft: Vec<Aircraft>,
 }
 
+impl World {
+  pub fn closest_airport(&self, point: Vec2) -> Option<&Airport> {
+    let mut closest: Option<&Airport> = None;
+    let mut distance = f32::MAX;
+    for airspace in self.airspaces.iter().filter(|a| a.contains_point(point)) {
+      for airport in airspace.airports.iter() {
+        if airport.center.distance_squared(point) < distance {
+          distance = airport.center.distance_squared(point);
+          closest = Some(airport);
+        }
+      }
+    }
+
+    closest
+  }
+}
+
 // TODO: Support non-circular (regional) airspaces
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Airspace {

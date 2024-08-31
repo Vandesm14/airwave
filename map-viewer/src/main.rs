@@ -45,13 +45,11 @@ fn read_world_file(path: &Path) -> Result<World, String> {
   match std::fs::File::open(path) {
     Ok(file) => match serde_json::de::from_reader::<_, World>(file) {
       Ok(world) => Ok(world),
-      Err(e) => {
-        return Err(format!(
-          "Failed to parse world file at {}: {}",
-          path.display(),
-          e
-        ))
-      }
+      Err(e) => Err(format!(
+        "Failed to parse world file at {}: {}",
+        path.display(),
+        e
+      )),
     },
     Err(e) => Err(format!(
       "Failed to open world file at {}: {}",

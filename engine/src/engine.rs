@@ -198,6 +198,18 @@ impl Engine {
     let aircraft = self
       .world
       .aircraft
+      .iter()
+      .find(|a| a.callsign == command.id);
+    // TODO: Cloning isn't great but yet again this is a "you can't reference
+    // the thing you're referencing twice even though you're accessing different
+    // fields".
+    let airport = aircraft
+      .and_then(|a| self.world.closest_airport(a.pos))
+      .cloned();
+
+    let aircraft = self
+      .world
+      .aircraft
       .iter_mut()
       .find(|a| a.callsign == command.id);
     if let Some(aircraft) = aircraft {
@@ -215,12 +227,16 @@ impl Engine {
             }
             Task::Speed(spd) => aircraft.target.speed = *spd,
             Task::Frequency(frq) => aircraft.frequency = *frq,
-            Task::Land(..) => {
-              // let target = self.runways.iter().find(|r| &r.id == runway);
-              // if let Some(target) = target {
-              //   aircraft.state = AircraftState::Landing(target.clone());
-              // }
-              todo!("land")
+            Task::Land(runway) => {
+              if let Some(ref airport) = airport {
+                let target = airport.runways.iter().find(|r| &r.id == runway);
+                if let Some(target) = target {
+                  aircraft.state = AircraftState::Landing(target.clone());
+                }
+              } else {
+                // TODO: broadcast reply for no airport
+                tracing::warn!("no airport found for {}", aircraft.callsign);
+              }
             }
             Task::GoAround => aircraft
               .do_go_around(&self.sender, crate::structs::GoAroundReason::None),
