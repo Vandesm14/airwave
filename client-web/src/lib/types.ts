@@ -113,11 +113,11 @@ export type Airspace = {
   id: string;
   pos: Vec2;
   size: number;
+  airports: Array<Airport>;
 };
 
 export type World = {
   airspaces: Array<Airspace>;
-  airports: Array<Airport>;
 };
 
 export type RadioMessage = {

@@ -18,10 +18,10 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
-  pub airports: Vec<Airport>,
   pub aircraft: Vec<Aircraft>,
 }
 
+// TODO: Support non-circular (regional) airspaces
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Airspace {
   pub id: String,
@@ -29,6 +29,14 @@ pub struct Airspace {
   #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub size: f32,
+  pub airports: Vec<Airport>,
+}
+
+impl Airspace {
+  pub fn contains_point(&self, point: Vec2) -> bool {
+    let distance = point.distance_squared(self.pos);
+    distance <= self.size.powf(2.0)
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]

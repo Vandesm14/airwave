@@ -457,11 +457,11 @@ export default function Canvas({
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
     for (let airspace of world.airspaces) {
       drawAirspace(ctx, airspace);
-    }
 
-    for (let airport of world.airports) {
-      for (let runway of airport.runways) {
-        drawRunway(ctx, runway);
+      for (let airport of airspace.airports) {
+        for (let runway of airport.runways) {
+          drawRunway(ctx, runway);
+        }
       }
     }
 
@@ -471,20 +471,24 @@ export default function Canvas({
   }
 
   function drawGround(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
-    for (let airport of world.airports) {
-      drawAirspaceGround(ctx, airport);
+    // TODO: only draws selected airspace in ground and approach view
+    // center view shows all airspaces
+    for (let airspace of world.airspaces) {
+      for (let airport of airspace.airports) {
+        drawAirspaceGround(ctx, airport);
 
-      for (let taxiway of airport.taxiways) {
-        drawTaxiway(ctx, taxiway);
-      }
-      for (let taxiway of airport.taxiways) {
-        drawTaxiwayLabel(ctx, taxiway);
-      }
-      for (let runway of airport.runways) {
-        drawRunwayGround(ctx, runway);
-      }
-      for (let terminal of airport.terminals) {
-        drawTerminal(ctx, terminal);
+        for (let taxiway of airport.taxiways) {
+          drawTaxiway(ctx, taxiway);
+        }
+        for (let taxiway of airport.taxiways) {
+          drawTaxiwayLabel(ctx, taxiway);
+        }
+        for (let runway of airport.runways) {
+          drawRunwayGround(ctx, runway);
+        }
+        for (let terminal of airport.terminals) {
+          drawTerminal(ctx, terminal);
+        }
       }
     }
 

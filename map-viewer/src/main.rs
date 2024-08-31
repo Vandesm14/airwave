@@ -170,21 +170,25 @@ fn update(_app: &App, model: &mut Model, update: Update) {
     );
 
     ui.collapsing("Objects", |ui| {
-      ui.collapsing("Airports", |ui| {
-        for airport in model.world.airports.iter_mut() {
-          ui.collapsing(airport.id.as_str(), |ui| {
-            ui.collapsing("Runways", |ui| {
-              airport.runways.iter_mut().for_each(|runway| {
-                ui.label("Runway:");
-                ui.add(egui::widgets::TextEdit::singleline(&mut runway.id));
-                ui.label("X:");
-                ui.add(egui::widgets::DragValue::new(&mut runway.pos.x));
-                ui.label("Y:");
-                ui.add(egui::widgets::DragValue::new(&mut runway.pos.y));
-                ui.label("Heading:");
-                ui.add(egui::widgets::DragValue::new(&mut runway.heading));
+      ui.collapsing("Airspaces", |ui| {
+        for airspace in model.world.airspaces.iter_mut() {
+          ui.collapsing("Airports", |ui| {
+            for airport in airspace.airports.iter_mut() {
+              ui.collapsing(airport.id.as_str(), |ui| {
+                ui.collapsing("Runways", |ui| {
+                  airport.runways.iter_mut().for_each(|runway| {
+                    ui.label("Runway:");
+                    ui.add(egui::widgets::TextEdit::singleline(&mut runway.id));
+                    ui.label("X:");
+                    ui.add(egui::widgets::DragValue::new(&mut runway.pos.x));
+                    ui.label("Y:");
+                    ui.add(egui::widgets::DragValue::new(&mut runway.pos.y));
+                    ui.label("Heading:");
+                    ui.add(egui::widgets::DragValue::new(&mut runway.heading));
+                  });
+                });
               });
-            });
+            }
           });
         }
       });
@@ -208,18 +212,20 @@ fn view(app: &App, model: &Model, frame: Frame) {
   const FEET_TO_PIXELS: f32 = 0.003;
   let scale = model.settings.scale * FEET_TO_PIXELS;
 
-  for airport in model.world.airports.iter() {
-    airport.taxiways.iter().for_each(|taxiway| {
-      taxiway.draw(&draw, scale);
-    });
+  for airspace in model.world.airspaces.iter() {
+    for airport in airspace.airports.iter() {
+      airport.taxiways.iter().for_each(|taxiway| {
+        taxiway.draw(&draw, scale);
+      });
 
-    airport.terminals.iter().for_each(|terminal| {
-      terminal.draw(&draw, scale);
-    });
+      airport.terminals.iter().for_each(|terminal| {
+        terminal.draw(&draw, scale);
+      });
 
-    airport.runways.iter().for_each(|taxiway| {
-      taxiway.draw(&draw, scale);
-    });
+      airport.runways.iter().for_each(|taxiway| {
+        taxiway.draw(&draw, scale);
+      });
+    }
   }
 
   // TODO: draw a scale for 1, 10, 100, and 1000 feet
