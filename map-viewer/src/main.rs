@@ -120,27 +120,23 @@ fn model(app: &App) -> Model {
       .expect("failed to watch");
 
     println!("Watching for changes in {:?}", thread_path);
+
+    loop {
+      std::thread::sleep(std::time::Duration::from_secs(1));
+    }
   });
 
   model
 }
 
 fn update(_app: &App, model: &mut Model, update: Update) {
-  match model.update_receiver.try_recv() {
-    Ok(evt) => {
-      dbg!(&evt);
-      if let Ok(notify::Event {
-        kind: notify::EventKind::Modify(..),
-        ..
-      }) = evt
-      {
-        model.load_world();
-      }
-    }
-    Err(e) => {
-      eprintln!("Error receiving event: {:?}", e);
-    }
-  };
+  if let Ok(Ok(notify::Event {
+    kind: notify::EventKind::Modify(..),
+    ..
+  })) = model.update_receiver.try_recv()
+  {
+    model.load_world();
+  }
 
   let egui = &mut model.egui;
 
@@ -154,8 +150,14 @@ fn update(_app: &App, model: &mut Model, update: Update) {
       let world = model.world.clone();
       std::thread::spawn(move || {
         let string = serde_json::ser::to_string_pretty(&world).unwrap();
-        if let Ok(mut file) = std::fs::File::create(path) {
-          file.write_all(string.as_bytes()).unwrap();
+        match std::fs::File::create(&path) {
+          Ok(mut file) => {
+            println!("Saved world file to {}", path.display());
+            file.write_all(string.as_bytes()).unwrap();
+          }
+          Err(e) => {
+            eprintln!("Failed to save world file: {}", e);
+          }
         }
       });
     }
