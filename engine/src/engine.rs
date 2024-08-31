@@ -7,6 +7,7 @@ use std::{
 
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
+use tracing::{debug, error};
 
 use crate::{
   angle_between_points, heading_to_direction,
@@ -141,10 +142,16 @@ impl Engine {
     if let Some(path) = &self.save_to {
       let world: World = self.world.clone();
 
-      let string = ron::ser::to_string(&world);
-      if let Ok(string) = string {
-        let mut file = std::fs::File::create(path).unwrap();
-        file.write_all(string.as_bytes()).unwrap();
+      let string = serde_json::ser::to_string(&world);
+      match string {
+        Ok(string) => {
+          debug!("saving world to {}", path.display());
+          let mut file = std::fs::File::create(path).unwrap();
+          file.write_all(string.as_bytes()).unwrap();
+        }
+        Err(e) => {
+          error!("failed to save world: {}", e);
+        }
       }
     }
   }

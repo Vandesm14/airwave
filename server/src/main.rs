@@ -64,7 +64,7 @@ fn main() {
   let mut engine = Engine::new(
     command_receiver,
     update_sender.clone(),
-    Some(PathBuf::from_str("world.ron").unwrap()),
+    Some(PathBuf::from_str("assets/world.json").unwrap()),
   );
 
   let mut airport = Airport::new("KSFO".into(), Vec2::new(0.0, 0.0));

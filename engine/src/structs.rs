@@ -325,6 +325,7 @@ impl Taxiway {
 pub struct Gate {
   pub id: String,
   #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub heading: f32,
 }
