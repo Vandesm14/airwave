@@ -12,7 +12,8 @@ use tracing::{debug, error};
 use crate::{
   angle_between_points, heading_to_direction,
   structs::{
-    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Task, World,
+    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Task,
+    TaxiPoint, TaxiWaypoint, TaxiWaypointBehavior, TaxiwayKind, World,
   },
 };
 
@@ -110,13 +111,12 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        // TODO: spawn aircraft
-        // if self.aircraft.len() < 1
-        //   && self.last_spawn.elapsed() >= Duration::from_secs(150)
-        // {
-        //   self.last_spawn = Instant::now();
-        //   self.spawn_random_aircraft();
-        // }
+        if self.world.aircraft.len() < 10
+          && self.last_spawn.elapsed() >= Duration::from_secs(150)
+        {
+          self.last_spawn = Instant::now();
+          self.spawn_random_aircraft();
+        }
 
         let mut commands: Vec<CommandWithFreq> = Vec::new();
         for incoming in self.receiver.try_iter() {
@@ -242,100 +242,110 @@ impl Engine {
             }
             Task::GoAround => aircraft
               .do_go_around(&self.sender, crate::structs::GoAroundReason::None),
-            Task::Takeoff(..) => {
-              // let target = self.runways.iter().find(|r| &r.id == runway);
-              // if let Some(target) = target {
-              //   aircraft.do_takeoff(target);
-              // }
-              todo!("takeoff")
+            Task::Takeoff(runway) => {
+              if let Some(ref airport) = airport {
+                let target = airport.runways.iter().find(|r| &r.id == runway);
+                if let Some(target) = target {
+                  aircraft.do_takeoff(target);
+                }
+              }
             }
             Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
-            Task::TaxiRunway { .. } => {
-              // if let AircraftState::Taxiing { .. } = &mut aircraft.state {
-              //   let runway = self.runways.iter().find(|r| r.id == *runway_str);
-              //   let hold_short_taxiway = runway.and_then(|r| {
-              //     self.taxiways.iter().find(|t| {
-              //       if let TaxiwayKind::HoldShort(rw) = &t.kind {
-              //         rw == &r.id
-              //       } else {
-              //         false
-              //       }
-              //     })
-              //   });
-              //   if let Some((runway, hold_short_taxiway)) =
-              //     runway.zip(hold_short_taxiway)
-              //   {
-              //     let mut taxi_instructions: Vec<TaxiWaypoint> = vec![
-              //       TaxiWaypoint {
-              //         pos: Vec2::default(),
-              //         wp: TaxiPoint::Runway(runway.clone()),
-              //         behavior: TaxiWaypointBehavior::HoldShort,
-              //       },
-              //       TaxiWaypoint {
-              //         pos: Vec2::default(),
-              //         wp: TaxiPoint::Taxiway(hold_short_taxiway.clone()),
-              //         behavior: TaxiWaypointBehavior::GoTo,
-              //       },
-              //     ];
+            Task::TaxiRunway {
+              runway: runway_str,
+              waypoints: waypoints_str,
+            } => {
+              if let Some(ref airport) = airport {
+                if let AircraftState::Taxiing { .. } = &mut aircraft.state {
+                  let runway =
+                    airport.runways.iter().find(|r| r.id == *runway_str);
+                  let hold_short_taxiway = runway.and_then(|r| {
+                    airport.taxiways.iter().find(|t| {
+                      if let TaxiwayKind::HoldShort(rw) = &t.kind {
+                        rw == &r.id
+                      } else {
+                        false
+                      }
+                    })
+                  });
+                  if let Some((runway, hold_short_taxiway)) =
+                    runway.zip(hold_short_taxiway)
+                  {
+                    let mut taxi_instructions: Vec<TaxiWaypoint> = vec![
+                      TaxiWaypoint {
+                        pos: Vec2::default(),
+                        wp: TaxiPoint::Runway(runway.clone()),
+                        behavior: TaxiWaypointBehavior::HoldShort,
+                      },
+                      TaxiWaypoint {
+                        pos: Vec2::default(),
+                        wp: TaxiPoint::Taxiway(hold_short_taxiway.clone()),
+                        behavior: TaxiWaypointBehavior::GoTo,
+                      },
+                    ];
 
-              //     for (instruction, hold) in waypoints_str.iter().rev() {
-              //       let taxiway =
-              //         self.taxiways.iter().find(|t| t.id == *instruction);
-              //       if let Some(taxiway) = taxiway {
-              //         taxi_instructions.push(TaxiWaypoint {
-              //           pos: Vec2::default(),
-              //           wp: TaxiPoint::Taxiway(taxiway.clone()),
-              //           behavior: if *hold {
-              //             TaxiWaypointBehavior::HoldShort
-              //           } else {
-              //             TaxiWaypointBehavior::GoTo
-              //           },
-              //         });
-              //       }
-              //     }
+                    for (instruction, hold) in waypoints_str.iter().rev() {
+                      let taxiway =
+                        airport.taxiways.iter().find(|t| t.id == *instruction);
+                      if let Some(taxiway) = taxiway {
+                        taxi_instructions.push(TaxiWaypoint {
+                          pos: Vec2::default(),
+                          wp: TaxiPoint::Taxiway(taxiway.clone()),
+                          behavior: if *hold {
+                            TaxiWaypointBehavior::HoldShort
+                          } else {
+                            TaxiWaypointBehavior::GoTo
+                          },
+                        });
+                      }
+                    }
 
-              //     taxi_instructions.reverse();
-              //     aircraft.do_taxi(taxi_instructions);
-              //   }
-              // }
-              todo!("taxi to runway")
+                    taxi_instructions.reverse();
+                    aircraft.do_taxi(taxi_instructions);
+                  }
+                }
+              }
             }
-            Task::TaxiGate { .. } => {
-              // let terminal = self
-              //   .terminals
-              //   .iter()
-              //   .find(|t| t.id == gate_str.chars().next().unwrap());
-              // let gate = terminal
-              //   .and_then(|t| t.gates.iter().find(|g| g.id == *gate_str));
+            Task::TaxiGate {
+              gate: gate_str,
+              waypoints: waypoints_str,
+            } => {
+              if let Some(ref airport) = airport {
+                let terminal = airport
+                  .terminals
+                  .iter()
+                  .find(|t| t.id == gate_str.chars().next().unwrap());
+                let gate = terminal
+                  .and_then(|t| t.gates.iter().find(|g| g.id == *gate_str));
 
-              // if let Some((terminal, gate)) = terminal.zip(gate) {
-              //   let mut taxi_instructions: Vec<TaxiWaypoint> =
-              //     vec![TaxiWaypoint {
-              //       pos: Vec2::default(),
-              //       wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
-              //       behavior: TaxiWaypointBehavior::GoTo,
-              //     }];
+                if let Some((terminal, gate)) = terminal.zip(gate) {
+                  let mut taxi_instructions: Vec<TaxiWaypoint> =
+                    vec![TaxiWaypoint {
+                      pos: Vec2::default(),
+                      wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
+                      behavior: TaxiWaypointBehavior::GoTo,
+                    }];
 
-              //   for (instruction, hold) in waypoints_str.iter().rev() {
-              //     let taxiway =
-              //       self.taxiways.iter().find(|t| t.id == *instruction);
-              //     if let Some(taxiway) = taxiway {
-              //       taxi_instructions.push(TaxiWaypoint {
-              //         pos: Vec2::default(),
-              //         wp: TaxiPoint::Taxiway(taxiway.clone()),
-              //         behavior: if *hold {
-              //           TaxiWaypointBehavior::HoldShort
-              //         } else {
-              //           TaxiWaypointBehavior::GoTo
-              //         },
-              //       });
-              //     }
-              //   }
+                  for (instruction, hold) in waypoints_str.iter().rev() {
+                    let taxiway =
+                      airport.taxiways.iter().find(|t| t.id == *instruction);
+                    if let Some(taxiway) = taxiway {
+                      taxi_instructions.push(TaxiWaypoint {
+                        pos: Vec2::default(),
+                        wp: TaxiPoint::Taxiway(taxiway.clone()),
+                        behavior: if *hold {
+                          TaxiWaypointBehavior::HoldShort
+                        } else {
+                          TaxiWaypointBehavior::GoTo
+                        },
+                      });
+                    }
+                  }
 
-              //   taxi_instructions.reverse();
-              //   aircraft.do_taxi(taxi_instructions);
-              // }
-              todo!("taxi to gate")
+                  taxi_instructions.reverse();
+                  aircraft.do_taxi(taxi_instructions);
+                }
+              }
             }
             Task::TaxiHold => aircraft.do_hold_taxi(false),
             Task::TaxiContinue => aircraft.do_continue_taxi(),

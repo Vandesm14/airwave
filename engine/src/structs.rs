@@ -745,6 +745,17 @@ impl Aircraft {
       let target_speed_ft_s = distance_to_runway / seconds_for_descent;
       let target_knots = target_speed_ft_s / KNOT_TO_FEET_PER_SECOND;
 
+      let angle_to_runway =
+        inverse_degrees(angle_between_points(runway.start(), self.pos));
+      let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
+
+      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
+      // anything.
+      if !angle_range.contains(&angle_to_runway) {
+        return;
+      }
+
+      // If we have passed the runway (landed), set our state to taxiing.
       if distance_to_runway <= 1.0 {
         self.altitude = 0.0;
         self.target.altitude = 0.0;
@@ -766,6 +777,7 @@ impl Aircraft {
         return;
       }
 
+      // TODO: only set our target altitude if our altitude is greater
       self.target.altitude =
         4000.0 * (distance_to_runway / start_descent_distance).min(1.0);
 
@@ -787,15 +799,14 @@ impl Aircraft {
     }
   }
 
-  fn update_leave_airspace(&mut self, airspace_size: f32) {
-    // TODO: reimplement leave airspace
-    // let airspace_center = Vec2::splat(airspace_size * 0.5);
-    // let distance = self.pos.distance_squared(airspace_center);
-    // let max_distance = (airspace_size * 0.5).powf(2.0);
+  fn update_leave_airspace(&mut self, airspace: &Airspace) {
+    // TODO: reimplement leave airspace (we need access to our current airspace)
+    let distance = self.pos.distance_squared(airspace.pos);
+    let max_distance = (airspace.size).powf(2.0);
 
-    // if distance >= max_distance {
-    //   self.state = AircraftState::Deleted;
-    // }
+    if distance >= max_distance {
+      self.state = AircraftState::Deleted;
+    }
   }
 
   fn dt_climb_speed(&self, dt: f32) -> f32 {
