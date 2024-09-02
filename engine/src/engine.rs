@@ -146,6 +146,8 @@ impl Engine {
       match string {
         Ok(string) => {
           debug!("saving world to {}", path.display());
+          // Make the directory if it doesn't exist
+          let _ = std::fs::create_dir_all(path.parent().unwrap());
           let mut file = std::fs::File::create(path).unwrap();
           file.write_all(string.as_bytes()).unwrap();
         }
