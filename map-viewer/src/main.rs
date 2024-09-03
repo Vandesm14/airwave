@@ -7,6 +7,7 @@ use std::{
 
 use clap::Parser;
 use engine::structs::World;
+use glam::Vec2;
 use map_viewer::Draw;
 use nannou::{
   color::*,
@@ -127,6 +128,16 @@ fn model(app: &App) -> Model {
   model
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum UIAction {
+  RunwayName(String),
+  RunwayPos(Vec2),
+  RunwayHeading(f32),
+  RunwayLength(f32),
+
+  DeleteRunway,
+}
+
 fn update(_app: &App, model: &mut Model, update: Update) {
   if let Ok(Ok(notify::Event {
     kind: notify::EventKind::Modify(..),
@@ -183,6 +194,17 @@ fn update(_app: &App, model: &mut Model, update: Update) {
                     ui.add(egui::widgets::DragValue::new(&mut runway.pos.y));
                     ui.label("Heading:");
                     ui.add(egui::widgets::DragValue::new(&mut runway.heading));
+                    ui.horizontal(|ui| {
+                      // if ui.button("Remove").clicked() {
+                      //   let index = airport
+                      //     .runways
+                      //     .iter()
+                      //     .position(|r| r == runway)
+                      //     .unwrap();
+                      //   airport.runways.remove(index);
+                      // }
+                    });
+                    ui.separator();
                   });
                 });
               });
