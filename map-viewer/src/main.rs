@@ -2,11 +2,10 @@ use std::{
   io::Write,
   path::{Path, PathBuf},
   sync::mpsc::Receiver,
-  thread,
 };
 
 use clap::Parser;
-use engine::structs::World;
+use engine::structs::{Runway, World};
 use glam::Vec2;
 use map_viewer::Draw;
 use nannou::{
@@ -15,7 +14,9 @@ use nannou::{
 };
 
 use nannou_egui::{egui, Egui};
-use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{
+  Config, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
+};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -65,6 +66,7 @@ pub struct Model {
   settings: Settings,
   world: World,
   egui: Egui,
+  watcher: INotifyWatcher,
 
   update_receiver: Receiver<Result<notify::Event, notify::Error>>,
 }
@@ -100,42 +102,50 @@ fn model(app: &App) -> Model {
   let (tx, rx) = std::sync::mpsc::channel();
   let thread_path = path.clone();
 
+  let mut watcher = RecommendedWatcher::new(tx, Config::default())
+    .expect("Failed to create file watcher");
+
+  watcher
+    .watch(&thread_path, RecursiveMode::Recursive)
+    .expect("failed to watch");
+
+  println!("Watching for changes in {:?}", thread_path);
+
   let mut model = Model {
     path,
     settings: Settings::new(),
     world,
     egui,
+    watcher,
     update_receiver: rx,
   };
 
   model.load_world();
 
-  thread::spawn(move || {
-    let mut watcher = RecommendedWatcher::new(tx, Config::default())
-      .expect("Failed to create file watcher");
-
-    watcher
-      .watch(&thread_path, RecursiveMode::Recursive)
-      .expect("failed to watch");
-
-    println!("Watching for changes in {:?}", thread_path);
-
-    loop {
-      std::thread::sleep(std::time::Duration::from_secs(1));
-    }
-  });
-
   model
+}
+
+pub fn has_changed(x: egui::Response) -> bool {
+  x.lost_focus() || x.drag_released() || (x.has_focus() && x.changed())
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrevNext<P, N>(pub P, pub N);
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum UIRunwayAction {
+  RunwayName(PrevNext<String, String>),
+  RunwayPos(PrevNext<Vec2, Vec2>),
+  RunwayHeading(PrevNext<f32, f32>),
+  RunwayLength(PrevNext<f32, f32>),
+
+  AddRunway(PrevNext<usize, Runway>),
+  DeleteRunway(PrevNext<Runway, usize>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UIAction {
-  RunwayName(String),
-  RunwayPos(Vec2),
-  RunwayHeading(f32),
-  RunwayLength(f32),
-
-  DeleteRunway,
+  Runway(UIRunwayAction),
 }
 
 fn update(_app: &App, model: &mut Model, update: Update) {
@@ -189,7 +199,13 @@ fn update(_app: &App, model: &mut Model, update: Update) {
                     ui.label("Runway:");
                     ui.add(egui::widgets::TextEdit::singleline(&mut runway.id));
                     ui.label("X:");
-                    ui.add(egui::widgets::DragValue::new(&mut runway.pos.x));
+                    let runway_x =
+                      ui.add(egui::widgets::DragValue::new(&mut runway.pos.x));
+
+                    if has_changed(runway_x) {
+                      println!("try");
+                    }
+
                     ui.label("Y:");
                     ui.add(egui::widgets::DragValue::new(&mut runway.pos.y));
                     ui.label("Heading:");
