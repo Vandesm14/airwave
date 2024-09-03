@@ -1,13 +1,10 @@
 import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/index';
 import {
-  airspaceSizeAtom,
   frequencyAtom,
   isRecordingAtom,
   messagesAtom,
-  runwaysAtom,
-  taxiwaysAtom,
-  terminalsAtom,
+  worldAtom,
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
@@ -22,15 +19,16 @@ export default function App() {
 
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
 
-  let [, setAirspaceSize] = useAtom(airspaceSizeAtom);
   let [aircrafts, setAircrafts] = createSignal<Array<Aircraft>>([], {
     equals: false,
   });
-  let [, setRunways] = useAtom(runwaysAtom);
-  let [, setTaxiways] = useAtom(taxiwaysAtom);
-  let [, setTerminals] = useAtom(terminalsAtom);
+  let [, setWorld] = useAtom(worldAtom);
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useAtom(frequencyAtom);
+
+  async function getMedia(constraints) {
+    await navigator.mediaDevices.getUserMedia(constraints);
+  }
 
   function callsignString(id: string): string {
     const airlines: Record<string, string> = {
@@ -64,7 +62,9 @@ export default function App() {
     localStorage.setItem('messages', JSON.stringify(messages()));
   });
 
-  onMount(() => {
+  onMount(async () => {
+    await getMedia({ audio: true, video: false });
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Insert' && !isRecording()) {
         whisper.startRecording();
@@ -129,23 +129,14 @@ export default function App() {
       case 'aircraft':
         setAircrafts(json.value);
         break;
-      case 'runways':
-        setRunways(json.value);
-        break;
-      case 'taxiways':
-        setTaxiways(json.value);
-        break;
-      case 'terminals':
-        setTerminals(json.value);
+      case 'world':
+        setWorld(json.value);
         break;
       case 'atcreply':
         speakAsATC(json.value);
         break;
       case 'reply':
         speakAsAircraft(json.value);
-        break;
-      case 'size':
-        setAirspaceSize(json.value);
         break;
     }
   };

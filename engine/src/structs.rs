@@ -9,11 +9,82 @@ use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-  add_degrees, angle_between_points, closest_point_on_line, degrees_to_heading,
-  delta_angle, engine::OutgoingReply, find_line_intersection,
-  get_random_point_on_circle, heading_to_degrees, inverse_degrees, move_point,
-  FEET_PER_UNIT, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
+  add_degrees, angle_between_points, closest_point_on_line, delta_angle,
+  engine::OutgoingReply, find_line_intersection, get_random_point_on_circle,
+  inverse_degrees, move_point, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  TIME_SCALE,
 };
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct World {
+  pub airspaces: Vec<Airspace>,
+  pub aircraft: Vec<Aircraft>,
+}
+
+impl World {
+  pub fn closest_airport(&self, point: Vec2) -> Option<&Airport> {
+    let mut closest: Option<&Airport> = None;
+    let mut distance = f32::MAX;
+    for airspace in self.airspaces.iter().filter(|a| a.contains_point(point)) {
+      for airport in airspace.airports.iter() {
+        if airport.center.distance_squared(point) < distance {
+          distance = airport.center.distance_squared(point);
+          closest = Some(airport);
+        }
+      }
+    }
+
+    closest
+  }
+}
+
+// TODO: Support non-circular (regional) airspaces
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct Airspace {
+  pub id: String,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub pos: Vec2,
+  pub size: f32,
+  pub airports: Vec<Airport>,
+}
+
+impl Airspace {
+  pub fn contains_point(&self, point: Vec2) -> bool {
+    let distance = point.distance_squared(self.pos);
+    distance <= self.size.powf(2.0)
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct Airport {
+  pub id: String,
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
+  pub center: Vec2,
+  pub runways: Vec<Runway>,
+  pub taxiways: Vec<Taxiway>,
+  pub terminals: Vec<Terminal>,
+  pub altitude_range: [f32; 2],
+}
+
+impl Airport {
+  pub fn new(id: String, center: Vec2) -> Self {
+    Self {
+      id,
+      center,
+      runways: Vec::new(),
+      taxiways: Vec::new(),
+      terminals: Vec::new(),
+      altitude_range: [0.0, 0.0],
+    }
+  }
+
+  pub fn add_taxiway(&mut self, taxiway: Taxiway) {
+    let taxiway = taxiway.extend_ends_by(100.0);
+    self.taxiways.push(taxiway);
+  }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Line(pub Vec2, pub Vec2);
@@ -22,19 +93,14 @@ impl Line {
   pub fn new(a: Vec2, b: Vec2) -> Self {
     Self(a, b)
   }
-
-  pub fn to_feet(self) -> Self {
-    Self(self.0 * FEET_PER_UNIT, self.1 * FEET_PER_UNIT)
-  }
 }
 
 impl From<Runway> for Line {
   fn from(value: Runway) -> Self {
-    let angle = heading_to_degrees(value.heading);
-    let inverse_angle = inverse_degrees(angle);
+    let inverse_angle = inverse_degrees(value.heading);
     let half_length = value.length * 0.5;
 
-    let a = move_point(value.pos, angle, half_length);
+    let a = move_point(value.pos, value.heading, half_length);
     let b = move_point(value.pos, inverse_angle, half_length);
 
     Line::new(a, b)
@@ -156,35 +222,11 @@ pub struct Runway {
 
 impl Runway {
   pub fn start(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      inverse_degrees(heading_to_degrees(self.heading)),
-      self.length * FEET_PER_UNIT * 0.5,
-    )
+    move_point(self.pos, inverse_degrees(self.heading), self.length * 0.5)
   }
 
   pub fn end(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      heading_to_degrees(self.heading),
-      self.length * FEET_PER_UNIT * 0.5,
-    )
-  }
-
-  pub fn a(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      inverse_degrees(heading_to_degrees(self.heading)),
-      self.length * 0.5,
-    )
-  }
-
-  pub fn b(&self) -> Vec2 {
-    move_point(
-      self.pos,
-      heading_to_degrees(self.heading),
-      self.length * 0.5,
-    )
+    move_point(self.pos, self.heading, self.length * 0.5)
   }
 }
 
@@ -308,6 +350,7 @@ impl Taxiway {
 pub struct Gate {
   pub id: String,
   #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub heading: f32,
 }
@@ -340,10 +383,8 @@ pub struct Terminal {
 }
 
 impl Aircraft {
-  pub fn random_to_land(airspace_size: f32, frequency: f32) -> Self {
-    let airspace_center = Vec2::splat(airspace_size * 0.5);
-    let point =
-      get_random_point_on_circle(airspace_center, airspace_size * 0.5);
+  pub fn random_to_land(airspace: &Airspace, frequency: f32) -> Self {
+    let point = get_random_point_on_circle(airspace.pos, airspace.size);
 
     Self {
       callsign: Self::random_callsign(),
@@ -351,18 +392,12 @@ impl Aircraft {
       intention: AircraftIntention::Land,
       state: AircraftState::Flying,
       pos: point.position,
-      heading: degrees_to_heading(angle_between_points(
-        point.position,
-        airspace_center,
-      )),
+      heading: angle_between_points(point.position, airspace.pos),
       speed: 250.0,
       altitude: 7000.0,
       frequency,
       target: AircraftTargets {
-        heading: degrees_to_heading(angle_between_points(
-          point.position,
-          airspace_center,
-        )),
+        heading: angle_between_points(point.position, airspace.pos),
         speed: 250.0,
         altitude: 7000.0,
       },
@@ -443,7 +478,7 @@ impl Aircraft {
   }
 
   pub fn speed_in_pixels(&self) -> f32 {
-    self.speed * KNOT_TO_FEET_PER_SECOND * FEET_PER_UNIT
+    self.speed * KNOT_TO_FEET_PER_SECOND
   }
 
   pub fn do_hold_pattern(&mut self, direction: HoldDirection) {
@@ -520,8 +555,7 @@ impl Aircraft {
 
           if let TaxiWaypointBehavior::HoldShort = waypoint.behavior {
             let angle = angle_between_points(waypoint.pos, current.pos);
-            let hold_point =
-              move_point(waypoint.pos, angle, FEET_PER_UNIT * 300.0);
+            let hold_point = move_point(waypoint.pos, angle, 300.0);
 
             new_waypoints.push(TaxiWaypoint {
               pos: hold_point,
@@ -608,11 +642,7 @@ impl Aircraft {
   }
 
   fn update_position(&mut self, dt: f32) {
-    let pos = move_point(
-      self.pos,
-      heading_to_degrees(self.heading),
-      self.speed_in_pixels() * dt,
-    );
+    let pos = move_point(self.pos, self.heading, self.speed_in_pixels() * dt);
     self.pos = pos;
   }
 
@@ -652,8 +682,7 @@ impl Aircraft {
       } else {
         let waypoint = waypoints.last().cloned();
         if let Some(waypoint) = waypoint {
-          let angle = angle_between_points(self.pos, waypoint.pos);
-          let heading = degrees_to_heading(angle);
+          let heading = angle_between_points(self.pos, waypoint.pos);
 
           self.heading = heading;
           self.target.heading = heading;
@@ -699,18 +728,14 @@ impl Aircraft {
   fn update_landing(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     if let AircraftState::Landing(runway) = &self.state {
       let ils_line = Line::new(
+        move_point(runway.start(), runway.heading, 500.0),
         move_point(
           runway.start(),
-          heading_to_degrees(runway.heading),
-          FEET_PER_UNIT * 500.0,
-        ),
-        move_point(
-          runway.start(),
-          inverse_degrees(heading_to_degrees(runway.heading)),
-          NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 10.0,
+          inverse_degrees(runway.heading),
+          NAUTICALMILES_TO_FEET * 10.0,
         ),
       );
-      let start_descent_distance = NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 6.0;
+      let start_descent_distance = NAUTICALMILES_TO_FEET * 6.0;
 
       let distance_to_runway = self.pos.distance(runway.start());
 
@@ -718,9 +743,19 @@ impl Aircraft {
       let seconds_for_descent = self.altitude / (climb_speed / dt);
 
       let target_speed_ft_s = distance_to_runway / seconds_for_descent;
-      let target_knots =
-        target_speed_ft_s / KNOT_TO_FEET_PER_SECOND / FEET_PER_UNIT;
+      let target_knots = target_speed_ft_s / KNOT_TO_FEET_PER_SECOND;
 
+      let angle_to_runway =
+        inverse_degrees(angle_between_points(runway.start(), self.pos));
+      let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
+
+      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
+      // anything.
+      if !angle_range.contains(&angle_to_runway) {
+        return;
+      }
+
+      // If we have passed the runway (landed), set our state to taxiing.
       if distance_to_runway <= 1.0 {
         self.altitude = 0.0;
         self.target.altitude = 0.0;
@@ -742,6 +777,7 @@ impl Aircraft {
         return;
       }
 
+      // TODO: only set our target altitude if our altitude is greater
       self.target.altitude =
         4000.0 * (distance_to_runway / start_descent_distance).min(1.0);
 
@@ -755,22 +791,18 @@ impl Aircraft {
       let closest_point =
         closest_point_on_line(self.pos, ils_line.0, ils_line.1);
 
-      let landing_point = move_point(
-        closest_point,
-        heading_to_degrees(runway.heading),
-        NAUTICALMILES_TO_FEET * FEET_PER_UNIT * 0.4,
-      );
+      let landing_point =
+        move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.4);
 
-      let heading_to_point =
-        degrees_to_heading(angle_between_points(self.pos, landing_point));
+      let heading_to_point = angle_between_points(self.pos, landing_point);
       self.target.heading = heading_to_point;
     }
   }
 
-  fn update_leave_airspace(&mut self, airspace_size: f32) {
-    let airspace_center = Vec2::splat(airspace_size * 0.5);
-    let distance = self.pos.distance_squared(airspace_center);
-    let max_distance = (airspace_size * 0.5).powf(2.0);
+  fn update_leave_airspace(&mut self, airspace: &Airspace) {
+    // TODO: reimplement leave airspace (we need access to our current airspace)
+    let distance = self.pos.distance_squared(airspace.pos);
+    let max_distance = (airspace.size).powf(2.0);
 
     if distance >= max_distance {
       self.state = AircraftState::Deleted;
@@ -848,12 +880,7 @@ impl Aircraft {
     self.heading = (360.0 + self.heading) % 360.0;
   }
 
-  pub fn update(
-    &mut self,
-    airspace_size: f32,
-    dt: f32,
-    sender: &Sender<OutgoingReply>,
-  ) {
+  pub fn update(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     self.update_landing(dt, sender);
     self.update_holding_pattern();
     self.update_targets(dt);
@@ -861,6 +888,6 @@ impl Aircraft {
     self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);
-    self.update_leave_airspace(airspace_size);
+    // self.update_leave_airspace(airspace_size);
   }
 }

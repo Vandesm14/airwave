@@ -8,13 +8,11 @@ export const airlines: Record<string, string> = {
 
 export const timeScale = 1;
 
-export const feetPerPixel = 0.005;
 export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
-export const milesToFeet = 6076.12;
 
 export function headingToDegrees(heading: number) {
-  return (heading + 270) % 360;
+  return (heading + 360 + 90) % 360;
 }
 
 export function degreesToHeading(degrees: number) {
@@ -35,12 +33,10 @@ export function movePoint(
   directionDegrees: number
 ) {
   // Convert direction from degrees to radians
-  const directionRadians = directionDegrees * (Math.PI / 180);
-
+  const directionRadians = toRadians(directionDegrees);
   // Calculate the new coordinates
-  const newX = x + length * Math.cos(directionRadians);
-  const newY = y + length * Math.sin(directionRadians);
-
+  const newX = x + length * Math.sin(directionRadians);
+  const newY = y + length * Math.cos(directionRadians);
   return { x: newX, y: newY };
 }
 
@@ -68,7 +64,10 @@ export function inverseDegrees(degrees: number): number {
   return (degrees + 180) % 360;
 }
 
-export function runwayInfo(runway: Runway): {
+export function runwayInfo(
+  runway: Runway
+  // scale: number
+): {
   start: { x: number; y: number };
   end: { x: number; y: number };
   ils: {
@@ -78,18 +77,19 @@ export function runwayInfo(runway: Runway): {
     minAngle: { x: number; y: number };
   };
 } {
+  let pos: Vec2 = {
+    x: runway.x,
+    y: runway.y,
+  };
+  let length = runway.length;
+
   let start = movePoint(
-    runway.x,
-    runway.y,
-    runway.length * feetPerPixel * 0.5,
-    inverseDegrees(headingToDegrees(runway.heading))
+    pos.x,
+    pos.y,
+    length * 0.5,
+    inverseDegrees(runway.heading)
   );
-  let end = movePoint(
-    runway.x,
-    runway.y,
-    runway.length * feetPerPixel * 0.5,
-    headingToDegrees(runway.heading)
-  );
+  let end = movePoint(pos.x, pos.y, length * 0.5, runway.heading);
 
   let maxIlsRangeMiles = 10;
   let ilsPoints: { x: number; y: number }[] = [];
@@ -100,8 +100,8 @@ export function runwayInfo(runway: Runway): {
       movePoint(
         start.x,
         start.y,
-        length + milesToFeet * feetPerPixel * point,
-        inverseDegrees(headingToDegrees(runway.heading))
+        length + nauticalMilesToFeet * point,
+        inverseDegrees(runway.heading)
       )
     );
   }
@@ -109,21 +109,21 @@ export function runwayInfo(runway: Runway): {
   let ilsStart = movePoint(
     start.x,
     start.y,
-    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees(runway.heading))
+    length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
+    inverseDegrees(runway.heading)
   );
 
   let maxAngle = movePoint(
     start.x,
     start.y,
-    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees(runway.heading + 5))
+    length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
+    inverseDegrees(runway.heading + 5)
   );
   let minAngle = movePoint(
     start.x,
     start.y,
-    length / 2 + milesToFeet * feetPerPixel * maxIlsRangeMiles,
-    inverseDegrees(headingToDegrees((runway.heading + (360 - 5)) % 360))
+    length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
+    inverseDegrees((runway.heading + (360 - 5)) % 360)
   );
 
   return {

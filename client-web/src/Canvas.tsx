@@ -1,27 +1,25 @@
 import { useAtom } from 'solid-jotai';
+import { radarAtom, renderAtom, worldAtom } from './lib/atoms';
 import {
-  airspaceSizeAtom,
-  radarAtom,
-  renderAtom,
-  runwaysAtom,
-  taxiwaysAtom,
-  terminalsAtom,
-} from './lib/atoms';
-import { Aircraft, Gate, Runway, Taxiway, Terminal, Vec2 } from './lib/types';
+  Aircraft,
+  Airport,
+  Airspace,
+  Runway,
+  Taxiway,
+  Terminal,
+  Vec2,
+  World,
+} from './lib/types';
+import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
 import {
-  degreesToHeading,
-  toRadians,
   headingToDegrees,
-  feetPerPixel,
   knotToFeetPerSecond,
+  midpointBetweenPoints,
+  movePoint,
   nauticalMilesToFeet,
   runwayInfo,
-  movePoint,
-  projectPoint,
-  angleBetweenPoints,
-  midpointBetweenPoints,
+  toRadians,
 } from './lib/lib';
-import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
 
 export default function Canvas({
   aircrafts,
@@ -34,18 +32,33 @@ export default function Canvas({
 
   let [radar, setRadar] = useAtom(radarAtom);
 
-  let [airspaceSize] = useAtom(airspaceSizeAtom);
-  let [runways] = useAtom(runwaysAtom);
-  let [taxiways] = useAtom(taxiwaysAtom);
-  let [terminals] = useAtom(terminalsAtom);
+  let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
-  let groundScale = createMemo(() => (radar().mode === 'ground' ? 10 : 1));
+  let groundScale = createMemo(() => (radar().mode === 'ground' ? 25 : 1));
+  let fontSize = createMemo(
+    () => 16 * (radar().scale * (radar().mode === 'ground' ? 1.1 : 0.9))
+  );
+
+  function scaleFeet(num: number): number {
+    const FEET_TO_PIXELS = 0.003;
+    return num * FEET_TO_PIXELS * radar().scale * groundScale();
+  }
+
+  function scalePoint(vec2: Vec2): Vec2 {
+    let x = scaleFeet(vec2.x);
+    let y = scaleFeet(vec2.y);
+
+    return {
+      x: x,
+      y: -y,
+    };
+  }
 
   createEffect(() => {
     setRadar((radar) => {
       radar.shiftPoint = {
-        x: airspaceSize() * 0.5,
-        y: airspaceSize() * 0.5,
+        x: 0.0,
+        y: 0.0,
       };
 
       return { ...radar };
@@ -59,12 +72,12 @@ export default function Canvas({
         canvas.height = canvas.clientHeight;
       });
 
-      setInterval(() => loopMain(canvas), 1000 / 30);
+      setInterval(() => doRender(canvas), 1000 / 30);
 
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
 
-      loopMain(canvas);
+      doRender(canvas);
 
       canvas.addEventListener('mousedown', (e) => {
         setRadar((radar) => {
@@ -101,8 +114,11 @@ export default function Canvas({
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
-          radar.scale += e.deltaY * -0.0005;
-          radar.scale = Math.max(Math.min(radar.scale, 2), 0.6);
+          let maxScale = 3.0;
+          let minScale = 0.1;
+
+          radar.scale += e.deltaY * -0.001;
+          radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
 
           radar.isZooming = true;
 
@@ -112,7 +128,7 @@ export default function Canvas({
     }
   });
 
-  function loopMain(canvas: HTMLCanvasElement, forceRender?: boolean) {
+  function doRender(canvas: HTMLCanvasElement, forceRender?: boolean) {
     let dt = Date.now() - render().lastTime;
     let dts = dt / 1000;
 
@@ -124,7 +140,7 @@ export default function Canvas({
       render().lastDraw === 0 ||
       deltaDrawTime >= 1000 / 3
     ) {
-      loopDraw(canvas, dts);
+      doDraw(canvas, dts);
       setRadar((radar) => {
         radar.isZooming = false;
         return { ...radar };
@@ -144,424 +160,177 @@ export default function Canvas({
   function resetTransform(ctx: CanvasRenderingContext2D) {
     ctx.resetTransform();
     ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
-    ctx.scale(radar().scale, radar().scale);
-    ctx.translate(airspaceSize() * -0.5, airspaceSize() * -0.5);
+    // Set 0.0 to be the center of the canvas
+    ctx.translate(canvas.width * 0.5, canvas.height * 0.5);
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
+    ctx.font = `900 ${fontSize()}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
   }
 
-  function loopDraw(canvas: HTMLCanvasElement, dts: number) {
+  function doDraw(canvas: HTMLCanvasElement, dts: number) {
     const width = canvas.width;
     const height = canvas.height;
 
     let ctx = canvas.getContext('2d');
     if (ctx) {
-      const fontSize = 16 * (1 / radar().scale);
-      ctx.font = `900 ${fontSize}px monospace`;
+      ctx.font = `900 16px monospace`;
       ctx.fillStyle = 'black';
 
       ctx.resetTransform();
       ctx.fillRect(0, 0, width, height);
+      // drawCompass(ctx);
       resetTransform(ctx);
-      drawCompass(ctx);
 
       if (radar().mode === 'tower') {
-        for (let runway of runways()) {
-          drawRunway(ctx, runway);
-        }
-
-        for (let aircraft of aircrafts()) {
-          if (aircraft.state.type !== 'taxiing') {
-            drawBlip(ctx, aircraft);
-          }
-        }
+        drawTower(ctx, world(), aircrafts());
       } else if (radar().mode === 'ground') {
-        for (let taxiway of taxiways()) {
-          drawTaxiway(ctx, taxiway);
-        }
-
-        for (let taxiway of taxiways()) {
-          drawTaxiwayLabel(ctx, taxiway);
-        }
-
-        for (let runway of runways()) {
-          drawRunwayGround(ctx, runway);
-        }
-
-        for (let terminal of terminals()) {
-          drawTerminal(ctx, terminal);
-        }
-
-        for (let aircraft of aircrafts()) {
-          if (aircraft.altitude < 1000) {
-            drawBlipGround(ctx, aircraft);
-          }
-        }
+        drawGround(ctx, world(), aircrafts());
       }
     }
   }
 
   function drawCompass(ctx: Ctx) {
-    let half_size = airspaceSize() * 0.5;
+    let diameter = canvas.height;
+    if (canvas.width < canvas.height) {
+      diameter = canvas.width;
+    }
 
-    let airspace_radius = half_size - 50;
+    let radius = diameter * 0.5;
+    let origin = {
+      x: canvas.width * 0.5,
+      y: canvas.height * 0.5,
+    };
 
-    ctx.strokeStyle = 'white';
-    ctx.fillStyle = 'white';
-    ctx.beginPath();
-    ctx.arc(half_size, half_size, airspace_radius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#8886';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    let padding = -10;
     for (let i = 0; i < 36; i++) {
-      let text = degreesToHeading(i * 10)
+      let text = headingToDegrees(i * 10)
         .toString()
         .padStart(3, '0');
       if (text === '000') {
         text = '360';
       }
-
       ctx.fillText(
         text,
-        Math.cos(toRadians(i * 10)) * (airspace_radius + 20) + half_size,
-        Math.sin(toRadians(i * 10)) * (airspace_radius + 20) + half_size
+        Math.cos(toRadians(i * 10)) * (radius + padding) + origin.x,
+        Math.sin(toRadians(i * 10)) * (radius + padding) + origin.y
       );
     }
   }
 
-  function drawRunway(ctx: Ctx, runway: Runway) {
-    let width = 4;
-    let info = runwayInfo(runway);
+  function drawAirspace(ctx: Ctx, airspace: Airspace) {
+    resetTransform(ctx);
+    let pos = scalePoint(airspace.pos);
 
-    let startLeft = movePoint(
-      info.start.x,
-      info.start.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 270) % 360
-    );
-    let startRight = movePoint(
-      info.start.x,
-      info.start.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 90) % 360
-    );
-
-    let endLeft = movePoint(
-      info.end.x,
-      info.end.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 270) % 360
-    );
-    let endRight = movePoint(
-      info.end.x,
-      info.end.y,
-      width * 0.5,
-      (headingToDegrees(runway.heading) + 90) % 360
-    );
-
-    ctx.fillStyle = 'grey';
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
     ctx.beginPath();
-    ctx.moveTo(startLeft.x, startLeft.y);
-    ctx.lineTo(startRight.x, startRight.y);
-    ctx.lineTo(endRight.x, endRight.y);
-    ctx.lineTo(endLeft.x, endLeft.y);
-    ctx.lineTo(startLeft.x, startLeft.y);
-    ctx.fill();
+    ctx.arc(pos.x, pos.y, scaleFeet(airspace.size), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  function drawRunway(ctx: Ctx, runway: Runway) {
+    resetTransform(ctx);
+    let info = runwayInfo(runway);
+    let start = scalePoint(info.start);
+    let end = scalePoint(info.end);
+    let ils = {
+      end: scalePoint(info.ils.end),
+      maxAngle: scalePoint(info.ils.maxAngle),
+      minAngle: scalePoint(info.ils.minAngle),
+    };
 
+    // Draw the runway
+    ctx.strokeStyle = 'grey';
+    ctx.fillStyle = 'grey';
+    ctx.lineWidth = scaleFeet(1000);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+
+    // Draw the localizer beacon
     ctx.fillStyle = '#3087f2';
     ctx.strokeStyle = '#3087f2';
-
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(info.start.x, info.start.y);
-    ctx.lineTo(info.ils.end.x, info.ils.end.y);
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(ils.end.x, ils.end.y);
     ctx.stroke();
 
+    // Draw the max and min localizer angle
     ctx.strokeStyle = '#444444';
     ctx.beginPath();
-    ctx.moveTo(info.start.x, info.start.y);
-    ctx.lineTo(info.ils.maxAngle.x, info.ils.maxAngle.y);
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(ils.maxAngle.x, ils.maxAngle.y);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(info.start.x, info.start.y);
-    ctx.lineTo(info.ils.minAngle.x, info.ils.minAngle.y);
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(ils.minAngle.x, ils.minAngle.y);
     ctx.stroke();
 
+    // Draw the localizer altitude points
     ctx.strokeStyle = '#3087f2';
-    for (let point of info.ils.altitudePoints) {
+    for (let p of info.ils.altitudePoints) {
+      let point = scalePoint(p);
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, scaleFeet(1500), 0, Math.PI * 2);
       ctx.stroke();
     }
   }
+  function drawBlip(ctx: Ctx, aircraft: Aircraft) {
+    resetTransform(ctx);
+    let pos = scalePoint(aircraft);
 
-  function drawRunwayGround(ctx: Ctx, runway: Runway) {
-    let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
-    };
-    let width = feetPerPixel * 250;
-    let projectionScale = 14;
+    ctx.fillStyle = '#00aa00';
+    ctx.strokeStyle = '#00aa00';
 
-    let info = runwayInfo(runway);
-
-    let startLeft = projectPoint(
-      origin,
-      movePoint(
-        info.start.x,
-        info.start.y,
-        width * 0.5,
-        (headingToDegrees(runway.heading) + 270) % 360
-      ),
-      projectionScale
-    );
-    let startRight = projectPoint(
-      origin,
-      movePoint(
-        info.start.x,
-        info.start.y,
-        width * 0.5,
-        (headingToDegrees(runway.heading) + 90) % 360
-      ),
-      projectionScale
-    );
-
-    let endLeft = projectPoint(
-      origin,
-      movePoint(
-        info.end.x,
-        info.end.y,
-        width * 0.5,
-        (headingToDegrees(runway.heading) + 270) % 360
-      ),
-      projectionScale
-    );
-    let endRight = projectPoint(
-      origin,
-      movePoint(
-        info.end.x,
-        info.end.y,
-        width * 0.5,
-        (headingToDegrees(runway.heading) + 90) % 360
-      ),
-      projectionScale
-    );
-
-    ctx.fillStyle = '#666';
-    ctx.beginPath();
-    ctx.moveTo(startLeft.x, startLeft.y);
-    ctx.lineTo(startRight.x, startRight.y);
-    ctx.lineTo(endRight.x, endRight.y);
-    ctx.lineTo(endLeft.x, endLeft.y);
-    ctx.lineTo(startLeft.x, startLeft.y);
-    ctx.fill();
-
-    let fontSize = 16;
-    ctx.font = `900 ${fontSize}px monospace`;
-    ctx.textAlign = 'center';
-    let middle = midpointBetweenPoints(startLeft, startRight);
-    let textWidth = ctx.measureText(runway.id).width + 10;
-    ctx.fillStyle = '#000a';
-    ctx.fillRect(
-      middle.x - textWidth * 0.5,
-      middle.y - fontSize * 0.5,
-      textWidth,
-      fontSize
-    );
-
-    ctx.fillStyle = '#dd9904';
-    ctx.fillText(runway.id, middle.x, middle.y);
-  }
-
-  function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
-    let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
-    };
-    let width = feetPerPixel * 200;
-    let projectionScale = 14;
-
-    let angle = angleBetweenPoints(taxiway.a, taxiway.b);
-
-    let startLeft = projectPoint(
-      origin,
-      movePoint(taxiway.a.x, taxiway.a.y, width * 0.5, (angle + 270) % 360),
-      projectionScale
-    );
-    let startRight = projectPoint(
-      origin,
-      movePoint(taxiway.a.x, taxiway.a.y, width * 0.5, (angle + 90) % 360),
-      projectionScale
-    );
-
-    let endLeft = projectPoint(
-      origin,
-      movePoint(taxiway.b.x, taxiway.b.y, width * 0.5, (angle + 270) % 360),
-      projectionScale
-    );
-    let endRight = projectPoint(
-      origin,
-      movePoint(taxiway.b.x, taxiway.b.y, width * 0.5, (angle + 90) % 360),
-      projectionScale
-    );
-
-    ctx.fillStyle = '#999';
-    ctx.beginPath();
-    ctx.moveTo(startLeft.x, startLeft.y);
-    ctx.lineTo(startRight.x, startRight.y);
-    ctx.lineTo(endRight.x, endRight.y);
-    ctx.lineTo(endLeft.x, endLeft.y);
-    ctx.lineTo(startLeft.x, startLeft.y);
-    ctx.fill();
-  }
-
-  function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
-    let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
-    };
-    let projectionScale = 14;
-
-    if (taxiway.kind.type === 'normal') {
-      let start = projectPoint(origin, taxiway.a, projectionScale);
-      let end = projectPoint(origin, taxiway.b, projectionScale);
-      let middle = midpointBetweenPoints(start, end);
-
-      let fontSize = 16;
-      ctx.font = `900 ${fontSize}px monospace`;
-      let textWidth = ctx.measureText(taxiway.id).width + 10;
-      ctx.fillStyle = '#000a';
-      ctx.fillRect(
-        middle.x - textWidth * 0.5,
-        middle.y - fontSize * 0.5,
-        textWidth,
-        fontSize
-      );
-
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#dd9904';
-      ctx.fillText(taxiway.id, middle.x, middle.y);
-    }
-  }
-
-  function drawTerminal(ctx: Ctx, terminal: Terminal) {
-    let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
-    };
-    let projectionScale = 14;
-
-    let a = projectPoint(origin, terminal.a, projectionScale);
-    let b = projectPoint(origin, terminal.b, projectionScale);
-
-    let c = projectPoint(origin, terminal.c, projectionScale);
-    let d = projectPoint(origin, terminal.d, projectionScale);
-
-    ctx.fillStyle = '#999';
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.lineTo(c.x, c.y);
-    ctx.lineTo(d.x, d.y);
-    ctx.lineTo(a.x, a.y);
-    ctx.fill();
-
-    function drawGate(ctx: Ctx, gate: Gate, id: string) {
-      let pos = projectPoint(origin, gate.pos, projectionScale);
-
-      ctx.fillStyle = 'red';
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
-      ctx.fill();
-
-      let fontSize = 16;
-      ctx.font = `900 ${fontSize}px monospace`;
-      ctx.textAlign = 'center';
-      let textWidth = ctx.measureText(id).width + 10;
-      ctx.fillStyle = '#000a';
-      ctx.fillRect(
-        pos.x - textWidth * 0.5,
-        pos.y - fontSize * 0.5 - fontSize,
-        textWidth,
-        fontSize
-      );
-
-      ctx.fillStyle = '#dd9904';
-      ctx.fillText(id, pos.x, pos.y - fontSize);
-    }
-
-    for (let i = 0; i < terminal.gates.length; i++) {
-      let gate = terminal.gates[i];
-      drawGate(ctx, gate, gate.id);
-    }
-  }
-
-  function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
-    let origin: Vec2 = {
-      x: airspaceSize() * 0.5,
-      y: airspaceSize() * 0.5,
-    };
-    let projectionScale = 14;
-
-    ctx.fillStyle = '#ffff00';
-    ctx.strokeStyle = '#ffff00';
-
-    if (aircraft.state.type !== 'taxiing') {
-      ctx.fillStyle = '#00aa00';
-      ctx.strokeStyle = '#00aa00';
-    }
-
-    let pos = projectPoint(origin, aircraft, projectionScale);
-
+    // Draw the dot
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
     ctx.fill();
 
+    // Draw the separation circle
     ctx.beginPath();
-    ctx.arc(
-      pos.x,
-      pos.y,
-      nauticalMilesToFeet * feetPerPixel * 0.4,
-      0,
-      Math.PI * 2
-    );
+    ctx.arc(pos.x, pos.y, scaleFeet(nauticalMilesToFeet * 0.8), 0, Math.PI * 2);
     ctx.stroke();
 
-    function drawDirection(ctx: Ctx, aircraft: Aircraft) {
-      const angleDegrees = (aircraft.heading + 270) % 360;
-      const angleRadians = angleDegrees * (Math.PI / 180);
-      const length = 30;
-      const endX = pos.x + length * Math.cos(angleRadians);
-      const endY = pos.y + length * Math.sin(angleRadians);
+    // Draw the direction
+    const length = aircraft.speed * knotToFeetPerSecond * 60;
+    const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
+    let endPos = scalePoint(end);
 
-      ctx.strokeStyle = '#ffff00';
-      if (aircraft.state.type !== 'taxiing') {
-        ctx.strokeStyle = '#00aa00';
-      }
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-    }
+    ctx.strokeStyle = '#00aa00';
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(endPos.x, endPos.y);
+    ctx.stroke();
 
-    drawDirection(ctx, aircraft);
-
-    let spacing = 16;
-    ctx.font = `900 ${spacing}px monospace`;
+    // Draw info
+    let spacing = scaleFeet(nauticalMilesToFeet * 0.8);
     ctx.textAlign = 'left';
-    if (aircraft.state.type !== 'taxiing') {
-      ctx.fillStyle = '#00aa00';
-    }
-    ctx.fillStyle = '#ffff00';
+    ctx.fillStyle =
+      aircraft.intention.type === 'depart' ||
+      aircraft.intention.type === 'flyover'
+        ? '#fc67eb'
+        : '#44ff44';
+
+    // Draw callsign
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
 
+    // Draw altitude
     let altitudeIcon = ' ';
     if (aircraft.altitude < aircraft.target.altitude) {
       altitudeIcon = '⬈';
     } else if (aircraft.altitude > aircraft.target.altitude) {
       altitudeIcon = '⬊';
     }
-
     ctx.fillText(
       Math.round(aircraft.altitude / 100)
         .toString()
@@ -571,135 +340,161 @@ export default function Canvas({
           .toString()
           .padStart(3, '0'),
       pos.x + spacing,
-      pos.y - spacing + spacing
+      pos.y - spacing + fontSize()
     );
 
+    // Draw heading
+    let targetHeadingInfo =
+      aircraft.state.type === 'landing'
+        ? 'ILS'
+        : Math.round(aircraft.target.heading)
+            .toString()
+            .padStart(3, '0')
+            .replace('360', '000');
+    ctx.fillText(
+      Math.round(aircraft.heading)
+        .toString()
+        .padStart(3, '0')
+        .replace('360', '000') +
+        ' ' +
+        targetHeadingInfo,
+      pos.x + spacing,
+      pos.y - spacing + fontSize() * 2
+    );
+
+    // Draw speed
     ctx.fillText(
       Math.round(aircraft.speed).toString(),
       pos.x + spacing,
-      pos.y - spacing + spacing * 2
+      pos.y - spacing + fontSize() * 3
     );
+  }
 
-    if (aircraft.state.type === 'taxiing') {
-      ctx.strokeStyle = 'red';
-      ctx.fillStyle = 'red';
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let point = projectPoint(origin, wp.pos, projectionScale);
-        ctx.lineTo(point.x, point.y);
-      }
-      ctx.stroke();
+  function drawAirspaceGround(ctx: Ctx, airport: Airport) {
+    resetTransform(ctx);
+    let pos = scalePoint(airport.center);
 
-      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let point = projectPoint(origin, wp.pos, projectionScale);
-        ctx.fillStyle = wp.behavior.type === 'holdshort' ? 'red' : '#00ff00';
-        ctx.fillStyle =
-          wp.behavior.type === 'takeoff' ? '#0000ff' : ctx.fillStyle;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
-        ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(nauticalMilesToFeet * 10), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  function drawTerminal(ctx: Ctx, terminal: Terminal) {
+    let a = scalePoint(terminal.a);
+    let b = scalePoint(terminal.b);
+    let c = scalePoint(terminal.c);
+    let d = scalePoint(terminal.d);
+
+    ctx.fillStyle = '#999';
+    ctx.lineWidth = scaleFeet(200);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.lineTo(d.x, d.y);
+    ctx.lineTo(a.x, a.y);
+    ctx.fill();
+  }
+  function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
+    resetTransform(ctx);
+    let start = scalePoint(taxiway.a);
+    let end = scalePoint(taxiway.b);
+
+    ctx.strokeStyle = '#999';
+    ctx.lineWidth = scaleFeet(200);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  }
+  function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
+    if (taxiway.kind.type === 'normal') {
+      let start = scalePoint(taxiway.a);
+      let end = scalePoint(taxiway.b);
+      let middle = midpointBetweenPoints(start, end);
+      let textWidth = ctx.measureText(taxiway.id).width + 10;
+      ctx.fillStyle = '#000a';
+      ctx.fillRect(
+        middle.x - textWidth * 0.5,
+        middle.y - fontSize() * 0.5,
+        textWidth,
+        fontSize()
+      );
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#dd9904';
+      ctx.fillText(taxiway.id, middle.x, middle.y);
+    }
+  }
+  function drawRunwayGround(ctx: Ctx, runway: Runway) {
+    resetTransform(ctx);
+    let info = runwayInfo(runway);
+    let start = scalePoint(info.start);
+    let end = scalePoint(info.end);
+
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = scaleFeet(250);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+
+    // Draw runway label
+    let textWidth = ctx.measureText(runway.id).width + 10;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(
+      start.x - textWidth * 0.5,
+      start.y - fontSize() * 0.5,
+      textWidth,
+      fontSize()
+    );
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dd9904';
+    ctx.fillText(runway.id, start.x, start.y);
+  }
+  function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {}
+
+  function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
+    for (let airspace of world.airspaces) {
+      drawAirspace(ctx, airspace);
+
+      for (let airport of airspace.airports) {
+        for (let runway of airport.runways) {
+          drawRunway(ctx, runway);
+        }
       }
+    }
+
+    for (let aircraft of aircrafts) {
+      drawBlip(ctx, aircraft);
     }
   }
 
-  function drawBlip(ctx: Ctx, aircraft: Aircraft) {
-    ctx.fillStyle = '#00aa00';
-    ctx.strokeStyle = '#00aa00';
+  function drawGround(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
+    // TODO: only draws selected airspace in ground and approach view
+    // center view shows all airspaces
+    for (let airspace of world.airspaces) {
+      for (let airport of airspace.airports) {
+        drawAirspaceGround(ctx, airport);
 
-    ctx.moveTo(aircraft.x, aircraft.y);
-
-    ctx.beginPath();
-    ctx.arc(aircraft.x, aircraft.y, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(
-      aircraft.x,
-      aircraft.y,
-      nauticalMilesToFeet * feetPerPixel * 0.8,
-      0,
-      Math.PI * 2
-    );
-    ctx.stroke();
-
-    function drawDirection(ctx: Ctx, aircraft: Aircraft) {
-      const angleDegrees = (aircraft.heading + 270) % 360;
-      const angleRadians = angleDegrees * (Math.PI / 180);
-      const length = aircraft.speed * knotToFeetPerSecond * feetPerPixel * 60;
-      const endX = aircraft.x + length * Math.cos(angleRadians);
-      const endY = aircraft.y + length * Math.sin(angleRadians);
-
-      ctx.strokeStyle = '#00aa00';
-      ctx.beginPath();
-      ctx.moveTo(aircraft.x, aircraft.y);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-    }
-
-    function drawInfo(ctx: Ctx, aircraft: Aircraft) {
-      let spacing = 16;
-      const fontSize = 16 * (1 / radar().scale);
-      ctx.font = `900 ${fontSize}px monospace`;
-
-      ctx.textAlign = 'left';
-      ctx.fillStyle =
-        aircraft.intention.type === 'depart' ||
-        aircraft.intention.type === 'flyover'
-          ? '#fc67eb'
-          : '#44ff44';
-      ctx.fillText(
-        aircraft.callsign,
-        aircraft.x + spacing,
-        aircraft.y - spacing
-      );
-
-      let altitudeIcon = ' ';
-      if (aircraft.altitude < aircraft.target.altitude) {
-        altitudeIcon = '⬈';
-      } else if (aircraft.altitude > aircraft.target.altitude) {
-        altitudeIcon = '⬊';
+        for (let taxiway of airport.taxiways) {
+          drawTaxiway(ctx, taxiway);
+        }
+        for (let taxiway of airport.taxiways) {
+          drawTaxiwayLabel(ctx, taxiway);
+        }
+        for (let runway of airport.runways) {
+          drawRunwayGround(ctx, runway);
+        }
+        for (let terminal of airport.terminals) {
+          drawTerminal(ctx, terminal);
+        }
       }
-
-      ctx.fillText(
-        Math.round(aircraft.altitude / 100)
-          .toString()
-          .padStart(3, '0') +
-          altitudeIcon +
-          Math.round(aircraft.target.altitude / 100)
-            .toString()
-            .padStart(3, '0'),
-        aircraft.x + spacing,
-        aircraft.y - spacing + fontSize
-      );
-
-      let targetHeadingInfo =
-        aircraft.state.type === 'landing'
-          ? 'ILS'
-          : Math.round(aircraft.target.heading)
-              .toString()
-              .padStart(3, '0')
-              .replace('360', '000');
-      ctx.fillText(
-        Math.round(aircraft.heading)
-          .toString()
-          .padStart(3, '0')
-          .replace('360', '000') +
-          ' ' +
-          targetHeadingInfo,
-        aircraft.x + spacing,
-        aircraft.y - spacing + fontSize * 2
-      );
-
-      ctx.fillText(
-        Math.round(aircraft.speed).toString(),
-        aircraft.x + spacing,
-        aircraft.y - spacing + fontSize * 3
-      );
     }
 
-    drawDirection(ctx, aircraft);
-    drawInfo(ctx, aircraft);
+    for (let aircraft of aircrafts) {
+      drawBlipGround(ctx, aircraft);
+    }
   }
 
   return <canvas id="canvas" ref={canvas}></canvas>;

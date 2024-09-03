@@ -12,3 +12,4 @@ client-web/dist/
 
 # Environment
 .env
+assets/
