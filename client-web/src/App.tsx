@@ -62,6 +62,12 @@ export default function App() {
     localStorage.setItem('messages', JSON.stringify(messages()));
   });
 
+  function sendTextMessage(text: string) {
+    socket.send(
+      JSON.stringify({ type: 'text', value: { text, frequency: frequency() } })
+    );
+  }
+
   onMount(async () => {
     await getMedia({ audio: true, video: false });
 
@@ -160,7 +166,7 @@ export default function App() {
   return (
     <div id="radar">
       <RadarSwitch></RadarSwitch>
-      <Chatbox></Chatbox>
+      <Chatbox sendMessage={sendTextMessage}></Chatbox>
       <Canvas aircrafts={aircrafts}></Canvas>
       <div class="top-right">
         <StripBoard aircrafts={aircrafts}></StripBoard>

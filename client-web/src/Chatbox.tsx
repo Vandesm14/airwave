@@ -2,12 +2,17 @@ import { useAtom } from 'solid-jotai';
 import { frequencyAtom, isRecordingAtom, messagesAtom } from './lib/atoms';
 import { createEffect, createSignal } from 'solid-js';
 
-export default function Chatbox() {
+export default function Chatbox({
+  sendMessage,
+}: {
+  sendMessage: (text: string) => void;
+}) {
   let chatbox;
   let [messages, setMessages] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [showAll, setShowAll] = createSignal(false);
+  let [text, setText] = createSignal('');
 
   createEffect(() => {
     if (chatbox instanceof HTMLDivElement) {
@@ -28,6 +33,11 @@ export default function Chatbox() {
 
   function clearAll() {
     setMessages([]);
+  }
+
+  function handleSendMessage(text) {
+    sendMessage(text);
+    setText('');
   }
 
   return (
@@ -55,6 +65,20 @@ export default function Chatbox() {
               <span class="text">{m.reply}</span>
             </div>
           ))}
+      </div>
+      <div class="input">
+        <input
+          type="text"
+          value={text()}
+          oninput={(e) => setText(e.currentTarget.value)}
+          onkeydown={(e) => e.key === 'Enter' && handleSendMessage(text())}
+          placeholder="Type a message..."
+        />
+        <input
+          type="button"
+          value="Send"
+          onclick={() => handleSendMessage(text())}
+        />
       </div>
     </div>
   );

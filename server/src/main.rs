@@ -3,7 +3,9 @@ use std::{
   path::PathBuf,
   str::FromStr,
   sync::{mpsc, Arc},
+  thread,
   vec,
+  // sync::OnceLock,
 };
 
 use async_openai::types::{
@@ -31,6 +33,15 @@ use engine::{
   },
   DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
+
+// fn runtime() -> &'static tokio::runtime::Runtime {
+//     static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+
+//     RUNTIME.get_or_init(|| tokio::runtime::Builder::new_multi_thread()
+//       .enable_all()
+//       .build()
+//       .unwrap())
+// }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -79,11 +90,18 @@ fn main() {
   engine.world.airspaces.push(airspace);
   engine.spawn_random_aircraft();
 
-  std::thread::spawn(move || {
+  thread::spawn(move || {
+    // let runtime = runtime();
+
     let runtime = tokio::runtime::Builder::new_multi_thread()
       .enable_all()
       .build()
       .unwrap();
+
+    // Without a non-underscore identifier, this would be dropped and hence
+    // useless. This ties tokio::spawn, and other executor related stuff, to
+    // this runtime.
+    let _runtime_guard = runtime.enter();
 
     runtime.block_on(async move {
       let listener = TcpListener::bind("0.0.0.0:8000").await.unwrap();
@@ -193,6 +211,15 @@ fn main() {
                         text: string,
                         frequency,
                       } => {
+                        ws_sender
+                          .send(OutgoingReply::ATCReply(CommandWithFreq {
+                            id: "ATC".to_owned(),
+                            frequency,
+                            reply: string.clone(),
+                            tasks: Vec::new(),
+                          }))
+                          .unwrap();
+
                         if let Some(result) =
                           complete_atc_request(string, frequency).await
                         {
@@ -235,8 +262,8 @@ fn main() {
 
       tokio::select! {
         _ = http_handle => tracing::debug!("http exit"),
-            _ = broadcast_handle => tracing::debug!("broadcast exit"),
-            _ = ws_handle => tracing::debug!("ws exit"),
+        _ = broadcast_handle => tracing::debug!("broadcast exit"),
+        _ = ws_handle => tracing::debug!("ws exit"),
       };
     });
   });

@@ -110,6 +110,22 @@ $transparent-black: #000a;
     &.live {
       border-color: red;
     }
+
+    .input {
+      display: flex;
+      flex-direction: row;
+      gap: 5px;
+      padding: 5px;
+
+      input {
+        flex-grow: 1;
+        border: 1px solid white;
+        background-color: transparent;
+        font-size: 14px;
+        padding: 4px;
+        color: white;
+      }
+    }
   }
 
   canvas {
