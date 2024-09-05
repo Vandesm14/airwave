@@ -33,6 +33,7 @@ use engine::{
   },
   DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
+use tracing::info;
 
 // fn runtime() -> &'static tokio::runtime::Runtime {
 //     static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
@@ -143,7 +144,7 @@ fn main() {
                 let ws_sender = ws_sender.clone();
                 async move {
                   if let Message::Text(string) = message {
-                    dbg!("received incoming ws");
+                    info!("received incoming ws");
                     let req =
                       serde_json::from_str::<FrontendRequest>(&string).unwrap();
                     match req {
@@ -151,7 +152,10 @@ fn main() {
                         data: bytes,
                         frequency,
                       } => {
-                        dbg!("received transcription request", bytes.len());
+                        info!(
+                          "received transcription request: {} bytes",
+                          bytes.len()
+                        );
 
                         let client = Client::new();
                         let form = reqwest::multipart::Form::new();
