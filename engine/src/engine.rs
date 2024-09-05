@@ -7,7 +7,7 @@ use std::{
 
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error};
+use tracing::error;
 
 use crate::{
   angle_between_points, heading_to_direction,

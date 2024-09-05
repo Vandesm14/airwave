@@ -66,7 +66,7 @@ pub struct Model {
   settings: Settings,
   world: World,
   egui: Egui,
-  watcher: INotifyWatcher,
+  _watcher: INotifyWatcher,
 
   update_receiver: Receiver<Result<notify::Event, notify::Error>>,
 }
@@ -102,10 +102,10 @@ fn model(app: &App) -> Model {
   let (tx, rx) = std::sync::mpsc::channel();
   let thread_path = path.clone();
 
-  let mut watcher = RecommendedWatcher::new(tx, Config::default())
+  let mut _watcher = RecommendedWatcher::new(tx, Config::default())
     .expect("Failed to create file watcher");
 
-  watcher
+  _watcher
     .watch(&thread_path, RecursiveMode::Recursive)
     .expect("failed to watch");
 
@@ -116,7 +116,7 @@ fn model(app: &App) -> Model {
     settings: Settings::new(),
     world,
     egui,
-    watcher,
+    _watcher,
     update_receiver: rx,
   };
 
@@ -210,16 +210,16 @@ fn update(_app: &App, model: &mut Model, update: Update) {
                     ui.add(egui::widgets::DragValue::new(&mut runway.pos.y));
                     ui.label("Heading:");
                     ui.add(egui::widgets::DragValue::new(&mut runway.heading));
-                    ui.horizontal(|ui| {
-                      // if ui.button("Remove").clicked() {
-                      //   let index = airport
-                      //     .runways
-                      //     .iter()
-                      //     .position(|r| r == runway)
-                      //     .unwrap();
-                      //   airport.runways.remove(index);
-                      // }
-                    });
+                    // ui.horizontal(|ui| {
+                    // if ui.button("Remove").clicked() {
+                    //   let index = airport
+                    //     .runways
+                    //     .iter()
+                    //     .position(|r| r == runway)
+                    //     .unwrap();
+                    //   airport.runways.remove(index);
+                    // }
+                    // });
                     ui.separator();
                   });
                 });
