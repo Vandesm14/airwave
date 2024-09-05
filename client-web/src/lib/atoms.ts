@@ -1,6 +1,5 @@
 import { atom } from 'solid-jotai';
-import { RadioMessage, Runway, Taxiway, Terminal, World } from './types';
-import { nauticalMilesToFeet } from './lib';
+import { RadioMessage, World } from './types';
 
 type RadarConfig = {
   scale: number;
@@ -18,7 +17,6 @@ type RadarConfig = {
     x: number;
     y: number;
   };
-  mode: 'tower' | 'ground';
 };
 export let radarAtom = atom<RadarConfig>({
   scale: 1.0,
@@ -36,13 +34,11 @@ export let radarAtom = atom<RadarConfig>({
     x: 0,
     y: 0,
   },
-  mode: 'tower',
 });
 
 export let isRecordingAtom = atom(false);
 export let worldAtom = atom<World>({
   airspaces: [],
-  airports: [],
 });
 export let frequencyAtom = atom(118.5);
 

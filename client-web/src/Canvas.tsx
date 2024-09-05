@@ -34,14 +34,11 @@ export default function Canvas({
 
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
-  let groundScale = createMemo(() => (radar().mode === 'ground' ? 25 : 1));
-  let fontSize = createMemo(
-    () => 16 * (radar().scale * (radar().mode === 'ground' ? 1.1 : 0.9))
-  );
+  let fontSize = createMemo(() => 16);
 
   function scaleFeet(num: number): number {
     const FEET_TO_PIXELS = 0.003;
-    return num * FEET_TO_PIXELS * radar().scale * groundScale();
+    return num * FEET_TO_PIXELS * radar().scale;
   }
 
   function scalePoint(vec2: Vec2): Vec2 {
@@ -114,10 +111,16 @@ export default function Canvas({
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
-          let maxScale = 3.0;
+          let maxScale = 30.0;
           let minScale = 0.1;
 
-          radar.scale += e.deltaY * -0.001;
+          if (e.deltaY > 0) {
+            radar.scale *= 0.9;
+          } else {
+            radar.scale *= 1.1;
+          }
+
+          // radar.scale += e.deltaY * -0.001;
           radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
 
           radar.isZooming = true;
@@ -185,9 +188,9 @@ export default function Canvas({
       // drawCompass(ctx);
       resetTransform(ctx);
 
-      if (radar().mode === 'tower') {
+      if (radar().scale <= 5.0) {
         drawTower(ctx, world(), aircrafts());
-      } else if (radar().mode === 'ground') {
+      } else {
         drawGround(ctx, world(), aircrafts());
       }
     }
@@ -234,6 +237,7 @@ export default function Canvas({
     ctx.arc(pos.x, pos.y, scaleFeet(airspace.size), 0, Math.PI * 2);
     ctx.stroke();
   }
+
   function drawRunway(ctx: Ctx, runway: Runway) {
     resetTransform(ctx);
     let info = runwayInfo(runway);
@@ -284,6 +288,7 @@ export default function Canvas({
       ctx.stroke();
     }
   }
+
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     resetTransform(ctx);
     let pos = scalePoint(aircraft);
@@ -293,7 +298,7 @@ export default function Canvas({
 
     // Draw the dot
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeet(700), 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, Math.min(3, scaleFeet(1000)), 0, Math.PI * 2);
     ctx.fill();
 
     // Draw the separation circle
@@ -380,6 +385,7 @@ export default function Canvas({
     ctx.arc(pos.x, pos.y, scaleFeet(nauticalMilesToFeet * 10), 0, Math.PI * 2);
     ctx.stroke();
   }
+
   function drawTerminal(ctx: Ctx, terminal: Terminal) {
     let a = scalePoint(terminal.a);
     let b = scalePoint(terminal.b);
@@ -396,6 +402,7 @@ export default function Canvas({
     ctx.lineTo(a.x, a.y);
     ctx.fill();
   }
+
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
     resetTransform(ctx);
     let start = scalePoint(taxiway.a);
@@ -408,6 +415,7 @@ export default function Canvas({
     ctx.lineTo(end.x, end.y);
     ctx.stroke();
   }
+
   function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
     if (taxiway.kind.type === 'normal') {
       let start = scalePoint(taxiway.a);
@@ -426,6 +434,7 @@ export default function Canvas({
       ctx.fillText(taxiway.id, middle.x, middle.y);
     }
   }
+
   function drawRunwayGround(ctx: Ctx, runway: Runway) {
     resetTransform(ctx);
     let info = runwayInfo(runway);
@@ -452,6 +461,7 @@ export default function Canvas({
     ctx.fillStyle = '#dd9904';
     ctx.fillText(runway.id, start.x, start.y);
   }
+
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     resetTransform(ctx);
     let pos = scalePoint(aircraft);
@@ -508,7 +518,7 @@ export default function Canvas({
       }
     }
 
-    for (let aircraft of aircrafts) {
+    for (let aircraft of aircrafts.filter((a) => a.altitude >= 1000)) {
       drawBlip(ctx, aircraft);
     }
   }
@@ -517,9 +527,9 @@ export default function Canvas({
     // TODO: only draws selected airspace in ground and approach view
     // center view shows all airspaces
     for (let airspace of world.airspaces) {
-      for (let airport of airspace.airports) {
-        drawAirspaceGround(ctx, airport);
+      drawAirspace(ctx, airspace);
 
+      for (let airport of airspace.airports) {
         for (let taxiway of airport.taxiways) {
           drawTaxiway(ctx, taxiway);
         }
@@ -535,7 +545,7 @@ export default function Canvas({
       }
     }
 
-    for (let aircraft of aircrafts) {
+    for (let aircraft of aircrafts.filter((a) => a.altitude < 1000)) {
       drawBlipGround(ctx, aircraft);
     }
   }

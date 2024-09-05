@@ -12,7 +12,6 @@ import { createEffect, createSignal, onMount } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
-import RadarSwitch from './RadarSwitch';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -165,7 +164,6 @@ export default function App() {
 
   return (
     <div id="radar">
-      <RadarSwitch></RadarSwitch>
       <Chatbox sendMessage={sendTextMessage}></Chatbox>
       <Canvas aircrafts={aircrafts}></Canvas>
       <div class="top-right">
