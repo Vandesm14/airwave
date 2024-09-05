@@ -10,7 +10,13 @@ import {
   Vec2,
   World,
 } from './lib/types';
-import { Accessor, createEffect, createMemo, onMount } from 'solid-js';
+import {
+  Accessor,
+  createEffect,
+  createMemo,
+  createSignal,
+  onMount,
+} from 'solid-js';
 import {
   headingToDegrees,
   knotToFeetPerSecond,
@@ -20,6 +26,8 @@ import {
   runwayInfo,
   toRadians,
 } from './lib/lib';
+
+const groundScale = 5.0;
 
 export default function Canvas({
   aircrafts,
@@ -35,6 +43,8 @@ export default function Canvas({
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
   let fontSize = createMemo(() => 16);
+  let isGround = createMemo(() => radar().scale > groundScale);
+  let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
 
   function scaleFeet(num: number): number {
     const FEET_TO_PIXELS = 0.003;
@@ -60,6 +70,16 @@ export default function Canvas({
 
       return { ...radar };
     });
+  });
+
+  createEffect(() => {
+    if (waitingForAircraft() && aircrafts().length > 0) {
+      setRender((render) => {
+        render.doInitialDraw = true;
+        return { ...render };
+      });
+      setWaitingForAircraft(false);
+    }
   });
 
   onMount(() => {
@@ -131,32 +151,27 @@ export default function Canvas({
     }
   });
 
-  function doRender(canvas: HTMLCanvasElement, forceRender?: boolean) {
-    let dt = Date.now() - render().lastTime;
-    let dts = dt / 1000;
-
-    let deltaDrawTime = Date.now() - render().lastDraw;
-    if (
-      forceRender ||
-      radar().isDragging ||
-      radar().isZooming ||
-      render().lastDraw === 0 ||
-      deltaDrawTime >= 1000 / 3
-    ) {
-      doDraw(canvas, dts);
-      setRadar((radar) => {
-        radar.isZooming = false;
-        return { ...radar };
-      });
-      setRender((render) => {
-        render.lastDraw = Date.now();
-        return render;
-      });
-    }
+  function doRender(canvas: HTMLCanvasElement) {
+    doDraw(canvas);
+    setRadar((radar) => {
+      radar.isZooming = false;
+      return { ...radar };
+    });
 
     setRender((render) => {
-      render.lastTime = Date.now();
-      return render;
+      let now = Date.now();
+      let duration = isGround() ? 1000 * 0.5 : 1000 * 4;
+
+      console.log('render', render, aircrafts());
+
+      if (now - render.lastDraw > duration || render.doInitialDraw) {
+        render.lastDraw = now;
+        render.aircrafts = aircrafts();
+
+        render.doInitialDraw = false;
+      }
+
+      return { ...render };
     });
   }
 
@@ -174,7 +189,7 @@ export default function Canvas({
     ctx.textBaseline = 'middle';
   }
 
-  function doDraw(canvas: HTMLCanvasElement, dts: number) {
+  function doDraw(canvas: HTMLCanvasElement) {
     const width = canvas.width;
     const height = canvas.height;
 
@@ -188,10 +203,10 @@ export default function Canvas({
       // drawCompass(ctx);
       resetTransform(ctx);
 
-      if (radar().scale <= 5.0) {
-        drawTower(ctx, world(), aircrafts());
+      if (isGround()) {
+        drawGround(ctx, world(), render().aircrafts);
       } else {
-        drawGround(ctx, world(), aircrafts());
+        drawTower(ctx, world(), render().aircrafts);
       }
     }
   }

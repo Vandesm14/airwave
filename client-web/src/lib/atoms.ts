@@ -1,5 +1,5 @@
 import { atom } from 'solid-jotai';
-import { RadioMessage, World } from './types';
+import { Aircraft, RadioMessage, World } from './types';
 
 type RadarConfig = {
   scale: number;
@@ -42,9 +42,14 @@ export let worldAtom = atom<World>({
 });
 export let frequencyAtom = atom(118.5);
 
-export let renderAtom = atom({
-  lastTime: Date.now(),
+export let renderAtom = atom<{
+  doInitialDraw: boolean;
+  lastDraw: number;
+  aircrafts: Array<Aircraft>;
+}>({
+  doInitialDraw: true,
   lastDraw: 0,
+  aircrafts: [],
 });
 
 function initMessages(): Array<RadioMessage> {
