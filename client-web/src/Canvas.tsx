@@ -162,8 +162,6 @@ export default function Canvas({
       let now = Date.now();
       let duration = isGround() ? 1000 * 0.5 : 1000 * 4;
 
-      console.log('render', render, aircrafts());
-
       if (now - render.lastDraw > duration || render.doInitialDraw) {
         render.lastDraw = now;
         render.aircrafts = aircrafts();
