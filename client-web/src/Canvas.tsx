@@ -2,8 +2,8 @@ import { useAtom } from 'solid-jotai';
 import { radarAtom, renderAtom, worldAtom } from './lib/atoms';
 import {
   Aircraft,
-  Airport,
   Airspace,
+  Gate,
   Runway,
   Taxiway,
   Terminal,
@@ -403,6 +403,34 @@ export default function Canvas({
     ctx.lineTo(d.x, d.y);
     ctx.lineTo(a.x, a.y);
     ctx.fill();
+
+    for (let i = 0; i < terminal.gates.length; i++) {
+      let gate = terminal.gates[i];
+      let id = `${terminal.id}${i + 1}`;
+      drawGate(ctx, gate, id);
+    }
+  }
+
+  function drawGate(ctx: Ctx, gate: Gate, id: string) {
+    let pos = scalePoint(gate.pos);
+
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    let fontSize = 16;
+    let textWidth = ctx.measureText(id).width + 10;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(
+      pos.x - textWidth * 0.5,
+      pos.y - fontSize * 0.5 - fontSize,
+      textWidth,
+      fontSize
+    );
+
+    ctx.fillStyle = '#dd9904';
+    ctx.fillText(id, pos.x, pos.y - fontSize);
   }
 
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
@@ -507,6 +535,26 @@ export default function Canvas({
       pos.x + spacing,
       pos.y - spacing + fontSize()
     );
+
+    if (aircraft.state.type === 'taxiing') {
+      ctx.strokeStyle = 'red';
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+        let pos = scalePoint(wp.pos);
+        ctx.lineTo(pos.x, pos.y);
+      }
+      ctx.stroke();
+
+      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+        let pos = scalePoint(wp.pos);
+        ctx.fillStyle = '#00ff00';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
