@@ -205,7 +205,7 @@ export default function Canvas({
       y: canvas.height * 0.5,
     };
 
-    ctx.fillStyle = '#8886';
+    ctx.fillStyle = '#8887';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let padding = -10;
@@ -293,7 +293,7 @@ export default function Canvas({
 
     // Draw the dot
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, scaleFeet(700), 0, Math.PI * 2);
     ctx.fill();
 
     // Draw the separation circle
@@ -452,7 +452,50 @@ export default function Canvas({
     ctx.fillStyle = '#dd9904';
     ctx.fillText(runway.id, start.x, start.y);
   }
-  function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {}
+  function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
+    resetTransform(ctx);
+    let pos = scalePoint(aircraft);
+    let taxi_yellow = '#ffff00';
+
+    ctx.fillStyle = taxi_yellow;
+    ctx.strokeStyle = taxi_yellow;
+
+    // Draw the dot
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(30), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw the separation circle
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(150), 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Draw the direction
+    const length = 400;
+    const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
+    let endPos = scalePoint(end);
+
+    ctx.strokeStyle = taxi_yellow;
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(endPos.x, endPos.y);
+    ctx.stroke();
+
+    // Draw info
+    let spacing = scaleFeet(100);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = taxi_yellow;
+
+    // Draw callsign
+    ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
+
+    // Draw speed
+    ctx.fillText(
+      Math.round(aircraft.speed).toString(),
+      pos.x + spacing,
+      pos.y - spacing + fontSize()
+    );
+  }
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
     for (let airspace of world.airspaces) {

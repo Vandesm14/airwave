@@ -67,7 +67,7 @@ impl Engine {
 
       last_tick: Instant::now(),
       last_spawn: Instant::now(),
-      rate: 30,
+      rate: 10,
     }
   }
 
@@ -145,7 +145,6 @@ impl Engine {
       let string = serde_json::ser::to_string(&world);
       match string {
         Ok(string) => {
-          debug!("saving world to {}", path.display());
           // Make the directory if it doesn't exist
           let _ = std::fs::create_dir_all(path.parent().unwrap());
           let mut file = std::fs::File::create(path).unwrap();

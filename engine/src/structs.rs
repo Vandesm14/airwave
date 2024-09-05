@@ -7,12 +7,13 @@ use std::{
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use tracing::debug;
 
 use crate::{
-  add_degrees, angle_between_points, closest_point_on_line, delta_angle,
-  engine::OutgoingReply, find_line_intersection, get_random_point_on_circle,
-  inverse_degrees, move_point, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
-  TIME_SCALE,
+  add_degrees, angle_between_points, calculate_ils_altitude,
+  closest_point_on_line, delta_angle, engine::OutgoingReply,
+  find_line_intersection, get_random_point_on_circle, inverse_degrees,
+  move_point, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -728,16 +729,17 @@ impl Aircraft {
   fn update_landing(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
     if let AircraftState::Landing(runway) = &self.state {
       let ils_line = Line::new(
-        move_point(runway.start(), runway.heading, 500.0),
+        move_point(runway.end(), runway.heading, 500.0),
         move_point(
-          runway.start(),
+          runway.end(),
           inverse_degrees(runway.heading),
-          NAUTICALMILES_TO_FEET * 10.0,
+          NAUTICALMILES_TO_FEET * 10.0 + runway.length,
         ),
       );
-      let start_descent_distance = NAUTICALMILES_TO_FEET * 6.0;
 
+      let start_descent_distance = NAUTICALMILES_TO_FEET * 10.0;
       let distance_to_runway = self.pos.distance(runway.start());
+      let distance_to_end = self.pos.distance_squared(runway.end());
 
       let climb_speed = self.dt_climb_speed(dt);
       let seconds_for_descent = self.altitude / (climb_speed / dt);
@@ -745,18 +747,31 @@ impl Aircraft {
       let target_speed_ft_s = distance_to_runway / seconds_for_descent;
       let target_knots = target_speed_ft_s / KNOT_TO_FEET_PER_SECOND;
 
+      let target_altitude = calculate_ils_altitude(distance_to_runway);
+
+      debug!("");
+
+      debug!("seconds_for_descent: {}", seconds_for_descent);
+      debug!("target_speed_ft_s: {}", target_speed_ft_s);
+
       let angle_to_runway =
         inverse_degrees(angle_between_points(runway.start(), self.pos));
       let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
 
-      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
-      // anything.
-      if !angle_range.contains(&angle_to_runway) {
+      debug!("distance_to_runway: {}", distance_to_runway);
+      debug!("start_descent_distance: {}", start_descent_distance);
+      debug!("target_knots: {:?}", target_knots);
+
+      // If we are too high, go around.
+      if self.altitude - target_altitude > 100.0 {
+        self.do_go_around(sender, GoAroundReason::TooHigh);
         return;
       }
 
-      // If we have passed the runway (landed), set our state to taxiing.
-      if distance_to_runway <= 1.0 {
+      // If we have passed the start of the runway (landed),
+      // set our state to taxiing.
+      debug!("to end {}, len {}", distance_to_end.sqrt(), runway.length);
+      if distance_to_end <= runway.length.powf(2.0) {
         self.altitude = 0.0;
         self.target.altitude = 0.0;
 
@@ -777,17 +792,6 @@ impl Aircraft {
         return;
       }
 
-      // TODO: only set our target altitude if our altitude is greater
-      self.target.altitude =
-        4000.0 * (distance_to_runway / start_descent_distance).min(1.0);
-
-      if (165.0..=175.0).contains(&target_knots) {
-        self.target.speed = target_knots;
-      } else if target_knots < 165.0 {
-        self.do_go_around(sender, GoAroundReason::TooHigh);
-        return;
-      }
-
       let closest_point =
         closest_point_on_line(self.pos, ils_line.0, ils_line.1);
 
@@ -796,6 +800,22 @@ impl Aircraft {
 
       let heading_to_point = angle_between_points(self.pos, landing_point);
       self.target.heading = heading_to_point;
+
+      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
+      // anything.
+      if !angle_range.contains(&angle_to_runway)
+        || distance_to_runway > start_descent_distance
+      {
+        return;
+      }
+
+      self.target.speed = target_knots.min(180.0);
+
+      debug!("target_altitude: {}", target_altitude);
+      // If we are too high, descend.
+      if self.altitude > target_altitude {
+        self.target.altitude = target_altitude;
+      }
     }
   }
 
@@ -822,7 +842,7 @@ impl Aircraft {
     if self.altitude == 0.0 {
       // If landing
       if self.speed > 20.0 {
-        TIME_SCALE * 6.0 * dt
+        TIME_SCALE * 4.0 * dt
         // If taxiing
       } else {
         TIME_SCALE * 5.0 * dt

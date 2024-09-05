@@ -10,13 +10,17 @@ pub mod structs;
 pub const TIME_SCALE: f32 = 1.0;
 
 pub const NAUTICALMILES_TO_FEET: f32 = 6076.115;
-// pub const FEET_PER_UNIT: f32 = 0.005;
 pub const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781 * TIME_SCALE;
 
 pub const UP: f32 = 0.0;
 pub const DOWN: f32 = 180.0;
 pub const LEFT: f32 = 270.0;
 pub const RIGHT: f32 = 90.0;
+
+pub fn calculate_ils_altitude(distance: f32) -> f32 {
+  let slope_radians = 7.0_f32.to_radians();
+  distance * slope_radians.tan()
+}
 
 pub fn move_point(point: Vec2, degrees: f32, length: f32) -> Vec2 {
   // Convert degrees to radians
