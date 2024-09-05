@@ -375,17 +375,6 @@ export default function Canvas({
     );
   }
 
-  function drawAirspaceGround(ctx: Ctx, airport: Airport) {
-    resetTransform(ctx);
-    let pos = scalePoint(airport.center);
-
-    ctx.strokeStyle = 'white';
-    ctx.fillStyle = 'white';
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeet(nauticalMilesToFeet * 10), 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
   function drawTerminal(ctx: Ctx, terminal: Terminal) {
     let a = scalePoint(terminal.a);
     let b = scalePoint(terminal.b);
