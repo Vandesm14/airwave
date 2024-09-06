@@ -67,22 +67,6 @@ impl Pathfinder {
       return;
     }
 
-    // let mut current = segments.first().unwrap();
-    // for segment in segments.iter().skip(1) {
-    //   let id = segment.name();
-    //   let line = segment.line();
-
-    //   let intersection = find_line_intersection(*line, *current.line());
-    //   if let Some(intersection) = intersection {
-    //     let current_node = graph.add_node(current.clone());
-    //     let segment_node = graph.add_node(segment.clone());
-
-    //     graph.add_edge(current_node, segment_node, intersection);
-
-    //     current = segment;
-    //   }
-    // }
-
     while !segments.is_empty() {
       let current = segments.pop();
       if let Some(current) = current {
