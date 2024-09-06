@@ -1,8 +1,11 @@
 use glam::Vec2;
-use petgraph::{visit::IntoNodeReferences, Graph, Undirected};
+use petgraph::{
+  algo::simple_paths, graph::DiGraph, visit::IntoNodeReferences, Directed,
+  Graph,
+};
 
 use crate::{
-  find_line_intersection,
+  angle_between_points, find_line_intersection, inverse_degrees,
   structs::{Gate, Line, Runway, Taxiway},
 };
 
@@ -91,7 +94,13 @@ impl Node {
   }
 }
 
-type WaypointGraph = Graph<Node, Vec2, Undirected>;
+#[derive(Debug, Clone, PartialEq)]
+pub struct Edge {
+  pub pos: Vec2,
+  pub heading: f32,
+}
+
+type WaypointGraph = Graph<Node, Edge, Directed>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Pathfinder {
@@ -101,12 +110,12 @@ pub struct Pathfinder {
 impl Pathfinder {
   pub fn new() -> Self {
     Self {
-      graph: WaypointGraph::new_undirected(),
+      graph: WaypointGraph::new(),
     }
   }
 
   pub fn calculate(&mut self, mut segments: Vec<Node>) {
-    let mut graph = WaypointGraph::new_undirected();
+    let mut graph = WaypointGraph::new();
     if segments.is_empty() || segments.len() < 2 {
       tracing::error!("No segments to calculate path for");
       return;
@@ -131,7 +140,18 @@ impl Pathfinder {
               .map(|(i, _)| i)
               .unwrap_or_else(|| graph.add_node(segment.clone()));
 
-            graph.add_edge(current_node, segment_node, intersection);
+            let heading = angle_between_points(current.line().0, intersection);
+            let edge = Edge {
+              pos: intersection,
+              heading,
+            };
+            graph.add_edge(current_node, segment_node, edge);
+
+            let reverse_edge = Edge {
+              pos: intersection,
+              heading: inverse_degrees(heading),
+            };
+            graph.add_edge(segment_node, current_node, reverse_edge);
           }
         }
       }
@@ -149,8 +169,28 @@ impl Pathfinder {
     let to_node = self.graph.node_references().find(|(_, n)| to.eq(*n));
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
-      dbg!(from_node, to_node);
-      // simple_paths::all_simple_paths(self.graph, from_node.0, to_node.0, 0, 100)
+      let ways = simple_paths::all_simple_paths::<Vec<_>, _>(
+        &self.graph,
+        from_node.0,
+        to_node.0,
+        0,
+        None,
+      );
+      let mut ways = ways.collect::<Vec<_>>();
+      ways.sort_by_key(|a| a.len());
+
+      let ways = ways
+        .into_iter()
+        .map(|way| {
+          way
+            .into_iter()
+            .map(|w| self.graph.node_weight(w).map(|n| n.name()))
+            .collect::<Vec<_>>()
+        })
+        .take(5)
+        .collect::<Vec<_>>();
+
+      dbg!(ways);
     }
 
     todo!()

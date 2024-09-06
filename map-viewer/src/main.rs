@@ -150,23 +150,24 @@ fn model(app: &App) -> Model {
 
   pathfinder.calculate(nodes);
 
-  pathfinder.path_to(
-    &WaypointNode::Runway {
-      name: "27".to_owned(),
-      pos: Vec2::default(),
-    },
-    &WaypointNode::Gate {
-      name: "A1".to_owned(),
-      pos: Vec2::default(),
-    },
-  );
-
-  // println!("{:#?}", pathfinder.graph);
+  println!("{:#?}", pathfinder.graph);
   fs::write(
     "graph.dot",
     format!("{:?}", Dot::with_config(&pathfinder.graph, &[])),
   )
   .unwrap();
+
+  pathfinder.path_to(
+    &WaypointNode::Runway {
+      name: "20".to_owned(),
+      pos: Vec2::default(),
+    },
+    &WaypointNode::Taxiway {
+      name: "A1".to_owned(),
+      pos: Vec2::default(),
+    },
+  );
+
   panic!("done.");
 
   model
