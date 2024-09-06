@@ -1,36 +1,113 @@
-use core::fmt;
-
 use glam::Vec2;
-use petgraph::{Graph, Undirected};
+use petgraph::{visit::IntoNodeReferences, Graph, Undirected};
 
-type WaypointGraph = Graph<Vec2, u16, Undirected>;
+use crate::{
+  find_line_intersection,
+  structs::{Line, Runway, Taxiway},
+};
 
-pub trait Segment {
-  fn name(&self) -> String;
-  fn lines(&self) -> Vec<Vec2>;
+#[derive(Debug, Clone, PartialEq)]
+pub enum Node {
+  Taxiway { name: String, line: Line },
+  Runway { name: String, line: Line },
 }
+
+impl From<Taxiway> for Node {
+  fn from(value: Taxiway) -> Self {
+    Node::Taxiway {
+      name: value.id,
+      line: Line::new(value.a, value.b),
+    }
+  }
+}
+
+impl From<Runway> for Node {
+  fn from(value: Runway) -> Self {
+    Node::Runway {
+      name: value.id.clone(),
+      line: Line::new(value.start(), value.end()),
+    }
+  }
+}
+
+impl Node {
+  pub fn name(&self) -> &String {
+    match self {
+      Node::Taxiway { name, .. } => name,
+      Node::Runway { name, .. } => name,
+    }
+  }
+
+  pub fn line(&self) -> &Line {
+    match self {
+      Node::Taxiway { line, .. } => line,
+      Node::Runway { line, .. } => line,
+    }
+  }
+}
+
+type WaypointGraph = Graph<Node, Vec2, Undirected>;
 
 #[derive(Debug, Clone, Default)]
-pub struct Pathfinder<T>
-where
-  T: Segment + fmt::Debug + Clone,
-{
-  pub names: Vec<String>,
+pub struct Pathfinder {
   pub graph: WaypointGraph,
-  pub segments: Vec<T>,
 }
 
-impl<T> Pathfinder<T>
-where
-  T: Segment + fmt::Debug + Clone,
-{
+impl Pathfinder {
   pub fn new() -> Self {
     Self {
-      names: Vec::new(),
-      segments: Vec::new(),
       graph: WaypointGraph::new_undirected(),
     }
   }
 
-  pub fn add_segment(&mut self, segment: T) {}
+  pub fn calculate(&mut self, mut segments: Vec<Node>) {
+    let mut graph = WaypointGraph::new_undirected();
+    if segments.is_empty() || segments.len() < 2 {
+      tracing::error!("No segments to calculate path for");
+      return;
+    }
+
+    // let mut current = segments.first().unwrap();
+    // for segment in segments.iter().skip(1) {
+    //   let id = segment.name();
+    //   let line = segment.line();
+
+    //   let intersection = find_line_intersection(*line, *current.line());
+    //   if let Some(intersection) = intersection {
+    //     let current_node = graph.add_node(current.clone());
+    //     let segment_node = graph.add_node(segment.clone());
+
+    //     graph.add_edge(current_node, segment_node, intersection);
+
+    //     current = segment;
+    //   }
+    // }
+
+    while !segments.is_empty() {
+      let current = segments.pop();
+      if let Some(current) = current {
+        let current_node = graph
+          .node_references()
+          .find(|(_, n)| *n == &current)
+          .map(|(i, _)| i)
+          .unwrap_or_else(|| graph.add_node(current.clone()));
+        for segment in segments.iter() {
+          let line = segment.line();
+
+          let intersection = find_line_intersection(*line, *current.line());
+          if let Some(intersection) = intersection {
+            let segment_node = graph
+              .node_references()
+              .find(|(_, n)| *n == segment)
+              .map(|(i, _)| i)
+              .unwrap_or_else(|| graph.add_node(segment.clone()));
+
+            graph.add_edge(current_node, segment_node, intersection);
+          }
+        }
+      }
+    }
+
+    self.graph = graph;
+  }
 }

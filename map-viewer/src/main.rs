@@ -1,11 +1,15 @@
 use std::{
+  fs,
   io::Write,
   path::{Path, PathBuf},
   sync::mpsc::Receiver,
 };
 
 use clap::Parser;
-use engine::structs::{Runway, World};
+use engine::{
+  pathfinder::{Node, Pathfinder},
+  structs::{Airport, Runway, World},
+};
 use glam::Vec2;
 use map_viewer::Draw;
 use nannou::{
@@ -17,6 +21,7 @@ use nannou_egui::{egui, Egui};
 use notify::{
   Config, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
 };
+use petgraph::dot::Dot;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -121,6 +126,36 @@ fn model(app: &App) -> Model {
   };
 
   model.load_world();
+
+  let mut pathfinder = Pathfinder::new();
+  let airport: &Airport = model
+    .world
+    .airspaces
+    .first()
+    .unwrap()
+    .airports
+    .first()
+    .unwrap();
+  let mut nodes: Vec<Node> = Vec::new();
+
+  nodes.extend(airport.runways.iter().map(|r| r.clone().into()));
+  nodes.extend(airport.taxiways.iter().map(|t| t.clone().into()));
+
+  pathfinder.calculate(nodes);
+
+  println!("{:#?}", pathfinder.graph);
+  fs::write(
+    "graph.dot",
+    format!(
+      "{:?}",
+      Dot::with_config(
+        &pathfinder.graph,
+        &[petgraph::dot::Config::EdgeNoLabel]
+      )
+    ),
+  )
+  .unwrap();
+  panic!("done.");
 
   model
 }
