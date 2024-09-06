@@ -7,7 +7,7 @@ use std::{
 
 use clap::Parser;
 use engine::{
-  pathfinder::{Node, Pathfinder},
+  pathfinder::{Node, Pathfinder, WaypointNode},
   structs::{Airport, Runway, World},
 };
 use glam::Vec2;
@@ -140,10 +140,28 @@ fn model(app: &App) -> Model {
 
   nodes.extend(airport.runways.iter().map(|r| r.clone().into()));
   nodes.extend(airport.taxiways.iter().map(|t| t.clone().into()));
+  nodes.extend(
+    airport
+      .terminals
+      .iter()
+      .flat_map(|t| t.gates.iter())
+      .map(|g| g.clone().into()),
+  );
 
   pathfinder.calculate(nodes);
 
-  println!("{:#?}", pathfinder.graph);
+  pathfinder.path_to(
+    &WaypointNode::Runway {
+      name: "27".to_owned(),
+      pos: Vec2::default(),
+    },
+    &WaypointNode::Gate {
+      name: "A1".to_owned(),
+      pos: Vec2::default(),
+    },
+  );
+
+  // println!("{:#?}", pathfinder.graph);
   fs::write(
     "graph.dot",
     format!("{:?}", Dot::with_config(&pathfinder.graph, &[])),

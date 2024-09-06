@@ -3,13 +3,47 @@ use petgraph::{visit::IntoNodeReferences, Graph, Undirected};
 
 use crate::{
   find_line_intersection,
-  structs::{Line, Runway, Taxiway},
+  structs::{Gate, Line, Runway, Taxiway},
 };
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum WaypointNode {
+  Taxiway { name: String, pos: Vec2 },
+  Runway { name: String, pos: Vec2 },
+  Gate { name: String, pos: Vec2 },
+}
+
+impl PartialEq<Node> for WaypointNode {
+  fn eq(&self, other: &Node) -> bool {
+    match (self, other) {
+      (
+        WaypointNode::Taxiway { name, .. },
+        Node::Taxiway {
+          name: other_name, ..
+        },
+      ) => name == other_name,
+      (
+        WaypointNode::Runway { name, .. },
+        Node::Runway {
+          name: other_name, ..
+        },
+      ) => name == other_name,
+      (
+        WaypointNode::Gate { name, .. },
+        Node::Gate {
+          name: other_name, ..
+        },
+      ) => name == other_name,
+      _ => false,
+    }
+  }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
   Taxiway { name: String, line: Line },
   Runway { name: String, line: Line },
+  Gate { name: String, line: Line },
 }
 
 impl From<Taxiway> for Node {
@@ -30,11 +64,21 @@ impl From<Runway> for Node {
   }
 }
 
+impl From<Gate> for Node {
+  fn from(value: Gate) -> Self {
+    Node::Gate {
+      name: value.id.clone(),
+      line: Line::new(value.pos, value.pos),
+    }
+  }
+}
+
 impl Node {
   pub fn name(&self) -> &String {
     match self {
       Node::Taxiway { name, .. } => name,
       Node::Runway { name, .. } => name,
+      Node::Gate { name, .. } => name,
     }
   }
 
@@ -42,6 +86,7 @@ impl Node {
     match self {
       Node::Taxiway { line, .. } => line,
       Node::Runway { line, .. } => line,
+      Node::Gate { line, .. } => line,
     }
   }
 }
@@ -93,5 +138,21 @@ impl Pathfinder {
     }
 
     self.graph = graph;
+  }
+
+  pub fn path_to(
+    &self,
+    from: &WaypointNode,
+    to: &WaypointNode,
+  ) -> Option<Vec<WaypointNode>> {
+    let from_node = self.graph.node_references().find(|(_, n)| from.eq(*n));
+    let to_node = self.graph.node_references().find(|(_, n)| to.eq(*n));
+
+    if let Some((from_node, to_node)) = from_node.zip(to_node) {
+      dbg!(from_node, to_node);
+      // simple_paths::all_simple_paths(self.graph, from_node.0, to_node.0, 0, 100)
+    }
+
+    todo!()
   }
 }
