@@ -146,13 +146,7 @@ fn model(app: &App) -> Model {
   println!("{:#?}", pathfinder.graph);
   fs::write(
     "graph.dot",
-    format!(
-      "{:?}",
-      Dot::with_config(
-        &pathfinder.graph,
-        &[petgraph::dot::Config::EdgeNoLabel]
-      )
-    ),
+    format!("{:?}", Dot::with_config(&pathfinder.graph, &[])),
   )
   .unwrap();
   panic!("done.");
