@@ -544,12 +544,7 @@ impl Aircraft {
       for mut waypoint in blank_waypoints.into_iter() {
         let current_line: Line = current.wp.clone().into();
         let waypoint_line: Line = waypoint.wp.clone().into();
-        let intersection = find_line_intersection(
-          current_line.0,
-          current_line.1,
-          waypoint_line.0,
-          waypoint_line.1,
-        );
+        let intersection = find_line_intersection(current_line, waypoint_line);
 
         if let Some(intersection) = intersection {
           waypoint.pos = intersection;

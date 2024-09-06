@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use glam::Vec2;
 use rand::Rng;
+use structs::Line;
 
 pub mod engine;
 pub mod pathfinder;
@@ -61,15 +62,10 @@ pub fn angle_between_points(a: Vec2, b: Vec2) -> f32 {
   }
 }
 
-pub fn find_line_intersection(
-  line1_start: Vec2,
-  line1_end: Vec2,
-  line2_start: Vec2,
-  line2_end: Vec2,
-) -> Option<Vec2> {
+pub fn find_line_intersection(a: Line, b: Line) -> Option<Vec2> {
   // Calculate direction vectors
-  let line1_dir = line1_end - line1_start;
-  let line2_dir = line2_end - line2_start;
+  let line1_dir = a.1 - a.0;
+  let line2_dir = b.1 - b.0;
 
   // Calculate the determinant
   let det = line1_dir.x * line2_dir.y - line1_dir.y * line2_dir.x;
@@ -80,7 +76,7 @@ pub fn find_line_intersection(
   }
 
   // Calculate the differences between start points
-  let dp = line2_start - line1_start;
+  let dp = b.0 - a.0;
 
   // Calculate the parameters t and s
   let t = (dp.x * line2_dir.y - dp.y * line2_dir.x) / det;
@@ -92,7 +88,7 @@ pub fn find_line_intersection(
   }
 
   // Calculate the intersection point
-  let intersection = line1_start + line1_dir * t;
+  let intersection = a.0 + line1_dir * t;
 
   Some(intersection)
 }
@@ -172,153 +168,179 @@ fn closest_point_on_line(
 mod tests {
   use super::*;
 
-  #[test]
-  fn test_angle_between_points_origin() {
-    let a = Vec2::new(0.0, 0.0);
+  mod angle_between_points {
+    use super::*;
 
-    // Zero
-    let b = Vec2::new(a.x, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
+    #[test]
+    fn test_angle_between_points_origin() {
+      let a = Vec2::new(0.0, 0.0);
 
-    // Up
-    let b = Vec2::new(a.x, a.y + 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
+      // Zero
+      let b = Vec2::new(a.x, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
 
-    // Down
-    let b = Vec2::new(a.x, a.y - 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 180.0);
+      // Up
+      let b = Vec2::new(a.x, a.y + 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
 
-    // Right
-    let b = Vec2::new(a.x + 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 90.0);
+      // Down
+      let b = Vec2::new(a.x, a.y - 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 180.0);
 
-    // Left
-    let b = Vec2::new(a.x - 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 270.0);
+      // Right
+      let b = Vec2::new(a.x + 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 90.0);
+
+      // Left
+      let b = Vec2::new(a.x - 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 270.0);
+    }
+
+    #[test]
+    fn test_angle_between_points_top_right() {
+      let a = Vec2::new(10.0, 10.0);
+
+      // Zero
+      let b = Vec2::new(a.x, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Up
+      let b = Vec2::new(a.x, a.y + 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Down
+      let b = Vec2::new(a.x, a.y - 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 180.0);
+
+      // Right
+      let b = Vec2::new(a.x + 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 90.0);
+
+      // Left
+      let b = Vec2::new(a.x - 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 270.0);
+    }
+
+    #[test]
+    fn test_angle_between_points_top_left() {
+      let a = Vec2::new(-10.0, 10.0);
+
+      // Zero
+      let b = Vec2::new(a.x, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Up
+      let b = Vec2::new(a.x, a.y + 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Down
+      let b = Vec2::new(a.x, a.y - 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 180.0);
+
+      // Right
+      let b = Vec2::new(a.x + 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 90.0);
+
+      // Left
+      let b = Vec2::new(a.x - 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 270.0);
+    }
+
+    #[test]
+    fn test_angle_between_points_bottom_right() {
+      let a = Vec2::new(10.0, -10.0);
+
+      // Zero
+      let b = Vec2::new(a.x, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Up
+      let b = Vec2::new(a.x, a.y + 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Down
+      let b = Vec2::new(a.x, a.y - 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 180.0);
+
+      // Right
+      let b = Vec2::new(a.x + 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 90.0);
+
+      // Left
+      let b = Vec2::new(a.x - 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 270.0);
+    }
+
+    #[test]
+    fn test_angle_between_points_bottom_left() {
+      let a = Vec2::new(-10.0, -10.0);
+
+      // Zero
+      let b = Vec2::new(a.x, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Up
+      let b = Vec2::new(a.x, a.y + 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 0.0);
+
+      // Down
+      let b = Vec2::new(a.x, a.y - 1.0);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 180.0);
+
+      // Right
+      let b = Vec2::new(a.x + 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 90.0);
+
+      // Left
+      let b = Vec2::new(a.x - 1.0, a.y);
+      let angle = angle_between_points(a, b);
+      assert_eq!(angle, 270.0);
+    }
   }
 
-  #[test]
-  fn test_angle_between_points_top_right() {
-    let a = Vec2::new(10.0, 10.0);
+  mod find_line_intersection {
+    use super::*;
 
-    // Zero
-    let b = Vec2::new(a.x, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
+    #[test]
+    fn test_find_line_intersection() {
+      let a = Line(Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+      let b = Line(Vec2::new(0.0, 0.0), Vec2::new(0.0, 10.0));
 
-    // Up
-    let b = Vec2::new(a.x, a.y + 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
+      let intersection = find_line_intersection(a, b);
+      assert_eq!(intersection, Some(Vec2::new(0.0, 0.0)));
+    }
 
-    // Down
-    let b = Vec2::new(a.x, a.y - 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 180.0);
+    #[test]
+    fn test_find_line_intersection_equal() {
+      let a = Line(Vec2::new(-5.0, 0.0), Vec2::new(5.0, 0.0));
+      let b = Line(Vec2::new(0.0, -5.0), Vec2::new(0.0, 5.0));
 
-    // Right
-    let b = Vec2::new(a.x + 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 90.0);
-
-    // Left
-    let b = Vec2::new(a.x - 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 270.0);
-  }
-
-  #[test]
-  fn test_angle_between_points_top_left() {
-    let a = Vec2::new(-10.0, 10.0);
-
-    // Zero
-    let b = Vec2::new(a.x, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
-
-    // Up
-    let b = Vec2::new(a.x, a.y + 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
-
-    // Down
-    let b = Vec2::new(a.x, a.y - 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 180.0);
-
-    // Right
-    let b = Vec2::new(a.x + 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 90.0);
-
-    // Left
-    let b = Vec2::new(a.x - 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 270.0);
-  }
-
-  #[test]
-  fn test_angle_between_points_bottom_right() {
-    let a = Vec2::new(10.0, -10.0);
-
-    // Zero
-    let b = Vec2::new(a.x, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
-
-    // Up
-    let b = Vec2::new(a.x, a.y + 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
-
-    // Down
-    let b = Vec2::new(a.x, a.y - 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 180.0);
-
-    // Right
-    let b = Vec2::new(a.x + 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 90.0);
-
-    // Left
-    let b = Vec2::new(a.x - 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 270.0);
-  }
-
-  #[test]
-  fn test_angle_between_points_bottom_left() {
-    let a = Vec2::new(-10.0, -10.0);
-
-    // Zero
-    let b = Vec2::new(a.x, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
-
-    // Up
-    let b = Vec2::new(a.x, a.y + 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 0.0);
-
-    // Down
-    let b = Vec2::new(a.x, a.y - 1.0);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 180.0);
-
-    // Right
-    let b = Vec2::new(a.x + 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 90.0);
-
-    // Left
-    let b = Vec2::new(a.x - 1.0, a.y);
-    let angle = angle_between_points(a, b);
-    assert_eq!(angle, 270.0);
+      let intersection = find_line_intersection(a, b);
+      assert_eq!(intersection, Some(Vec2::new(0.0, 0.0)));
+    }
   }
 }
