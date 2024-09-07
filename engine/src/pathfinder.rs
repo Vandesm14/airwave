@@ -251,8 +251,6 @@ impl Pathfinder {
     }
 
     while let Some(current) = segments.pop() {
-      dbg!(current.clone());
-
       let current_node = graph
         .node_references()
         .find(|(_, n)| **n == current.clone().into())
