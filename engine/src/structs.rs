@@ -1,6 +1,5 @@
 use std::{
   ops::Add,
-  sync::mpsc::Sender,
   time::{Duration, SystemTime},
 };
 
@@ -469,7 +468,7 @@ impl Aircraft {
 
   pub fn do_go_around(
     &mut self,
-    sender: &Sender<OutgoingReply>,
+    sender: &async_broadcast::Sender<OutgoingReply>,
     reason: GoAroundReason,
   ) {
     if let AircraftState::Landing(_) = &self.state {
@@ -493,14 +492,15 @@ impl Aircraft {
       }
       GoAroundReason::None => return,
     };
+
     sender
-      .send(OutgoingReply::Reply(CommandWithFreq {
+      .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
         id: self.callsign.clone(),
         frequency: self.frequency,
         reply: text,
         tasks: Vec::new(),
       }))
-      .unwrap()
+      .unwrap();
   }
 
   pub fn do_takeoff(&mut self, runway: &Runway) {
@@ -679,7 +679,11 @@ impl Aircraft {
     }
   }
 
-  fn update_landing(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
+  fn update_landing(
+    &mut self,
+    dt: f32,
+    sender: &async_broadcast::Sender<OutgoingReply>,
+  ) {
     if let AircraftState::Landing(runway) = &self.state {
       let ils_line = Line::new(
         move_point(runway.end(), runway.heading, 500.0),
@@ -844,7 +848,11 @@ impl Aircraft {
     self.heading = (360.0 + self.heading) % 360.0;
   }
 
-  pub fn update(&mut self, dt: f32, sender: &Sender<OutgoingReply>) {
+  pub fn update(
+    &mut self,
+    dt: f32,
+    sender: &async_broadcast::Sender<OutgoingReply>,
+  ) {
     self.update_landing(dt, sender);
     self.update_holding_pattern();
     self.update_targets(dt);

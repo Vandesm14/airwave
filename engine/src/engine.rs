@@ -1,10 +1,10 @@
 use std::{
   io::Write,
   path::PathBuf,
-  sync::mpsc::{self},
   time::{Duration, Instant},
 };
 
+use async_channel::TryRecvError;
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
 use tracing::error;
@@ -40,8 +40,8 @@ pub enum IncomingUpdate {
 pub struct Engine {
   pub world: World,
 
-  pub receiver: mpsc::Receiver<IncomingUpdate>,
-  pub sender: mpsc::Sender<OutgoingReply>,
+  pub receiver: async_channel::Receiver<IncomingUpdate>,
+  pub sender: async_broadcast::Sender<OutgoingReply>,
 
   pub save_to: Option<PathBuf>,
 
@@ -52,8 +52,8 @@ pub struct Engine {
 
 impl Engine {
   pub fn new(
-    receiver: mpsc::Receiver<IncomingUpdate>,
-    sender: mpsc::Sender<OutgoingReply>,
+    receiver: async_channel::Receiver<IncomingUpdate>,
+    sender: async_broadcast::Sender<OutgoingReply>,
     save_to: Option<PathBuf>,
   ) -> Self {
     Self {
@@ -93,7 +93,7 @@ impl Engine {
     };
     self
       .sender
-      .send(OutgoingReply::Reply(CommandWithFreq {
+      .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
         id: aircraft.callsign.clone(),
 
         frequency: aircraft.frequency,
@@ -104,7 +104,7 @@ impl Engine {
   }
 
   pub fn begin_loop(&mut self) {
-    loop {
+    'main_loop: loop {
       if Instant::now() - self.last_tick
         >= Duration::from_secs_f32(1.0 / self.rate as f32)
       {
@@ -118,7 +118,14 @@ impl Engine {
         }
 
         let mut commands: Vec<CommandWithFreq> = Vec::new();
-        for incoming in self.receiver.try_iter() {
+
+        loop {
+          let incoming = match self.receiver.try_recv() {
+            Ok(incoming) => incoming,
+            Err(TryRecvError::Closed) => break 'main_loop,
+            Err(TryRecvError::Empty) => break,
+          };
+
           match incoming {
             IncomingUpdate::Command(command) => commands.push(command),
             IncomingUpdate::Connect => self.broadcast_for_new_client(),
@@ -159,14 +166,14 @@ impl Engine {
   fn broadcast_aircraft(&self) {
     let _ = self
       .sender
-      .send(OutgoingReply::Aircraft(self.world.aircraft.clone()))
+      .try_broadcast(OutgoingReply::Aircraft(self.world.aircraft.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
   }
 
   fn broadcast_world(&self) {
     let _ = self
       .sender
-      .send(OutgoingReply::World(self.world.clone()))
+      .try_broadcast(OutgoingReply::World(self.world.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
   }
 
@@ -263,7 +270,10 @@ impl Engine {
         }
 
         if !command.reply.is_empty() {
-          self.sender.send(OutgoingReply::Reply(command)).unwrap();
+          self
+            .sender
+            .try_broadcast(OutgoingReply::Reply(command))
+            .unwrap();
         }
       }
     }
