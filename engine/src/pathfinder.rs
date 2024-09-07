@@ -270,11 +270,7 @@ impl Pathfinder {
               .unwrap()
               .weight();
 
-            waypoints.push(Node::new(
-              first.1.name.clone(),
-              first.1.kind,
-              *edge,
-            ));
+            waypoints.push(Node::new(next.1.name.clone(), next.1.kind, *edge));
 
             first = next;
           }
