@@ -4,7 +4,10 @@ use nannou::{
   geom,
 };
 
-use engine::structs::{Gate, Runway, Taxiway, Terminal};
+use engine::{
+  pathfinder::WaypointNode,
+  structs::{Gate, Runway, Taxiway, Terminal},
+};
 
 fn glam_to_geom(v: Vec2) -> geom::Vec2 {
   geom::Vec2::new(v.x, v.y)
@@ -93,6 +96,31 @@ impl Draw for Airport {
     }
     for terminal in self.terminals.iter() {
       terminal.draw(draw, scale);
+    }
+  }
+}
+
+impl Draw for WaypointNode {
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    let pos = self.pos() * scale;
+    draw
+      .ellipse()
+      .x_y(pos.x, pos.y)
+      .width(100.0 * scale)
+      .height(100.0 * scale)
+      .color(color::rgb::<u8>(0xff, 0xff, 0x00));
+  }
+}
+
+impl Draw for Vec<WaypointNode> {
+  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+    let yellow = color::rgb::<u8>(0xff, 0xff, 0x00);
+    draw.polyline().weight(20.0 * scale).points_colored(
+      self.iter().map(|w| (glam_to_geom(w.pos() * scale), yellow)),
+    );
+
+    for point in self.iter() {
+      point.draw(draw, scale);
     }
   }
 }

@@ -72,6 +72,7 @@ pub struct Model {
   world: World,
   egui: Egui,
   _watcher: INotifyWatcher,
+  waypoints: Vec<WaypointNode>,
 
   update_receiver: Receiver<Result<notify::Event, notify::Error>>,
 }
@@ -122,6 +123,7 @@ fn model(app: &App) -> Model {
     world,
     egui,
     _watcher,
+    waypoints: Vec::new(),
     update_receiver: rx,
   };
 
@@ -150,14 +152,14 @@ fn model(app: &App) -> Model {
 
   pathfinder.calculate(nodes);
 
-  println!("{:#?}", pathfinder.graph);
   fs::write(
     "graph.dot",
     format!("{:?}", Dot::with_config(&pathfinder.graph, &[])),
   )
   .unwrap();
 
-  pathfinder.path_to(
+  let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
+  let path = pathfinder.path_to(
     &WaypointNode::Runway {
       name: "20".to_owned(),
       pos: Vec2::default(),
@@ -166,9 +168,14 @@ fn model(app: &App) -> Model {
       name: "A1".to_owned(),
       pos: Vec2::default(),
     },
+    runway_20.pos,
+    runway_20.heading,
   );
 
-  panic!("done.");
+  if let Some(path) = path {
+    println!("path: {:#?}", path);
+    model.waypoints = path;
+  }
 
   model
 }
@@ -311,6 +318,8 @@ fn view(app: &App, model: &Model, frame: Frame) {
       });
     }
   }
+
+  model.waypoints.draw(&draw, scale);
 
   // TODO: draw a scale for 1, 10, 100, and 1000 feet
 

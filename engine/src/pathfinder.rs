@@ -1,11 +1,10 @@
 use glam::Vec2;
 use petgraph::{
-  algo::simple_paths, graph::DiGraph, visit::IntoNodeReferences, Directed,
-  Graph,
+  algo::simple_paths, visit::IntoNodeReferences, Graph, Undirected,
 };
 
 use crate::{
-  angle_between_points, find_line_intersection, inverse_degrees,
+  find_line_intersection,
   structs::{Gate, Line, Runway, Taxiway},
 };
 
@@ -14,6 +13,32 @@ pub enum WaypointNode {
   Taxiway { name: String, pos: Vec2 },
   Runway { name: String, pos: Vec2 },
   Gate { name: String, pos: Vec2 },
+}
+
+impl WaypointNode {
+  pub fn from_node(node: Node, pos: Vec2) -> Self {
+    match node {
+      Node::Taxiway { name, .. } => WaypointNode::Taxiway { name, pos },
+      Node::Runway { name, .. } => WaypointNode::Runway { name, pos },
+      Node::Gate { name, .. } => WaypointNode::Gate { name, pos },
+    }
+  }
+
+  pub fn name(&self) -> &String {
+    match self {
+      WaypointNode::Taxiway { name, .. } => name,
+      WaypointNode::Runway { name, .. } => name,
+      WaypointNode::Gate { name, .. } => name,
+    }
+  }
+
+  pub fn pos(&self) -> &Vec2 {
+    match self {
+      WaypointNode::Taxiway { pos, .. } => pos,
+      WaypointNode::Runway { pos, .. } => pos,
+      WaypointNode::Gate { pos, .. } => pos,
+    }
+  }
 }
 
 impl PartialEq<Node> for WaypointNode {
@@ -47,6 +72,12 @@ pub enum Node {
   Taxiway { name: String, line: Line },
   Runway { name: String, line: Line },
   Gate { name: String, line: Line },
+}
+
+impl Node {
+  fn into_waypoint(self, pos: Vec2) -> WaypointNode {
+    WaypointNode::from_node(self, pos)
+  }
 }
 
 impl From<Taxiway> for Node {
@@ -94,13 +125,7 @@ impl Node {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Edge {
-  pub pos: Vec2,
-  pub heading: f32,
-}
-
-type WaypointGraph = Graph<Node, Edge, Directed>;
+type WaypointGraph = Graph<Node, Vec2, Undirected>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Pathfinder {
@@ -110,12 +135,12 @@ pub struct Pathfinder {
 impl Pathfinder {
   pub fn new() -> Self {
     Self {
-      graph: WaypointGraph::new(),
+      graph: WaypointGraph::new_undirected(),
     }
   }
 
   pub fn calculate(&mut self, mut segments: Vec<Node>) {
-    let mut graph = WaypointGraph::new();
+    let mut graph = WaypointGraph::new_undirected();
     if segments.is_empty() || segments.len() < 2 {
       tracing::error!("No segments to calculate path for");
       return;
@@ -140,18 +165,7 @@ impl Pathfinder {
               .map(|(i, _)| i)
               .unwrap_or_else(|| graph.add_node(segment.clone()));
 
-            let heading = angle_between_points(current.line().0, intersection);
-            let edge = Edge {
-              pos: intersection,
-              heading,
-            };
-            graph.add_edge(current_node, segment_node, edge);
-
-            let reverse_edge = Edge {
-              pos: intersection,
-              heading: inverse_degrees(heading),
-            };
-            graph.add_edge(segment_node, current_node, reverse_edge);
+            graph.add_edge(current_node, segment_node, intersection);
           }
         }
       }
@@ -164,6 +178,8 @@ impl Pathfinder {
     &self,
     from: &WaypointNode,
     to: &WaypointNode,
+    pos: Vec2,
+    heading: f32,
   ) -> Option<Vec<WaypointNode>> {
     let from_node = self.graph.node_references().find(|(_, n)| from.eq(*n));
     let to_node = self.graph.node_references().find(|(_, n)| to.eq(*n));
@@ -179,20 +195,45 @@ impl Pathfinder {
       let mut ways = ways.collect::<Vec<_>>();
       ways.sort_by_key(|a| a.len());
 
-      let ways = ways
-        .into_iter()
-        .map(|way| {
-          way
-            .into_iter()
-            .map(|w| self.graph.node_weight(w).map(|n| n.name()))
-            .collect::<Vec<_>>()
-        })
-        .take(5)
-        .collect::<Vec<_>>();
+      let ways = ways.into_iter().map(|way| {
+        way
+          .into_iter()
+          .map(|w| (w, self.graph.node_weight(w).unwrap()))
+          .collect::<Vec<_>>()
+      });
 
-      dbg!(ways);
+      let way: Option<Vec<WaypointNode>> = None;
+      let mut pos = pos;
+      let mut heading = heading;
+
+      let mut waypoints: Vec<WaypointNode> = Vec::new();
+
+      #[allow(clippy::never_loop)]
+      'outer: for path in ways {
+        waypoints.clear();
+
+        dbg!(&path);
+        let mut first = path.first().unwrap();
+        for next in path.iter().skip(1) {
+          let edge =
+            self.graph.edges_connecting(first.0, next.0).next().unwrap();
+
+          waypoints.push(first.1.clone().into_waypoint(*edge.weight()));
+
+          first = next;
+
+          // if not_ok {
+          //   continue 'outer;
+          // }
+        }
+
+        // if all good
+        break 'outer;
+      }
+
+      Some(waypoints)
+    } else {
+      None
     }
-
-    todo!()
   }
 }
