@@ -1,6 +1,6 @@
 use std::{
   ops::Add,
-  sync::{mpsc::Sender, Arc},
+  sync::mpsc::Sender,
   time::{Duration, SystemTime},
 };
 
@@ -624,10 +624,10 @@ impl Aircraft {
             value,
             ..
           },
-        ..
+        waypoints,
       } = &self.state
       {
-        if self.pos == *value {
+        if self.pos == *value && waypoints.is_empty() {
           self.departure_from_arrival();
           self.do_hold_taxi(true);
         }
