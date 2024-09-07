@@ -305,14 +305,6 @@ pub struct Aircraft {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[serde(tag = "type", content = "value")]
-pub enum TaxiwayKind {
-  Normal,
-  HoldShort(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Taxiway {
   pub id: String,
   #[serde(serialize_with = "serialize_vec2")]
@@ -321,13 +313,11 @@ pub struct Taxiway {
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub b: Vec2,
-
-  pub kind: TaxiwayKind,
 }
 
 impl Taxiway {
-  pub fn new(id: String, a: Vec2, b: Vec2, kind: TaxiwayKind) -> Self {
-    Self { id, a, b, kind }
+  pub fn new(id: String, a: Vec2, b: Vec2) -> Self {
+    Self { id, a, b }
   }
 
   pub fn extend_ends_by(mut self, padding: f32) -> Self {
@@ -401,45 +391,41 @@ impl Aircraft {
     }
   }
 
-  // TODO: reimplement
-  // pub fn random_to_depart(
-  //   frequency: f32,
-  //   terminal: Terminal,
-  //   gates: Vec<Gate>,
-  // ) -> Self {
-  //   let mut rng = thread_rng();
-  //   let gate = gates.choose(&mut rng).unwrap();
-  //   Self {
-  //     callsign: Self::random_callsign(),
-  //     is_colliding: false,
-  //     intention: AircraftIntention::Depart {
-  //       has_notified: false,
-  //       heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
-  //     },
-  //     state: AircraftState::Taxiing {
-  //       current: TaxiWaypoint {
-  //         pos: gate.pos,
-  //         wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
-  //         behavior: TaxiWaypointBehavior::GoTo,
-  //       },
-  //       waypoints: Vec::new(),
-  //     },
-  //     pos: gate.pos,
-  //     heading: 0.0,
-  //     speed: 0.0,
-  //     altitude: 0.0,
-  //     frequency,
-  //     target: AircraftTargets {
-  //       heading: 0.0,
-  //       speed: 0.0,
-  //       altitude: 0.0,
-  //     },
-  //     created: SystemTime::now()
-  //       .duration_since(SystemTime::UNIX_EPOCH)
-  //       .unwrap_or(Duration::from_millis(0))
-  //       .as_millis(),
-  //   }
-  // }
+  pub fn random_to_depart(frequency: f32, gates: Vec<Gate>) -> Self {
+    let mut rng = thread_rng();
+    let gate = gates.choose(&mut rng).unwrap();
+    Self {
+      callsign: Self::random_callsign(),
+      is_colliding: false,
+      intention: AircraftIntention::Depart {
+        has_notified: false,
+        heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
+      },
+      state: AircraftState::Taxiing {
+        current: Node {
+          name: gate.id.clone(),
+          kind: NodeKind::Gate,
+          behavior: NodeBehavior::GoTo,
+          value: gate.pos,
+        },
+        waypoints: Vec::new(),
+      },
+      pos: gate.pos,
+      heading: 0.0,
+      speed: 0.0,
+      altitude: 0.0,
+      frequency,
+      target: AircraftTargets {
+        heading: 0.0,
+        speed: 0.0,
+        altitude: 0.0,
+      },
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
+    }
+  }
 
   pub fn departure_from_arrival(&mut self) {
     let mut rng = thread_rng();
