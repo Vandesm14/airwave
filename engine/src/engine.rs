@@ -198,6 +198,12 @@ impl Engine {
     let dt = 1.0 / self.rate as f32;
     for aircraft in self.world.aircraft.iter_mut() {
       aircraft.update(dt, &self.sender);
+
+      for airspace in &self.world.airspaces {
+        if !airspace.contains_point(aircraft.pos) {
+          aircraft.state = AircraftState::Deleted;
+        }
+      }
     }
   }
 
