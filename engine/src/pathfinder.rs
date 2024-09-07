@@ -240,7 +240,7 @@ impl Pathfinder {
           let wp = first.1.clone().into_waypoint(*edge.weight());
 
           let angle = angle_between_points(pos, *wp.pos());
-          if delta_angle(heading, angle).abs() >= 170.0 {
+          if delta_angle(heading, angle).abs() >= 175.0 {
             continue 'outer;
           }
 
