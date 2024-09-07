@@ -13,10 +13,11 @@ use crate::{
   add_degrees, angle_between_points, calculate_ils_altitude,
   closest_point_on_line, delta_angle, engine::OutgoingReply,
   find_line_intersection, get_random_point_on_circle, inverse_degrees,
-  move_point, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
+  move_point, pathfinder::Pathfinder, KNOT_TO_FEET_PER_SECOND,
+  NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
   pub aircraft: Vec<Aircraft>,
@@ -40,7 +41,7 @@ impl World {
 }
 
 // TODO: Support non-circular (regional) airspaces
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airspace {
   pub id: String,
   #[serde(serialize_with = "serialize_vec2")]
@@ -57,7 +58,7 @@ impl Airspace {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airport {
   pub id: String,
   #[serde(serialize_with = "serialize_vec2")]
@@ -67,6 +68,9 @@ pub struct Airport {
   pub taxiways: Vec<Taxiway>,
   pub terminals: Vec<Terminal>,
   pub altitude_range: [f32; 2],
+
+  #[serde(skip)]
+  pub pathfinder: Pathfinder,
 }
 
 impl Airport {
@@ -78,12 +82,19 @@ impl Airport {
       taxiways: Vec::new(),
       terminals: Vec::new(),
       altitude_range: [0.0, 0.0],
+
+      pathfinder: Pathfinder::new(),
     }
   }
 
   pub fn add_taxiway(&mut self, taxiway: Taxiway) {
     let taxiway = taxiway.extend_ends_by(100.0);
     self.taxiways.push(taxiway);
+  }
+
+  pub fn add_runway(&mut self, mut runway: Runway) {
+    runway.length += 200.0;
+    self.runways.push(runway);
   }
 }
 
@@ -102,13 +113,7 @@ impl Line {
 
 impl From<Runway> for Line {
   fn from(value: Runway) -> Self {
-    let inverse_angle = inverse_degrees(value.heading);
-    let half_length = value.length * 0.5;
-
-    let a = move_point(value.pos, value.heading, half_length);
-    let b = move_point(value.pos, inverse_angle, half_length);
-
-    Line::new(a, b)
+    Line::new(value.start(), value.end())
   }
 }
 
@@ -537,57 +542,16 @@ impl Aircraft {
     self.state = AircraftState::TakingOff(runway.clone());
   }
 
-  pub fn do_taxi(&mut self, blank_waypoints: Vec<TaxiWaypoint>) {
+  pub fn do_taxi(&mut self, mut waypoints: Vec<TaxiWaypoint>) {
     if let AircraftState::Taxiing {
-      waypoints,
+      waypoints: wps,
       current: current_pos,
       ..
     } = &mut self.state
     {
-      let mut current = current_pos.clone();
-      let mut new_waypoints: Vec<TaxiWaypoint> = Vec::new();
-      for mut waypoint in blank_waypoints.into_iter() {
-        let current_line: Line = current.wp.clone().into();
-        let waypoint_line: Line = waypoint.wp.clone().into();
-        let intersection = find_line_intersection(current_line, waypoint_line);
-
-        if let Some(intersection) = intersection {
-          waypoint.pos = intersection;
-
-          if let TaxiWaypointBehavior::HoldShort = waypoint.behavior {
-            let angle = angle_between_points(waypoint.pos, current.pos);
-            let hold_point = move_point(waypoint.pos, angle, 300.0);
-
-            new_waypoints.push(TaxiWaypoint {
-              pos: hold_point,
-              wp: current.wp.clone(),
-              behavior: TaxiWaypointBehavior::HoldShort,
-            });
-
-            waypoint.behavior = TaxiWaypointBehavior::GoTo;
-          } else if let TaxiPoint::Gate(_, gate) = &waypoint.wp {
-            new_waypoints.push(waypoint.clone());
-            current = waypoint.clone();
-
-            new_waypoints.push(TaxiWaypoint {
-              pos: gate.pos,
-              wp: waypoint.wp.clone(),
-              behavior: TaxiWaypointBehavior::GoTo,
-            });
-
-            continue;
-          }
-
-          new_waypoints.push(waypoint.clone());
-          current = waypoint.clone();
-        } else {
-          tracing::warn!("handle no intersection {current:#?}, {waypoint:#?}");
-          return;
-        }
-      }
-
-      *waypoints = new_waypoints;
       waypoints.reverse();
+
+      *wps = waypoints;
       current_pos.behavior = TaxiWaypointBehavior::GoTo;
     }
 

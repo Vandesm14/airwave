@@ -388,8 +388,8 @@ fn cross_roads_airport(airport: &mut Airport, airspace_size: f32) {
   airport.add_taxiway(taxiway_hs14);
   airport.add_taxiway(taxiway_hs01);
 
-  airport.runways.push(runway_01);
-  airport.runways.push(runway_14);
+  airport.add_runway(runway_01);
+  airport.add_runway(runway_14);
 
   airport.terminals.push(terminal_a);
 }
@@ -523,8 +523,8 @@ fn v_pattern_airport(airport: &mut Airport) {
     kind: TaxiwayKind::Normal,
   };
 
-  airport.runways.push(runway_20);
-  airport.runways.push(runway_27);
+  airport.add_runway(runway_20);
+  airport.add_runway(runway_27);
 
   airport.add_taxiway(taxiway_a1);
   airport.add_taxiway(taxiway_a2);

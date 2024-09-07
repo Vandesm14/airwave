@@ -276,31 +276,17 @@ impl Pathfinder {
           }
 
           let wp = to_node.weight();
-          let point = match wp {
-            Node {
-              kind: NodeKind::Taxiway,
-              value,
-              ..
-            } => value.midpoint(),
-            Node {
-              kind: NodeKind::Runway,
-              value,
-              ..
-            } => value.0,
-            Node {
-              kind: NodeKind::Gate,
-              value,
-              ..
-            } => value.0,
-            Node {
-              kind: NodeKind::Apron,
-              ..
-            } => {
-              unreachable!("Apron should not be a waypoint")
-            }
-          };
 
-          waypoints.push(Node::new(to.name.clone(), to.kind, point));
+          // If our destination is a gate, set our destination to that gate
+          // (otherwise it will be the enterance on the apron but not the gate)
+          if let Node {
+            kind: NodeKind::Gate,
+            value,
+            ..
+          } = wp
+          {
+            waypoints.push(Node::new(to.name.clone(), to.kind, value.0));
+          }
 
           waypoints
         })
@@ -313,7 +299,9 @@ impl Pathfinder {
           let mut first = path.first().unwrap();
           for next in path.iter().skip(1) {
             let angle = angle_between_points(pos, first.value);
-            if delta_angle(heading, angle).abs() >= 175.0 {
+            if first.kind != NodeKind::Gate
+              && delta_angle(heading, angle).abs() >= 175.0
+            {
               return false;
             }
 
@@ -338,9 +326,6 @@ impl Pathfinder {
               via.next();
             }
           }
-
-          dbg!(path);
-          dbg!(&via);
 
           // If we didn't fulfill our via's
           if via.peek().is_some() {
