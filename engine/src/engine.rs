@@ -269,12 +269,10 @@ impl Engine {
           }
         }
 
-        if !command.reply.is_empty() {
-          self
-            .sender
-            .try_broadcast(OutgoingReply::Reply(command))
-            .unwrap();
-        }
+        self
+          .sender
+          .try_broadcast(OutgoingReply::Reply(command))
+          .unwrap();
       }
     }
   }

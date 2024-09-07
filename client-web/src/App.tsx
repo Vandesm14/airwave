@@ -144,7 +144,7 @@ export default function App() {
         break;
       case 'reply':
         setSelectedAircraft(json.value.id);
-        speakAsAircraft(json.value);
+        if (json.value.reply != '') speakAsAircraft(json.value);
         break;
     }
   };
