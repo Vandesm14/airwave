@@ -34,7 +34,7 @@ use engine::{
   },
   DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 // fn runtime() -> &'static tokio::runtime::Runtime {
 //     static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
@@ -586,7 +586,7 @@ async fn complete_atc_request(
         },
       ),
       ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
-        content: ChatCompletionRequestUserMessageContent::Text(string),
+        content: ChatCompletionRequestUserMessageContent::Text(string.clone()),
         name: None,
       }),
     ],

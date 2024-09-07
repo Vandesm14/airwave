@@ -716,18 +716,9 @@ impl Aircraft {
 
       let target_altitude = calculate_ils_altitude(distance_to_runway);
 
-      debug!("");
-
-      debug!("seconds_for_descent: {}", seconds_for_descent);
-      debug!("target_speed_ft_s: {}", target_speed_ft_s);
-
       let angle_to_runway =
         inverse_degrees(angle_between_points(runway.start(), self.pos));
       let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
-
-      debug!("distance_to_runway: {}", distance_to_runway);
-      debug!("start_descent_distance: {}", start_descent_distance);
-      debug!("target_knots: {:?}", target_knots);
 
       // If we are too high, go around.
       if self.altitude - target_altitude > 100.0 {
