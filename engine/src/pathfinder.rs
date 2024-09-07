@@ -1,6 +1,7 @@
 use glam::Vec2;
 use petgraph::{
   algo::simple_paths,
+  graph::NodeIndex,
   visit::{IntoNodeReferences, NodeRef},
   Graph, Undirected,
 };
@@ -12,38 +13,46 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum WaypointNode {
+pub enum Waypoint {
   Taxiway { name: String, pos: Vec2 },
   Runway { name: String, pos: Vec2 },
   Gate { name: String, pos: Vec2 },
   Apron { name: String, pos: Vec2 },
 }
 
-impl WaypointNode {
+impl Waypoint {
   pub fn from_node(node: Node, pos: Vec2) -> Self {
     match node {
-      Node::Taxiway { name, .. } => WaypointNode::Taxiway { name, pos },
-      Node::Runway { name, .. } => WaypointNode::Runway { name, pos },
-      Node::Gate { name, .. } => WaypointNode::Gate { name, pos },
-      Node::Apron { name, .. } => WaypointNode::Apron { name, pos },
+      Node::Taxiway { name, .. } => Waypoint::Taxiway { name, pos },
+      Node::Runway { name, .. } => Waypoint::Runway { name, pos },
+      Node::Gate { name, .. } => Waypoint::Gate { name, pos },
+      Node::Apron { name, .. } => Waypoint::Apron { name, pos },
+    }
+  }
+
+  pub fn from_waypoint_string(waypoint: WaypointString, pos: Vec2) -> Self {
+    match waypoint {
+      WaypointString::Taxiway(name) => Waypoint::Taxiway { name, pos },
+      WaypointString::Runway(name) => Waypoint::Runway { name, pos },
+      WaypointString::Gate(name) => Waypoint::Gate { name, pos },
     }
   }
 
   pub fn name(&self) -> &String {
     match self {
-      WaypointNode::Taxiway { name, .. } => name,
-      WaypointNode::Runway { name, .. } => name,
-      WaypointNode::Gate { name, .. } => name,
-      WaypointNode::Apron { name, .. } => name,
+      Waypoint::Taxiway { name, .. } => name,
+      Waypoint::Runway { name, .. } => name,
+      Waypoint::Gate { name, .. } => name,
+      Waypoint::Apron { name, .. } => name,
     }
   }
 
   pub fn set_name(&mut self, name: String) {
     let n = match self {
-      WaypointNode::Taxiway { name, .. } => name,
-      WaypointNode::Runway { name, .. } => name,
-      WaypointNode::Gate { name, .. } => name,
-      WaypointNode::Apron { name, .. } => name,
+      Waypoint::Taxiway { name, .. } => name,
+      Waypoint::Runway { name, .. } => name,
+      Waypoint::Gate { name, .. } => name,
+      Waypoint::Apron { name, .. } => name,
     };
 
     *n = name;
@@ -51,42 +60,42 @@ impl WaypointNode {
 
   pub fn pos(&self) -> &Vec2 {
     match self {
-      WaypointNode::Taxiway { pos, .. } => pos,
-      WaypointNode::Runway { pos, .. } => pos,
-      WaypointNode::Gate { pos, .. } => pos,
-      WaypointNode::Apron { pos, .. } => pos,
+      Waypoint::Taxiway { pos, .. } => pos,
+      Waypoint::Runway { pos, .. } => pos,
+      Waypoint::Gate { pos, .. } => pos,
+      Waypoint::Apron { pos, .. } => pos,
     }
   }
 
   pub fn set_pos(&mut self, pos: Vec2) {
     let p = match self {
-      WaypointNode::Taxiway { pos, .. } => pos,
-      WaypointNode::Runway { pos, .. } => pos,
-      WaypointNode::Gate { pos, .. } => pos,
-      WaypointNode::Apron { pos, .. } => pos,
+      Waypoint::Taxiway { pos, .. } => pos,
+      Waypoint::Runway { pos, .. } => pos,
+      Waypoint::Gate { pos, .. } => pos,
+      Waypoint::Apron { pos, .. } => pos,
     };
 
     *p = pos;
   }
 }
 
-impl PartialEq<Node> for WaypointNode {
+impl PartialEq<Node> for Waypoint {
   fn eq(&self, other: &Node) -> bool {
     match (self, other) {
       (
-        WaypointNode::Taxiway { name, .. },
+        Waypoint::Taxiway { name, .. },
         Node::Taxiway {
           name: other_name, ..
         },
       ) => name == other_name,
       (
-        WaypointNode::Runway { name, .. },
+        Waypoint::Runway { name, .. },
         Node::Runway {
           name: other_name, ..
         },
       ) => name == other_name,
       (
-        WaypointNode::Gate { name, .. },
+        Waypoint::Gate { name, .. },
         Node::Gate {
           name: other_name, ..
         },
@@ -105,8 +114,8 @@ pub enum Node {
 }
 
 impl Node {
-  fn into_waypoint(self, pos: Vec2) -> WaypointNode {
-    WaypointNode::from_node(self, pos)
+  fn into_waypoint(self, pos: Vec2) -> Waypoint {
+    Waypoint::from_node(self, pos)
   }
 }
 
@@ -217,8 +226,7 @@ impl From<Segment> for Node {
   }
 }
 
-pub fn total_distance(path: &[WaypointNode]) -> f32 {
-  dbg!(path.len());
+pub fn total_distance(path: &[Waypoint]) -> f32 {
   let mut distance = 0.0;
   let mut first = path.first().unwrap();
   for next in path.iter().skip(1) {
@@ -227,6 +235,35 @@ pub fn total_distance(path: &[WaypointNode]) -> f32 {
   }
 
   distance
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum WaypointString {
+  Taxiway(String),
+  Runway(String),
+  Gate(String),
+}
+
+impl PartialEq<Node> for WaypointString {
+  fn eq(&self, other: &Node) -> bool {
+    match (self, other) {
+      (WaypointString::Taxiway(a), Node::Taxiway { name, .. }) => a == name,
+      (WaypointString::Runway(a), Node::Runway { name, .. }) => a == name,
+      (WaypointString::Gate(a), Node::Gate { name, .. }) => a == name,
+      _ => false,
+    }
+  }
+}
+
+impl PartialEq<Waypoint> for WaypointString {
+  fn eq(&self, other: &Waypoint) -> bool {
+    match (self, other) {
+      (WaypointString::Taxiway(a), Waypoint::Taxiway { name, .. }) => a == name,
+      (WaypointString::Runway(a), Waypoint::Runway { name, .. }) => a == name,
+      (WaypointString::Gate(a), Waypoint::Gate { name, .. }) => a == name,
+      _ => false,
+    }
+  }
 }
 
 type WaypointGraph = Graph<Node, Vec2, Undirected>;
@@ -253,7 +290,7 @@ impl Pathfinder {
     while let Some(current) = segments.pop() {
       let current_node = graph
         .node_references()
-        .find(|(_, n)| **n == current.clone().into())
+        .find(|(_, n)| **n == Node::from(current.clone()))
         .map(|(i, _)| i)
         .unwrap_or_else(|| graph.add_node(current.clone().into()));
 
@@ -264,7 +301,7 @@ impl Pathfinder {
         if let Some(intersection) = intersection {
           let segment_node = graph
             .node_references()
-            .find(|(_, n)| **n == segment.clone().into())
+            .find(|(_, n)| **n == Node::from(segment.clone()))
             .map(|(i, _)| i)
             .unwrap_or_else(|| graph.add_node(segment.clone().into()));
 
@@ -288,11 +325,12 @@ impl Pathfinder {
 
   pub fn path_to(
     &self,
-    from: &WaypointNode,
-    to: &WaypointNode,
+    from: &WaypointString,
+    to: &WaypointString,
+    via: Vec<&WaypointString>,
     pos: Vec2,
     heading: f32,
-  ) -> Option<Vec<WaypointNode>> {
+  ) -> Option<Vec<Waypoint>> {
     let from_node = self.graph.node_references().find(|(_, n)| from.eq(*n));
     let to_node = self.graph.node_references().find(|(_, n)| to.eq(*n));
 
@@ -307,7 +345,7 @@ impl Pathfinder {
 
       paths.next()?;
 
-      let mut paths: Vec<Vec<WaypointNode>> = paths
+      let mut paths: Vec<Vec<Waypoint>> = paths
         .map(|path| {
           path
             .into_iter()
@@ -315,7 +353,7 @@ impl Pathfinder {
             .collect::<Vec<_>>()
         })
         .map(|path| {
-          let mut waypoints: Vec<WaypointNode> = Vec::new();
+          let mut waypoints: Vec<Waypoint> = Vec::new();
 
           let mut first = path.first().unwrap();
           for next in path.iter().skip(1) {
@@ -337,14 +375,14 @@ impl Pathfinder {
               unreachable!("Apron should not be a waypoint")
             }
           };
-          let mut last_wp = to.clone();
-          last_wp.set_pos(point);
 
-          waypoints.push(last_wp);
+          waypoints.push(Waypoint::from_waypoint_string(to.clone(), point));
 
           waypoints
         })
         .filter(|path| {
+          let mut via = via.iter().peekable();
+
           let mut pos = pos;
           let mut heading = heading;
 
@@ -358,7 +396,32 @@ impl Pathfinder {
             pos = *first.pos();
             heading = angle;
 
+            // if Some(first) == via.peek().copied().copied() {
+            //   dbg!("YES");
+            //   via.next();
+            // }
+            if let Some(v) = via.peek().copied().copied() {
+              if v.clone().eq(first) {
+                via.next();
+              }
+            }
+
             first = next;
+          }
+
+          if let Some(v) = via.peek().copied().copied() {
+            if v.clone().eq(first) {
+              via.next();
+            }
+          }
+
+          dbg!(path);
+          dbg!(&via);
+
+          // If we didn't fulfill our via's
+          if via.peek().is_some() {
+            println!("doesn't fulfill vias");
+            return false;
           }
 
           true
@@ -371,8 +434,7 @@ impl Pathfinder {
       // });
       paths.sort_by_key(|p| p.len());
 
-      let path = paths.first().unwrap();
-      Some(path.clone())
+      paths.first().cloned()
     } else {
       None
     }

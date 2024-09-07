@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use engine::{
-  pathfinder::{Pathfinder, Segment, WaypointNode},
+  pathfinder::{Pathfinder, Segment, Waypoint, WaypointString},
   structs::{Airport, Runway, World},
 };
 use glam::Vec2;
@@ -70,7 +70,7 @@ pub struct Model {
   world: World,
   egui: Egui,
   _watcher: INotifyWatcher,
-  waypoints: Vec<WaypointNode>,
+  waypoints: Vec<Waypoint>,
 
   update_receiver: Receiver<Result<notify::Event, notify::Error>>,
 }
@@ -156,14 +156,13 @@ fn model(app: &App) -> Model {
 
   let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
   let path = pathfinder.path_to(
-    &WaypointNode::Runway {
-      name: "20".to_owned(),
-      pos: Vec2::default(),
-    },
-    &WaypointNode::Gate {
-      name: "A1".to_owned(),
-      pos: Vec2::default(),
-    },
+    &WaypointString::Runway("20".to_owned()),
+    &WaypointString::Gate("A1".to_owned()),
+    vec![
+      &WaypointString::Runway("27".to_owned()),
+      &WaypointString::Taxiway("A1".to_owned()),
+      // &WaypointString::Taxiway("B".to_owned()),
+    ],
     runway_20.pos,
     runway_20.heading,
   );
