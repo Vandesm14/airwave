@@ -137,6 +137,15 @@ fn model(app: &App) -> Model {
     .unwrap();
   airport.cache_waypoints();
 
+  // std::fs::write(
+  //   "graph.dot",
+  //   format!(
+  //     "{:?}",
+  //     petgraph::dot::Dot::with_config(&airport.pathfinder.graph, &[])
+  //   ),
+  // )
+  // .unwrap();
+
   let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
   let gate_a1 = airport
     .terminals
