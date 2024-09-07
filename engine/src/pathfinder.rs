@@ -13,6 +13,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum NodeKind {
   Taxiway,
   Runway,
@@ -24,6 +25,8 @@ pub enum NodeKind {
 pub struct Node<T> {
   pub name: String,
   pub kind: NodeKind,
+
+  #[serde(default)]
   pub value: T,
 }
 

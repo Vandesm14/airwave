@@ -1,26 +1,16 @@
-export type TaxiPoint =
-  | {
-      type: 'taxiway';
-      value: Taxiway;
-    }
-  | {
-      type: 'runway';
-      value: Runway;
-    }
-  | {
-      type: 'gate';
-      value: [Terminal, Gate];
-    };
-
 export type TaxiWaypointBehavior = {
   type: 'goto' | 'holdshort' | 'takeoff' | 'park';
 };
 
-export type TaxiWaypoint = {
-  pos: Vec2;
-  wp: TaxiPoint;
-  behavior: TaxiWaypointBehavior;
+export type NodeVec2 = {
+  name: string;
+  kind: 'taxiway' | 'runway' | 'gate';
+  value: [number, number];
 };
+
+export function arrToVec2(arr: [number, number]): Vec2 {
+  return { x: arr[0], y: arr[1] };
+}
 
 export type Aircraft = {
   x: number;
@@ -53,8 +43,8 @@ export type Aircraft = {
     | {
         type: 'taxiing';
         value: {
-          current: TaxiWaypoint;
-          waypoints: Array<TaxiWaypoint>;
+          current: NodeVec2;
+          waypoints: Array<NodeVec2>;
         };
       };
   intention:

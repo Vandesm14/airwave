@@ -48,15 +48,15 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
       // } else if (strip.value.intention.type === 'willdepart') {
       //   target = `RW${strip.value.state.value.runway.id}`;
     } else if (strip.value.state.type === 'taxiing') {
-      switch (strip.value.state.value.current.wp.type) {
+      switch (strip.value.state.value.current.kind) {
         case 'gate':
-          target = `G&nbsp;${strip.value.state.value.current.wp.value[1].id}`;
+          target = `G&nbsp;${strip.value.state.value.current.name}`;
           break;
         case 'runway':
-          target = `RW${strip.value.state.value.current.wp.value.id}`;
+          target = `RW${strip.value.state.value.current.name}`;
           break;
         case 'taxiway':
-          target = `&nbsp;&nbsp;${strip.value.state.value.current.wp.value.id}`;
+          target = `&nbsp;&nbsp;${strip.value.state.value.current.name}`;
           break;
       }
     } else if (strip.value.intention.type === 'depart') {

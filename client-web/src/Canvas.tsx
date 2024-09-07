@@ -3,6 +3,7 @@ import { radarAtom, renderAtom, worldAtom } from './lib/atoms';
 import {
   Aircraft,
   Airspace,
+  arrToVec2,
   Gate,
   Runway,
   Taxiway,
@@ -539,19 +540,20 @@ export default function Canvas({
     if (aircraft.state.type === 'taxiing') {
       ctx.strokeStyle = 'red';
       ctx.fillStyle = 'red';
+
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let pos = scalePoint(wp.pos);
+        let pos = scalePoint(arrToVec2(wp.value));
         ctx.lineTo(pos.x, pos.y);
       }
       ctx.stroke();
 
+      ctx.fillStyle = '#00ff00';
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let pos = scalePoint(wp.pos);
-        ctx.fillStyle = '#00ff00';
+        let pos = scalePoint(arrToVec2(wp.value));
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 2, 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
         ctx.fill();
       }
     }

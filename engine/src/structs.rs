@@ -532,21 +532,26 @@ impl Aircraft {
       ..
     } = &mut self.state
     {
-      let waypoints = pathfinder
-        .path_to(
-          Node {
-            name: current.name.clone(),
-            kind: current.kind,
-            value: (),
-          },
-          waypoints.last().unwrap().clone(),
-          waypoints,
-          self.pos,
-          self.heading,
-        )
-        .unwrap_or_default();
+      dbg!(&waypoints, &current);
+      let waypoints = pathfinder.path_to(
+        Node {
+          name: current.name.clone(),
+          kind: current.kind,
+          value: (),
+        },
+        waypoints.last().unwrap().clone(),
+        waypoints,
+        self.pos,
+        self.heading,
+      );
+      dbg!(&waypoints);
 
-      *wps = waypoints;
+      if let Some(mut waypoints) = waypoints {
+        waypoints.reverse();
+        *wps = waypoints;
+      } else {
+        return;
+      }
 
       if wps.is_empty() {
         return;

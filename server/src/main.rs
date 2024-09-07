@@ -27,13 +27,14 @@ use engine::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
   inverse_degrees, move_point,
+  pathfinder::{Node, NodeKind},
   structs::{
-    Airport, Airspace, Command, CommandWithFreq, Gate, Line, Runway, Taxiway,
-    TaxiwayKind, Terminal,
+    Aircraft, AircraftState, Airport, Airspace, Command, CommandWithFreq, Gate,
+    Line, Runway, Taxiway, TaxiwayKind, Terminal,
   },
   DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
-use tracing::info;
+use tracing::{error, info};
 
 // fn runtime() -> &'static tokio::runtime::Runtime {
 //     static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
@@ -87,10 +88,39 @@ fn main() {
     id: "KSFO".into(),
     pos: airport.center,
     size: airspace_size,
-    airports: vec![airport],
+    // TODO: remove clone after debugging
+    airports: vec![airport.clone()],
   };
+
+  let runway = airport.runways.first().unwrap().clone();
+  let mut aircraft = Aircraft::random_to_land(&airspace, 118.5);
+  aircraft.state = AircraftState::Taxiing {
+    current: Node {
+      name: runway.id.clone(),
+      kind: NodeKind::Runway,
+      value: runway.pos,
+    },
+    waypoints: Vec::new(),
+  };
+  // aircraft.pos = move_point(
+  //   runway.start(),
+  //   inverse_degrees(runway.heading),
+  //   NAUTICALMILES_TO_FEET * 5.0,
+  // );
+  aircraft.pos = runway.pos;
+
+  aircraft.speed = 0.0;
+  aircraft.altitude = 0.0;
+  aircraft.heading = runway.heading;
+
+  aircraft.target.speed = aircraft.speed;
+  aircraft.target.altitude = aircraft.altitude;
+  aircraft.target.heading = aircraft.heading;
+
+  engine.world.aircraft.push(aircraft);
+
   engine.world.airspaces.push(airspace);
-  engine.spawn_random_aircraft();
+  // engine.spawn_random_aircraft();
 
   thread::spawn(move || {
     // let runtime = runtime();
@@ -567,13 +597,18 @@ async fn complete_atc_request(
   if let Ok(response) = response {
     if let Some(choice) = response.choices.first() {
       if let Some(ref text) = choice.message.content {
-        if let Ok(reply) = serde_json::from_str::<Command>(text) {
-          return Some(CommandWithFreq {
-            id: reply.id,
-            frequency: freq,
-            reply: reply.reply,
-            tasks: reply.tasks,
-          });
+        match serde_json::from_str::<Command>(text) {
+          Ok(reply) => {
+            return Some(CommandWithFreq {
+              id: reply.id,
+              frequency: freq,
+              reply: reply.reply,
+              tasks: reply.tasks,
+            })
+          }
+          Err(e) => {
+            error!("failed to parse command: {} (raw: {})", e, text);
+          }
         }
       }
     }
