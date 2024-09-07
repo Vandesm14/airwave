@@ -14,7 +14,7 @@ use crate::{
   closest_point_on_line, delta_angle,
   engine::OutgoingReply,
   get_random_point_on_circle, inverse_degrees, move_point,
-  pathfinder::{Node, NodeBehavior, Object, Pathfinder},
+  pathfinder::{Node, NodeBehavior, NodeKind, Object, Pathfinder},
   KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
@@ -532,8 +532,6 @@ impl Aircraft {
       ..
     } = &mut self.state
     {
-      dbg!(&waypoints);
-
       let waypoints = pathfinder.path_to(
         Node {
           name: current.name.clone(),
@@ -618,16 +616,23 @@ impl Aircraft {
   }
 
   fn update_to_departure(&mut self) {
-    //   if let AircraftIntention::Land = self.intention {
-    //     if let AircraftState::Taxiing { current, .. } = &self.state {
-    //       if let TaxiPoint::Gate(_, gate) = &current.wp {
-    //         if self.pos == gate.pos {
-    //           self.departure_from_arrival();
-    //           self.do_hold_taxi(true);
-    //         }
-    //       }
-    //     }
-    //   }
+    if let AircraftIntention::Land = self.intention {
+      if let AircraftState::Taxiing {
+        current:
+          Node {
+            kind: NodeKind::Gate,
+            value,
+            ..
+          },
+        ..
+      } = &self.state
+      {
+        if self.pos == *value {
+          self.departure_from_arrival();
+          self.do_hold_taxi(true);
+        }
+      }
+    }
   }
 
   fn update_taxi(&mut self) {
@@ -649,14 +654,6 @@ impl Aircraft {
         if movement_speed >= distance {
           *current = waypoints.pop().unwrap();
           self.pos = waypoint.value;
-
-          // if let TaxiWaypointBehavior::HoldShort = current.behavior {
-          //   // TODO: This solution seems to break holding short of a runway
-          //   // if let Some(popped) = waypoints.pop() {
-          //   //   *current = popped;
-          //   // }
-          //   self.do_hold_taxi(false);
-          // }
         }
       } else {
         self.do_hold_taxi(false);
