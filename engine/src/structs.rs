@@ -6,7 +6,7 @@ use std::{
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use crate::{
   add_degrees, angle_between_points, calculate_ils_altitude,
@@ -537,6 +537,8 @@ impl Aircraft {
 
         info!("Initiating taxi for {}: {:?}", self.callsign, wps);
       } else {
+        error!("Failed to find waypoints for {}", self.callsign);
+
         return;
       }
 
