@@ -262,7 +262,9 @@ impl Engine {
           }
         }
 
-        self.sender.send(OutgoingReply::Reply(command)).unwrap();
+        if !command.reply.is_empty() {
+          self.sender.send(OutgoingReply::Reply(command)).unwrap();
+        }
       }
     }
   }
