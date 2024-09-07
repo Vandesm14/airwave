@@ -549,8 +549,8 @@ export default function Canvas({
       }
       ctx.stroke();
 
-      ctx.fillStyle = '#00ff00';
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+        ctx.fillStyle = wp.behavior === 'goto' ? '#00ff00' : '#ff0000';
         let pos = scalePoint(arrToVec2(wp.value));
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);

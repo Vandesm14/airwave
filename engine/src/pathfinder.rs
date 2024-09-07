@@ -204,7 +204,7 @@ impl Pathfinder {
     &self,
     from: WaypointString,
     to: WaypointString,
-    via: Vec<WaypointString>,
+    vias: Vec<WaypointString>,
     pos: Vec2,
     heading: f32,
   ) -> Option<Vec<Node<Vec2>>> {
@@ -278,7 +278,7 @@ impl Pathfinder {
           waypoints
         })
         .filter(|path| {
-          let mut via = via.iter().peekable();
+          let mut via = vias.iter().peekable();
 
           let mut pos = pos;
           let mut heading = heading;
@@ -312,7 +312,6 @@ impl Pathfinder {
 
           // If we didn't fulfill our via's
           if via.peek().is_some() {
-            println!("doesn't fulfill vias");
             return false;
           }
 
@@ -326,7 +325,22 @@ impl Pathfinder {
       // });
       paths.sort_by_key(|p| p.len());
 
-      paths.first().cloned()
+      let first_path = paths.first();
+
+      // iterate through the path and add the behavior from the vias
+      first_path.map(|first_path| {
+        first_path
+          .iter()
+          .map(|wp| {
+            let mut wp = wp.clone();
+            if let Some(via) = vias.iter().find(|v| v.name_and_kind_eq(&wp)) {
+              wp.behavior = via.behavior
+            }
+
+            wp
+          })
+          .collect()
+      })
     } else {
       None
     }

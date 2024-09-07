@@ -1,13 +1,13 @@
 use std::{
   ops::Add,
-  sync::mpsc::Sender,
+  sync::{mpsc::Sender, Arc},
   time::{Duration, SystemTime},
 };
 
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::{
   add_degrees, angle_between_points, calculate_ils_altitude,
@@ -532,6 +532,8 @@ impl Aircraft {
       ..
     } = &mut self.state
     {
+      dbg!(&waypoints);
+
       let waypoints = pathfinder.path_to(
         Node {
           name: current.name.clone(),
@@ -548,6 +550,8 @@ impl Aircraft {
       if let Some(mut waypoints) = waypoints {
         waypoints.reverse();
         *wps = waypoints;
+
+        info!("Initiating taxi for {}: {:?}", self.callsign, wps);
       } else {
         return;
       }
@@ -656,6 +660,20 @@ impl Aircraft {
         }
       } else {
         self.do_hold_taxi(false);
+      }
+    }
+
+    if let AircraftState::Taxiing { waypoints, .. } = &mut self.state {
+      let waypoint = waypoints.last_mut();
+      if let Some(waypoint) = waypoint {
+        let distance = self.pos.distance_squared(waypoint.value);
+
+        if NodeBehavior::HoldShort == waypoint.behavior
+          && distance <= 250.0_f32.powf(2.0)
+        {
+          waypoint.behavior = NodeBehavior::GoTo;
+          self.do_hold_taxi(false);
+        }
       }
     }
   }
