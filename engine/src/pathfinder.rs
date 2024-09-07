@@ -217,6 +217,18 @@ impl From<Segment> for Node {
   }
 }
 
+pub fn total_distance(path: &[WaypointNode]) -> f32 {
+  dbg!(path.len());
+  let mut distance = 0.0;
+  let mut first = path.first().unwrap();
+  for next in path.iter().skip(1) {
+    distance += first.pos().distance_squared(*next.pos());
+    first = next;
+  }
+
+  distance
+}
+
 type WaypointGraph = Graph<Node, Vec2, Undirected>;
 
 #[derive(Debug, Clone, Default)]
@@ -287,74 +299,82 @@ impl Pathfinder {
     let to_node = self.graph.node_references().find(|(_, n)| to.eq(*n));
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
-      let ways = simple_paths::all_simple_paths::<Vec<_>, _>(
+      let mut paths = simple_paths::all_simple_paths::<Vec<_>, _>(
         &self.graph,
         from_node.0,
         to_node.0,
         0,
         None,
       );
-      let mut ways = ways.collect::<Vec<_>>();
-      ways.sort_by_key(|a| a.len());
 
-      if ways.is_empty() {
-        return None;
-      }
+      paths.next()?;
 
-      let ways = ways.into_iter().map(|way| {
-        way
-          .into_iter()
-          .map(|w| (w, self.graph.node_weight(w).unwrap()))
-          .collect::<Vec<_>>()
-      });
+      let mut paths: Vec<Vec<WaypointNode>> = paths
+        .map(|path| {
+          path
+            .into_iter()
+            .map(|wp| (wp, self.graph.node_weight(wp).unwrap()))
+            .collect::<Vec<_>>()
+        })
+        .map(|path| {
+          let mut waypoints: Vec<WaypointNode> = Vec::new();
 
-      let mut waypoints: Vec<WaypointNode> = Vec::new();
+          let mut first = path.first().unwrap();
+          for next in path.iter().skip(1) {
+            let edge =
+              self.graph.edges_connecting(first.0, next.0).next().unwrap();
+            let wp = first.1.clone().into_waypoint(*edge.weight());
 
-      #[allow(clippy::never_loop)]
-      'outer: for path in ways {
-        let mut pos = pos;
-        let mut heading = heading;
+            waypoints.push(wp);
 
-        waypoints.clear();
-
-        let mut first = path.first().unwrap();
-        for next in path.iter().skip(1) {
-          let edge =
-            self.graph.edges_connecting(first.0, next.0).next().unwrap();
-          let wp = first.1.clone().into_waypoint(*edge.weight());
-
-          let angle = angle_between_points(pos, *wp.pos());
-          if delta_angle(heading, angle).abs() >= 175.0 {
-            continue 'outer;
+            first = next;
           }
 
-          pos = *wp.pos();
-          heading = angle;
+          let wp = to_node.weight();
+          let point = match wp {
+            Node::Taxiway { line, .. } => line.midpoint(),
+            Node::Runway { line, .. } => line.0,
+            Node::Gate { line, .. } => line.0,
+            Node::Apron { .. } => {
+              unreachable!("Apron should not be a waypoint")
+            }
+          };
+          let mut last_wp = to.clone();
+          last_wp.set_pos(point);
 
-          waypoints.push(wp);
+          waypoints.push(last_wp);
 
-          first = next;
-        }
+          waypoints
+        })
+        .filter(|path| {
+          let mut pos = pos;
+          let mut heading = heading;
 
-        // if all good
-        break 'outer;
-      }
+          let mut first = path.first().unwrap();
+          for next in path.iter().skip(1) {
+            let angle = angle_between_points(pos, *first.pos());
+            if delta_angle(heading, angle).abs() >= 175.0 {
+              return false;
+            }
 
-      let wp = to_node.weight();
-      let point = match wp {
-        Node::Taxiway { line, .. } => line.midpoint(),
-        Node::Runway { line, .. } => line.0,
-        Node::Gate { line, .. } => line.0,
-        Node::Apron { .. } => {
-          unreachable!("Apron should not be a waypoint")
-        }
-      };
-      let mut last_wp = to.clone();
-      last_wp.set_pos(point);
+            pos = *first.pos();
+            heading = angle;
 
-      waypoints.push(last_wp);
+            first = next;
+          }
 
-      Some(waypoints)
+          true
+        })
+        .collect();
+
+      // paths.sort_by(|a, b| {
+      //   // TODO: unwrapping might cause errors with NaN's and Infinity's
+      //   total_distance(a).partial_cmp(&total_distance(b)).unwrap()
+      // });
+      paths.sort_by_key(|p| p.len());
+
+      let path = paths.first().unwrap();
+      Some(path.clone())
     } else {
       None
     }

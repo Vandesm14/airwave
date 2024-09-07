@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use engine::{
-  pathfinder::{Node, Pathfinder, Segment, WaypointNode},
+  pathfinder::{Pathfinder, Segment, WaypointNode},
   structs::{Airport, Runway, World},
 };
 use glam::Vec2;
@@ -145,14 +145,14 @@ fn model(app: &App) -> Model {
   pathfinder.calculate(nodes);
 
   // TODO: remove this
-  std::fs::write(
-    "graph.dot",
-    format!(
-      "{:?}",
-      petgraph::dot::Dot::with_config(&pathfinder.graph, &[])
-    ),
-  )
-  .unwrap();
+  // std::fs::write(
+  //   "graph.dot",
+  //   format!(
+  //     "{:?}",
+  //     petgraph::dot::Dot::with_config(&pathfinder.graph, &[])
+  //   ),
+  // )
+  // .unwrap();
 
   let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
   let path = pathfinder.path_to(
