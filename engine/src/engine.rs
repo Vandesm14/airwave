@@ -12,8 +12,7 @@ use tracing::error;
 use crate::{
   angle_between_points, heading_to_direction,
   structs::{
-    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Task,
-    TaxiPoint, TaxiWaypoint, TaxiWaypointBehavior, TaxiwayKind, World,
+    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Task, World,
   },
 };
 
@@ -250,100 +249,9 @@ impl Engine {
               }
             }
             Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
-            Task::TaxiRunway {
-              runway: runway_str,
-              waypoints: waypoints_str,
-            } => {
+            Task::Taxi(waypoints) => {
               if let Some(ref airport) = airport {
-                if let AircraftState::Taxiing { .. } = &mut aircraft.state {
-                  let runway =
-                    airport.runways.iter().find(|r| r.id == *runway_str);
-                  let hold_short_taxiway = runway.and_then(|r| {
-                    airport.taxiways.iter().find(|t| {
-                      if let TaxiwayKind::HoldShort(rw) = &t.kind {
-                        rw == &r.id
-                      } else {
-                        false
-                      }
-                    })
-                  });
-                  if let Some((runway, hold_short_taxiway)) =
-                    runway.zip(hold_short_taxiway)
-                  {
-                    let mut taxi_instructions: Vec<TaxiWaypoint> = vec![
-                      TaxiWaypoint {
-                        pos: Vec2::default(),
-                        wp: TaxiPoint::Runway(runway.clone()),
-                        behavior: TaxiWaypointBehavior::HoldShort,
-                      },
-                      TaxiWaypoint {
-                        pos: Vec2::default(),
-                        wp: TaxiPoint::Taxiway(hold_short_taxiway.clone()),
-                        behavior: TaxiWaypointBehavior::GoTo,
-                      },
-                    ];
-
-                    for (instruction, hold) in waypoints_str.iter().rev() {
-                      let taxiway =
-                        airport.taxiways.iter().find(|t| t.id == *instruction);
-                      if let Some(taxiway) = taxiway {
-                        taxi_instructions.push(TaxiWaypoint {
-                          pos: Vec2::default(),
-                          wp: TaxiPoint::Taxiway(taxiway.clone()),
-                          behavior: if *hold {
-                            TaxiWaypointBehavior::HoldShort
-                          } else {
-                            TaxiWaypointBehavior::GoTo
-                          },
-                        });
-                      }
-                    }
-
-                    taxi_instructions.reverse();
-                    aircraft.do_taxi(taxi_instructions);
-                  }
-                }
-              }
-            }
-            Task::TaxiGate {
-              gate: gate_str,
-              waypoints: waypoints_str,
-            } => {
-              if let Some(ref airport) = airport {
-                let terminal = airport
-                  .terminals
-                  .iter()
-                  .find(|t| t.id == gate_str.chars().next().unwrap());
-                let gate = terminal
-                  .and_then(|t| t.gates.iter().find(|g| g.id == *gate_str));
-
-                if let Some((terminal, gate)) = terminal.zip(gate) {
-                  let mut taxi_instructions: Vec<TaxiWaypoint> =
-                    vec![TaxiWaypoint {
-                      pos: Vec2::default(),
-                      wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
-                      behavior: TaxiWaypointBehavior::GoTo,
-                    }];
-
-                  for (instruction, hold) in waypoints_str.iter().rev() {
-                    let taxiway =
-                      airport.taxiways.iter().find(|t| t.id == *instruction);
-                    if let Some(taxiway) = taxiway {
-                      taxi_instructions.push(TaxiWaypoint {
-                        pos: Vec2::default(),
-                        wp: TaxiPoint::Taxiway(taxiway.clone()),
-                        behavior: if *hold {
-                          TaxiWaypointBehavior::HoldShort
-                        } else {
-                          TaxiWaypointBehavior::GoTo
-                        },
-                      });
-                    }
-                  }
-
-                  taxi_instructions.reverse();
-                  aircraft.do_taxi(taxi_instructions);
-                }
+                aircraft.do_taxi(waypoints.clone(), &airport.pathfinder);
               }
             }
             Task::TaxiHold => aircraft.do_hold_taxi(false),

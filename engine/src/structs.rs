@@ -11,10 +11,11 @@ use tracing::debug;
 
 use crate::{
   add_degrees, angle_between_points, calculate_ils_altitude,
-  closest_point_on_line, delta_angle, engine::OutgoingReply,
-  find_line_intersection, get_random_point_on_circle, inverse_degrees,
-  move_point, pathfinder::Pathfinder, KNOT_TO_FEET_PER_SECOND,
-  NAUTICALMILES_TO_FEET, TIME_SCALE,
+  closest_point_on_line, delta_angle,
+  engine::OutgoingReply,
+  get_random_point_on_circle, inverse_degrees, move_point,
+  pathfinder::{Node, Object, Pathfinder},
+  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -96,6 +97,15 @@ impl Airport {
     runway.length += 200.0;
     self.runways.push(runway);
   }
+
+  pub fn cache_waypoints(&mut self) {
+    let mut nodes: Vec<Object> = Vec::new();
+    nodes.extend(self.runways.iter().map(|r| r.clone().into()));
+    nodes.extend(self.taxiways.iter().map(|t| t.clone().into()));
+    nodes.extend(self.terminals.iter().map(|g| g.clone().into()));
+
+    self.pathfinder.calculate(nodes);
+  }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
@@ -163,16 +173,8 @@ pub enum Task {
   #[serde(rename = "resume")]
   ResumeOwnNavigation,
 
-  #[serde(rename = "taxi-runway")]
-  TaxiRunway {
-    runway: String,
-    waypoints: Vec<(String, bool)>,
-  },
-  #[serde(rename = "taxi-gate")]
-  TaxiGate {
-    gate: String,
-    waypoints: Vec<(String, bool)>,
-  },
+  #[serde(rename = "taxi")]
+  Taxi(Vec<Node<()>>),
   #[serde(rename = "taxi-hold")]
   TaxiHold,
   #[serde(rename = "taxi-continue")]
@@ -243,26 +245,6 @@ impl Runway {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
-pub enum TaxiWaypointBehavior {
-  GoTo,
-  HoldShort,
-  TakeOff,
-  LineUp,
-  Park,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TaxiWaypoint {
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
-  pub pos: Vec2,
-  pub wp: TaxiPoint,
-  pub behavior: TaxiWaypointBehavior,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[serde(tag = "type", content = "value")]
 pub enum TaxiPoint {
   Taxiway(Taxiway),
   Runway(Runway),
@@ -277,8 +259,8 @@ pub enum AircraftState {
   Landing(Runway),
   HoldingPattern(HoldDirection),
   Taxiing {
-    current: TaxiWaypoint,
-    waypoints: Vec<TaxiWaypoint>,
+    current: Node<Vec2>,
+    waypoints: Vec<Node<Vec2>>,
   },
   TakingOff(Runway),
 
@@ -419,44 +401,45 @@ impl Aircraft {
     }
   }
 
-  pub fn random_to_depart(
-    frequency: f32,
-    terminal: Terminal,
-    gates: Vec<Gate>,
-  ) -> Self {
-    let mut rng = thread_rng();
-    let gate = gates.choose(&mut rng).unwrap();
-    Self {
-      callsign: Self::random_callsign(),
-      is_colliding: false,
-      intention: AircraftIntention::Depart {
-        has_notified: false,
-        heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
-      },
-      state: AircraftState::Taxiing {
-        current: TaxiWaypoint {
-          pos: gate.pos,
-          wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
-          behavior: TaxiWaypointBehavior::GoTo,
-        },
-        waypoints: Vec::new(),
-      },
-      pos: gate.pos,
-      heading: 0.0,
-      speed: 0.0,
-      altitude: 0.0,
-      frequency,
-      target: AircraftTargets {
-        heading: 0.0,
-        speed: 0.0,
-        altitude: 0.0,
-      },
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .as_millis(),
-    }
-  }
+  // TODO: reimplement
+  // pub fn random_to_depart(
+  //   frequency: f32,
+  //   terminal: Terminal,
+  //   gates: Vec<Gate>,
+  // ) -> Self {
+  //   let mut rng = thread_rng();
+  //   let gate = gates.choose(&mut rng).unwrap();
+  //   Self {
+  //     callsign: Self::random_callsign(),
+  //     is_colliding: false,
+  //     intention: AircraftIntention::Depart {
+  //       has_notified: false,
+  //       heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
+  //     },
+  //     state: AircraftState::Taxiing {
+  //       current: TaxiWaypoint {
+  //         pos: gate.pos,
+  //         wp: TaxiPoint::Gate(terminal.clone(), gate.clone()),
+  //         behavior: TaxiWaypointBehavior::GoTo,
+  //       },
+  //       waypoints: Vec::new(),
+  //     },
+  //     pos: gate.pos,
+  //     heading: 0.0,
+  //     speed: 0.0,
+  //     altitude: 0.0,
+  //     frequency,
+  //     target: AircraftTargets {
+  //       heading: 0.0,
+  //       speed: 0.0,
+  //       altitude: 0.0,
+  //     },
+  //     created: SystemTime::now()
+  //       .duration_since(SystemTime::UNIX_EPOCH)
+  //       .unwrap_or(Duration::from_millis(0))
+  //       .as_millis(),
+  //   }
+  // }
 
   pub fn departure_from_arrival(&mut self) {
     let mut rng = thread_rng();
@@ -488,7 +471,7 @@ impl Aircraft {
     string
   }
 
-  pub fn speed_in_pixels(&self) -> f32 {
+  pub fn speed_in_feet(&self) -> f32 {
     self.speed * KNOT_TO_FEET_PER_SECOND
   }
 
@@ -542,17 +525,32 @@ impl Aircraft {
     self.state = AircraftState::TakingOff(runway.clone());
   }
 
-  pub fn do_taxi(&mut self, mut waypoints: Vec<TaxiWaypoint>) {
+  pub fn do_taxi(&mut self, waypoints: Vec<Node<()>>, pathfinder: &Pathfinder) {
     if let AircraftState::Taxiing {
       waypoints: wps,
-      current: current_pos,
+      current,
       ..
     } = &mut self.state
     {
-      waypoints.reverse();
+      let waypoints = pathfinder
+        .path_to(
+          Node {
+            name: current.name.clone(),
+            kind: current.kind,
+            value: (),
+          },
+          waypoints.last().unwrap().clone(),
+          waypoints,
+          self.pos,
+          self.heading,
+        )
+        .unwrap_or_default();
 
       *wps = waypoints;
-      current_pos.behavior = TaxiWaypointBehavior::GoTo;
+
+      if wps.is_empty() {
+        return;
+      }
     }
 
     if let AircraftState::Taxiing { .. } = self.state {
@@ -607,67 +605,53 @@ impl Aircraft {
   }
 
   fn update_position(&mut self, dt: f32) {
-    let pos = move_point(self.pos, self.heading, self.speed_in_pixels() * dt);
+    let pos = move_point(self.pos, self.heading, self.speed_in_feet() * dt);
     self.pos = pos;
   }
 
   fn update_to_departure(&mut self) {
-    if let AircraftIntention::Land = self.intention {
-      if let AircraftState::Taxiing { current, .. } = &self.state {
-        if let TaxiPoint::Gate(_, gate) = &current.wp {
-          if self.pos == gate.pos {
-            self.departure_from_arrival();
-            self.do_hold_taxi(true);
-          }
-        }
-      }
-    }
+    //   if let AircraftIntention::Land = self.intention {
+    //     if let AircraftState::Taxiing { current, .. } = &self.state {
+    //       if let TaxiPoint::Gate(_, gate) = &current.wp {
+    //         if self.pos == gate.pos {
+    //           self.departure_from_arrival();
+    //           self.do_hold_taxi(true);
+    //         }
+    //       }
+    //     }
+    //   }
   }
 
   fn update_taxi(&mut self) {
-    let speed_in_pixels = self.speed_in_pixels();
-    if let AircraftState::Taxiing { current, waypoints } = &mut self.state {
-      if let TaxiWaypoint {
-        wp: TaxiPoint::Runway(r),
-        behavior: TaxiWaypointBehavior::TakeOff,
-        ..
-      } = current
-      {
-        // TODO: I removed the position check from this due to floating point
-        // errors. Ideally, we should lerp position on taxiways instead of
-        // manually moving them
-        self.pos = r.start();
-        self.heading = r.heading;
-        self.target.heading = r.heading;
-        self.state = AircraftState::TakingOff(r.clone());
-      } else if matches!(current.behavior, TaxiWaypointBehavior::HoldShort)
-        || waypoints.is_empty()
-      {
-        self.do_hold_taxi(false)
-      } else {
-        let waypoint = waypoints.last().cloned();
-        if let Some(waypoint) = waypoint {
-          let heading = angle_between_points(self.pos, waypoint.pos);
+    let speed_in_feet = self.speed_in_feet();
+    if let AircraftState::Taxiing {
+      current, waypoints, ..
+    } = &mut self.state
+    {
+      let waypoint = waypoints.last().cloned();
+      if let Some(waypoint) = waypoint {
+        let heading = angle_between_points(self.pos, waypoint.value);
 
-          self.heading = heading;
-          self.target.heading = heading;
+        self.heading = heading;
+        self.target.heading = heading;
 
-          let distance = self.pos.distance_squared(waypoint.pos);
-          let movement_speed = speed_in_pixels.powf(2.0);
+        let distance = self.pos.distance_squared(waypoint.value);
+        let movement_speed = speed_in_feet.powf(2.0);
 
-          if movement_speed >= distance {
-            *current = waypoints.pop().unwrap();
-            self.pos = waypoint.pos;
+        if movement_speed >= distance {
+          *current = waypoints.pop().unwrap();
+          self.pos = waypoint.value;
 
-            if let TaxiWaypointBehavior::HoldShort = current.behavior {
-              // TODO: This solution seems to break holding short of a runway
-              // if let Some(popped) = waypoints.pop() {
-              //   *current = popped;
-              // }
-              self.do_hold_taxi(false);
-            }
-          }
+          // if let TaxiWaypointBehavior::HoldShort = current.behavior {
+          //   // TODO: This solution seems to break holding short of a runway
+          //   // if let Some(popped) = waypoints.pop() {
+          //   //   *current = popped;
+          //   // }
+          //   self.do_hold_taxi(false);
+          // }
         }
+      } else {
+        self.do_hold_taxi(false);
       }
     }
   }
@@ -744,14 +728,14 @@ impl Aircraft {
 
         self.target.speed = 0.0;
 
-        self.state = AircraftState::Taxiing {
-          current: TaxiWaypoint {
-            pos: runway.end(),
-            wp: TaxiPoint::Runway(runway.clone()),
-            behavior: TaxiWaypointBehavior::GoTo,
-          },
-          waypoints: Vec::new(),
-        };
+        // self.state = AircraftState::Taxiing {
+        //   current: TaxiWaypoint {
+        //     pos: runway.end(),
+        //     wp: TaxiPoint::Runway(runway.clone()),
+        //     behavior: TaxiWaypointBehavior::GoTo,
+        //   },
+        //   waypoints: Vec::new(),
+        // };
 
         return;
       }

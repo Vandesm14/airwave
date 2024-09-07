@@ -129,32 +129,15 @@ fn model(app: &App) -> Model {
 
   model.load_world();
 
-  let mut pathfinder = Pathfinder::new();
-  let airport: &Airport = model
+  let airport = model
     .world
     .airspaces
-    .first()
+    .first_mut()
     .unwrap()
     .airports
-    .first()
+    .first_mut()
     .unwrap();
-
-  let mut nodes: Vec<Object> = Vec::new();
-  nodes.extend(airport.runways.iter().map(|r| r.clone().into()));
-  nodes.extend(airport.taxiways.iter().map(|t| t.clone().into()));
-  nodes.extend(airport.terminals.iter().map(|g| g.clone().into()));
-
-  pathfinder.calculate(nodes);
-
-  // TODO: remove this
-  std::fs::write(
-    "graph.dot",
-    format!(
-      "{:?}",
-      petgraph::dot::Dot::with_config(&pathfinder.graph, &[])
-    ),
-  )
-  .unwrap();
+  airport.cache_waypoints();
 
   let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
   let gate_a1 = airport
@@ -162,9 +145,9 @@ fn model(app: &App) -> Model {
     .iter()
     .find_map(|t| t.gates.iter().find(|g| g.id == "A1"))
     .unwrap();
-  let path = pathfinder.path_to(
-    &Node::new("20".to_owned(), NodeKind::Runway, ()),
-    &Node::new("A1".to_owned(), NodeKind::Gate, ()),
+  let path = airport.pathfinder.path_to(
+    Node::new("20".to_owned(), NodeKind::Runway, ()),
+    Node::new("A1".to_owned(), NodeKind::Gate, ()),
     vec![],
     runway_20.pos,
     runway_20.heading,

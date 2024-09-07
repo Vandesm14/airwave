@@ -81,6 +81,7 @@ fn main() {
 
   let mut airport = Airport::new("KSFO".into(), Vec2::new(0.0, 0.0));
   v_pattern_airport(&mut airport);
+  airport.cache_waypoints();
 
   let airspace = Airspace {
     id: "KSFO".into(),

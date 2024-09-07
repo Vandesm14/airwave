@@ -4,6 +4,7 @@ use petgraph::{
   visit::{IntoNodeReferences, NodeRef},
   Graph, Undirected,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
@@ -11,7 +12,7 @@ use crate::{
   structs::{Gate, Line, Runway, Taxiway, Terminal},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum NodeKind {
   Taxiway,
   Runway,
@@ -19,7 +20,7 @@ pub enum NodeKind {
   Apron,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
   pub name: String,
   pub kind: NodeKind,
@@ -221,9 +222,9 @@ impl Pathfinder {
 
   pub fn path_to(
     &self,
-    from: &WaypointString,
-    to: &WaypointString,
-    via: Vec<&WaypointString>,
+    from: WaypointString,
+    to: WaypointString,
+    via: Vec<WaypointString>,
     pos: Vec2,
     heading: f32,
   ) -> Option<Vec<Node<Vec2>>> {
@@ -312,7 +313,7 @@ impl Pathfinder {
             //   dbg!("YES");
             //   via.next();
             // }
-            if let Some(v) = via.peek().copied().copied() {
+            if let Some(v) = via.peek().copied() {
               if v.name_and_kind_eq(first) {
                 via.next();
               }
@@ -321,7 +322,7 @@ impl Pathfinder {
             first = next;
           }
 
-          if let Some(v) = via.peek().copied().copied() {
+          if let Some(v) = via.peek().copied() {
             if v.name_and_kind_eq(first) {
               via.next();
             }
