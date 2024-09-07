@@ -737,7 +737,6 @@ impl Aircraft {
 
       // If we have passed the start of the runway (landed),
       // set our state to taxiing.
-      debug!("to end {}, len {}", distance_to_end.sqrt(), runway.length);
       if distance_to_end <= runway.length.powf(2.0) {
         self.altitude = 0.0;
         self.target.altitude = 0.0;
@@ -747,14 +746,15 @@ impl Aircraft {
 
         self.target.speed = 0.0;
 
-        // self.state = AircraftState::Taxiing {
-        //   current: TaxiWaypoint {
-        //     pos: runway.end(),
-        //     wp: TaxiPoint::Runway(runway.clone()),
-        //     behavior: TaxiWaypointBehavior::GoTo,
-        //   },
-        //   waypoints: Vec::new(),
-        // };
+        self.state = AircraftState::Taxiing {
+          current: Node {
+            name: runway.id.clone(),
+            kind: NodeKind::Runway,
+            behavior: NodeBehavior::GoTo,
+            value: self.pos,
+          },
+          waypoints: Vec::new(),
+        };
 
         return;
       }
