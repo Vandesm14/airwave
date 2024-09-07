@@ -72,7 +72,6 @@ export type Taxiway = {
   id: string;
   a: Vec2;
   b: Vec2;
-  kind: { type: 'normal' | 'holdshort' | 'apron'; value: string };
 };
 
 export type Gate = {

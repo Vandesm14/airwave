@@ -467,22 +467,20 @@ export default function Canvas({
   }
 
   function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
-    if (taxiway.kind.type === 'normal') {
-      let start = scalePoint(taxiway.a);
-      let end = scalePoint(taxiway.b);
-      let middle = midpointBetweenPoints(start, end);
-      let textWidth = ctx.measureText(taxiway.id).width + 10;
-      ctx.fillStyle = '#000a';
-      ctx.fillRect(
-        middle.x - textWidth * 0.5,
-        middle.y - fontSize() * 0.5,
-        textWidth,
-        fontSize()
-      );
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#dd9904';
-      ctx.fillText(taxiway.id, middle.x, middle.y);
-    }
+    let start = scalePoint(taxiway.a);
+    let end = scalePoint(taxiway.b);
+    let middle = midpointBetweenPoints(start, end);
+    let textWidth = ctx.measureText(taxiway.id).width + 10;
+    ctx.fillStyle = '#000a';
+    ctx.fillRect(
+      middle.x - textWidth * 0.5,
+      middle.y - fontSize() * 0.5,
+      textWidth,
+      fontSize()
+    );
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dd9904';
+    ctx.fillText(taxiway.id, middle.x, middle.y);
   }
 
   function drawRunwayGround(ctx: Ctx, runway: Runway) {
