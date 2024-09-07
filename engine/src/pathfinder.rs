@@ -126,12 +126,12 @@ impl From<Object> for Node<Line> {
   }
 }
 
-pub fn total_distance(path: &[Node<Vec2>]) -> f32 {
+pub fn total_distance(path: &[Node<Vec2>], current_pos: Vec2) -> f32 {
   let mut distance = 0.0;
-  let mut first = path.first().unwrap();
-  for next in path.iter().skip(1) {
-    distance += first.value.distance_squared(next.value);
-    first = next;
+  let mut first = current_pos;
+  for next in path.iter() {
+    distance += first.distance_squared(next.value);
+    first = next.value;
   }
 
   distance
@@ -292,6 +292,14 @@ impl Pathfinder {
               return false;
             }
 
+            // If the waypoint is a runway and we haven't instructed to go to
+            // it, don't use this path.
+            if next.kind == NodeKind::Runway
+              && !vias.iter().any(|v| v.name_and_kind_eq(next))
+            {
+              return false;
+            }
+
             pos = first.value;
             heading = angle;
 
@@ -321,9 +329,23 @@ impl Pathfinder {
 
       paths.sort_by(|a, b| {
         // TODO: unwrapping might cause errors with NaN's and Infinity's
-        total_distance(a).partial_cmp(&total_distance(b)).unwrap()
+        total_distance(a, pos)
+          .partial_cmp(&total_distance(b, pos))
+          .unwrap()
       });
       // paths.sort_by_key(|p| p.len());
+
+      for path in paths.iter() {
+        tracing::info!(
+          "path: {:?} ({} ft)",
+          path
+            .iter()
+            .map(|n| n.name.clone())
+            .collect::<Vec<_>>()
+            .join(", "),
+          total_distance(path, pos).sqrt()
+        );
+      }
 
       let first_path = paths.first();
 
