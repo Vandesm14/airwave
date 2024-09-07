@@ -152,11 +152,12 @@ fn model(app: &App) -> Model {
 
   pathfinder.calculate(nodes);
 
-  fs::write(
-    "graph.dot",
-    format!("{:?}", Dot::with_config(&pathfinder.graph, &[])),
-  )
-  .unwrap();
+  // TODO: remove this
+  // fs::write(
+  //   "graph.dot",
+  //   format!("{:?}", Dot::with_config(&pathfinder.graph, &[])),
+  // )
+  // .unwrap();
 
   let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
   let path = pathfinder.path_to(

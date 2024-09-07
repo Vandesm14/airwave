@@ -94,6 +94,10 @@ impl Line {
   pub fn new(a: Vec2, b: Vec2) -> Self {
     Self(a, b)
   }
+
+  pub fn midpoint(&self) -> Vec2 {
+    self.0.midpoint(self.1)
+  }
 }
 
 impl From<Runway> for Line {

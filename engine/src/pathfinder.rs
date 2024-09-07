@@ -1,6 +1,8 @@
 use glam::Vec2;
 use petgraph::{
-  algo::simple_paths, visit::IntoNodeReferences, Graph, Undirected,
+  algo::simple_paths,
+  visit::{IntoNodeReferences, NodeRef},
+  Graph, Undirected,
 };
 
 use crate::{
@@ -32,12 +34,32 @@ impl WaypointNode {
     }
   }
 
+  pub fn set_name(&mut self, name: String) {
+    let n = match self {
+      WaypointNode::Taxiway { name, .. } => name,
+      WaypointNode::Runway { name, .. } => name,
+      WaypointNode::Gate { name, .. } => name,
+    };
+
+    *n = name;
+  }
+
   pub fn pos(&self) -> &Vec2 {
     match self {
       WaypointNode::Taxiway { pos, .. } => pos,
       WaypointNode::Runway { pos, .. } => pos,
       WaypointNode::Gate { pos, .. } => pos,
     }
+  }
+
+  pub fn set_pos(&mut self, pos: Vec2) {
+    let p = match self {
+      WaypointNode::Taxiway { pos, .. } => pos,
+      WaypointNode::Runway { pos, .. } => pos,
+      WaypointNode::Gate { pos, .. } => pos,
+    };
+
+    *p = pos;
   }
 }
 
@@ -202,7 +224,6 @@ impl Pathfinder {
           .collect::<Vec<_>>()
       });
 
-      let way: Option<Vec<WaypointNode>> = None;
       let mut pos = pos;
       let mut heading = heading;
 
@@ -212,7 +233,6 @@ impl Pathfinder {
       'outer: for path in ways {
         waypoints.clear();
 
-        dbg!(&path);
         let mut first = path.first().unwrap();
         for next in path.iter().skip(1) {
           let edge =
@@ -230,6 +250,12 @@ impl Pathfinder {
         // if all good
         break 'outer;
       }
+
+      let midpoint = to_node.weight().line().midpoint();
+      let mut last_wp = to.clone();
+      last_wp.set_pos(midpoint);
+
+      waypoints.push(last_wp);
 
       Some(waypoints)
     } else {
