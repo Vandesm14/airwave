@@ -200,6 +200,13 @@ $transparent-black: #000a;
         &.theirs {
           opacity: 0.5;
         }
+
+        &.selected {
+          .callsign {
+            color: #aaaa00;
+            font-weight: bold;
+          }
+        }
       }
     }
 
