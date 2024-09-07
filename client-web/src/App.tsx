@@ -46,8 +46,6 @@ export default function App() {
       if (window.speechSynthesis.speaking || isRecording()) {
         setTimeout(() => speak(message), 500);
       } else {
-        setSelectedAircraft(message.id);
-
         const utterance = new SpeechSynthesisUtterance(
           message.reply.replace(/[0-9]/g, '$& ')
         );
@@ -145,6 +143,7 @@ export default function App() {
         speakAsATC(json.value);
         break;
       case 'reply':
+        setSelectedAircraft(json.value.id);
         speakAsAircraft(json.value);
         break;
     }
