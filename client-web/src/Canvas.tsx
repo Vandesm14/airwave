@@ -395,7 +395,7 @@ export default function Canvas({
     let c = scalePoint(terminal.c);
     let d = scalePoint(terminal.d);
 
-    ctx.fillStyle = '#999';
+    ctx.fillStyle = '#555';
     ctx.lineWidth = scaleFeet(200);
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
@@ -439,7 +439,7 @@ export default function Canvas({
     let start = scalePoint(taxiway.a);
     let end = scalePoint(taxiway.b);
 
-    ctx.strokeStyle = '#999';
+    ctx.strokeStyle = '#555';
     ctx.lineWidth = scaleFeet(200);
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
@@ -472,7 +472,7 @@ export default function Canvas({
     let start = scalePoint(info.start);
     let end = scalePoint(info.end);
 
-    ctx.strokeStyle = '#666';
+    ctx.strokeStyle = '#222';
     ctx.lineWidth = scaleFeet(250);
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
@@ -496,50 +496,12 @@ export default function Canvas({
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     resetTransform(ctx);
     let pos = scalePoint(aircraft);
-    let taxi_yellow = '#ffff00';
-
-    ctx.fillStyle = taxi_yellow;
-    ctx.strokeStyle = taxi_yellow;
-
-    // Draw the dot
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeet(30), 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw the separation circle
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeet(150), 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Draw the direction
-    const length = 400;
-    const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
-    let endPos = scalePoint(end);
-
-    ctx.strokeStyle = taxi_yellow;
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    ctx.lineTo(endPos.x, endPos.y);
-    ctx.stroke();
-
-    // Draw info
-    let spacing = scaleFeet(100);
-    ctx.textAlign = 'left';
-    ctx.fillStyle = taxi_yellow;
-
-    // Draw callsign
-    ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
-
-    // Draw speed
-    ctx.fillText(
-      Math.round(aircraft.speed).toString(),
-      pos.x + spacing,
-      pos.y - spacing + fontSize()
-    );
+    // let taxi_yellow = '#ffff00';
+    let taxi_color = '#ffffff';
 
     if (aircraft.state.type === 'taxiing') {
-      ctx.strokeStyle = 'red';
-      ctx.fillStyle = 'red';
+      ctx.strokeStyle = '#ffff00aa';
+      ctx.lineWidth = scaleFeet(50);
 
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
@@ -550,13 +512,51 @@ export default function Canvas({
       ctx.stroke();
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        ctx.fillStyle = wp.behavior === 'goto' ? '#00ff00' : '#ff0000';
+        ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
         let pos = scalePoint(arrToVec2(wp.value));
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
         ctx.fill();
       }
     }
+
+    resetTransform(ctx);
+
+    ctx.fillStyle = taxi_color;
+    ctx.strokeStyle = taxi_color;
+
+    // Draw the dot
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(50), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw the direction
+    ctx.strokeStyle = `${taxi_color}`;
+    ctx.lineWidth = 2;
+    const length = 400;
+    const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
+    let endPos = scalePoint(end);
+
+    ctx.strokeStyle = taxi_color;
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(endPos.x, endPos.y);
+    ctx.stroke();
+
+    // Draw info
+    let spacing = scaleFeet(100);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = taxi_color;
+
+    // Draw callsign
+    ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
+
+    // Draw speed
+    ctx.fillText(
+      Math.round(aircraft.speed).toString(),
+      pos.x + spacing,
+      pos.y - spacing + fontSize()
+    );
   }
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
