@@ -11,18 +11,38 @@ use crate::{
   structs::{Gate, Line, Runway, Taxiway, Terminal},
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum NodeKind {
+  Taxiway,
+  Runway,
+  Gate,
+  Apron,
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub enum Node<T> {
-  Taxiway { name: String, value: T },
-  Runway { name: String, value: T },
-  Gate { name: String, value: T },
-  Apron { name: String, value: T },
+pub struct Node<T> {
+  pub name: String,
+  pub kind: NodeKind,
+  pub value: T,
+}
+
+impl<T> Node<T> {
+  pub fn new(name: String, kind: NodeKind, value: T) -> Self {
+    Self { name, kind, value }
+  }
+}
+
+impl<T> Node<T> {
+  pub fn name_and_kind_eq<U>(&self, other: &Node<U>) -> bool {
+    self.name == other.name && self.kind == other.kind
+  }
 }
 
 impl From<Taxiway> for Node<Line> {
   fn from(value: Taxiway) -> Self {
-    Node::Taxiway {
+    Node {
       name: value.id,
+      kind: NodeKind::Taxiway,
       value: Line::new(value.a, value.b),
     }
   }
@@ -30,8 +50,9 @@ impl From<Taxiway> for Node<Line> {
 
 impl From<Runway> for Node<Line> {
   fn from(value: Runway) -> Self {
-    Node::Runway {
+    Node {
       name: value.id.clone(),
+      kind: NodeKind::Runway,
       value: Line::new(value.start(), value.end()),
     }
   }
@@ -39,42 +60,11 @@ impl From<Runway> for Node<Line> {
 
 impl From<Gate> for Node<Line> {
   fn from(value: Gate) -> Self {
-    Node::Gate {
-      name: value.id.clone(),
+    Node {
+      name: value.id,
+      kind: NodeKind::Gate,
       value: Line::new(value.pos, value.pos),
     }
-  }
-}
-
-impl<T> Node<T> {
-  pub fn name(&self) -> &String {
-    match self {
-      Node::Taxiway { name, .. } => name,
-      Node::Runway { name, .. } => name,
-      Node::Gate { name, .. } => name,
-      Node::Apron { name, .. } => name,
-    }
-  }
-
-  pub fn value(&self) -> &T {
-    match self {
-      Node::Taxiway { value, .. } => value,
-      Node::Runway { value, .. } => value,
-      Node::Gate { value, .. } => value,
-      Node::Apron { value, .. } => value,
-    }
-  }
-}
-
-impl Node<Line> {
-  pub fn line(&self) -> &Line {
-    self.value()
-  }
-}
-
-impl Node<Vec2> {
-  pub fn pos(&self) -> &Vec2 {
-    self.value()
   }
 }
 
@@ -122,16 +112,19 @@ impl From<Object> for Line {
 impl From<Object> for Node<Line> {
   fn from(value: Object) -> Self {
     match value {
-      Object::Taxiway(value) => Node::Taxiway {
+      Object::Taxiway(value) => Node {
         name: value.id.clone(),
+        kind: NodeKind::Taxiway,
         value: value.into(),
       },
-      Object::Runway(value) => Node::Runway {
+      Object::Runway(value) => Node {
         name: value.id.clone(),
+        kind: NodeKind::Runway,
         value: value.into(),
       },
-      Object::Terminal(value) => Node::Apron {
+      Object::Terminal(value) => Node {
         name: value.id.to_string(),
+        kind: NodeKind::Apron,
         value: value.into(),
       },
     }
@@ -142,50 +135,34 @@ pub fn total_distance(path: &[Node<Vec2>]) -> f32 {
   let mut distance = 0.0;
   let mut first = path.first().unwrap();
   for next in path.iter().skip(1) {
-    distance += first.pos().distance_squared(*next.pos());
+    distance += first.value.distance_squared(next.value);
     first = next;
   }
 
   distance
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum WaypointString {
-  Taxiway(String),
-  Runway(String),
-  Gate(String),
-}
-
-impl WaypointString {
-  fn name(&self) -> &String {
-    match self {
-      WaypointString::Taxiway(name) => name,
-      WaypointString::Runway(name) => name,
-      WaypointString::Gate(name) => name,
-    }
-  }
-}
-
-impl<T> PartialEq<Node<T>> for WaypointString {
-  fn eq(&self, other: &Node<T>) -> bool {
-    match self {
-      WaypointString::Taxiway(n) => match other {
-        Node::Taxiway { name, .. } => n == name,
-        _ => false,
-      },
-      WaypointString::Runway(n) => match other {
-        Node::Runway { name, .. } => n == name,
-        _ => false,
-      },
-      WaypointString::Gate(n) => match other {
-        Node::Gate { name, .. } => n == name,
-        _ => false,
-      },
-    }
-  }
-}
+// impl<T> PartialEq<Node<T>> for WaypointString {
+//   fn eq(&self, other: &Node<T>) -> bool {
+//     match self {
+//       WaypointString::Taxiway(n) => match other {
+//         Node::Taxiway { name, .. } => n == name,
+//         _ => false,
+//       },
+//       WaypointString::Runway(n) => match other {
+//         Node::Runway { name, .. } => n == name,
+//         _ => false,
+//       },
+//       WaypointString::Gate(n) => match other {
+//         Node::Gate { name, .. } => n == name,
+//         _ => false,
+//       },
+//     }
+//   }
+// }
 
 type WaypointGraph = Graph<Node<Line>, Vec2, Undirected>;
+type WaypointString = Node<()>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Pathfinder {
@@ -250,8 +227,14 @@ impl Pathfinder {
     pos: Vec2,
     heading: f32,
   ) -> Option<Vec<Node<Vec2>>> {
-    let from_node = self.graph.node_references().find(|(_, n)| from.eq(*n));
-    let to_node = self.graph.node_references().find(|(_, n)| to.eq(*n));
+    let from_node = self
+      .graph
+      .node_references()
+      .find(|(_, n)| from.name_and_kind_eq(*n));
+    let to_node = self
+      .graph
+      .node_references()
+      .find(|(_, n)| to.name_and_kind_eq(*n));
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
       let mut paths = simple_paths::all_simple_paths::<Vec<_>, _>(
@@ -283,22 +266,41 @@ impl Pathfinder {
               .unwrap()
               .weight();
 
-            waypoints.push(wp);
+            waypoints.push(Node::new(
+              first.1.name.clone(),
+              first.1.kind,
+              *edge,
+            ));
 
             first = next;
           }
 
           let wp = to_node.weight();
           let point = match wp {
-            Node::Taxiway { value, .. } => value.midpoint(),
-            Node::Runway { value, .. } => value.0,
-            Node::Gate { value, .. } => value.0,
-            Node::Apron { .. } => {
+            Node {
+              kind: NodeKind::Taxiway,
+              value,
+              ..
+            } => value.midpoint(),
+            Node {
+              kind: NodeKind::Runway,
+              value,
+              ..
+            } => value.0,
+            Node {
+              kind: NodeKind::Gate,
+              value,
+              ..
+            } => value.0,
+            Node {
+              kind: NodeKind::Apron,
+              ..
+            } => {
               unreachable!("Apron should not be a waypoint")
             }
           };
 
-          waypoints.push(Waypoint::from_waypoint_string(to.clone(), point));
+          waypoints.push(Node::new(to.name.clone(), to.kind, point));
 
           waypoints
         })
@@ -310,12 +312,12 @@ impl Pathfinder {
 
           let mut first = path.first().unwrap();
           for next in path.iter().skip(1) {
-            let angle = angle_between_points(pos, *first.pos());
+            let angle = angle_between_points(pos, first.value);
             if delta_angle(heading, angle).abs() >= 175.0 {
               return false;
             }
 
-            pos = *first.pos();
+            pos = first.value;
             heading = angle;
 
             // if Some(first) == via.peek().copied().copied() {
@@ -323,7 +325,7 @@ impl Pathfinder {
             //   via.next();
             // }
             if let Some(v) = via.peek().copied().copied() {
-              if v.clone().eq(first) {
+              if v.name_and_kind_eq(first) {
                 via.next();
               }
             }
@@ -332,7 +334,7 @@ impl Pathfinder {
           }
 
           if let Some(v) = via.peek().copied().copied() {
-            if v.clone().eq(first) {
+            if v.name_and_kind_eq(first) {
               via.next();
             }
           }

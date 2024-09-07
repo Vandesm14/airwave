@@ -5,7 +5,7 @@ use nannou::{
 };
 
 use engine::{
-  pathfinder::GraphWaypoint,
+  pathfinder::Node,
   structs::{Gate, Runway, Taxiway, Terminal},
 };
 
@@ -100,9 +100,9 @@ impl Draw for Airport {
   }
 }
 
-impl Draw for GraphWaypoint {
+impl Draw for Node<Vec2> {
   fn draw(&self, draw: &nannou::Draw, scale: f32) {
-    let pos = self.pos() * scale;
+    let pos = self.value * scale;
     draw
       .ellipse()
       .x_y(pos.x, pos.y)
@@ -112,11 +112,11 @@ impl Draw for GraphWaypoint {
   }
 }
 
-impl Draw for Vec<GraphWaypoint> {
+impl Draw for Vec<Node<Vec2>> {
   fn draw(&self, draw: &nannou::Draw, scale: f32) {
     let yellow = color::rgb::<u8>(0xff, 0xff, 0x00);
     draw.polyline().weight(20.0 * scale).points_colored(
-      self.iter().map(|w| (glam_to_geom(w.pos() * scale), yellow)),
+      self.iter().map(|w| (glam_to_geom(w.value * scale), yellow)),
     );
 
     for point in self.iter() {
