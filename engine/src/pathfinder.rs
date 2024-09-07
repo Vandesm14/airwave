@@ -6,7 +6,7 @@ use petgraph::{
 };
 
 use crate::{
-  find_line_intersection,
+  angle_between_points, delta_angle, find_line_intersection,
   structs::{Gate, Line, Runway, Taxiway},
 };
 
@@ -224,27 +224,32 @@ impl Pathfinder {
           .collect::<Vec<_>>()
       });
 
-      let mut pos = pos;
-      let mut heading = heading;
-
       let mut waypoints: Vec<WaypointNode> = Vec::new();
 
       #[allow(clippy::never_loop)]
       'outer: for path in ways {
+        let mut pos = pos;
+        let mut heading = heading;
+
         waypoints.clear();
 
         let mut first = path.first().unwrap();
         for next in path.iter().skip(1) {
           let edge =
             self.graph.edges_connecting(first.0, next.0).next().unwrap();
+          let wp = first.1.clone().into_waypoint(*edge.weight());
 
-          waypoints.push(first.1.clone().into_waypoint(*edge.weight()));
+          let angle = angle_between_points(pos, *wp.pos());
+          if delta_angle(heading, angle).abs() >= 170.0 {
+            continue 'outer;
+          }
+
+          pos = *wp.pos();
+          heading = angle;
+
+          waypoints.push(wp);
 
           first = next;
-
-          // if not_ok {
-          //   continue 'outer;
-          // }
         }
 
         // if all good

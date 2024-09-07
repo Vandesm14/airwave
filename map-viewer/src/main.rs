@@ -1,5 +1,4 @@
 use std::{
-  fs,
   io::Write,
   path::{Path, PathBuf},
   sync::mpsc::Receiver,
@@ -21,7 +20,6 @@ use nannou_egui::{egui, Egui};
 use notify::{
   Config, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
 };
-use petgraph::dot::Dot;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
