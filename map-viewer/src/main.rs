@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use engine::{
-  pathfinder::{Pathfinder, Segment, Waypoint, WaypointString},
+  pathfinder::{GraphWaypoint, Object, Pathfinder, WaypointString},
   structs::{Airport, Runway, World},
 };
 use glam::Vec2;
@@ -70,7 +70,7 @@ pub struct Model {
   world: World,
   egui: Egui,
   _watcher: INotifyWatcher,
-  waypoints: Vec<Waypoint>,
+  waypoints: Vec<GraphWaypoint>,
 
   update_receiver: Receiver<Result<notify::Event, notify::Error>>,
 }
@@ -137,7 +137,7 @@ fn model(app: &App) -> Model {
     .first()
     .unwrap();
 
-  let mut nodes: Vec<Segment> = Vec::new();
+  let mut nodes: Vec<Object> = Vec::new();
   nodes.extend(airport.runways.iter().map(|r| r.clone().into()));
   nodes.extend(airport.taxiways.iter().map(|t| t.clone().into()));
   nodes.extend(airport.terminals.iter().map(|g| g.clone().into()));

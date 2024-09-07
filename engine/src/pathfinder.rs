@@ -1,7 +1,6 @@
 use glam::Vec2;
 use petgraph::{
   algo::simple_paths,
-  graph::NodeIndex,
   visit::{IntoNodeReferences, NodeRef},
   Graph, Undirected,
 };
@@ -13,140 +12,41 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Waypoint {
-  Taxiway { name: String, pos: Vec2 },
-  Runway { name: String, pos: Vec2 },
-  Gate { name: String, pos: Vec2 },
-  Apron { name: String, pos: Vec2 },
+pub enum Node<T> {
+  Taxiway { name: String, value: T },
+  Runway { name: String, value: T },
+  Gate { name: String, value: T },
+  Apron { name: String, value: T },
 }
 
-impl Waypoint {
-  pub fn from_node(node: Node, pos: Vec2) -> Self {
-    match node {
-      Node::Taxiway { name, .. } => Waypoint::Taxiway { name, pos },
-      Node::Runway { name, .. } => Waypoint::Runway { name, pos },
-      Node::Gate { name, .. } => Waypoint::Gate { name, pos },
-      Node::Apron { name, .. } => Waypoint::Apron { name, pos },
-    }
-  }
-
-  pub fn from_waypoint_string(waypoint: WaypointString, pos: Vec2) -> Self {
-    match waypoint {
-      WaypointString::Taxiway(name) => Waypoint::Taxiway { name, pos },
-      WaypointString::Runway(name) => Waypoint::Runway { name, pos },
-      WaypointString::Gate(name) => Waypoint::Gate { name, pos },
-    }
-  }
-
-  pub fn name(&self) -> &String {
-    match self {
-      Waypoint::Taxiway { name, .. } => name,
-      Waypoint::Runway { name, .. } => name,
-      Waypoint::Gate { name, .. } => name,
-      Waypoint::Apron { name, .. } => name,
-    }
-  }
-
-  pub fn set_name(&mut self, name: String) {
-    let n = match self {
-      Waypoint::Taxiway { name, .. } => name,
-      Waypoint::Runway { name, .. } => name,
-      Waypoint::Gate { name, .. } => name,
-      Waypoint::Apron { name, .. } => name,
-    };
-
-    *n = name;
-  }
-
-  pub fn pos(&self) -> &Vec2 {
-    match self {
-      Waypoint::Taxiway { pos, .. } => pos,
-      Waypoint::Runway { pos, .. } => pos,
-      Waypoint::Gate { pos, .. } => pos,
-      Waypoint::Apron { pos, .. } => pos,
-    }
-  }
-
-  pub fn set_pos(&mut self, pos: Vec2) {
-    let p = match self {
-      Waypoint::Taxiway { pos, .. } => pos,
-      Waypoint::Runway { pos, .. } => pos,
-      Waypoint::Gate { pos, .. } => pos,
-      Waypoint::Apron { pos, .. } => pos,
-    };
-
-    *p = pos;
-  }
-}
-
-impl PartialEq<Node> for Waypoint {
-  fn eq(&self, other: &Node) -> bool {
-    match (self, other) {
-      (
-        Waypoint::Taxiway { name, .. },
-        Node::Taxiway {
-          name: other_name, ..
-        },
-      ) => name == other_name,
-      (
-        Waypoint::Runway { name, .. },
-        Node::Runway {
-          name: other_name, ..
-        },
-      ) => name == other_name,
-      (
-        Waypoint::Gate { name, .. },
-        Node::Gate {
-          name: other_name, ..
-        },
-      ) => name == other_name,
-      _ => false,
-    }
-  }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Node {
-  Taxiway { name: String, line: Line },
-  Runway { name: String, line: Line },
-  Gate { name: String, line: Line },
-  Apron { name: String, line: Line },
-}
-
-impl Node {
-  fn into_waypoint(self, pos: Vec2) -> Waypoint {
-    Waypoint::from_node(self, pos)
-  }
-}
-
-impl From<Taxiway> for Node {
+impl From<Taxiway> for Node<Line> {
   fn from(value: Taxiway) -> Self {
     Node::Taxiway {
       name: value.id,
-      line: Line::new(value.a, value.b),
+      value: Line::new(value.a, value.b),
     }
   }
 }
 
-impl From<Runway> for Node {
+impl From<Runway> for Node<Line> {
   fn from(value: Runway) -> Self {
     Node::Runway {
       name: value.id.clone(),
-      line: Line::new(value.start(), value.end()),
+      value: Line::new(value.start(), value.end()),
     }
   }
 }
 
-impl From<Gate> for Node {
+impl From<Gate> for Node<Line> {
   fn from(value: Gate) -> Self {
     Node::Gate {
       name: value.id.clone(),
-      line: Line::new(value.pos, value.pos),
+      value: Line::new(value.pos, value.pos),
     }
   }
 }
 
-impl Node {
+impl<T> Node<T> {
   pub fn name(&self) -> &String {
     match self {
       Node::Taxiway { name, .. } => name,
@@ -156,77 +56,89 @@ impl Node {
     }
   }
 
-  pub fn line(&self) -> &Line {
+  pub fn value(&self) -> &T {
     match self {
-      Node::Taxiway { line, .. } => line,
-      Node::Runway { line, .. } => line,
-      Node::Gate { line, .. } => line,
-      Node::Apron { line, .. } => line,
+      Node::Taxiway { value, .. } => value,
+      Node::Runway { value, .. } => value,
+      Node::Gate { value, .. } => value,
+      Node::Apron { value, .. } => value,
     }
   }
 }
 
+impl Node<Line> {
+  pub fn line(&self) -> &Line {
+    self.value()
+  }
+}
+
+impl Node<Vec2> {
+  pub fn pos(&self) -> &Vec2 {
+    self.value()
+  }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub enum Segment {
+pub enum Object {
   Taxiway(Taxiway),
   Runway(Runway),
   Terminal(Terminal),
 }
 
-impl From<Taxiway> for Segment {
+impl From<Taxiway> for Object {
   fn from(value: Taxiway) -> Self {
-    Segment::Taxiway(value)
+    Object::Taxiway(value)
   }
 }
 
-impl From<Runway> for Segment {
+impl From<Runway> for Object {
   fn from(value: Runway) -> Self {
-    Segment::Runway(value)
+    Object::Runway(value)
   }
 }
 
-impl From<Terminal> for Segment {
+impl From<Terminal> for Object {
   fn from(value: Terminal) -> Self {
-    Segment::Terminal(value)
+    Object::Terminal(value)
   }
 }
 
-impl From<&Segment> for Line {
-  fn from(value: &Segment) -> Self {
+impl From<&Object> for Line {
+  fn from(value: &Object) -> Self {
     match value {
-      Segment::Taxiway(value) => Line::new(value.a, value.b),
-      Segment::Runway(value) => Line::new(value.start(), value.end()),
-      Segment::Terminal(value) => value.apron,
+      Object::Taxiway(value) => Line::new(value.a, value.b),
+      Object::Runway(value) => Line::new(value.start(), value.end()),
+      Object::Terminal(value) => value.apron,
     }
   }
 }
 
-impl From<Segment> for Line {
-  fn from(value: Segment) -> Self {
+impl From<Object> for Line {
+  fn from(value: Object) -> Self {
     (&value).into()
   }
 }
 
-impl From<Segment> for Node {
-  fn from(value: Segment) -> Self {
+impl From<Object> for Node<Line> {
+  fn from(value: Object) -> Self {
     match value {
-      Segment::Taxiway(value) => Node::Taxiway {
+      Object::Taxiway(value) => Node::Taxiway {
         name: value.id.clone(),
-        line: value.into(),
+        value: value.into(),
       },
-      Segment::Runway(value) => Node::Runway {
+      Object::Runway(value) => Node::Runway {
         name: value.id.clone(),
-        line: value.into(),
+        value: value.into(),
       },
-      Segment::Terminal(value) => Node::Apron {
+      Object::Terminal(value) => Node::Apron {
         name: value.id.to_string(),
-        line: value.into(),
+        value: value.into(),
       },
     }
   }
 }
 
-pub fn total_distance(path: &[Waypoint]) -> f32 {
+pub fn total_distance(path: &[Node<Vec2>]) -> f32 {
   let mut distance = 0.0;
   let mut first = path.first().unwrap();
   for next in path.iter().skip(1) {
@@ -244,29 +156,36 @@ pub enum WaypointString {
   Gate(String),
 }
 
-impl PartialEq<Node> for WaypointString {
-  fn eq(&self, other: &Node) -> bool {
-    match (self, other) {
-      (WaypointString::Taxiway(a), Node::Taxiway { name, .. }) => a == name,
-      (WaypointString::Runway(a), Node::Runway { name, .. }) => a == name,
-      (WaypointString::Gate(a), Node::Gate { name, .. }) => a == name,
-      _ => false,
+impl WaypointString {
+  fn name(&self) -> &String {
+    match self {
+      WaypointString::Taxiway(name) => name,
+      WaypointString::Runway(name) => name,
+      WaypointString::Gate(name) => name,
     }
   }
 }
 
-impl PartialEq<Waypoint> for WaypointString {
-  fn eq(&self, other: &Waypoint) -> bool {
-    match (self, other) {
-      (WaypointString::Taxiway(a), Waypoint::Taxiway { name, .. }) => a == name,
-      (WaypointString::Runway(a), Waypoint::Runway { name, .. }) => a == name,
-      (WaypointString::Gate(a), Waypoint::Gate { name, .. }) => a == name,
-      _ => false,
+impl<T> PartialEq<Node<T>> for WaypointString {
+  fn eq(&self, other: &Node<T>) -> bool {
+    match self {
+      WaypointString::Taxiway(n) => match other {
+        Node::Taxiway { name, .. } => n == name,
+        _ => false,
+      },
+      WaypointString::Runway(n) => match other {
+        Node::Runway { name, .. } => n == name,
+        _ => false,
+      },
+      WaypointString::Gate(n) => match other {
+        Node::Gate { name, .. } => n == name,
+        _ => false,
+      },
     }
   }
 }
 
-type WaypointGraph = Graph<Node, Vec2, Undirected>;
+type WaypointGraph = Graph<Node<Line>, Vec2, Undirected>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Pathfinder {
@@ -280,7 +199,7 @@ impl Pathfinder {
     }
   }
 
-  pub fn calculate(&mut self, mut segments: Vec<Segment>) {
+  pub fn calculate(&mut self, mut segments: Vec<Object>) {
     let mut graph = WaypointGraph::new_undirected();
     if segments.is_empty() || segments.len() < 2 {
       tracing::error!("No segments to calculate path for");
@@ -309,7 +228,7 @@ impl Pathfinder {
         }
       }
 
-      if let Segment::Terminal(terminal) = current {
+      if let Object::Terminal(terminal) = current {
         for gate in terminal.gates.iter() {
           let gate_node = graph.add_node(gate.clone().into());
           let intersection =
@@ -330,7 +249,7 @@ impl Pathfinder {
     via: Vec<&WaypointString>,
     pos: Vec2,
     heading: f32,
-  ) -> Option<Vec<Waypoint>> {
+  ) -> Option<Vec<Node<Vec2>>> {
     let from_node = self.graph.node_references().find(|(_, n)| from.eq(*n));
     let to_node = self.graph.node_references().find(|(_, n)| to.eq(*n));
 
@@ -345,7 +264,7 @@ impl Pathfinder {
 
       paths.next()?;
 
-      let mut paths: Vec<Vec<Waypoint>> = paths
+      let mut paths: Vec<Vec<Node<Vec2>>> = paths
         .map(|path| {
           path
             .into_iter()
@@ -353,13 +272,16 @@ impl Pathfinder {
             .collect::<Vec<_>>()
         })
         .map(|path| {
-          let mut waypoints: Vec<Waypoint> = Vec::new();
+          let mut waypoints: Vec<Node<Vec2>> = Vec::new();
 
           let mut first = path.first().unwrap();
           for next in path.iter().skip(1) {
-            let edge =
-              self.graph.edges_connecting(first.0, next.0).next().unwrap();
-            let wp = first.1.clone().into_waypoint(*edge.weight());
+            let edge = self
+              .graph
+              .edges_connecting(first.0, next.0)
+              .next()
+              .unwrap()
+              .weight();
 
             waypoints.push(wp);
 
@@ -368,9 +290,9 @@ impl Pathfinder {
 
           let wp = to_node.weight();
           let point = match wp {
-            Node::Taxiway { line, .. } => line.midpoint(),
-            Node::Runway { line, .. } => line.0,
-            Node::Gate { line, .. } => line.0,
+            Node::Taxiway { value, .. } => value.midpoint(),
+            Node::Runway { value, .. } => value.0,
+            Node::Gate { value, .. } => value.0,
             Node::Apron { .. } => {
               unreachable!("Apron should not be a waypoint")
             }
