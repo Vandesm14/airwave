@@ -532,7 +532,6 @@ impl Aircraft {
       ..
     } = &mut self.state
     {
-      dbg!(&waypoints, &current);
       let waypoints = pathfinder.path_to(
         Node {
           name: current.name.clone(),
@@ -544,7 +543,6 @@ impl Aircraft {
         self.pos,
         self.heading,
       );
-      dbg!(&waypoints);
 
       if let Some(mut waypoints) = waypoints {
         waypoints.reverse();

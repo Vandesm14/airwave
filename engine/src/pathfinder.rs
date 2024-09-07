@@ -308,10 +308,6 @@ impl Pathfinder {
             pos = first.value;
             heading = angle;
 
-            // if Some(first) == via.peek().copied().copied() {
-            //   dbg!("YES");
-            //   via.next();
-            // }
             if let Some(v) = via.peek().copied() {
               if v.name_and_kind_eq(first) {
                 via.next();
