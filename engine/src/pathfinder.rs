@@ -6,8 +6,9 @@ use petgraph::{
 };
 
 use crate::{
-  angle_between_points, delta_angle, find_line_intersection,
-  structs::{Gate, Line, Runway, Taxiway},
+  angle_between_points, closest_point_on_line, delta_angle,
+  find_line_intersection,
+  structs::{Gate, Line, Runway, Taxiway, Terminal},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -15,6 +16,7 @@ pub enum WaypointNode {
   Taxiway { name: String, pos: Vec2 },
   Runway { name: String, pos: Vec2 },
   Gate { name: String, pos: Vec2 },
+  Apron { name: String, pos: Vec2 },
 }
 
 impl WaypointNode {
@@ -23,6 +25,7 @@ impl WaypointNode {
       Node::Taxiway { name, .. } => WaypointNode::Taxiway { name, pos },
       Node::Runway { name, .. } => WaypointNode::Runway { name, pos },
       Node::Gate { name, .. } => WaypointNode::Gate { name, pos },
+      Node::Apron { name, .. } => WaypointNode::Apron { name, pos },
     }
   }
 
@@ -31,6 +34,7 @@ impl WaypointNode {
       WaypointNode::Taxiway { name, .. } => name,
       WaypointNode::Runway { name, .. } => name,
       WaypointNode::Gate { name, .. } => name,
+      WaypointNode::Apron { name, .. } => name,
     }
   }
 
@@ -39,6 +43,7 @@ impl WaypointNode {
       WaypointNode::Taxiway { name, .. } => name,
       WaypointNode::Runway { name, .. } => name,
       WaypointNode::Gate { name, .. } => name,
+      WaypointNode::Apron { name, .. } => name,
     };
 
     *n = name;
@@ -49,6 +54,7 @@ impl WaypointNode {
       WaypointNode::Taxiway { pos, .. } => pos,
       WaypointNode::Runway { pos, .. } => pos,
       WaypointNode::Gate { pos, .. } => pos,
+      WaypointNode::Apron { pos, .. } => pos,
     }
   }
 
@@ -57,6 +63,7 @@ impl WaypointNode {
       WaypointNode::Taxiway { pos, .. } => pos,
       WaypointNode::Runway { pos, .. } => pos,
       WaypointNode::Gate { pos, .. } => pos,
+      WaypointNode::Apron { pos, .. } => pos,
     };
 
     *p = pos;
@@ -94,6 +101,7 @@ pub enum Node {
   Taxiway { name: String, line: Line },
   Runway { name: String, line: Line },
   Gate { name: String, line: Line },
+  Apron { name: String, line: Line },
 }
 
 impl Node {
@@ -135,6 +143,7 @@ impl Node {
       Node::Taxiway { name, .. } => name,
       Node::Runway { name, .. } => name,
       Node::Gate { name, .. } => name,
+      Node::Apron { name, .. } => name,
     }
   }
 
@@ -143,6 +152,67 @@ impl Node {
       Node::Taxiway { line, .. } => line,
       Node::Runway { line, .. } => line,
       Node::Gate { line, .. } => line,
+      Node::Apron { line, .. } => line,
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Segment {
+  Taxiway(Taxiway),
+  Runway(Runway),
+  Terminal(Terminal),
+}
+
+impl From<Taxiway> for Segment {
+  fn from(value: Taxiway) -> Self {
+    Segment::Taxiway(value)
+  }
+}
+
+impl From<Runway> for Segment {
+  fn from(value: Runway) -> Self {
+    Segment::Runway(value)
+  }
+}
+
+impl From<Terminal> for Segment {
+  fn from(value: Terminal) -> Self {
+    Segment::Terminal(value)
+  }
+}
+
+impl From<&Segment> for Line {
+  fn from(value: &Segment) -> Self {
+    match value {
+      Segment::Taxiway(value) => Line::new(value.a, value.b),
+      Segment::Runway(value) => Line::new(value.start(), value.end()),
+      Segment::Terminal(value) => value.apron,
+    }
+  }
+}
+
+impl From<Segment> for Line {
+  fn from(value: Segment) -> Self {
+    (&value).into()
+  }
+}
+
+impl From<Segment> for Node {
+  fn from(value: Segment) -> Self {
+    match value {
+      Segment::Taxiway(value) => Node::Taxiway {
+        name: value.id.clone(),
+        line: value.into(),
+      },
+      Segment::Runway(value) => Node::Runway {
+        name: value.id.clone(),
+        line: value.into(),
+      },
+      Segment::Terminal(value) => Node::Apron {
+        name: value.id.to_string(),
+        line: value.into(),
+      },
     }
   }
 }
@@ -161,34 +231,44 @@ impl Pathfinder {
     }
   }
 
-  pub fn calculate(&mut self, mut segments: Vec<Node>) {
+  pub fn calculate(&mut self, mut segments: Vec<Segment>) {
     let mut graph = WaypointGraph::new_undirected();
     if segments.is_empty() || segments.len() < 2 {
       tracing::error!("No segments to calculate path for");
       return;
     }
 
-    while !segments.is_empty() {
-      let current = segments.pop();
-      if let Some(current) = current {
-        let current_node = graph
-          .node_references()
-          .find(|(_, n)| *n == &current)
-          .map(|(i, _)| i)
-          .unwrap_or_else(|| graph.add_node(current.clone()));
-        for segment in segments.iter() {
-          let line = segment.line();
+    while let Some(current) = segments.pop() {
+      dbg!(current.clone());
 
-          let intersection = find_line_intersection(*line, *current.line());
-          if let Some(intersection) = intersection {
-            let segment_node = graph
-              .node_references()
-              .find(|(_, n)| *n == segment)
-              .map(|(i, _)| i)
-              .unwrap_or_else(|| graph.add_node(segment.clone()));
+      let current_node = graph
+        .node_references()
+        .find(|(_, n)| **n == current.clone().into())
+        .map(|(i, _)| i)
+        .unwrap_or_else(|| graph.add_node(current.clone().into()));
 
-            graph.add_edge(current_node, segment_node, intersection);
-          }
+      for segment in segments.iter() {
+        let line: Line = segment.into();
+
+        let intersection = find_line_intersection(line, current.clone().into());
+        if let Some(intersection) = intersection {
+          let segment_node = graph
+            .node_references()
+            .find(|(_, n)| **n == segment.clone().into())
+            .map(|(i, _)| i)
+            .unwrap_or_else(|| graph.add_node(segment.clone().into()));
+
+          graph.add_edge(current_node, segment_node, intersection);
+        }
+      }
+
+      if let Segment::Terminal(terminal) = current {
+        for gate in terminal.gates.iter() {
+          let gate_node = graph.add_node(gate.clone().into());
+          let intersection =
+            closest_point_on_line(gate.pos, terminal.apron.0, terminal.apron.1);
+
+          graph.add_edge(current_node, gate_node, intersection);
         }
       }
     }
@@ -216,6 +296,10 @@ impl Pathfinder {
       );
       let mut ways = ways.collect::<Vec<_>>();
       ways.sort_by_key(|a| a.len());
+
+      if ways.is_empty() {
+        return None;
+      }
 
       let ways = ways.into_iter().map(|way| {
         way
@@ -256,9 +340,17 @@ impl Pathfinder {
         break 'outer;
       }
 
-      let midpoint = to_node.weight().line().midpoint();
+      let wp = to_node.weight();
+      let point = match wp {
+        Node::Taxiway { line, .. } => line.midpoint(),
+        Node::Runway { line, .. } => line.0,
+        Node::Gate { line, .. } => line.0,
+        Node::Apron { .. } => {
+          unreachable!("Apron should not be a waypoint")
+        }
+      };
       let mut last_wp = to.clone();
-      last_wp.set_pos(midpoint);
+      last_wp.set_pos(point);
 
       waypoints.push(last_wp);
 

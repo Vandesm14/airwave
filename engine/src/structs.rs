@@ -87,7 +87,7 @@ impl Airport {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct Line(pub Vec2, pub Vec2);
 
 impl Line {
@@ -385,6 +385,7 @@ pub struct Terminal {
   pub d: Vec2,
 
   pub gates: Vec<Gate>,
+  pub apron: Line,
 }
 
 impl Aircraft {

@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use engine::{
-  pathfinder::{Node, Pathfinder, WaypointNode},
+  pathfinder::{Node, Pathfinder, Segment, WaypointNode},
   structs::{Airport, Runway, World},
 };
 use glam::Vec2;
@@ -136,26 +136,23 @@ fn model(app: &App) -> Model {
     .airports
     .first()
     .unwrap();
-  let mut nodes: Vec<Node> = Vec::new();
 
+  let mut nodes: Vec<Segment> = Vec::new();
   nodes.extend(airport.runways.iter().map(|r| r.clone().into()));
   nodes.extend(airport.taxiways.iter().map(|t| t.clone().into()));
-  nodes.extend(
-    airport
-      .terminals
-      .iter()
-      .flat_map(|t| t.gates.iter())
-      .map(|g| g.clone().into()),
-  );
+  nodes.extend(airport.terminals.iter().map(|g| g.clone().into()));
 
   pathfinder.calculate(nodes);
 
   // TODO: remove this
-  // fs::write(
-  //   "graph.dot",
-  //   format!("{:?}", Dot::with_config(&pathfinder.graph, &[])),
-  // )
-  // .unwrap();
+  std::fs::write(
+    "graph.dot",
+    format!(
+      "{:?}",
+      petgraph::dot::Dot::with_config(&pathfinder.graph, &[])
+    ),
+  )
+  .unwrap();
 
   let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
   let path = pathfinder.path_to(
@@ -163,7 +160,7 @@ fn model(app: &App) -> Model {
       name: "20".to_owned(),
       pos: Vec2::default(),
     },
-    &WaypointNode::Taxiway {
+    &WaypointNode::Gate {
       name: "A1".to_owned(),
       pos: Vec2::default(),
     },

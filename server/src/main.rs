@@ -28,7 +28,7 @@ use engine::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
   inverse_degrees, move_point,
   structs::{
-    Airport, Airspace, Command, CommandWithFreq, Gate, Runway, Taxiway,
+    Airport, Airspace, Command, CommandWithFreq, Gate, Line, Runway, Taxiway,
     TaxiwayKind, Terminal,
   },
   DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
@@ -360,7 +360,9 @@ fn cross_roads_airport(airport: &mut Airport, airspace_size: f32) {
       2750.0,
     ),
     gates: Vec::new(),
+    apron: Line::default(),
   };
+  terminal_a.apron = Line::new(terminal_a.a, terminal_a.b);
 
   let gate_count = 8;
 
@@ -459,7 +461,9 @@ fn v_pattern_airport(airport: &mut Airport) {
     c,
     d,
     gates: Vec::new(),
+    apron: Line::default(),
   };
+  terminal_a.apron = Line::new(terminal_a.a, terminal_a.b);
 
   let gates_line_start = move_point(terminal_a.a, UP, 1200.0);
   let gates = 5;
