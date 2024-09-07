@@ -4,6 +4,7 @@ import {
   frequencyAtom,
   isRecordingAtom,
   messagesAtom,
+  selectedAircraftAtom,
   worldAtom,
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
@@ -24,6 +25,7 @@ export default function App() {
   let [, setWorld] = useAtom(worldAtom);
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useAtom(frequencyAtom);
+  let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
   async function getMedia(constraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
@@ -44,6 +46,8 @@ export default function App() {
       if (window.speechSynthesis.speaking || isRecording()) {
         setTimeout(() => speak(message), 500);
       } else {
+        setSelectedAircraft(message.id);
+
         const utterance = new SpeechSynthesisUtterance(
           message.reply.replace(/[0-9]/g, '$& ')
         );

@@ -1,5 +1,10 @@
 import { useAtom } from 'solid-jotai';
-import { radarAtom, renderAtom, worldAtom } from './lib/atoms';
+import {
+  radarAtom,
+  renderAtom,
+  selectedAircraftAtom,
+  worldAtom,
+} from './lib/atoms';
 import {
   Aircraft,
   Airspace,
@@ -43,6 +48,7 @@ export default function Canvas({
 
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
+  let [selectedAircraft] = useAtom(selectedAircraftAtom);
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
   let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
@@ -307,8 +313,13 @@ export default function Canvas({
     resetTransform(ctx);
     let pos = scalePoint(aircraft);
 
-    ctx.fillStyle = '#00aa00';
-    ctx.strokeStyle = '#00aa00';
+    if (selectedAircraft() == aircraft.callsign) {
+      ctx.fillStyle = '#aaaa00';
+      ctx.strokeStyle = '#aaaa00';
+    } else {
+      ctx.fillStyle = '#00aa00';
+      ctx.strokeStyle = '#00aa00';
+    }
 
     // Draw the dot
     ctx.beginPath();
@@ -325,7 +336,11 @@ export default function Canvas({
     const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
     let endPos = scalePoint(end);
 
-    ctx.strokeStyle = '#00aa00';
+    if (selectedAircraft() == aircraft.callsign) {
+      ctx.strokeStyle = '#aaaa00';
+    } else {
+      ctx.strokeStyle = '#00aa00';
+    }
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     ctx.lineTo(endPos.x, endPos.y);
@@ -339,6 +354,10 @@ export default function Canvas({
       aircraft.intention.type === 'flyover'
         ? '#fc67eb'
         : '#44ff44';
+
+    if (selectedAircraft() == aircraft.callsign) {
+      ctx.fillStyle = '#FFE045';
+    }
 
     // Draw callsign
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
@@ -499,7 +518,10 @@ export default function Canvas({
     // let taxi_yellow = '#ffff00';
     let taxi_color = '#ffffff';
 
-    if (aircraft.state.type === 'taxiing') {
+    if (
+      aircraft.state.type === 'taxiing' &&
+      selectedAircraft() == aircraft.callsign
+    ) {
       ctx.strokeStyle = '#ffff00aa';
       ctx.lineWidth = scaleFeet(50);
 
@@ -547,6 +569,9 @@ export default function Canvas({
     let spacing = scaleFeet(100);
     ctx.textAlign = 'left';
     ctx.fillStyle = taxi_color;
+    if (selectedAircraft() == aircraft.callsign) {
+      ctx.fillStyle = '#FFE045';
+    }
 
     // Draw callsign
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);

@@ -61,3 +61,4 @@ function initMessages(): Array<RadioMessage> {
   }
 }
 export let messagesAtom = atom<Array<RadioMessage>>(initMessages());
+export let selectedAircraftAtom = atom<string>('');
