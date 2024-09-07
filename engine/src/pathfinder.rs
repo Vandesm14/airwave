@@ -286,7 +286,7 @@ impl Pathfinder {
           let mut first = path.first().unwrap();
           for next in path.iter().skip(1) {
             let angle = angle_between_points(pos, first.value);
-            if first.kind != NodeKind::Gate
+            if from_node.1.kind != NodeKind::Gate
               && delta_angle(heading, angle).abs() >= 175.0
             {
               return false;
@@ -319,11 +319,11 @@ impl Pathfinder {
         })
         .collect();
 
-      // paths.sort_by(|a, b| {
-      //   // TODO: unwrapping might cause errors with NaN's and Infinity's
-      //   total_distance(a).partial_cmp(&total_distance(b)).unwrap()
-      // });
-      paths.sort_by_key(|p| p.len());
+      paths.sort_by(|a, b| {
+        // TODO: unwrapping might cause errors with NaN's and Infinity's
+        total_distance(a).partial_cmp(&total_distance(b)).unwrap()
+      });
+      // paths.sort_by_key(|p| p.len());
 
       let first_path = paths.first();
 
