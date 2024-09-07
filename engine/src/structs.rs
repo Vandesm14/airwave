@@ -14,7 +14,7 @@ use crate::{
   closest_point_on_line, delta_angle,
   engine::OutgoingReply,
   get_random_point_on_circle, inverse_degrees, move_point,
-  pathfinder::{Node, Object, Pathfinder},
+  pathfinder::{Node, NodeBehavior, Object, Pathfinder},
   KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
@@ -536,6 +536,7 @@ impl Aircraft {
         Node {
           name: current.name.clone(),
           kind: current.kind,
+          behavior: NodeBehavior::GoTo,
           value: (),
         },
         waypoints.last().unwrap().clone(),

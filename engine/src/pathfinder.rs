@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
   find_line_intersection,
-  structs::{Gate, Line, Runway, Taxiway, Terminal},
+  structs::{Line, Runway, Taxiway, Terminal},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -21,54 +21,42 @@ pub enum NodeKind {
   Apron,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NodeBehavior {
+  GoTo,
+  HoldShort,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
   pub name: String,
   pub kind: NodeKind,
+  pub behavior: NodeBehavior,
 
   #[serde(default)]
   pub value: T,
 }
 
 impl<T> Node<T> {
-  pub fn new(name: String, kind: NodeKind, value: T) -> Self {
-    Self { name, kind, value }
+  pub fn new(
+    name: String,
+    kind: NodeKind,
+    behavior: NodeBehavior,
+    value: T,
+  ) -> Self {
+    Self {
+      name,
+      kind,
+      behavior,
+      value,
+    }
   }
 }
 
 impl<T> Node<T> {
   pub fn name_and_kind_eq<U>(&self, other: &Node<U>) -> bool {
     self.name == other.name && self.kind == other.kind
-  }
-}
-
-impl From<Taxiway> for Node<Line> {
-  fn from(value: Taxiway) -> Self {
-    Node {
-      name: value.id,
-      kind: NodeKind::Taxiway,
-      value: Line::new(value.a, value.b),
-    }
-  }
-}
-
-impl From<Runway> for Node<Line> {
-  fn from(value: Runway) -> Self {
-    Node {
-      name: value.id.clone(),
-      kind: NodeKind::Runway,
-      value: Line::new(value.start(), value.end()),
-    }
-  }
-}
-
-impl From<Gate> for Node<Line> {
-  fn from(value: Gate) -> Self {
-    Node {
-      name: value.id,
-      kind: NodeKind::Gate,
-      value: Line::new(value.pos, value.pos),
-    }
   }
 }
 
@@ -119,16 +107,19 @@ impl From<Object> for Node<Line> {
       Object::Taxiway(value) => Node {
         name: value.id.clone(),
         kind: NodeKind::Taxiway,
+        behavior: NodeBehavior::GoTo,
         value: value.into(),
       },
       Object::Runway(value) => Node {
         name: value.id.clone(),
         kind: NodeKind::Runway,
+        behavior: NodeBehavior::HoldShort,
         value: value.into(),
       },
       Object::Terminal(value) => Node {
         name: value.id.to_string(),
         kind: NodeKind::Apron,
+        behavior: NodeBehavior::GoTo,
         value: value.into(),
       },
     }
@@ -145,25 +136,6 @@ pub fn total_distance(path: &[Node<Vec2>]) -> f32 {
 
   distance
 }
-
-// impl<T> PartialEq<Node<T>> for WaypointString {
-//   fn eq(&self, other: &Node<T>) -> bool {
-//     match self {
-//       WaypointString::Taxiway(n) => match other {
-//         Node::Taxiway { name, .. } => n == name,
-//         _ => false,
-//       },
-//       WaypointString::Runway(n) => match other {
-//         Node::Runway { name, .. } => n == name,
-//         _ => false,
-//       },
-//       WaypointString::Gate(n) => match other {
-//         Node::Gate { name, .. } => n == name,
-//         _ => false,
-//       },
-//     }
-//   }
-// }
 
 type WaypointGraph = Graph<Node<Line>, Vec2, Undirected>;
 type WaypointString = Node<()>;
@@ -211,7 +183,12 @@ impl Pathfinder {
 
       if let Object::Terminal(terminal) = current {
         for gate in terminal.gates.iter() {
-          let gate_node = graph.add_node(gate.clone().into());
+          let gate_node = graph.add_node(Node {
+            name: gate.id.clone(),
+            kind: NodeKind::Gate,
+            behavior: NodeBehavior::GoTo,
+            value: Line::new(gate.pos, gate.pos),
+          });
           let intersection =
             closest_point_on_line(gate.pos, terminal.apron.0, terminal.apron.1);
 
@@ -270,7 +247,12 @@ impl Pathfinder {
               .unwrap()
               .weight();
 
-            waypoints.push(Node::new(next.1.name.clone(), next.1.kind, *edge));
+            waypoints.push(Node::new(
+              next.1.name.clone(),
+              next.1.kind,
+              next.1.behavior,
+              *edge,
+            ));
 
             first = next;
           }
@@ -285,7 +267,12 @@ impl Pathfinder {
             ..
           } = wp
           {
-            waypoints.push(Node::new(to.name.clone(), to.kind, value.0));
+            waypoints.push(Node::new(
+              to.name.clone(),
+              to.kind,
+              to.behavior,
+              value.0,
+            ));
           }
 
           waypoints

@@ -27,7 +27,7 @@ use engine::{
   add_degrees,
   engine::{Engine, IncomingUpdate, OutgoingReply},
   inverse_degrees, move_point,
-  pathfinder::{Node, NodeKind},
+  pathfinder::{Node, NodeBehavior, NodeKind},
   structs::{
     Aircraft, AircraftState, Airport, Airspace, Command, CommandWithFreq, Gate,
     Line, Runway, Taxiway, TaxiwayKind, Terminal,
@@ -98,6 +98,7 @@ fn main() {
     current: Node {
       name: runway.id.clone(),
       kind: NodeKind::Runway,
+      behavior: NodeBehavior::GoTo,
       value: runway.pos,
     },
     waypoints: Vec::new(),

@@ -6,10 +6,8 @@ use std::{
 
 use clap::Parser;
 use engine::{
-  add_degrees,
-  pathfinder::{Node, NodeKind, Object, Pathfinder},
-  structs::{Airport, Runway, World},
-  subtract_degrees,
+  pathfinder::{Node, NodeBehavior, NodeKind},
+  structs::{Runway, World},
 };
 use glam::Vec2;
 use map_viewer::Draw;
@@ -146,8 +144,8 @@ fn model(app: &App) -> Model {
     .find_map(|t| t.gates.iter().find(|g| g.id == "A1"))
     .unwrap();
   let path = airport.pathfinder.path_to(
-    Node::new("20".to_owned(), NodeKind::Runway, ()),
-    Node::new("A1".to_owned(), NodeKind::Gate, ()),
+    Node::new("20".to_owned(), NodeKind::Runway, NodeBehavior::GoTo, ()),
+    Node::new("A1".to_owned(), NodeKind::Gate, NodeBehavior::GoTo, ()),
     vec![],
     runway_20.pos,
     runway_20.heading,
