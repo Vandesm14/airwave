@@ -426,12 +426,12 @@ export default function Canvas({
 
     for (let i = 0; i < terminal.gates.length; i++) {
       let gate = terminal.gates[i];
-      let id = `${terminal.id}${i + 1}`;
-      drawGate(ctx, gate, id);
+      drawGate(ctx, gate);
     }
   }
 
-  function drawGate(ctx: Ctx, gate: Gate, id: string) {
+  function drawGate(ctx: Ctx, gate: Gate) {
+    let id = gate.id;
     let pos = scalePoint(gate.pos);
 
     ctx.fillStyle = 'red';
