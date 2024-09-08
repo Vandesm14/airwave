@@ -80,8 +80,7 @@ impl Engine {
 
     // TODO: update replies
     let reply = if let AircraftIntention::Land = aircraft.intention {
-      let center = Vec2::splat(airspace.size);
-      let heading = angle_between_points(center, aircraft.pos);
+      let heading = angle_between_points(airspace.pos, aircraft.pos);
       let direction = heading_to_direction(heading);
 
       format!(
