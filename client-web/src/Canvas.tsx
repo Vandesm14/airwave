@@ -578,7 +578,7 @@ export default function Canvas({
       aircraft.state.type === 'taxiing' &&
       selectedAircraft() == aircraft.callsign
     ) {
-      ctx.strokeStyle = '#ffff00aa';
+      ctx.strokeStyle = '#ffff0088';
       ctx.lineWidth = scaleFeet(50);
 
       ctx.beginPath();
@@ -609,7 +609,7 @@ export default function Canvas({
     ctx.fill();
 
     // Draw the direction
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = taxi_color;
     ctx.lineWidth = 2;
     const length = 400;
     const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
