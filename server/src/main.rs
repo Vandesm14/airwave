@@ -19,7 +19,9 @@ use tokio::net::TcpListener;
 #[tokio::main]
 async fn main() {
   tracing_subscriber::fmt::init();
-  dotenv::dotenv().unwrap();
+  if let Err(e) = dotenv::dotenv() {
+    tracing::warn!(".env file was not provided");
+  }
 
   let openai_api_key: Arc<str> = std::env::var("OPENAI_API_KEY")
     .expect("OPENAI_API_KEY must be set")

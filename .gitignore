@@ -13,3 +13,6 @@ client-web/dist/
 # Environment
 .env
 assets/
+
+# From Replit
+.cargo
