@@ -571,7 +571,8 @@ export default function Canvas({
     resetTransform(ctx);
     let pos = scalePoint(aircraft);
     // let taxi_yellow = '#ffff00';
-    let taxi_color = '#ffffff';
+    let taxi_color =
+      selectedAircraft() == aircraft.callsign ? '#ffe045' : '#ffffff';
 
     if (
       aircraft.state.type === 'taxiing' &&
@@ -608,7 +609,7 @@ export default function Canvas({
     ctx.fill();
 
     // Draw the direction
-    ctx.strokeStyle = taxi_color;
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     const length = 400;
     const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
@@ -627,9 +628,6 @@ export default function Canvas({
     let spacing = scaleFeet(100);
     ctx.textAlign = 'left';
     ctx.fillStyle = taxi_color;
-    if (selectedAircraft() == aircraft.callsign) {
-      ctx.fillStyle = '#FFE045';
-    }
 
     // Draw callsign
     ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
