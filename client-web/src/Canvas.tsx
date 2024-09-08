@@ -608,14 +608,14 @@ export default function Canvas({
         for (let taxiway of airport.taxiways) {
           drawTaxiway(ctx, taxiway);
         }
-        for (let taxiway of airport.taxiways) {
-          drawTaxiwayLabel(ctx, taxiway);
-        }
         for (let runway of airport.runways) {
           drawRunwayGround(ctx, runway);
         }
         for (let terminal of airport.terminals) {
           drawTerminal(ctx, terminal);
+        }
+        for (let taxiway of airport.taxiways) {
+          drawTaxiwayLabel(ctx, taxiway);
         }
       }
     }
