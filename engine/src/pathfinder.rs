@@ -281,18 +281,22 @@ impl Pathfinder {
         .filter(|path| {
           let mut via = vias.iter().peekable();
 
-          // let mut pos = pos;
-          // let mut heading = heading;
+          let mut pos = pos;
+          let mut heading = heading;
 
-          let mut first = path.first().unwrap();
-          for next in path.iter().skip(1) {
-            // TODO: fix angle detection
-            // let angle = angle_between_points(pos, first.value);
-            // if from_node.1.kind != NodeKind::Gate
-            //   && delta_angle(heading, angle).abs() >= 175.0
-            // {
-            //   return false;
-            // }
+          let mut first = &Node {
+            name: from.name.clone(),
+            kind: from.kind,
+            behavior: NodeBehavior::GoTo,
+            value: pos,
+          };
+          for next in path.iter() {
+            let angle = angle_between_points(pos, first.value);
+            if from_node.1.kind != NodeKind::Gate
+              && delta_angle(heading, angle).abs() >= 175.0
+            {
+              return false;
+            }
 
             // If the waypoint is a runway and we haven't instructed to go to
             // it, don't use this path.
@@ -302,8 +306,8 @@ impl Pathfinder {
               return false;
             }
 
-            // pos = first.value;
-            // heading = angle;
+            pos = first.value;
+            heading = angle;
 
             if let Some(v) = via.peek().copied() {
               if v.name_and_kind_eq(first) {
