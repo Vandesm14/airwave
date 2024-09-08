@@ -235,7 +235,9 @@ impl Engine {
               aircraft.target.heading = *hdg;
 
               if let AircraftState::HoldingPattern(_) = &aircraft.state {
-                aircraft.state = AircraftState::Flying;
+                aircraft.state = AircraftState::Flying {
+                  waypoints: Vec::new(),
+                };
               }
             }
             Task::Speed(spd) => aircraft.target.speed = *spd,

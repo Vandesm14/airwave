@@ -202,7 +202,9 @@ impl Runway {
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
 pub enum AircraftState {
-  Flying,
+  Flying {
+    waypoints: Vec<Node<Vec2>>,
+  },
   Landing(Runway),
   HoldingPattern(HoldDirection),
   Taxiing {
@@ -320,7 +322,9 @@ impl Aircraft {
       callsign: Self::random_callsign(),
       is_colliding: false,
       intention: AircraftIntention::Land,
-      state: AircraftState::Flying,
+      state: AircraftState::Flying {
+        waypoints: Vec::new(),
+      },
       pos: point.position,
       heading: angle_between_points(point.position, airspace.pos),
       speed: 250.0,
@@ -409,7 +413,7 @@ impl Aircraft {
   }
 
   pub fn do_hold_pattern(&mut self, direction: HoldDirection) {
-    if let AircraftState::Flying = self.state {
+    if let AircraftState::Flying { .. } = self.state {
       self.state = AircraftState::HoldingPattern(direction);
     }
   }
@@ -429,7 +433,9 @@ impl Aircraft {
       }
     }
 
-    self.state = AircraftState::Flying;
+    self.state = AircraftState::Flying {
+      waypoints: Vec::new(),
+    };
 
     let text = match reason {
       GoAroundReason::TooHigh => {
@@ -524,7 +530,7 @@ impl Aircraft {
   }
 
   pub fn resume_own_navigation(&mut self) {
-    if let AircraftState::Flying = &self.state {
+    if let AircraftState::Flying { .. } = &self.state {
       if let AircraftIntention::Depart { heading, .. } = &self.intention {
         self.target.heading = *heading;
         self.target.speed = 400.0;
@@ -622,7 +628,9 @@ impl Aircraft {
 
         self.target.altitude = 3000.0;
 
-        self.state = AircraftState::Flying;
+        self.state = AircraftState::Flying {
+          waypoints: Vec::new(),
+        };
       } else {
         todo!("not at or lined up to runway {}", runway.id)
       }
