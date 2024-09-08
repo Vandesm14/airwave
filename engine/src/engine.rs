@@ -268,16 +268,6 @@ impl Engine {
             Task::TaxiContinue => aircraft.do_continue_taxi(),
             Task::Direct(waypoint_str) => {
               if let Some(ref airport) = airport {
-                // if let Some(node) =
-                //   airport.waypoints.iter().find(|w| &w.name == waypoint)
-                // {
-                //   let current = waypoints;
-                //   aircraft.state = AircraftState::Flying {
-                //     current: Some(node.clone()),
-                //     waypoints: Vec::new(),
-                //   };
-                // }
-
                 let mut current = None;
                 let mut waypoints = Vec::new();
 
