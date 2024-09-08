@@ -2,7 +2,8 @@ use std::f32::consts::PI;
 
 use glam::Vec2;
 use rand::Rng;
-use structs::Line;
+use serde::{Deserialize, Serialize};
+use structs::{Runway, Taxiway, Terminal};
 
 pub mod engine;
 pub mod pathfinder;
@@ -17,6 +18,39 @@ pub const UP: f32 = 0.0;
 pub const DOWN: f32 = 180.0;
 pub const LEFT: f32 = 270.0;
 pub const RIGHT: f32 = 90.0;
+
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+pub struct Line(pub Vec2, pub Vec2);
+
+impl Line {
+  pub fn new(a: Vec2, b: Vec2) -> Self {
+    Self(a, b)
+  }
+
+  pub fn midpoint(&self) -> Vec2 {
+    self.0.midpoint(self.1)
+  }
+}
+
+impl From<Runway> for Line {
+  fn from(value: Runway) -> Self {
+    Line::new(value.start(), value.end())
+  }
+}
+
+impl From<Taxiway> for Line {
+  fn from(value: Taxiway) -> Self {
+    Line::new(value.a, value.b)
+  }
+}
+
+impl From<Terminal> for Line {
+  fn from(value: Terminal) -> Self {
+    // TODO: This means that terminals can only have one enterance, AB
+
+    Line::new(value.a, value.b)
+  }
+}
 
 pub fn calculate_ils_altitude(distance: f32) -> f32 {
   let slope_radians = 7.0_f32.to_radians();

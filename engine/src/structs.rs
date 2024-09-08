@@ -14,7 +14,7 @@ use crate::{
   engine::OutgoingReply,
   get_random_point_on_circle, inverse_degrees, move_point,
   pathfinder::{Node, NodeBehavior, NodeKind, Object, Pathfinder},
-  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
+  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -107,49 +107,6 @@ impl Airport {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
-pub struct Line(pub Vec2, pub Vec2);
-
-impl Line {
-  pub fn new(a: Vec2, b: Vec2) -> Self {
-    Self(a, b)
-  }
-
-  pub fn midpoint(&self) -> Vec2 {
-    self.0.midpoint(self.1)
-  }
-}
-
-impl From<Runway> for Line {
-  fn from(value: Runway) -> Self {
-    Line::new(value.start(), value.end())
-  }
-}
-
-impl From<Taxiway> for Line {
-  fn from(value: Taxiway) -> Self {
-    Line::new(value.a, value.b)
-  }
-}
-
-impl From<Terminal> for Line {
-  fn from(value: Terminal) -> Self {
-    // TODO: This means that terminals can only have one enterance, AB
-
-    Line::new(value.a, value.b)
-  }
-}
-
-impl From<TaxiPoint> for Line {
-  fn from(value: TaxiPoint) -> Self {
-    match value {
-      TaxiPoint::Taxiway(x) => x.into(),
-      TaxiPoint::Runway(x) => x.into(),
-      TaxiPoint::Gate(x, _) => x.into(),
-    }
-  }
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum HoldDirection {
@@ -239,15 +196,6 @@ impl Runway {
   pub fn end(&self) -> Vec2 {
     move_point(self.pos, self.heading, self.length * 0.5)
   }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[serde(tag = "type", content = "value")]
-pub enum TaxiPoint {
-  Taxiway(Taxiway),
-  Runway(Runway),
-  Gate(Terminal, Gate),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
