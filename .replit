@@ -1,5 +1,5 @@
 modules = ["rust-stable", "nodejs-20", "web"]
-run = "pnpm client-web:build && cargo run --release --bin server -- --address 0.0.0.0:9001"
+run = "pnpm client-web:build && cargo run --release --bin server -- --address 0.0.0.0:9001 & cargo run --release --bin serve -- client-web/dist --address 0.0.0.0:8080"
 
 [nix]
 channel = "stable-24_05"
@@ -11,9 +11,11 @@ publicDir = "client-web/dist"
 
 [[ports]]
 localPort = 8080
+externalPort = 80
 
 [[ports]]
 localPort = 9001
+externalPort = 6000
 
 [env]
 PKG_CONFIG_PATH = "/nix/store/gp504m4dvw5k2pdx6pccf1km79fkcwgf-openssl-3.0.13/lib"

@@ -8,7 +8,7 @@ layout {
         args "client-web:build" "--watch"
       }
       pane name="client server" command="cargo" {
-        args "run" "--bin" "serve" "client-web/dist"
+        args "run" "--bin" "serve" "--" "client-web/dist" "--address" "0.0.0.0:8080"
       }
       pane name="engine server" command="cargo" {
         args "run" "--bin" "server" "--release" "--" "--address" "0.0.0.0:9001"
