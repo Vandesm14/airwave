@@ -1,7 +1,7 @@
 use engine::{
   move_point,
-  structs::{Airport, Gate, Line, Runway, Taxiway, Terminal},
-  DOWN, RIGHT, UP,
+  structs::{Airport, Gate, Runway, Taxiway, Terminal},
+  Line, DOWN, RIGHT, UP,
 };
 use glam::Vec2;
 
