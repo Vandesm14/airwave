@@ -608,17 +608,20 @@ export default function Canvas({
     ctx.fill();
 
     // Draw the direction
-    ctx.strokeStyle = `${taxi_color}`;
+    ctx.strokeStyle = taxi_color;
     ctx.lineWidth = 2;
     const length = 400;
     const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
     let endPos = scalePoint(end);
 
-    ctx.strokeStyle = taxi_color;
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     ctx.lineTo(endPos.x, endPos.y);
     ctx.stroke();
+
+    if (aircraft.created > Date.now()) {
+      return;
+    }
 
     // Draw info
     let spacing = scaleFeet(100);
