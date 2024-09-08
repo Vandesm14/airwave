@@ -9,14 +9,14 @@ use glam::Vec2;
 pub fn setup(airport: &mut Airport) {
   let runway_20 = Runway {
     id: "20".into(),
-    pos: Vec2::new(0.0, 0.0),
+    pos: airport.center + Vec2::new(0.0, 0.0),
     heading: 200.0,
     length: 7000.0,
   };
 
   let runway_27: Runway = Runway {
     id: "27".into(),
-    pos: Vec2::new(-1000.0, 2400.0),
+    pos: airport.center + Vec2::new(-1000.0, 2400.0),
     heading: 270.0,
     length: 7000.0,
   };

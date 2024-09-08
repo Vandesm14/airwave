@@ -12,7 +12,7 @@ pub fn setup(airport: &mut Airport) {
 
   let runway_27r = Runway {
     id: "27R".into(),
-    pos: Vec2::Y * 1500.0,
+    pos: airport.center + Vec2::Y * 1500.0,
     heading: 270.0,
     length: 7000.0,
   };
@@ -73,7 +73,7 @@ pub fn setup(airport: &mut Airport) {
 
   let runway_27l = Runway {
     id: "27L".into(),
-    pos: Vec2::Y * -1500.0,
+    pos: airport.center + Vec2::Y * -1500.0,
     heading: 270.0,
     length: 7000.0,
   };

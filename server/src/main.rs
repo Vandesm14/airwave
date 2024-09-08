@@ -41,26 +41,42 @@ async fn main() {
     Some(PathBuf::from_str("assets/world.json").unwrap()),
   );
 
-  let mut airport = Airport::new("KSFO".into(), Vec2::new(0.0, 0.0));
-  airport::v_pattern::setup(&mut airport);
-  airport.cache_waypoints();
-
-  tracing::debug!("Created {airport:?}");
-
-  let airspace = Airspace {
+  let mut airspace_ksfo = Airspace {
     id: "KSFO".into(),
-    pos: airport.center,
+    pos: Vec2::new(0.0, 0.0),
     size: NAUTICALMILES_TO_FEET * 30.0,
-    // TODO: remove clone after debugging
-    airports: vec![airport.clone()],
+    airports: vec![],
   };
+  tracing::debug!("Created {airspace_ksfo:?}");
 
-  tracing::debug!("Created {airspace:?}");
+  let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
+  airport::v_pattern::setup(&mut airport_ksfo);
+  airport_ksfo.cache_waypoints();
+  tracing::debug!("Created {airport_ksfo:?}");
 
-  engine.world.airspaces.push(airspace);
+  airspace_ksfo.airports.push(airport_ksfo);
+
+  let mut airspace_klax = Airspace {
+    id: "KLAX".into(),
+    pos: Vec2::new(
+      -NAUTICALMILES_TO_FEET * 80.0,
+      -NAUTICALMILES_TO_FEET * 40.0,
+    ),
+    size: NAUTICALMILES_TO_FEET * 30.0,
+    airports: vec![],
+  };
+  tracing::debug!("Created {airspace_klax:?}");
+
+  let mut airport_klax = Airport::new("KLAX".into(), airspace_klax.pos);
+  airport::parallel::setup(&mut airport_klax);
+  airport_klax.cache_waypoints();
+  tracing::debug!("Created {airport_klax:?}");
+
+  airspace_klax.airports.push(airport_klax);
+
+  engine.world.airspaces.push(airspace_ksfo);
+  engine.world.airspaces.push(airspace_klax);
   engine.spawn_random_aircraft();
-
-  // engine.spawn_random_aircraft();
 
   tokio::task::spawn_blocking(move || engine.begin_loop());
 
