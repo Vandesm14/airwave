@@ -2,6 +2,68 @@ use engine::structs::Airport;
 
 pub fn setup(_airport: &mut Airport) {
   todo!()
+
+  // let runway_01 = Runway {
+  //   id: "01".into(),
+  //   pos: Vec2::new(750.0, 750.0),
+  //   heading: 10.0,
+  //   length: 7000.0,
+  // };
+
+  // let runway_14 = Runway {
+  //   id: "14".into(),
+  //   pos: Vec2::new(750.0, 750.0),
+  //   heading: 140.0,
+  //   length: 9000.0,
+  // };
+
+  // let taxiway_b = Taxiway {
+  //   id: "B".into(),
+  //   a: move_point(
+  //     runway_14.start(),
+  //     add_degrees(runway_14.heading, 90.0),
+  //     -500.0,
+  //   ),
+  //   b: move_point(
+  //     runway_14.end(),
+  //     add_degrees(runway_14.heading, 90.0),
+  //     -500.0,
+  //   ),
+  // };
+
+  // // let taxiway_c = Taxiway {
+  // //   id: "C".into(),
+  // //   a: runway_01.end(),
+  // //   b: move_point(runway_01.end(), 180.0, 3600.0),
+  // // };
+
+  // let taxiway_a1 = Taxiway {
+  //   id: "A1".into(),
+  //   a: move_point(runway_14.start(), runway_14.heading - 90.0, 3250.0),
+  //   b: move_point(taxiway_b.a, runway_14.heading - 90.0, 3250.0),
+  // };
+
+  // let taxiway_a2 = Taxiway {
+  //   id: "A2".into(),
+  //   a: move_point(runway_14.end(), runway_14.heading + 90.0, 2750.0),
+  //   b: move_point(taxiway_b.b, runway_14.heading + 90.0, 2750.0),
+  // };
+
+  // let taxiway_a3 = Taxiway {
+  //   id: "A3".into(),
+  //   a: runway_14.end(),
+  //   b: taxiway_b.b,
+  // };
+
+  // airport.add_runway(runway_01);
+  // airport.add_runway(runway_14);
+
+  // airport.add_taxiway(taxiway_b);
+  // // airport.add_taxiway(taxiway_c);
+
+  // airport.add_taxiway(taxiway_a1);
+  // airport.add_taxiway(taxiway_a2);
+  // airport.add_taxiway(taxiway_a3);
 }
 
 // #[allow(dead_code)]
