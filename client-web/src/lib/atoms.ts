@@ -4,7 +4,6 @@ import { Aircraft, RadioMessage, World } from './types';
 type RadarConfig = {
   scale: number;
   isDragging: boolean;
-  isZooming: boolean;
   shiftPoint: {
     x: number;
     y: number;
@@ -21,7 +20,6 @@ type RadarConfig = {
 export let radarAtom = atom<RadarConfig>({
   scale: 1.0,
   isDragging: false,
-  isZooming: false,
   shiftPoint: {
     x: 0,
     y: 0,
