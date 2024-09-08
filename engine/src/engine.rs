@@ -201,11 +201,14 @@ impl Engine {
     for aircraft in self.world.aircraft.iter_mut() {
       aircraft.update(dt, &self.sender);
 
-      for airspace in &self.world.airspaces {
-        if !airspace.contains_point(aircraft.pos) {
-          aircraft.state = AircraftState::Deleted;
-        }
-      }
+      // if !self
+      //   .world
+      //   .airspaces
+      //   .iter()
+      //   .any(|a| a.contains_point(aircraft.pos))
+      // {
+      //   aircraft.state = AircraftState::Deleted;
+      // }
     }
   }
 
