@@ -352,6 +352,8 @@ export default function Canvas({
       ctx.stroke();
 
       if (aircraft.state.value.current) {
+        let pos = scalePoint(arrToVec2(aircraft.state.value.current.value));
+        ctx.fillStyle = '#ffff00';
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
         ctx.fill();
