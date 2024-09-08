@@ -769,16 +769,6 @@ impl Aircraft {
     }
   }
 
-  fn update_leave_airspace(&mut self, airspace: &Airspace) {
-    // TODO: reimplement leave airspace (we need access to our current airspace)
-    let distance = self.pos.distance_squared(airspace.pos);
-    let max_distance = (airspace.size).powf(2.0);
-
-    if distance >= max_distance {
-      self.state = AircraftState::Deleted;
-    }
-  }
-
   fn dt_climb_speed(&self, dt: f32) -> f32 {
     TIME_SCALE * (2000.0_f32 / 60.0_f32).round() * dt
   }
@@ -862,6 +852,5 @@ impl Aircraft {
     self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);
-    // self.update_leave_airspace(airspace_size);
   }
 }
