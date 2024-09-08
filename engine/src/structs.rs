@@ -140,7 +140,7 @@ pub enum Task {
   #[serde(rename = "taxi-continue")]
   TaxiContinue,
 
-  Direct(String),
+  Direct(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

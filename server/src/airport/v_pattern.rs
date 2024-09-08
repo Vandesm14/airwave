@@ -157,8 +157,8 @@ pub fn setup(airport: &mut Airport) {
     ),
   };
 
-  let wp_boar = Node {
-    name: "BOAR".to_owned(),
+  let wp_safe = Node {
+    name: "SAFE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: move_point(
@@ -171,7 +171,7 @@ pub fn setup(airport: &mut Airport) {
   airport.waypoints.push(wp_way);
   airport.waypoints.push(wp_dude);
   airport.waypoints.push(wp_road);
-  airport.waypoints.push(wp_boar);
+  airport.waypoints.push(wp_safe);
 
   airport.add_runway(runway_20);
   airport.add_runway(runway_27);
