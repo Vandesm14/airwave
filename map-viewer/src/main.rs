@@ -20,6 +20,7 @@ use nannou_egui::{egui, Egui};
 use notify::{
   Config, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
 };
+use petgraph::visit::IntoNodeReferences;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -145,26 +146,6 @@ fn model(app: &App) -> Model {
   //   ),
   // )
   // .unwrap();
-
-  let runway_20 = airport.runways.iter().find(|r| r.id == "20").unwrap();
-  let gate_a1 = airport
-    .terminals
-    .iter()
-    .find_map(|t| t.gates.iter().find(|g| g.id == "A1"))
-    .unwrap();
-  let path = airport.pathfinder.path_to(
-    Node::new("20".to_owned(), NodeKind::Runway, NodeBehavior::GoTo, ()),
-    Node::new("A1".to_owned(), NodeKind::Gate, NodeBehavior::GoTo, ()),
-    vec![],
-    runway_20.pos,
-    runway_20.heading,
-    // gate_a1.pos,
-    // gate_a1.heading,
-  );
-
-  if let Some(path) = path {
-    model.waypoints = path;
-  }
 
   model
 }
@@ -305,6 +286,17 @@ fn view(app: &App, model: &Model, frame: Frame) {
       airport.runways.iter().for_each(|taxiway| {
         taxiway.draw(&draw, scale);
       });
+
+      for edge in airport.pathfinder.graph.edge_references() {
+        let node = Node {
+          name: "".to_owned(),
+          kind: NodeKind::Taxiway,
+          behavior: NodeBehavior::GoTo,
+          value: *edge.weight(),
+        };
+
+        node.draw(&draw, scale);
+      }
     }
   }
 
