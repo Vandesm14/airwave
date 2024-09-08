@@ -48,6 +48,10 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
       // TODO: update stripboard on intention/state
       // } else if (strip.value.intention.type === 'willdepart') {
       //   target = `RW${strip.value.state.value.runway.id}`;
+    } else if (strip.value.intention.type === 'depart') {
+      target = `${strip.value.intention.value.heading
+        .toString()
+        .padStart(3, '0')}&nbsp;`;
     } else if (strip.value.state.type === 'taxiing') {
       switch (strip.value.state.value.current.kind) {
         case 'gate':
@@ -60,10 +64,6 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
           target = `&nbsp;&nbsp;${strip.value.state.value.current.name}`;
           break;
       }
-    } else if (strip.value.intention.type === 'depart') {
-      target = `${strip.value.intention.value.heading
-        .toString()
-        .padStart(3, '0')}&nbsp;`;
     }
 
     frequency = strip.value.frequency;
