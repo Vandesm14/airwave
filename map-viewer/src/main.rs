@@ -20,7 +20,6 @@ use nannou_egui::{egui, Egui};
 use notify::{
   Config, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
 };
-use petgraph::visit::IntoNodeReferences;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
