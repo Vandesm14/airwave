@@ -59,6 +59,35 @@ export default function App() {
     }
   }
 
+  function startRecording() {
+    whisper.startRecording();
+    setIsRecording(true);
+  }
+
+  function stopRecording() {
+    setIsRecording(false);
+    whisper.stopRecording((blob) => {
+      blob.arrayBuffer().then((value) => {
+        console.log('send voice request');
+        socket.send(
+          JSON.stringify({
+            type: 'voice',
+            value: {
+              data: [...new Uint8Array(value)],
+              frequency: frequency(),
+            },
+          })
+        );
+        console.log('sent voice request');
+      });
+    });
+  }
+
+  function discardRecording() {
+    whisper.abortRecording();
+    setIsRecording(false);
+  }
+
   createEffect(() => {
     localStorage.setItem('messages', JSON.stringify(messages()));
   });
@@ -74,35 +103,15 @@ export default function App() {
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Insert' && !isRecording()) {
-        whisper.startRecording();
-        setIsRecording(true);
-      } else if (e.key === 'Delete' && isRecording()) {
-        whisper.abortRecording();
-        setIsRecording(false);
+        startRecording();
       }
     });
 
     document.addEventListener('keyup', (e) => {
       if (e.key === 'Insert' && isRecording()) {
-        setIsRecording(false);
-
-        whisper.stopRecording((blob) => {
-          blob.arrayBuffer().then((value) => {
-            console.log('send voice request');
-
-            socket.send(
-              JSON.stringify({
-                type: 'voice',
-                value: {
-                  data: [...new Uint8Array(value)],
-                  frequency: frequency(),
-                },
-              })
-            );
-
-            console.log('sent voice request');
-          });
-        });
+        stopRecording();
+      } else if (e.key === 'Delete' && isRecording()) {
+        discardRecording();
       }
     });
   });
@@ -119,8 +128,9 @@ export default function App() {
 
   const search = new URLSearchParams(window.location.search);
   const hostname = search.get('ws') ?? window.location.hostname;
+  const port = search.get('port') ?? '9001';
 
-  let socket = new WebSocket(`ws://${hostname}:9001`);
+  let socket = new WebSocket(`ws://${hostname}:${port}`);
   socket.onopen = function (_) {
     console.log('[open] Connection established');
     console.log('Sending to server');
@@ -174,6 +184,18 @@ export default function App() {
       <div class="top-right">
         <StripBoard aircrafts={aircrafts}></StripBoard>
         <FreqSelector></FreqSelector>
+      </div>
+      <div class="bottom-right-buttons">
+        <button
+          class={`talk-button ${isRecording() ? 'recording' : ''}`}
+          onMouseDown={startRecording}
+          onMouseUp={stopRecording}
+        >
+          {isRecording() ? 'Recording...' : 'Talk'}
+        </button>
+        <button class="discard-button" onClick={discardRecording}>
+          Discard
+        </button>
       </div>
     </div>
   );

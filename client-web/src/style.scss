@@ -18,6 +18,39 @@ $transparent-black: #000a;
 
   font: 14px monospace;
 
+  .bottom-right-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px;
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: $transparent-black;
+    border: 1px solid white;
+
+    .talk-button,
+    .discard-button {
+      border: 1px solid white;
+      color: white;
+      background-color: transparent;
+      font-size: 14px;
+      padding: 4px;
+      cursor: pointer;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    .talk-button {
+      &.recording {
+        font-weight: bold;
+        color: rgb(255, 78, 78);
+      }
+    }
+  }
+
   #radar-tabs {
     display: flex;
     flex-direction: row;
