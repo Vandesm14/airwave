@@ -143,7 +143,9 @@ export default function App() {
         speakAsATC(json.value);
         break;
       case 'reply':
-        setSelectedAircraft(json.value.id);
+        if (json.value.frequency == frequency()) {
+          setSelectedAircraft(json.value.id);
+        }
         if (json.value.reply != '') speakAsAircraft(json.value);
         break;
     }
