@@ -7,8 +7,7 @@ use std::{path::PathBuf, sync::Arc};
 use clap::Parser;
 use engine::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  pathfinder::{Node, NodeBehavior, NodeKind},
-  structs::{Aircraft, AircraftState, Airport, Airspace},
+  structs::{Airport, Airspace},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
@@ -20,7 +19,7 @@ use tokio::net::TcpListener;
 async fn main() {
   tracing_subscriber::fmt::init();
   if let Err(e) = dotenv::dotenv() {
-    tracing::warn!(".env file was not provided");
+    tracing::warn!(".env file was not provided: {}", e);
   }
 
   let openai_api_key: Arc<str> = std::env::var("OPENAI_API_KEY")
