@@ -154,20 +154,17 @@ pub fn setup(airport: &mut Airport) {
 
   const GATES_PER_TERMINAL: usize = 4;
 
+  // TODO: Shift the gates back over to where they're supposed to be
   for i in 1..=GATES_PER_TERMINAL {
     terminal_a.gates.push(Gate {
       id: format!("{}{i}", terminal_a.id),
       heading: DOWN,
       pos: move_point(
-        move_point(
-          terminal_a
-            .c
-            .lerp(terminal_a.d, (1.0 / GATES_PER_TERMINAL as f32) * i as f32),
-          UP,
-          150.0,
-        ),
-        RIGHT,
-        terminal_a.c.lerp(terminal_a.d, 0.25).length() / 2.0,
+        terminal_a
+          .c
+          .lerp(terminal_a.d, (1.0 / GATES_PER_TERMINAL as f32) * i as f32),
+        UP,
+        150.0,
       ),
     });
 
@@ -175,15 +172,11 @@ pub fn setup(airport: &mut Airport) {
       id: format!("{}{i}", terminal_b.id),
       heading: UP,
       pos: move_point(
-        move_point(
-          terminal_b
-            .c
-            .lerp(terminal_b.d, (1.0 / GATES_PER_TERMINAL as f32) * i as f32),
-          DOWN,
-          150.0,
-        ),
-        RIGHT,
-        terminal_b.c.lerp(terminal_b.d, 0.25).length() / 2.0,
+        terminal_b
+          .c
+          .lerp(terminal_b.d, (1.0 / GATES_PER_TERMINAL as f32) * i as f32),
+        DOWN,
+        150.0,
       ),
     });
   }
