@@ -1,7 +1,7 @@
 use engine::{
   add_degrees, inverse_degrees, move_point,
-  structs::{Airport, Gate, Line, Runway, Taxiway, Terminal},
-  DOWN, LEFT, RIGHT, UP,
+  structs::{Airport, Gate, Runway, Taxiway, Terminal},
+  Line, DOWN, LEFT, RIGHT, UP,
 };
 use glam::Vec2;
 
