@@ -40,7 +40,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   let sinceCreated: string | null = null;
   let isOverTime = false;
   let [ourFrequency] = useAtom(frequencyAtom);
-  let [selectedAircraft] = useAtom(selectedAircraftAtom);
+  let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
   if (strip.type === 'strip') {
     if (strip.value.state.type === 'landing') {
@@ -73,6 +73,14 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
     );
   }
 
+  function handleMouseDown() {
+    if (strip.type === 'strip') {
+      setSelectedAircraft(strip.value.callsign);
+    }
+
+    onmousedown();
+  }
+
   if (strip.type === 'strip') {
     let intention = strip.value.intention.type === 'depart' ? 'D' : 'A';
     return (
@@ -83,7 +91,7 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
           overtime: isOverTime,
           selected: selectedAircraft() === strip.value.callsign,
         }}
-        onmousedown={onmousedown}
+        onmousedown={handleMouseDown}
         onmousemove={onmousemove}
       >
         <span class="callsign">{strip.value.callsign}</span>
@@ -199,30 +207,32 @@ export default function StripBoard({
   }
 
   function handleMouseUp() {
-    setStrips((strips) => {
-      let callsign = dragged();
-      let fromIndex = strips.findIndex(
-        (s) => s.type === 'strip' && s.value.callsign === callsign
-      );
-      let toIndex = separator();
+    if (separator()) {
+      setStrips((strips) => {
+        let callsign = dragged();
+        let fromIndex = strips.findIndex(
+          (s) => s.type === 'strip' && s.value.callsign === callsign
+        );
+        let toIndex = separator();
 
-      if (fromIndex !== -1) {
-        let newStrips = [];
-        for (let i = 0; i < strips.length; i++) {
-          if (i !== fromIndex) {
-            newStrips.push(strips[i]);
+        if (fromIndex !== -1) {
+          let newStrips = [];
+          for (let i = 0; i < strips.length; i++) {
+            if (i !== fromIndex) {
+              newStrips.push(strips[i]);
+            }
+
+            if (i === toIndex) {
+              newStrips.push(strips[fromIndex]);
+            }
           }
 
-          if (i === toIndex) {
-            newStrips.push(strips[fromIndex]);
-          }
+          return newStrips;
+        } else {
+          return strips;
         }
-
-        return newStrips;
-      } else {
-        return strips;
-      }
-    });
+      });
+    }
 
     resetDrag();
   }
