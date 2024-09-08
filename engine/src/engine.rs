@@ -5,7 +5,6 @@ use std::{
 };
 
 use async_channel::TryRecvError;
-use glam::Vec2;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
