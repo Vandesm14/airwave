@@ -1,7 +1,8 @@
 use engine::{
   add_degrees, inverse_degrees, move_point,
+  pathfinder::{Node, NodeBehavior, NodeKind},
   structs::{Airport, Gate, Runway, Taxiway, Terminal},
-  Line, DOWN, LEFT, RIGHT, UP,
+  subtract_degrees, Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
 
@@ -122,6 +123,31 @@ pub fn setup(airport: &mut Airport) {
     a: move_point(taxiway_c.b, inverse_degrees(runway_20.heading), 2500.0),
     b: move_point(runway_20.end(), inverse_degrees(runway_20.heading), 2500.0),
   };
+
+  let wp_way = Node {
+    name: "WAY".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_27.start(),
+      inverse_degrees(runway_27.heading),
+      NAUTICALMILES_TO_FEET * 18.0,
+    ),
+  };
+
+  let wp_dude = Node {
+    name: "DUDE".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      wp_way.value,
+      subtract_degrees(runway_27.heading, 90.0),
+      NAUTICALMILES_TO_FEET * 8.0,
+    ),
+  };
+
+  airport.waypoints.push(wp_way);
+  airport.waypoints.push(wp_dude);
 
   airport.add_runway(runway_20);
   airport.add_runway(runway_27);

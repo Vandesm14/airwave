@@ -96,6 +96,7 @@ export type Airport = {
   runways: Array<Runway>;
   taxiways: Array<Taxiway>;
   terminals: Array<Terminal>;
+  waypoints: Array<NodeVec2>;
   altitudeRange: [number, number];
 };
 

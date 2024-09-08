@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::{
-  angle_between_points, heading_to_direction,
+  angle_between_points, delta_angle, heading_to_direction,
+  pathfinder::Node,
   structs::{
     Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Task, World,
   },
@@ -271,8 +272,15 @@ impl Engine {
             }
             Task::TaxiHold => aircraft.do_hold_taxi(false),
             Task::TaxiContinue => aircraft.do_continue_taxi(),
-            Task::HoldPattern(direction) => {
-              aircraft.do_hold_pattern(*direction)
+            Task::Direct(waypoint) => {
+              if let Some(ref airport) = airport {
+                if let Some(node) =
+                  airport.waypoints.iter().find(|w| &w.name == waypoint)
+                {
+                  aircraft.target.heading =
+                    angle_between_points(aircraft.pos, node.value);
+                }
+              }
             }
           }
         }

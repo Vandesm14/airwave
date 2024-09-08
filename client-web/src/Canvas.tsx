@@ -10,6 +10,7 @@ import {
   Airspace,
   arrToVec2,
   Gate,
+  NodeVec2,
   Runway,
   Taxiway,
   Terminal,
@@ -309,6 +310,24 @@ export default function Canvas({
     }
   }
 
+  function drawWaypoint(ctx: Ctx, wp: NodeVec2) {
+    let pos = scalePoint(arrToVec2(wp.value));
+    ctx.fillStyle = '#888';
+    ctx.strokeStyle = '#888';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(500), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw the separation circle
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, scaleFeet(2000), 0, Math.PI * 2);
+    ctx.stroke();
+
+    let spacing = scaleFeet(nauticalMilesToFeet * 0.8);
+    ctx.textAlign = 'center';
+    ctx.fillText(wp.name, pos.x, pos.y - spacing);
+  }
+
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     resetTransform(ctx);
     let pos = scalePoint(aircraft);
@@ -589,6 +608,10 @@ export default function Canvas({
       for (let airport of airspace.airports) {
         for (let runway of airport.runways) {
           drawRunway(ctx, runway);
+        }
+
+        for (let wp of airport.waypoints) {
+          drawWaypoint(ctx, wp);
         }
       }
     }
