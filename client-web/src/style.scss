@@ -104,6 +104,12 @@ $transparent-black: #000a;
         .text {
           margin-left: 5px;
         }
+
+        &.selected {
+          .callsign {
+            color: #ffe045;
+          }
+        }
       }
     }
 

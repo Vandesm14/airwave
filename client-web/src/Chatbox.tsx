@@ -1,5 +1,10 @@
 import { useAtom } from 'solid-jotai';
-import { frequencyAtom, isRecordingAtom, messagesAtom } from './lib/atoms';
+import {
+  frequencyAtom,
+  isRecordingAtom,
+  messagesAtom,
+  selectedAircraftAtom,
+} from './lib/atoms';
 import { createEffect, createSignal } from 'solid-js';
 
 export default function Chatbox({
@@ -11,6 +16,7 @@ export default function Chatbox({
   let [messages, setMessages] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
+  let [selectedAircraft] = useAtom(selectedAircraftAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
 
@@ -59,7 +65,12 @@ export default function Chatbox({
         {messages()
           .filter((m) => showAll() || m.frequency === frequency())
           .map((m) => (
-            <div class="message">
+            <div
+              classList={{
+                message: true,
+                selected: m.id === selectedAircraft(),
+              }}
+            >
               {showAll() ? <span class="frequency">{m.frequency}</span> : null}
               <span class="callsign">{m.id}</span>
               <span class="text">{m.reply}</span>
