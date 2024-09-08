@@ -10,8 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::error;
 
 use crate::{
-  angle_between_points, delta_angle, heading_to_direction,
-  pathfinder::Node,
+  angle_between_points, heading_to_direction,
   structs::{
     Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Task, World,
   },
@@ -233,13 +232,8 @@ impl Engine {
           match task {
             Task::Altitude(alt) => aircraft.target.altitude = *alt,
             Task::Heading(hdg) => {
+              aircraft.clear_waypoints();
               aircraft.target.heading = *hdg;
-
-              if let AircraftState::HoldingPattern(_) = &aircraft.state {
-                aircraft.state = AircraftState::Flying {
-                  waypoints: Vec::new(),
-                };
-              }
             }
             Task::Speed(spd) => aircraft.target.speed = *spd,
             Task::Frequency(frq) => aircraft.frequency = *frq,
@@ -277,8 +271,10 @@ impl Engine {
                 if let Some(node) =
                   airport.waypoints.iter().find(|w| &w.name == waypoint)
                 {
-                  aircraft.target.heading =
-                    angle_between_points(aircraft.pos, node.value);
+                  aircraft.state = AircraftState::Flying {
+                    current: Some(node.clone()),
+                    waypoints: Vec::new(),
+                  };
                 }
               }
             }

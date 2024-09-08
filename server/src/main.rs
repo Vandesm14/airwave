@@ -55,40 +55,8 @@ async fn main() {
 
   tracing::debug!("Created {airspace:?}");
 
-  // DEBUGGING:
-  {
-    let runway = airport.runways.first().unwrap().clone();
-    let mut aircraft = Aircraft::random_to_land(&airspace, 118.5);
-    aircraft.state = AircraftState::Taxiing {
-      current: Node {
-        name: runway.id.clone(),
-        kind: NodeKind::Runway,
-        behavior: NodeBehavior::GoTo,
-        value: runway.pos,
-      },
-      waypoints: Vec::new(),
-    };
-    // aircraft.pos = move_point(
-    //   runway.start(),
-    //   inverse_degrees(runway.heading),
-    //   NAUTICALMILES_TO_FEET * 5.0,
-    // );
-    aircraft.pos = runway.pos;
-
-    aircraft.speed = 0.0;
-    aircraft.altitude = 0.0;
-    aircraft.heading = runway.heading;
-
-    aircraft.target.speed = aircraft.speed;
-    aircraft.target.altitude = aircraft.altitude;
-    aircraft.target.heading = aircraft.heading;
-
-    tracing::debug!("Created {aircraft:?}");
-
-    engine.world.aircraft.push(aircraft);
-  }
-
   engine.world.airspaces.push(airspace);
+  engine.spawn_random_aircraft();
 
   // engine.spawn_random_aircraft();
 

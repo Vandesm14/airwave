@@ -39,7 +39,10 @@ export type Aircraft = {
   callsign: string;
 
   state:
-    | { type: 'flying' }
+    | {
+        type: 'flying';
+        value: { current: NodeVec2 | null; waypoints: Array<NodeVec2> };
+      }
     | { type: 'landing'; value: Runway }
     | {
         type: 'taxiing';

@@ -146,8 +146,32 @@ pub fn setup(airport: &mut Airport) {
     ),
   };
 
+  let wp_road = Node {
+    name: "ROAD".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_20.start(),
+      inverse_degrees(runway_20.heading),
+      NAUTICALMILES_TO_FEET * 18.0,
+    ),
+  };
+
+  let wp_boar = Node {
+    name: "BOAR".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      wp_road.value,
+      add_degrees(runway_20.heading, 90.0),
+      NAUTICALMILES_TO_FEET * 8.0,
+    ),
+  };
+
   airport.waypoints.push(wp_way);
   airport.waypoints.push(wp_dude);
+  airport.waypoints.push(wp_road);
+  airport.waypoints.push(wp_boar);
 
   airport.add_runway(runway_20);
   airport.add_runway(runway_27);

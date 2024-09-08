@@ -9,8 +9,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use tracing::{debug, error, info};
 
 use crate::{
-  add_degrees, angle_between_points, calculate_ils_altitude,
-  closest_point_on_line, delta_angle,
+  angle_between_points, calculate_ils_altitude, closest_point_on_line,
+  delta_angle,
   engine::OutgoingReply,
   get_random_point_on_circle, inverse_degrees, move_point,
   pathfinder::{Node, NodeBehavior, NodeKind, Object, Pathfinder},
@@ -206,10 +206,10 @@ impl Runway {
 #[serde(tag = "type", content = "value")]
 pub enum AircraftState {
   Flying {
+    current: Option<Node<Vec2>>,
     waypoints: Vec<Node<Vec2>>,
   },
   Landing(Runway),
-  HoldingPattern(HoldDirection),
   Taxiing {
     current: Node<Vec2>,
     waypoints: Vec<Node<Vec2>>,
@@ -326,6 +326,7 @@ impl Aircraft {
       is_colliding: false,
       intention: AircraftIntention::Land,
       state: AircraftState::Flying {
+        current: None,
         waypoints: Vec::new(),
       },
       pos: point.position,
@@ -415,12 +416,6 @@ impl Aircraft {
     self.speed * KNOT_TO_FEET_PER_SECOND
   }
 
-  pub fn do_hold_pattern(&mut self, direction: HoldDirection) {
-    if let AircraftState::Flying { .. } = self.state {
-      self.state = AircraftState::HoldingPattern(direction);
-    }
-  }
-
   pub fn do_go_around(
     &mut self,
     sender: &async_broadcast::Sender<OutgoingReply>,
@@ -437,6 +432,7 @@ impl Aircraft {
     }
 
     self.state = AircraftState::Flying {
+      current: None,
       waypoints: Vec::new(),
     };
 
@@ -532,6 +528,15 @@ impl Aircraft {
     self.target.speed = 20.0;
   }
 
+  pub fn clear_waypoints(&mut self) {
+    if let AircraftState::Flying { .. } = self.state {
+      self.state = AircraftState::Flying {
+        current: None,
+        waypoints: Vec::new(),
+      };
+    }
+  }
+
   pub fn resume_own_navigation(&mut self) {
     if let AircraftState::Flying { .. } = &self.state {
       if let AircraftIntention::Depart { heading, .. } = &self.intention {
@@ -539,19 +544,6 @@ impl Aircraft {
         self.target.speed = 400.0;
         self.target.altitude = 13000.0;
       }
-    }
-  }
-
-  fn update_holding_pattern(&mut self) {
-    if let AircraftState::HoldingPattern(direction) = &mut self.state {
-      match direction {
-        HoldDirection::Right => {
-          self.target.heading = add_degrees(self.heading, 10.0)
-        }
-        HoldDirection::Left => {
-          self.target.heading = add_degrees(self.heading, -10.0)
-        }
-      };
     }
   }
 
@@ -620,6 +612,33 @@ impl Aircraft {
     }
   }
 
+  fn update_flying(&mut self) {
+    let speed_in_feet = self.speed_in_feet();
+    if let AircraftState::Flying {
+      ref mut current,
+      waypoints,
+      ..
+    } = &mut self.state
+    {
+      let waypoint = core::mem::take(current);
+      *current = waypoint.and_then(|current| {
+        let heading = angle_between_points(self.pos, current.value);
+
+        self.target.heading = heading;
+
+        let distance = self.pos.distance_squared(current.value);
+        let movement_speed = speed_in_feet.powf(2.0);
+
+        if movement_speed >= distance {
+          self.pos = current.value;
+          waypoints.pop()
+        } else {
+          Some(current)
+        }
+      });
+    }
+  }
+
   fn update_takeoff(&mut self) {
     if let AircraftState::TakingOff(runway) = &self.state {
       if self.pos == runway.start() && self.heading == runway.heading {
@@ -632,6 +651,7 @@ impl Aircraft {
         self.target.altitude = 3000.0;
 
         self.state = AircraftState::Flying {
+          current: None,
           waypoints: Vec::new(),
         };
       } else {
@@ -805,9 +825,9 @@ impl Aircraft {
     sender: &async_broadcast::Sender<OutgoingReply>,
   ) {
     self.update_landing(dt, sender);
-    self.update_holding_pattern();
     self.update_targets(dt);
     self.update_taxi();
+    self.update_flying();
     self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);

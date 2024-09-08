@@ -68,3 +68,6 @@ Assistant: {"reply": "", "id": "SKW5138", "tasks":[]}
 
 User: Skywest 5-1-3-8, direct to sierra alpha yankee.
 Assistant: {"reply": "Direct to sierra alpha yankee.", "id": "SKW5138", "tasks":[{"type": "direct", "value": "SAY"}]}
+
+User: Skywest 5-1-3-8, direct to road.
+Assistant: {"reply": "Direct to ROAD.", "id": "SKW5138", "tasks":[{"type": "direct", "value": "ROAD"}]}

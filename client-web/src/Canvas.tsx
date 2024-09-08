@@ -329,8 +329,35 @@ export default function Canvas({
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
-    resetTransform(ctx);
     let pos = scalePoint(aircraft);
+    if (aircraft.state.type === 'flying') {
+      ctx.strokeStyle = '#ffff0066';
+      ctx.lineWidth = scaleFeet(500);
+
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+
+      if (aircraft.state.value.current) {
+        let pos = scalePoint(arrToVec2(aircraft.state.value.current.value));
+        ctx.lineTo(pos.x, pos.y);
+      }
+
+      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+        let pos = scalePoint(arrToVec2(wp.value));
+        ctx.lineTo(pos.x, pos.y);
+      }
+      ctx.stroke();
+
+      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+        ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
+        let pos = scalePoint(arrToVec2(wp.value));
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    resetTransform(ctx);
 
     if (selectedAircraft() == aircraft.callsign) {
       ctx.fillStyle = '#aaaa00';
