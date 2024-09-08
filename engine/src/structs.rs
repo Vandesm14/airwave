@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{
   ops::Add,
   time::{Duration, SystemTime},
@@ -154,8 +155,35 @@ pub struct Command {
 pub struct CommandWithFreq {
   pub id: String,
   pub frequency: f32,
+  // TODO: Should this be converted to CommandReply so that the front-end can
+  //       handle formatting?
   pub reply: String,
   pub tasks: Vec<Task>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CommandReply {
+  pub callsign: String,
+  pub kind: CommandReplyKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CommandReplyKind {
+  AircraftArrivedInTowerAirspace { direction: String },
+}
+
+impl fmt::Display for CommandReply {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match &self.kind {
+      CommandReplyKind::AircraftArrivedInTowerAirspace { direction } => {
+        write!(
+          f,
+          "Tower, {} is {direction} of the airport, with you.",
+          self.callsign
+        )
+      }
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]

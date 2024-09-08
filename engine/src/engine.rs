@@ -11,7 +11,8 @@ use tracing::error;
 use crate::{
   angle_between_points, heading_to_direction,
   structs::{
-    Aircraft, AircraftIntention, AircraftState, CommandWithFreq, Task, World,
+    Aircraft, AircraftIntention, AircraftState, CommandReply, CommandReplyKind,
+    CommandWithFreq, Task, World,
   },
 };
 
@@ -82,20 +83,23 @@ impl Engine {
       let heading = angle_between_points(airspace.pos, aircraft.pos);
       let direction = heading_to_direction(heading);
 
-      format!(
-        "Tower, {} is {} of the airport, with you.",
-        aircraft.callsign, direction
-      )
+      Some(CommandReply {
+        callsign: aircraft.callsign.clone(),
+        kind: CommandReplyKind::AircraftArrivedInTowerAirspace {
+          direction: direction.to_owned(),
+        },
+      })
     } else {
-      "Error generating reply for spawned aircraft".to_owned()
+      None
     };
     self
       .sender
       .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
         id: aircraft.callsign.clone(),
-
         frequency: aircraft.frequency,
-        reply,
+        reply: reply.map(|s| s.to_string()).unwrap_or_else(|| {
+          "Error generating reply for spawned aircraft".to_owned()
+        }),
         tasks: Vec::new(),
       }))
       .unwrap();
