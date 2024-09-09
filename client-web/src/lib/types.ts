@@ -101,12 +101,21 @@ export type Airport = {
   altitudeRange: [number, number];
 };
 
+export type Frequencies = {
+  approach: number;
+  departure: number;
+  tower: number;
+  ground: number;
+  center: number;
+};
+
 export type Airspace = {
   id: string;
   pos: Vec2;
   size: number;
   airports: Array<Airport>;
   auto: boolean;
+  frequencies: Frequencies;
 };
 
 export type World = {
