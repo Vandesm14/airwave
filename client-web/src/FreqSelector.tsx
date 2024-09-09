@@ -48,12 +48,6 @@ export default function FreqSelector() {
     }
   }
 
-  function onEnter(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-      swap();
-    }
-  }
-
   function onBackslash(e: KeyboardEvent) {
     if (e.key === '\\') {
       swap();
