@@ -58,7 +58,14 @@ function Strip({ strip }: StripProps) {
       onmousedown={handleMouseDown}
     >
       <td class="callsign">{strip.callsign}</td>
-
+      <td class="vertical">
+        <span>{strip.flight_plan[0]}</span>
+        <span>{strip.flight_plan[1]}</span>
+      </td>
+      <td class="vertical">
+        <span>FOO</span>
+        <span>BAR</span>
+      </td>
       <td class="vertical">
         <span class="frequency">{strip.frequency}</span>
         <span class="timer">{sinceCreated}</span>
