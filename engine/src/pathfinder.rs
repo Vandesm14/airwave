@@ -236,6 +236,7 @@ impl Pathfinder {
             .map(|wp| (wp, self.graph.node_weight(wp).unwrap()))
             .collect::<Vec<_>>()
         })
+        // Generate a list of waypoints for each path
         .map(|path| {
           let mut waypoints: Vec<Node<Vec2>> = Vec::new();
 
@@ -278,6 +279,7 @@ impl Pathfinder {
 
           waypoints
         })
+        // Filter out paths that don't fulfill our requirements
         .filter(|path| {
           let mut via = vias.iter().peekable();
 
@@ -290,9 +292,13 @@ impl Pathfinder {
             behavior: NodeBehavior::GoTo,
             value: pos,
           };
-          for next in path.iter() {
-            let angle = angle_between_points(pos, first.value);
-            if from_node.1.kind != NodeKind::Gate
+          for wp in path.iter() {
+            let angle = angle_between_points(pos, wp.value);
+            // If our waypoint is not a gate and we are not heading towards it,
+            // don't use this path.
+            //
+            // Inverse: If this is a gate, ignore the heading check.
+            if first.kind != NodeKind::Gate
               && delta_angle(heading, angle).abs() >= 175.0
             {
               return false;
@@ -300,8 +306,8 @@ impl Pathfinder {
 
             // If the waypoint is a runway and we haven't instructed to go to
             // it, don't use this path.
-            if next.kind == NodeKind::Runway
-              && !vias.iter().any(|v| v.name_and_kind_eq(next))
+            if wp.kind == NodeKind::Runway
+              && !vias.iter().any(|v| v.name_and_kind_eq(wp))
             {
               return false;
             }
@@ -309,13 +315,15 @@ impl Pathfinder {
             pos = first.value;
             heading = angle;
 
+            // If we have a via, check if it's our waypoint
             if let Some(v) = via.peek().copied() {
-              if v.name_and_kind_eq(first) {
+              if v.name_and_kind_eq(wp) {
+                // If it is, clear that via
                 via.next();
               }
             }
 
-            first = next;
+            first = wp;
           }
 
           if let Some(v) = via.peek().copied() {
