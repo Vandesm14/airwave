@@ -8,7 +8,7 @@ use clap::Parser;
 use engine::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
   pathfinder::{Node, NodeBehavior, NodeKind},
-  structs::{Aircraft, Airport, Airspace},
+  structs::{Aircraft, Airport, Airspace, Frequencies},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
@@ -41,6 +41,8 @@ async fn main() {
     Some(PathBuf::from_str("assets/world.json").unwrap()),
   );
 
+  let frequencies = Frequencies::default();
+
   // Create a controlled KSFO airspace
   let mut airspace_ksfo = Airspace {
     id: "KSFO".into(),
@@ -48,6 +50,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 30.0,
     airports: vec![],
     auto: false,
+    frequencies: frequencies.clone(),
   };
 
   // Create an uncontrolled (auto) KLAX airspace
@@ -60,6 +63,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
+    frequencies: frequencies.clone(),
   };
 
   // Create an uncontrolled (auto) KPHL airspace
@@ -69,6 +73,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
+    frequencies: frequencies.clone(),
   };
 
   // Create an uncontrolled (auto) KJFK airspace
@@ -78,6 +83,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
+    frequencies: frequencies.clone(),
   };
 
   let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
@@ -109,6 +115,7 @@ async fn main() {
           });
           aircraft.airspace = Some(airspace.id.clone());
           aircraft.departure_from_arrival(&engine.world.airspaces);
+          aircraft.frequency = airspace.frequencies.ground;
 
           if now {
             aircraft.created_now();

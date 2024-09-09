@@ -106,7 +106,7 @@ impl Engine {
         self.last_tick = Instant::now();
 
         if self.world.aircraft.len() < 20
-          && self.last_spawn.elapsed() >= Duration::from_secs(150)
+          && self.last_spawn.elapsed() >= Duration::from_secs(180)
         {
           self.last_spawn = Instant::now();
           self.spawn_random_aircraft();

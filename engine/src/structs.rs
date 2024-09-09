@@ -76,6 +76,27 @@ impl World {
   }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Frequencies {
+  pub approach: f32,
+  pub departure: f32,
+  pub tower: f32,
+  pub ground: f32,
+  pub center: f32,
+}
+
+impl Default for Frequencies {
+  fn default() -> Self {
+    Self {
+      approach: 118.5,
+      departure: 118.5,
+      tower: 118.5,
+      ground: 118.6,
+      center: 118.5,
+    }
+  }
+}
+
 // TODO: Support non-circular (regional) airspaces
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airspace {
@@ -88,6 +109,7 @@ pub struct Airspace {
 
   /// Determines whether the airspace is automatically controlled.
   pub auto: bool,
+  pub frequencies: Frequencies,
 }
 
 impl Airspace {
@@ -472,6 +494,7 @@ impl Aircraft {
         angle_between_points(departure.pos, arr_airport.center);
 
       aircraft.sync_targets();
+      aircraft.frequency = arrival.frequencies.approach;
 
       Some(aircraft)
     } else {

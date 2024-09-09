@@ -68,7 +68,7 @@ function assignAircraftToStrips(aircraft: Aircraft): keyof Strips {
     }
   } else if (isDepartingFromLocalAirspace) {
     return 'Departure';
-  } else if (isArrivingToLocalAirspace) {
+  } else if (isArrivingToLocalAirspace && isInLocalAirspace) {
     return 'Approach';
   } else {
     return 'Center';
