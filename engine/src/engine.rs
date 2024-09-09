@@ -234,12 +234,16 @@ impl Engine {
     let airport = aircraft
       .and_then(|a| self.world.closest_airport(a.pos))
       .cloned();
+    let frequencies = aircraft
+      .and_then(|a| self.world.closest_airspace(a.pos))
+      .map(|a| a.frequencies.clone());
 
     let aircraft = self
       .world
       .aircraft
       .iter_mut()
       .find(|a| a.callsign == command.id);
+
     if let Some(aircraft) = aircraft {
       if aircraft.frequency == command.frequency {
         // TODO: Do go-around first (then filter it out from the rest of the tasks)
@@ -252,6 +256,14 @@ impl Engine {
             }
             Task::Speed(spd) => aircraft.target.speed = *spd,
             Task::Frequency(frq) => aircraft.frequency = *frq,
+            Task::NamedFrequency(frq) => {
+              dbg!(&frequencies);
+              if let Some(frequency) =
+                frequencies.clone().map(|f| f.from_string(frq))
+              {
+                aircraft.frequency = frequency;
+              }
+            }
             Task::Land(runway) => {
               if let Some(ref airport) = airport {
                 let target = airport.runways.iter().find(|r| &r.id == runway);

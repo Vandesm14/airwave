@@ -74,6 +74,19 @@ impl World {
 
     closest
   }
+
+  pub fn closest_airspace(&self, point: Vec2) -> Option<&Airspace> {
+    let mut closest: Option<&Airspace> = None;
+    let mut distance = f32::MAX;
+    for airspace in self.airspaces.iter() {
+      if airspace.pos.distance_squared(point) < distance {
+        distance = airspace.pos.distance_squared(point);
+        closest = Some(airspace);
+      }
+    }
+
+    closest
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,6 +106,19 @@ impl Default for Frequencies {
       tower: 118.5,
       ground: 118.6,
       center: 118.5,
+    }
+  }
+}
+
+impl Frequencies {
+  pub fn from_string(&self, s: &str) -> f32 {
+    match s {
+      "approach" => self.approach,
+      "departure" => self.departure,
+      "tower" => self.tower,
+      "ground" => self.ground,
+      "center" => self.center,
+      _ => self.center,
     }
   }
 }
@@ -183,25 +209,22 @@ pub enum HoldDirection {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
 #[serde(tag = "type", content = "value")]
 pub enum Task {
   Land(String),
-  #[serde(rename = "go-around")]
   GoAround,
   Altitude(f32),
   Heading(f32),
   Speed(f32),
   Frequency(f32),
+  NamedFrequency(String),
   Takeoff(String),
   #[serde(rename = "resume")]
   ResumeOwnNavigation,
 
-  #[serde(rename = "taxi")]
   Taxi(Vec<Node<()>>),
-  #[serde(rename = "taxi-hold")]
   TaxiHold,
-  #[serde(rename = "taxi-continue")]
   TaxiContinue,
 
   Direct(Vec<String>),

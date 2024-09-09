@@ -41,7 +41,13 @@ async fn main() {
     Some(PathBuf::from_str("assets/world.json").unwrap()),
   );
 
-  let frequencies = Frequencies::default();
+  let frequencies = Frequencies {
+    approach: 118.5,
+    departure: 118.5,
+    tower: 118.5,
+    ground: 118.6,
+    center: 118.7,
+  };
 
   // Create a controlled KSFO airspace
   let mut airspace_ksfo = Airspace {
@@ -87,11 +93,8 @@ async fn main() {
   };
 
   let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
-
   airport::v_pattern::setup(&mut airport_ksfo, &mut engine.world.waypoints);
-
   airport_ksfo.cache_waypoints();
-
   airspace_ksfo.airports.push(airport_ksfo);
 
   engine.world.airspaces.push(airspace_ksfo);
