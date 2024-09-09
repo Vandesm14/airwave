@@ -234,7 +234,6 @@ impl Runway {
 #[serde(tag = "type", content = "value")]
 pub enum AircraftState {
   Flying {
-    current: Option<Node<Vec2>>,
     waypoints: Vec<Node<Vec2>>,
   },
   Landing(Runway),
@@ -354,7 +353,6 @@ impl Aircraft {
       is_colliding: false,
       intention: AircraftIntention::Land,
       state: AircraftState::Flying {
-        current: None,
         waypoints: Vec::new(),
       },
       pos: point.position,
@@ -460,7 +458,6 @@ impl Aircraft {
     }
 
     self.state = AircraftState::Flying {
-      current: None,
       waypoints: Vec::new(),
     };
 
@@ -559,7 +556,6 @@ impl Aircraft {
   pub fn clear_waypoints(&mut self) {
     if let AircraftState::Flying { .. } = self.state {
       self.state = AircraftState::Flying {
-        current: None,
         waypoints: Vec::new(),
       };
     }
@@ -642,14 +638,8 @@ impl Aircraft {
 
   fn update_flying(&mut self) {
     let speed_in_feet = self.speed_in_feet();
-    if let AircraftState::Flying {
-      ref mut current,
-      waypoints,
-      ..
-    } = &mut self.state
-    {
-      let waypoint = core::mem::take(current);
-      *current = waypoint.and_then(|current| {
+    if let AircraftState::Flying { waypoints, .. } = &mut self.state {
+      if let Some(current) = waypoints.last() {
         let heading = angle_between_points(self.pos, current.value);
 
         self.target.heading = heading;
@@ -659,11 +649,9 @@ impl Aircraft {
 
         if movement_speed >= distance {
           self.pos = current.value;
-          waypoints.pop()
-        } else {
-          Some(current)
+          waypoints.pop();
         }
-      });
+      }
     }
   }
 
@@ -679,7 +667,6 @@ impl Aircraft {
         self.target.altitude = 3000.0;
 
         self.state = AircraftState::Flying {
-          current: None,
           waypoints: Vec::new(),
         };
       } else {

@@ -41,7 +41,7 @@ export type Aircraft = {
   state:
     | {
         type: 'flying';
-        value: { current: NodeVec2 | null; waypoints: Array<NodeVec2> };
+        value: { waypoints: Array<NodeVec2> };
       }
     | { type: 'landing'; value: Runway }
     | {
