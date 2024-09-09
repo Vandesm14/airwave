@@ -51,10 +51,7 @@ export type Aircraft = {
           waypoints: Array<NodeVec2>;
         };
       };
-  intention:
-    | { type: 'land' }
-    | { type: 'flyover' }
-    | { type: 'depart'; value: { heading: number } };
+  flight_plan: [string, string];
 
   created: number;
 };

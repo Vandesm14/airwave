@@ -243,15 +243,6 @@ pub enum AircraftState {
   Deleted,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[serde(tag = "type", content = "value")]
-pub enum AircraftIntention {
-  Land,
-  Flyover,
-  Depart { has_notified: bool, heading: f32 },
-}
-
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
   pub heading: f32,
@@ -264,7 +255,7 @@ pub struct Aircraft {
   pub callsign: String,
 
   pub is_colliding: bool,
-  pub intention: AircraftIntention,
+  pub flight_plan: (String, String),
   pub state: AircraftState,
 
   #[serde(flatten)]
@@ -343,74 +334,80 @@ pub struct Terminal {
 
 impl Aircraft {
   pub fn random_to_land(airspace: &Airspace, frequency: f32) -> Self {
-    let point = get_random_point_on_circle(airspace.pos, airspace.size);
+    // let point = get_random_point_on_circle(airspace.pos, airspace.size);
 
-    Self {
-      callsign: Self::random_callsign(),
-      is_colliding: false,
-      intention: AircraftIntention::Land,
-      state: AircraftState::Flying {
-        waypoints: Vec::new(),
-      },
-      pos: point.position,
-      heading: angle_between_points(point.position, airspace.pos),
-      speed: 250.0,
-      altitude: 7000.0,
-      frequency,
-      target: AircraftTargets {
-        heading: angle_between_points(point.position, airspace.pos),
-        speed: 250.0,
-        altitude: 7000.0,
-      },
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .as_millis(),
-    }
+    // Self {
+    //   callsign: Self::random_callsign(),
+    //   is_colliding: false,
+    //   intention: AircraftIntention::Land,
+    //   state: AircraftState::Flying {
+    //     waypoints: Vec::new(),
+    //   },
+    //   pos: point.position,
+    //   heading: angle_between_points(point.position, airspace.pos),
+    //   speed: 250.0,
+    //   altitude: 7000.0,
+    //   frequency,
+    //   target: AircraftTargets {
+    //     heading: angle_between_points(point.position, airspace.pos),
+    //     speed: 250.0,
+    //     altitude: 7000.0,
+    //   },
+    //   created: SystemTime::now()
+    //     .duration_since(SystemTime::UNIX_EPOCH)
+    //     .unwrap_or(Duration::from_millis(0))
+    //     .as_millis(),
+    // }
+
+    todo!()
   }
 
   pub fn random_to_depart(frequency: f32, gates: Vec<Gate>) -> Self {
-    let mut rng = thread_rng();
-    let gate = gates.choose(&mut rng).unwrap();
-    Self {
-      callsign: Self::random_callsign(),
-      is_colliding: false,
-      intention: AircraftIntention::Depart {
-        has_notified: false,
-        heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
-      },
-      state: AircraftState::Taxiing {
-        current: Node {
-          name: gate.id.clone(),
-          kind: NodeKind::Gate,
-          behavior: NodeBehavior::GoTo,
-          value: gate.pos,
-        },
-        waypoints: Vec::new(),
-      },
-      pos: gate.pos,
-      heading: 0.0,
-      speed: 0.0,
-      altitude: 0.0,
-      frequency,
-      target: AircraftTargets {
-        heading: 0.0,
-        speed: 0.0,
-        altitude: 0.0,
-      },
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .as_millis(),
-    }
+    // let mut rng = thread_rng();
+    // let gate = gates.choose(&mut rng).unwrap();
+    // Self {
+    //   callsign: Self::random_callsign(),
+    //   is_colliding: false,
+    //   intention: AircraftIntention::Depart {
+    //     has_notified: false,
+    //     heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
+    //   },
+    //   state: AircraftState::Taxiing {
+    //     current: Node {
+    //       name: gate.id.clone(),
+    //       kind: NodeKind::Gate,
+    //       behavior: NodeBehavior::GoTo,
+    //       value: gate.pos,
+    //     },
+    //     waypoints: Vec::new(),
+    //   },
+    //   pos: gate.pos,
+    //   heading: 0.0,
+    //   speed: 0.0,
+    //   altitude: 0.0,
+    //   frequency,
+    //   target: AircraftTargets {
+    //     heading: 0.0,
+    //     speed: 0.0,
+    //     altitude: 0.0,
+    //   },
+    //   created: SystemTime::now()
+    //     .duration_since(SystemTime::UNIX_EPOCH)
+    //     .unwrap_or(Duration::from_millis(0))
+    //     .as_millis(),
+    // }
+
+    todo!()
   }
 
   pub fn departure_from_arrival(&mut self) {
     let mut rng = thread_rng();
-    self.intention = AircraftIntention::Depart {
-      has_notified: false,
-      heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
-    };
+
+    // TODO: set intention to depart
+    // self.intention = AircraftIntention::Depart {
+    //   has_notified: false,
+    //   heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
+    // };
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)
       .unwrap_or(Duration::from_millis(0))
@@ -560,11 +557,12 @@ impl Aircraft {
 
   pub fn resume_own_navigation(&mut self) {
     if let AircraftState::Flying { .. } = &self.state {
-      if let AircraftIntention::Depart { heading, .. } = &self.intention {
-        self.target.heading = *heading;
-        self.target.speed = 400.0;
-        self.target.altitude = 13000.0;
-      }
+      // TODO: new system
+      // if let AircraftIntention::Depart { heading, .. } = &self.intention {
+      //   self.target.heading = *heading;
+      //   self.target.speed = 400.0;
+      //   self.target.altitude = 13000.0;
+      // }
     }
   }
 
@@ -574,23 +572,24 @@ impl Aircraft {
   }
 
   fn update_to_departure(&mut self) {
-    if let AircraftIntention::Land = self.intention {
-      if let AircraftState::Taxiing {
-        current:
-          Node {
-            kind: NodeKind::Gate,
-            value,
-            ..
-          },
-        waypoints,
-      } = &self.state
-      {
-        if self.pos == *value && waypoints.is_empty() {
-          self.departure_from_arrival();
-          self.do_hold_taxi(true);
-        }
-      }
-    }
+    // TODO: new system
+    // if let AircraftIntention::Land = self.intention {
+    //   if let AircraftState::Taxiing {
+    //     current:
+    //       Node {
+    //         kind: NodeKind::Gate,
+    //         value,
+    //         ..
+    //       },
+    //     waypoints,
+    //   } = &self.state
+    //   {
+    //     if self.pos == *value && waypoints.is_empty() {
+    //       self.departure_from_arrival();
+    //       self.do_hold_taxi(true);
+    //     }
+    //   }
+    // }
   }
 
   fn update_taxi(&mut self) {

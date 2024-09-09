@@ -48,10 +48,10 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
       // TODO: update stripboard on intention/state
       // } else if (strip.value.intention.type === 'willdepart') {
       //   target = `RW${strip.value.state.value.runway.id}`;
-    } else if (strip.value.intention.type === 'depart') {
-      target = `${strip.value.intention.value.heading
-        .toString()
-        .padStart(3, '0')}&nbsp;`;
+      // } else if (strip.value.intention.type === 'depart') {
+      //   target = `${strip.value.intention.value.heading
+      //     .toString()
+      //     .padStart(3, '0')}&nbsp;`;
     } else if (strip.value.state.type === 'taxiing') {
       switch (strip.value.state.value.current.kind) {
         case 'gate':
@@ -82,7 +82,6 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   }
 
   if (strip.type === 'strip') {
-    let intention = strip.value.intention.type === 'depart' ? 'D' : 'A';
     return (
       <div
         classList={{
@@ -95,7 +94,6 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
         onmousemove={onmousemove}
       >
         <span class="callsign">{strip.value.callsign}</span>
-        <span class="intention">{intention}</span>
         <span class="target" innerHTML={target}></span>
         <span class="frequency">{frequency}</span>
         <span class="timer">{sinceCreated}</span>
@@ -172,26 +170,26 @@ export default function StripBoard({
           );
 
           if (index === -1) {
-            if (aircraft.intention.type !== 'depart') {
-              return [
-                state[0],
-                { type: 'strip', value: aircraft },
-                ...state.slice(1),
-              ];
-            } else if (aircraft.intention.type === 'depart') {
-              let takeoffIndex = state.findIndex(
-                (s) => s.type === 'header' && s.value === 'Ground'
-              );
-              if (takeoffIndex !== -1) {
-                return [
-                  ...state.slice(0, takeoffIndex + 1),
-                  { type: 'strip', value: aircraft },
-                  ...state.slice(takeoffIndex + 1),
-                ];
-              } else {
-                return [{ type: 'strip', value: aircraft }, ...state];
-              }
-            }
+            // if (aircraft.intention.type !== 'depart') {
+            //   return [
+            //     state[0],
+            //     { type: 'strip', value: aircraft },
+            //     ...state.slice(1),
+            //   ];
+            // } else if (aircraft.intention.type === 'depart') {
+            //   let takeoffIndex = state.findIndex(
+            //     (s) => s.type === 'header' && s.value === 'Ground'
+            //   );
+            //   if (takeoffIndex !== -1) {
+            //     return [
+            //       ...state.slice(0, takeoffIndex + 1),
+            //       { type: 'strip', value: aircraft },
+            //       ...state.slice(takeoffIndex + 1),
+            //     ];
+            //   } else {
+            //     return [{ type: 'strip', value: aircraft }, ...state];
+            //   }
+            // }
           } else {
             return state.map((e, i) =>
               i === index ? { type: 'strip', value: aircraft } : e

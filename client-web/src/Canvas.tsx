@@ -401,12 +401,6 @@ export default function Canvas({
     // Draw info
     let spacing = scaleFeetToPixels(nauticalMilesToFeet * 0.8);
     ctx.textAlign = 'left';
-    ctx.fillStyle =
-      aircraft.intention.type === 'depart' ||
-      aircraft.intention.type === 'flyover'
-        ? '#fc67eb'
-        : '#44ff44';
-
     if (selectedAircraft() == aircraft.callsign) {
       ctx.fillStyle = '#FFE045';
     }

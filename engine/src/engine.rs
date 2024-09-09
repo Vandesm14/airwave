@@ -8,13 +8,7 @@ use async_channel::TryRecvError;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::{
-  angle_between_points, heading_to_direction,
-  structs::{
-    Aircraft, AircraftIntention, AircraftState, CommandReply, CommandReplyKind,
-    CommandWithFreq, Task, World,
-  },
-};
+use crate::structs::{Aircraft, AircraftState, CommandWithFreq, Task, World};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -79,30 +73,30 @@ impl Engine {
     self.world.aircraft.push(aircraft.clone());
 
     // TODO: update replies
-    let reply = if let AircraftIntention::Land = aircraft.intention {
-      let heading = angle_between_points(airspace.pos, aircraft.pos);
-      let direction = heading_to_direction(heading);
+    // let reply = if let AircraftIntention::Land = aircraft.intention {
+    //   let heading = angle_between_points(airspace.pos, aircraft.pos);
+    //   let direction = heading_to_direction(heading);
 
-      Some(CommandReply {
-        callsign: aircraft.callsign.clone(),
-        kind: CommandReplyKind::AircraftArrivedInTowerAirspace {
-          direction: direction.to_owned(),
-        },
-      })
-    } else {
-      None
-    };
-    self
-      .sender
-      .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
-        id: aircraft.callsign.clone(),
-        frequency: aircraft.frequency,
-        reply: reply.map(|s| s.to_string()).unwrap_or_else(|| {
-          "Error generating reply for spawned aircraft".to_owned()
-        }),
-        tasks: Vec::new(),
-      }))
-      .unwrap();
+    //   Some(CommandReply {
+    //     callsign: aircraft.callsign.clone(),
+    //     kind: CommandReplyKind::AircraftArrivedInTowerAirspace {
+    //       direction: direction.to_owned(),
+    //     },
+    //   })
+    // } else {
+    //   None
+    // };
+    // self
+    //   .sender
+    //   .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
+    //     id: aircraft.callsign.clone(),
+    //     frequency: aircraft.frequency,
+    //     reply: reply.map(|s| s.to_string()).unwrap_or_else(|| {
+    //       "Error generating reply for spawned aircraft".to_owned()
+    //     }),
+    //     tasks: Vec::new(),
+    //   }))
+    //   .unwrap();
   }
 
   pub fn begin_loop(&mut self) {
