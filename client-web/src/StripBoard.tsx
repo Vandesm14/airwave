@@ -126,6 +126,8 @@ function Strip({ strip }: StripProps) {
       topStatus = 'RNWY';
     } else if (current.kind === 'taxiway') {
       topStatus = 'TXWY';
+    } else if (current.kind === 'apron') {
+      topStatus = 'APRN';
     }
 
     bottomStatus = current.name;

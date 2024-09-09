@@ -4,7 +4,7 @@ export type TaxiWaypointBehavior = {
 
 export type NodeVec2 = {
   name: string;
-  kind: 'taxiway' | 'runway' | 'gate';
+  kind: 'taxiway' | 'runway' | 'gate' | 'apron';
   behavior: 'goto' | 'holdshort';
   value: [number, number];
 };
