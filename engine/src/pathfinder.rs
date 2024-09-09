@@ -218,6 +218,9 @@ impl Pathfinder {
       .node_references()
       .find(|(_, n)| to.name_and_kind_eq(*n));
 
+    // If we are already on the first via, remove it.
+    // Example: Aircraft is on A, and if you tell them to go via A, this will
+    // remove A from the vias list (because it's already on A).
     if let Some(first) = vias.first() {
       if first.name_and_kind_eq(&from) {
         vias.remove(0);
