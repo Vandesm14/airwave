@@ -127,10 +127,12 @@ export default function App() {
   }
 
   const search = new URLSearchParams(window.location.search);
-  const hostname = search.get('ws') ?? window.location.hostname;
-  const port = search.get('port') ?? '9001';
+  let path = `${window.location.hostname}:9001`;
+  if (search.get('ws') != null) {
+    path = search.get('ws');
+  }
 
-  let socket = new WebSocket(`ws://${hostname}:${port}`);
+  let socket = new WebSocket(`ws://${path}`);
   socket.onopen = function (_) {
     console.log('[open] Connection established');
     console.log('Sending to server');
