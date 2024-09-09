@@ -24,6 +24,55 @@ type StripProps = {
   strip: Aircraft;
 };
 
+function assignAircraftToStrips(aircraft: Aircraft): keyof Strips {
+  const isLanding = aircraft.state.type === 'landing';
+  const isTaxiing = aircraft.state.type === 'taxiing';
+
+  const isTaxiingToRunway = (() => {
+    if (aircraft.state.type === 'taxiing') {
+      return (
+        (aircraft.state.value.waypoints.length === 1 &&
+          aircraft.state.value.waypoints[0].kind === 'runway') ||
+        aircraft.state.value.current.kind === 'runway'
+      );
+    } else {
+      return false;
+    }
+  })();
+
+  const isDepartingFromThisAirport = aircraft.flight_plan[1] !== 'KSFO';
+
+  // TODO: Don't hard-code this, use an airspace selector in the UI
+  const isInLocalAirspace = aircraft.airspace === 'KSFO';
+  const isDepartingFromLocalAirspace =
+    isInLocalAirspace && aircraft.airspace === aircraft.flight_plan[0];
+  const isAtDepartureAltitude = aircraft.altitude >= 2000;
+
+  const isArrivingToLocalAirspace =
+    'KSFO' === aircraft.flight_plan[1] &&
+    aircraft.airspace !== aircraft.flight_plan[0];
+
+  if (isLanding) {
+    return 'Tower';
+  } else if (isTaxiing) {
+    if (isTaxiingToRunway && isDepartingFromThisAirport) {
+      return 'Tower';
+    } else {
+      return 'Ground';
+    }
+  } else if (isDepartingFromLocalAirspace) {
+    if (isAtDepartureAltitude) {
+      return 'Departure';
+    } else {
+      return 'Tower';
+    }
+  } else if (isArrivingToLocalAirspace) {
+    return 'Approach';
+  } else {
+    return 'Center';
+  }
+}
+
 function formatTime(duration: number): string {
   const isNegative = duration < 0;
   let absDuration = Math.abs(duration);
@@ -113,21 +162,6 @@ function Strip({ strip }: StripProps) {
   );
 }
 
-// function getStripsLocalStorage() {
-//   let item = localStorage.getItem('strips');
-//   if (typeof item === 'string') {
-//     return JSON.parse(item);
-//   } else {
-//     return [
-//       { type: 'header', value: 'Approach' },
-//       { type: 'header', value: 'Landing RW20' },
-//       { type: 'header', value: 'Landing RW27' },
-//       { type: 'header', value: 'Ground' },
-//       { type: 'header', value: 'Departure' },
-//     ];
-//   }
-// }
-
 export default function StripBoard({
   aircrafts,
 }: {
@@ -141,10 +175,6 @@ export default function StripBoard({
   );
 
   let stripEntries = createMemo(() => Object.entries(strips()));
-
-  // createEffect(() => {
-  //   localStorage.setItem('strips', JSON.stringify(strips()));
-  // });
 
   createEffect(() => {
     // This is to prevent initial loading state from removing saved strips.
@@ -162,38 +192,8 @@ export default function StripBoard({
       };
 
       for (let aircraft of aircrafts()) {
-        if (aircraft.state.type === 'landing') {
-          strips.Tower.push(aircraft);
-        } else if (aircraft.state.type === 'taxiing') {
-          if (
-            ((aircraft.state.value.waypoints.length === 1 &&
-              aircraft.state.value.waypoints[0].kind === 'runway') ||
-              aircraft.state.value.current.kind === 'runway') &&
-            aircraft.flight_plan[1] !== 'KSFO'
-          ) {
-            strips.Tower.push(aircraft);
-          } else {
-            strips.Ground.push(aircraft);
-          }
-        } else if (
-          // TODO: Don't hard-code this, use an airspace selector in the UI
-          aircraft.airspace === 'KSFO' &&
-          aircraft.airspace === aircraft.flight_plan[0]
-        ) {
-          if (aircraft.altitude >= 2000) {
-            strips.Departure.push(aircraft);
-          } else {
-            strips.Tower.push(aircraft);
-          }
-        } else if (
-          // TODO: Don't hard-code this, use an airspace selector in the UI
-          'KSFO' === aircraft.flight_plan[1] &&
-          aircraft.airspace !== aircraft.flight_plan[0]
-        ) {
-          strips.Approach.push(aircraft);
-        } else {
-          strips.Center.push(aircraft);
-        }
+        let category = assignAircraftToStrips(aircraft);
+        strips[category].push(aircraft);
       }
 
       const sorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
