@@ -16,7 +16,10 @@ use futures_util::{
 use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
-use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
+use tokio_tungstenite::{
+  tungstenite::{self, Message},
+  WebSocketStream,
+};
 
 pub mod airport;
 
@@ -40,7 +43,17 @@ pub async fn broadcast_updates_to(
     };
 
     if let Err(e) = writer.send(Message::Text(ser)).await {
-      tracing::error!("Unable to send update: {e}");
+      match e {
+        tungstenite::Error::ConnectionClosed => break,
+        tungstenite::Error::AlreadyClosed
+        | tungstenite::Error::AttackAttempt => {
+          tracing::error!("Unable to send update: {e}");
+          break;
+        }
+        e => {
+          tracing::error!("Unable to send update: {e}");
+        }
+      }
     }
 
     tracing::trace!("Sent update");
