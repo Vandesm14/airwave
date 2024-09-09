@@ -60,27 +60,38 @@ export default function FreqSelector() {
 
   return (
     <div id="freq-selector">
-      <select
-        name="frequency"
-        id=""
-        onchange={(e) => changeViaKey(e.target.value)}
-      >
-        {foundAirspace()?.frequencies
-          ? Object.keys(foundAirspace()?.frequencies).map((k) => (
-              <option value={k} selected={k === key()}>
-                {k}
-              </option>
-            ))
-          : null}
-      </select>
-      <input
-        type="number"
-        value={frequency()}
-        class="live"
-        oninput={oninput}
-        step=".1"
-      />
-      {/* <input type="button" value="⬌" class="swap" onclick={swap} /> */}
+      <div class="row">
+        <select
+          name="frequency"
+          id=""
+          onchange={(e) => changeViaKey(e.target.value)}
+        >
+          {foundAirspace()?.frequencies
+            ? Object.keys(foundAirspace()?.frequencies).map((k) => (
+                <option value={k} selected={k === key()}>
+                  {k}
+                </option>
+              ))
+            : null}
+        </select>
+        <input
+          type="number"
+          value={frequency()}
+          class="live"
+          oninput={oninput}
+          step=".1"
+        />
+      </div>
+      <div class="row">
+        <input type="button" value="Swap" onClick={swap} />
+        <input
+          type="number"
+          value={secondary()}
+          class="live"
+          oninput={(e) => setSecondary(parseFloat(e.target.value))}
+          step=".1"
+        />
+      </div>
     </div>
   );
 }

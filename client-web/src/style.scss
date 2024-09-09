@@ -269,9 +269,17 @@ $transparent-black: #000a;
 
     #freq-selector {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
 
       gap: 5px;
+
+      .row {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+
+        gap: 5px;
+      }
 
       input {
         background-color: $transparent-black;
@@ -279,14 +287,9 @@ $transparent-black: #000a;
         color: white;
         font-size: inherit;
 
-        width: 80px;
+        max-width: 80px;
         padding: 10px 10px;
         flex-grow: 1;
-
-        &.swap {
-          width: 40px;
-          font-size: 30px;
-        }
       }
 
       select {
