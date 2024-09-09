@@ -11,11 +11,11 @@ import { useAtom } from 'solid-jotai';
 import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 
 type Strips = {
+  Center: Array<Aircraft>;
   Approach: Array<Aircraft>;
   Tower: Array<Aircraft>;
   Ground: Array<Aircraft>;
   Departure: Array<Aircraft>;
-  Center: Array<Aircraft>;
 };
 
 const Separator = () => <div class="separator"></div>;
@@ -46,7 +46,7 @@ function assignAircraftToStrips(aircraft: Aircraft): keyof Strips {
   const isInLocalAirspace = aircraft.airspace === 'KSFO';
   const isDepartingFromLocalAirspace =
     isInLocalAirspace && aircraft.airspace === aircraft.flight_plan[0];
-  const isAtDepartureAltitude = aircraft.altitude >= 2000;
+  const isAtDepartureAltitude = aircraft.altitude > 0;
 
   const isArrivingToLocalAirspace =
     'KSFO' === aircraft.flight_plan[1] &&
@@ -184,11 +184,11 @@ export default function StripBoard({
     // up nonexistent callsigns from the strips, all are cleaned up.
     if (aircrafts().length > 0) {
       let strips: Strips = {
+        Center: [],
         Approach: [],
         Tower: [],
         Ground: [],
         Departure: [],
-        Center: [],
       };
 
       for (let aircraft of aircrafts()) {
@@ -197,11 +197,11 @@ export default function StripBoard({
       }
 
       const sorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
+      strips.Center.sort(sorter);
       strips.Approach.sort(sorter);
       strips.Departure.sort(sorter);
       strips.Ground.sort(sorter);
       strips.Tower.sort(sorter);
-      strips.Center.sort(sorter);
 
       setStrips(strips);
     }
