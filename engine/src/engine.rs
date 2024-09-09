@@ -257,7 +257,6 @@ impl Engine {
             Task::Speed(spd) => aircraft.target.speed = *spd,
             Task::Frequency(frq) => aircraft.frequency = *frq,
             Task::NamedFrequency(frq) => {
-              dbg!(&frequencies);
               if let Some(frequency) =
                 frequencies.clone().map(|f| f.from_string(frq))
               {
