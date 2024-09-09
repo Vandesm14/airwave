@@ -281,6 +281,7 @@ impl Engine {
                 .find(|a| a.id == aircraft.flight_plan.1)
                 .unwrap();
               aircraft.resume_own_navigation(arrival.pos);
+              aircraft.clear_waypoints();
             }
             Task::Taxi(waypoints) => {
               if let Some(ref airport) = airport {

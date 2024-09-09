@@ -640,6 +640,8 @@ impl Aircraft {
       self.state = AircraftState::Flying {
         waypoints: Vec::new(),
       };
+    } else if let AircraftState::Taxiing { waypoints, .. } = &mut self.state {
+      waypoints.clear();
     }
   }
 
