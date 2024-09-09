@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, worldAtom } from './lib/atoms';
-import { createEffect, createMemo, createSignal, onMount } from 'solid-js';
+import { createMemo, createSignal, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { Frequencies } from './lib/types';
 
@@ -37,14 +37,13 @@ export default function FreqSelector() {
   }
 
   function swap() {
-    // let swapFreq = frequency();
-    // setFrequency(secondary());
-    // setSecondary(swapFreq);
+    let swapFreq = frequency();
+    setFrequency(secondary());
+    setSecondary(swapFreq);
   }
 
   function oninput(e: InputEvent) {
     if (e.target instanceof HTMLInputElement) {
-      // setSecondary(parseFloat(e.target.value));
       changeViaValue(parseFloat(e.target.value));
     }
   }
