@@ -641,7 +641,11 @@ impl Aircraft {
         waypoints.reverse();
         *wps = waypoints;
 
-        info!("Initiating taxi for {}: {:?}", self.callsign, wps);
+        info!(
+          "Initiating taxi for {}: {:?}",
+          self.callsign,
+          wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
+        );
       } else {
         error!("Failed to find waypoints for {:?}", &self);
 
