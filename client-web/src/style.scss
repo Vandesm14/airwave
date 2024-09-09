@@ -199,6 +199,9 @@ $transparent-black: #000a;
       min-width: 300px;
       max-width: 20%;
 
+      max-height: 90vh;
+      overflow-y: auto;
+
       color: white;
 
       .header {
