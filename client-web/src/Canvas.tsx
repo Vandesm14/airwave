@@ -347,7 +347,7 @@ export default function Canvas({
       selectedAircraft() == aircraft.callsign
     ) {
       ctx.strokeStyle = '#ffff0033';
-      ctx.lineWidth = scaleFeetToPixels(500);
+      ctx.lineWidth = 3;
 
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
