@@ -1,11 +1,4 @@
-import {
-  Accessor,
-  createEffect,
-  createMemo,
-  createSignal,
-  For,
-  onMount,
-} from 'solid-js';
+import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
 import { Aircraft } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
