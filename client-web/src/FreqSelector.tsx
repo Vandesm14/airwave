@@ -78,7 +78,6 @@ export default function FreqSelector() {
         value={frequency()}
         class="live"
         oninput={oninput}
-        onkeydown={onEnter}
         step=".1"
       />
       {/* <input type="button" value="⬌" class="swap" onclick={swap} /> */}
