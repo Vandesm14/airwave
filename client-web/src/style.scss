@@ -182,10 +182,7 @@ $transparent-black: #000a;
     gap: 5px;
 
     #stripboard {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      padding: 5px;
+      padding: 0 5px;
 
       position: relative;
       min-height: 200px;
@@ -197,6 +194,10 @@ $transparent-black: #000a;
 
       color: white;
 
+      tr {
+        margin: 5px 0;
+      }
+
       .header {
         @extend .strip;
 
@@ -204,6 +205,7 @@ $transparent-black: #000a;
         color: white;
         font-weight: bold;
         border-bottom: 1px solid white;
+        cursor: default !important;
       }
 
       .separator {
@@ -218,8 +220,13 @@ $transparent-black: #000a;
         border: 1px solid grey;
         padding: 10px 10px;
 
-        cursor: grab;
+        cursor: pointer;
         user-select: none;
+
+        .vertical {
+          display: flex;
+          flex-direction: column;
+        }
 
         .intention,
         .timer {

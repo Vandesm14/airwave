@@ -1,4 +1,11 @@
-import { Accessor, createEffect, createSignal, For, onMount } from 'solid-js';
+import {
+  Accessor,
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onMount,
+} from 'solid-js';
 import { Aircraft } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
@@ -28,32 +35,35 @@ function formatTime(duration: number): string {
 }
 
 function Strip({ strip }: StripProps) {
-  let target: string = '&nbsp;'.repeat(4);
-  let frequency: number | null = null;
-  let sinceCreated: string | null = null;
-  let isOverTime = false;
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
+
+  let sinceCreated = formatTime(Date.now() - strip.created);
+  let overtime = !(
+    sinceCreated.startsWith('0') || sinceCreated.startsWith('-')
+  );
 
   function handleMouseDown() {
     setSelectedAircraft(strip.callsign);
   }
 
   return (
-    <div
+    <tr
       classList={{
         strip: true,
-        theirs: frequency !== ourFrequency(),
-        overtime: isOverTime,
+        theirs: strip.frequency !== ourFrequency(),
+        overtime,
         selected: selectedAircraft() === strip.callsign,
       }}
       onmousedown={handleMouseDown}
     >
-      <span class="callsign">{strip.callsign}</span>
-      <span class="target" innerHTML={target}></span>
-      <span class="frequency">{frequency}</span>
-      <span class="timer">{sinceCreated}</span>
-    </div>
+      <td class="callsign">{strip.callsign}</td>
+
+      <td class="vertical">
+        <span class="frequency">{strip.frequency}</span>
+        <span class="timer">{sinceCreated}</span>
+      </td>
+    </tr>
   );
 }
 
@@ -84,6 +94,8 @@ export default function StripBoard({
     }
   );
 
+  let stripEntries = createMemo(() => Object.entries(strips()));
+
   // createEffect(() => {
   //   localStorage.setItem('strips', JSON.stringify(strips()));
   // });
@@ -112,15 +124,15 @@ export default function StripBoard({
   });
 
   return (
-    <div id="stripboard">
-      {Object.entries(strips()).map(([key, list]) => (
+    <table id="stripboard">
+      {stripEntries().map(([key, list]) => (
         <>
-          <div class="header">{key}</div>
+          <tr class="header">{key}</tr>
           {list.map((strip) => (
             <Strip strip={strip}></Strip>
           ))}
         </>
       ))}
-    </div>
+    </table>
   );
 }
