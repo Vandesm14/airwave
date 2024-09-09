@@ -68,7 +68,7 @@ function Strip({ strip }: StripProps) {
   }
 
   return (
-    <tr
+    <div
       classList={{
         strip: true,
         theirs: strip.frequency !== ourFrequency(),
@@ -77,20 +77,23 @@ function Strip({ strip }: StripProps) {
       }}
       onmousedown={handleMouseDown}
     >
-      <td class="callsign">{strip.callsign}</td>
-      <td class="vertical">
+      <div class="vertical">
+        <span class="callsign">{strip.callsign}</span>
+        <span></span>
+      </div>
+      <div class="vertical">
         <span>{strip.flight_plan[0]}</span>
         <span>{strip.flight_plan[1]}</span>
-      </td>
-      <td class="vertical">
+      </div>
+      <div class="vertical">
         <span>{topStatus}</span>
         <span>{bottomStatus}</span>
-      </td>
-      <td class="vertical">
+      </div>
+      <div class="vertical">
         <span class="frequency">{strip.frequency}</span>
         <span class="timer">{sinceCreated}</span>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -151,15 +154,15 @@ export default function StripBoard({
   });
 
   return (
-    <table id="stripboard">
+    <div id="stripboard">
       {stripEntries().map(([key, list]) => (
         <>
-          <tr class="header">{key}</tr>
+          <div class="header">{key}</div>
           {list.map((strip) => (
             <Strip strip={strip}></Strip>
           ))}
         </>
       ))}
-    </table>
+    </div>
   );
 }

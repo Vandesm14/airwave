@@ -182,7 +182,10 @@ $transparent-black: #000a;
     gap: 5px;
 
     #stripboard {
-      padding: 0 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 5px;
 
       position: relative;
       min-height: 200px;
@@ -193,10 +196,6 @@ $transparent-black: #000a;
       max-width: 20%;
 
       color: white;
-
-      tr {
-        margin: 5px 0;
-      }
 
       .header {
         @extend .strip;
@@ -215,20 +214,18 @@ $transparent-black: #000a;
       .strip {
         display: flex;
         flex-direction: row;
+        justify-content: space-between;
 
         border: 1px solid grey;
-        padding: 5px 0;
+        padding: 5px 10px;
 
         cursor: pointer;
         user-select: none;
 
-        td {
-          margin: 0 10px;
-        }
-
         .vertical {
           display: flex;
           flex-direction: column;
+          justify-content: flex-start;
         }
 
         .intention,
