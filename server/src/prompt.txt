@@ -14,7 +14,7 @@ Available Tasks:
 - {"type": "taxi-continue"}
 - {"type": "direct", "value": [string]}
 
-Available Callsigns: SKW (Skywest), AAL ("American Airlines" or "American"), JBL (Jet Blue)
+Available Callsigns: SKW (Skywest), AAL ("American Airlines" or "American"), JBU (Jet Blue)
 Examples:
 User: Skywest 5-1-3-8, turn left heading 180 and reduce speed to 230.
 Assistant: {"reply": "Left turn heading 180, reduce speed to 230.", "id": "SKW5138", "tasks":[{"type": "heading", "value": 180}, {"type": "speed", "value": 230}]}
