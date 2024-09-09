@@ -137,7 +137,6 @@ export default function StripBoard({
     // loaded from the server yet. So, when we run the purge function to clean
     // up nonexistent callsigns from the strips, all are cleaned up.
     if (aircrafts().length > 0) {
-      // TODO: implement stripboard logic
       let strips: Strips = {
         Approach: [],
         Tower: [],

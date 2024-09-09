@@ -314,6 +314,8 @@ pub struct Aircraft {
 
   pub target: AircraftTargets,
   pub created: u128,
+
+  pub airspace: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -407,6 +409,7 @@ impl Aircraft {
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or(Duration::from_millis(0))
         .as_millis(),
+      airspace: None,
     }
     .with_synced_targets()
   }

@@ -54,6 +54,8 @@ export type Aircraft = {
   flight_plan: [string, string];
 
   created: number;
+
+  airspace: string | null;
 };
 
 export type Vec2 = { x: number; y: number };

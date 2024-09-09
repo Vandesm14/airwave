@@ -231,6 +231,13 @@ impl Engine {
           aircraft.state = AircraftState::Deleted;
         }
       }
+
+      let airspace = self
+        .world
+        .airspaces
+        .iter()
+        .find(|a| a.contains_point(aircraft.pos));
+      aircraft.airspace = airspace.map(|a| a.id.clone());
     }
   }
 
