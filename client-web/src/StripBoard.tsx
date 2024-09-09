@@ -51,6 +51,11 @@ function Strip({ strip }: StripProps) {
   );
   let topStatus = '';
   let bottomStatus = '';
+  let theirs = strip.frequency !== ourFrequency();
+
+  if (sinceCreated.startsWith('-')) {
+    theirs = true;
+  }
 
   if (strip.state.type === 'landing') {
     topStatus = 'ILS';
@@ -76,7 +81,7 @@ function Strip({ strip }: StripProps) {
     <div
       classList={{
         strip: true,
-        theirs: strip.frequency !== ourFrequency(),
+        theirs,
         overtime,
         selected: selectedAircraft() === strip.callsign,
       }}
@@ -154,7 +159,7 @@ export default function StripBoard({
           strips.Tower.push(aircraft);
         } else if (aircraft.state.type === 'taxiing') {
           if (
-            (aircraft.state.value.waypoints.length > 0 &&
+            (aircraft.state.value.waypoints.length === 1 &&
               aircraft.state.value.waypoints[0].kind === 'runway') ||
             aircraft.state.value.current.kind === 'runway'
           ) {
@@ -164,10 +169,15 @@ export default function StripBoard({
           }
         } else if (
           // TODO: Don't hard-code this, use an airspace selector in the UI
-          aircraft.airspace === 'KSFO' &&
-          aircraft.airspace === aircraft.flight_plan[0]
+          // aircraft.airspace === 'KSFO' &&
+          // aircraft.airspace === aircraft.flight_plan[0]
+          aircraft.flight_plan[1] === 'KSFO'
         ) {
-          strips.Departure.push(aircraft);
+          if (aircraft.altitude >= 2000) {
+            strips.Departure.push(aircraft);
+          } else {
+            strips.Tower.push(aircraft);
+          }
         } else if (
           // TODO: Don't hard-code this, use an airspace selector in the UI
           aircraft.airspace === 'KSFO' &&
@@ -177,7 +187,11 @@ export default function StripBoard({
         }
       }
 
-      strips['Approach'].sort((a, b) => b.created - a.created);
+      const sorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
+      strips.Approach.sort(sorter);
+      strips.Departure.sort(sorter);
+      strips.Ground.sort(sorter);
+      strips.Tower.sort(sorter);
 
       setStrips(strips);
     }
