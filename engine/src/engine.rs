@@ -221,14 +221,18 @@ impl Engine {
     for aircraft in self.world.aircraft.iter_mut() {
       aircraft.update(dt, &self.sender);
 
-      // if !self
-      //   .world
-      //   .airspaces
-      //   .iter()
-      //   .any(|a| a.contains_point(aircraft.pos))
-      // {
-      //   aircraft.state = AircraftState::Deleted;
-      // }
+      // TODO: switch this to find an airport with the name when we switch
+      // automated flights to use real airports instead of empty airspaces
+      if let Some(airspace) = self
+        .world
+        .airspaces
+        .iter()
+        .find(|a| a.id == aircraft.flight_plan.1)
+      {
+        if airspace.auto {
+          aircraft.state = AircraftState::Deleted;
+        }
+      }
     }
   }
 
