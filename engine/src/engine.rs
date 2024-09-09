@@ -70,32 +70,6 @@ impl Engine {
     if let Some(aircraft) = Aircraft::random_to_arrive(&self.world) {
       self.world.aircraft.push(aircraft);
     }
-
-    // TODO: update replies
-    // let reply = if let AircraftIntention::Land = aircraft.intention {
-    //   let heading = angle_between_points(airspace.pos, aircraft.pos);
-    //   let direction = heading_to_direction(heading);
-
-    //   Some(CommandReply {
-    //     callsign: aircraft.callsign.clone(),
-    //     kind: CommandReplyKind::AircraftArrivedInTowerAirspace {
-    //       direction: direction.to_owned(),
-    //     },
-    //   })
-    // } else {
-    //   None
-    // };
-    // self
-    //   .sender
-    //   .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
-    //     id: aircraft.callsign.clone(),
-    //     frequency: aircraft.frequency,
-    //     reply: reply.map(|s| s.to_string()).unwrap_or_else(|| {
-    //       "Error generating reply for spawned aircraft".to_owned()
-    //     }),
-    //     tasks: Vec::new(),
-    //   }))
-    //   .unwrap();
   }
 
   pub fn begin_loop(&mut self) {

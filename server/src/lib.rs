@@ -7,7 +7,7 @@ use async_openai::types::{
 };
 use engine::{
   engine::{IncomingUpdate, OutgoingReply},
-  structs::{Command, CommandWithFreq},
+  structs::{Command, CommandReply, CommandReplyKind, CommandWithFreq},
 };
 use futures_util::{
   stream::{SplitSink, SplitStream},
@@ -215,9 +215,13 @@ async fn complete_atc_request(
         match serde_json::from_str::<Command>(text) {
           Ok(reply) => {
             return Some(CommandWithFreq {
-              id: reply.id,
+              id: reply.id.clone(),
               frequency: freq,
-              reply: reply.reply,
+              reply: CommandReply {
+                callsign: reply.id,
+                kind: CommandReplyKind::WithCallsign { text: reply.reply },
+              }
+              .to_string(),
               tasks: reply.tasks,
             })
           }

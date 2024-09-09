@@ -247,6 +247,20 @@ pub struct CommandWithFreq {
   pub tasks: Vec<Task>,
 }
 
+pub fn decode_callsign(callsign: &str) -> String {
+  let airline = callsign.chars().take(3).collect::<String>();
+  let fnumber = callsign.chars().skip(3).collect::<String>();
+
+  let airline_str = match airline.as_str() {
+    "AAL" => "American Airlines",
+    "SKW" => "Skywest",
+    "JBU" => "JetBlue",
+    _ => "Unknown",
+  };
+
+  format!("{airline_str} {fnumber}")
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CommandReply {
   pub callsign: String,
@@ -255,17 +269,51 @@ pub struct CommandReply {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CommandReplyKind {
-  AircraftArrivedInTowerAirspace { direction: String },
+  WithCallsign { text: String },
+  WithoutCallsign { text: String },
+  ArriveInAirspace { direction: String },
+  HoldShortRunway { runway: String },
+  ReadyForDeparture { airport: String },
+  TaxiToGates { runway: String },
 }
 
 impl fmt::Display for CommandReply {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let decoded_callsign = decode_callsign(&self.callsign);
+
     match &self.kind {
-      CommandReplyKind::AircraftArrivedInTowerAirspace { direction } => {
+      CommandReplyKind::WithCallsign { text } => {
+        write!(f, "{text}, {}.", decoded_callsign)
+      }
+      CommandReplyKind::WithoutCallsign { text } => {
+        write!(f, "{text}.")
+      }
+      CommandReplyKind::ArriveInAirspace { direction } => {
         write!(
           f,
-          "Tower, {} is {direction} of the airport, with you.",
-          self.callsign
+          "Approach, {} is {direction} of the airport, with you.",
+          decoded_callsign,
+        )
+      }
+      CommandReplyKind::HoldShortRunway { runway } => {
+        write!(
+          f,
+          "Tower, {} is holding short at {}.",
+          decoded_callsign, runway
+        )
+      }
+      CommandReplyKind::ReadyForDeparture { airport } => {
+        write!(
+          f,
+          "Clearence, {} ready for departure to {}, as filed.",
+          decoded_callsign, airport
+        )
+      }
+      CommandReplyKind::TaxiToGates { runway } => {
+        write!(
+          f,
+          "Ground, {} is at {}, requesting taxi to the gates.",
+          decoded_callsign, runway
         )
       }
     }
@@ -551,7 +599,7 @@ impl Aircraft {
 
   pub fn random_callsign() -> String {
     let mut string = String::new();
-    let airlines = ["AAL", "SKW", "JBL"];
+    let airlines = ["AAL", "SKW", "JBU"];
 
     let mut rng = thread_rng();
     let airline = airlines.choose(&mut rng).unwrap();
@@ -603,7 +651,11 @@ impl Aircraft {
       .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
         id: self.callsign.clone(),
         frequency: self.frequency,
-        reply: text,
+        reply: CommandReply {
+          callsign: self.callsign.clone(),
+          kind: CommandReplyKind::WithCallsign { text },
+        }
+        .to_string(),
         tasks: Vec::new(),
       }))
       .unwrap();

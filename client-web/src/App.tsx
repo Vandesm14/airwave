@@ -31,16 +31,6 @@ export default function App() {
     await navigator.mediaDevices.getUserMedia(constraints);
   }
 
-  function callsignString(id: string): string {
-    const airlines: Record<string, string> = {
-      AAL: 'American Airlines',
-      SKW: 'Sky West',
-      JBL: 'Jet Blue',
-    };
-
-    return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
-  }
-
   function speak(message: RadioMessage) {
     if ('speechSynthesis' in window && frequency() === message.frequency) {
       if (window.speechSynthesis.speaking || isRecording()) {
@@ -117,7 +107,6 @@ export default function App() {
   });
 
   function speakAsAircraft(message: RadioMessage) {
-    message.reply = `${message.reply}, ${callsignString(message.id)}`;
     setMessages((messages) => [...messages, message]);
     speak(message);
   }
