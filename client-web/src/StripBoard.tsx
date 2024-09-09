@@ -190,6 +190,7 @@ export default function StripBoard({
             //     return [{ type: 'strip', value: aircraft }, ...state];
             //   }
             // }
+            return state;
           } else {
             return state.map((e, i) =>
               i === index ? { type: 'strip', value: aircraft } : e
