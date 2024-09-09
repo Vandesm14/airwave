@@ -93,7 +93,6 @@ impl Engine {
 
       aircraft.sync_targets();
       aircraft.target.speed = 400.0;
-      aircraft.target.altitude = 13_000.0;
 
       self.world.aircraft.push(aircraft.clone());
     }
