@@ -40,6 +40,10 @@ export let worldAtom = atom<World>({
   waypoints: [],
 });
 export let frequencyAtom = atom(118.5);
+export let controlAtom = atom({
+  airspace: atom('KSFO'),
+  frequency: atom(118.5),
+});
 
 export let renderAtom = atom<{
   doInitialDraw: boolean;

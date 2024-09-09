@@ -288,6 +288,17 @@ $transparent-black: #000a;
           font-size: 30px;
         }
       }
+
+      select {
+        background-color: $transparent-black;
+        border: 1px solid white;
+        color: white;
+        font-size: inherit;
+
+        width: 100px;
+        padding: 10px 10px;
+        flex-grow: 1;
+      }
     }
   }
 }
