@@ -15,6 +15,7 @@ type Strips = {
   Tower: Array<Aircraft>;
   Ground: Array<Aircraft>;
   Departure: Array<Aircraft>;
+  Center: Array<Aircraft>;
 };
 
 const Separator = () => <div class="separator"></div>;
@@ -71,6 +72,11 @@ function Strip({ strip }: StripProps) {
     }
 
     bottomStatus = current.name;
+  } else if (strip.state.type === 'flying') {
+    if (strip.state.value.waypoints.length > 0) {
+      topStatus = 'DCT';
+      bottomStatus = strip.state.value.waypoints[0].name;
+    }
   }
 
   function handleMouseDown() {
@@ -128,7 +134,7 @@ export default function StripBoard({
   aircrafts: Accessor<Array<Aircraft>>;
 }) {
   let [strips, setStrips] = createSignal<Strips>(
-    { Approach: [], Tower: [], Ground: [], Departure: [] },
+    { Approach: [], Tower: [], Ground: [], Departure: [], Center: [] },
     {
       equals: false,
     }
@@ -152,6 +158,7 @@ export default function StripBoard({
         Tower: [],
         Ground: [],
         Departure: [],
+        Center: [],
       };
 
       for (let aircraft of aircrafts()) {
@@ -159,9 +166,10 @@ export default function StripBoard({
           strips.Tower.push(aircraft);
         } else if (aircraft.state.type === 'taxiing') {
           if (
-            (aircraft.state.value.waypoints.length === 1 &&
+            ((aircraft.state.value.waypoints.length === 1 &&
               aircraft.state.value.waypoints[0].kind === 'runway') ||
-            aircraft.state.value.current.kind === 'runway'
+              aircraft.state.value.current.kind === 'runway') &&
+            aircraft.flight_plan[1] !== 'KSFO'
           ) {
             strips.Tower.push(aircraft);
           } else {
@@ -169,9 +177,8 @@ export default function StripBoard({
           }
         } else if (
           // TODO: Don't hard-code this, use an airspace selector in the UI
-          // aircraft.airspace === 'KSFO' &&
-          // aircraft.airspace === aircraft.flight_plan[0]
-          aircraft.flight_plan[1] === 'KSFO'
+          aircraft.airspace === 'KSFO' &&
+          aircraft.airspace === aircraft.flight_plan[0]
         ) {
           if (aircraft.altitude >= 2000) {
             strips.Departure.push(aircraft);
@@ -180,10 +187,12 @@ export default function StripBoard({
           }
         } else if (
           // TODO: Don't hard-code this, use an airspace selector in the UI
-          aircraft.airspace === 'KSFO' &&
-          aircraft.airspace === aircraft.flight_plan[1]
+          'KSFO' === aircraft.flight_plan[1] &&
+          aircraft.airspace !== aircraft.flight_plan[0]
         ) {
           strips.Approach.push(aircraft);
+        } else {
+          strips.Center.push(aircraft);
         }
       }
 
@@ -192,6 +201,7 @@ export default function StripBoard({
       strips.Departure.sort(sorter);
       strips.Ground.sort(sorter);
       strips.Tower.sort(sorter);
+      strips.Center.sort(sorter);
 
       setStrips(strips);
     }
@@ -199,9 +209,12 @@ export default function StripBoard({
 
   return (
     <div id="stripboard">
+      <div class="header">All ({aircrafts().length})</div>
       {stripEntries().map(([key, list]) => (
         <>
-          <div class="header">{key}</div>
+          <div class="header">
+            {key} ({list.length})
+          </div>
           {list.map((strip) => (
             <Strip strip={strip}></Strip>
           ))}
