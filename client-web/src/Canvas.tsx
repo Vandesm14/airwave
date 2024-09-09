@@ -254,11 +254,20 @@ export default function Canvas({
     resetTransform(ctx);
     let pos = scalePoint(airspace.pos);
 
-    ctx.strokeStyle = 'white';
-    ctx.fillStyle = 'white';
+    ctx.strokeStyle = airspace.auto ? '#444' : 'white';
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, scaleFeetToPixels(airspace.size), 0, Math.PI * 2);
     ctx.stroke();
+
+    // Draw airspace name
+    ctx.fillStyle = '#777';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(
+      airspace.id,
+      pos.x,
+      pos.y - scaleFeetToPixels(airspace.size) - 20
+    );
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
@@ -401,6 +410,7 @@ export default function Canvas({
     // Draw info
     let spacing = scaleFeetToPixels(nauticalMilesToFeet * 0.8);
     ctx.textAlign = 'left';
+    ctx.fillStyle = '#44ff44';
     if (selectedAircraft() == aircraft.callsign) {
       ctx.fillStyle = '#FFE045';
     }

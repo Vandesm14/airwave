@@ -45,6 +45,7 @@ async fn main() {
     pos: Vec2::new(0.0, 0.0),
     size: NAUTICALMILES_TO_FEET * 30.0,
     airports: vec![],
+    auto: false,
   };
   tracing::debug!("Created {airspace_ksfo:?}");
 
@@ -63,6 +64,7 @@ async fn main() {
     ),
     size: NAUTICALMILES_TO_FEET * 30.0,
     airports: vec![],
+    auto: true,
   };
   tracing::debug!("Created {airspace_klax:?}");
 

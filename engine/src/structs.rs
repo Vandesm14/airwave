@@ -40,6 +40,37 @@ impl World {
 
     closest
   }
+
+  fn find_random_airspace(
+    &self,
+    auto: bool,
+    with_airports: bool,
+  ) -> Option<&Airspace> {
+    let mut rng = thread_rng();
+    let airspaces: Vec<&Airspace> = self
+      .airspaces
+      .iter()
+      .filter(|a| {
+        if auto != a.auto {
+          return false;
+        }
+        if with_airports {
+          return !a.airports.is_empty();
+        }
+        true
+      })
+      .collect();
+
+    airspaces.choose(&mut rng).copied()
+  }
+
+  pub fn find_random_departure(&self) -> Option<&Airspace> {
+    self.find_random_airspace(true, true)
+  }
+
+  pub fn find_random_arrival(&self) -> Option<&Airspace> {
+    self.find_random_airspace(false, true)
+  }
 }
 
 // TODO: Support non-circular (regional) airspaces
@@ -51,12 +82,26 @@ pub struct Airspace {
   pub pos: Vec2,
   pub size: f32,
   pub airports: Vec<Airport>,
+
+  /// Determines whether the airspace is automatically controlled.
+  pub auto: bool,
 }
 
 impl Airspace {
   pub fn contains_point(&self, point: Vec2) -> bool {
     let distance = point.distance_squared(self.pos);
     distance <= self.size.powf(2.0)
+  }
+
+  pub fn find_random_airport(&self) -> Option<&Airport> {
+    let mut rng = thread_rng();
+    let airports: Vec<&Airport> = self
+      .airports
+      .iter()
+      .filter(|a| !a.terminals.is_empty())
+      .collect();
+
+    airports.choose(&mut rng).copied()
   }
 }
 
@@ -333,71 +378,37 @@ pub struct Terminal {
 }
 
 impl Aircraft {
-  pub fn random_to_land(airspace: &Airspace, frequency: f32) -> Self {
-    // let point = get_random_point_on_circle(airspace.pos, airspace.size);
-
-    // Self {
-    //   callsign: Self::random_callsign(),
-    //   is_colliding: false,
-    //   intention: AircraftIntention::Land,
-    //   state: AircraftState::Flying {
-    //     waypoints: Vec::new(),
-    //   },
-    //   pos: point.position,
-    //   heading: angle_between_points(point.position, airspace.pos),
-    //   speed: 250.0,
-    //   altitude: 7000.0,
-    //   frequency,
-    //   target: AircraftTargets {
-    //     heading: angle_between_points(point.position, airspace.pos),
-    //     speed: 250.0,
-    //     altitude: 7000.0,
-    //   },
-    //   created: SystemTime::now()
-    //     .duration_since(SystemTime::UNIX_EPOCH)
-    //     .unwrap_or(Duration::from_millis(0))
-    //     .as_millis(),
-    // }
-
-    todo!()
+  pub fn sync_targets(&mut self) {
+    self.target.heading = self.heading;
+    self.target.speed = self.speed;
+    self.target.altitude = self.altitude;
   }
 
-  pub fn random_to_depart(frequency: f32, gates: Vec<Gate>) -> Self {
-    // let mut rng = thread_rng();
-    // let gate = gates.choose(&mut rng).unwrap();
-    // Self {
-    //   callsign: Self::random_callsign(),
-    //   is_colliding: false,
-    //   intention: AircraftIntention::Depart {
-    //     has_notified: false,
-    //     heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
-    //   },
-    //   state: AircraftState::Taxiing {
-    //     current: Node {
-    //       name: gate.id.clone(),
-    //       kind: NodeKind::Gate,
-    //       behavior: NodeBehavior::GoTo,
-    //       value: gate.pos,
-    //     },
-    //     waypoints: Vec::new(),
-    //   },
-    //   pos: gate.pos,
-    //   heading: 0.0,
-    //   speed: 0.0,
-    //   altitude: 0.0,
-    //   frequency,
-    //   target: AircraftTargets {
-    //     heading: 0.0,
-    //     speed: 0.0,
-    //     altitude: 0.0,
-    //   },
-    //   created: SystemTime::now()
-    //     .duration_since(SystemTime::UNIX_EPOCH)
-    //     .unwrap_or(Duration::from_millis(0))
-    //     .as_millis(),
-    // }
+  pub fn with_synced_targets(mut self) -> Self {
+    self.sync_targets();
+    self
+  }
 
-    todo!()
+  pub fn random_flying() -> Self {
+    Self {
+      callsign: Self::random_callsign(),
+      is_colliding: false,
+      flight_plan: (String::new(), String::new()),
+      state: AircraftState::Flying {
+        waypoints: Vec::new(),
+      },
+      pos: Vec2::default(),
+      heading: 0.0,
+      speed: 250.0,
+      altitude: 7000.0,
+      frequency: 118.5,
+      target: AircraftTargets::default(),
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
+    }
+    .with_synced_targets()
   }
 
   pub fn departure_from_arrival(&mut self) {

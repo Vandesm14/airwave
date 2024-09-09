@@ -104,6 +104,7 @@ export type Airspace = {
   pos: Vec2;
   size: number;
   airports: Array<Airport>;
+  auto: boolean;
 };
 
 export type World = {

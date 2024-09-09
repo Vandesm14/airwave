@@ -8,7 +8,10 @@ use async_channel::TryRecvError;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::structs::{Aircraft, AircraftState, CommandWithFreq, Task, World};
+use crate::{
+  angle_between_points,
+  structs::{Aircraft, AircraftState, CommandWithFreq, Task, World},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -65,12 +68,25 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    // TODO: spawn aircraft
-    let airspace = self.world.airspaces.first().unwrap();
+    let departure = self.world.find_random_departure();
+    let arrival = self.world.find_random_arrival();
 
-    // TODO: don't hard-code this frequency
-    let aircraft = Aircraft::random_to_land(airspace, 118.5);
-    self.world.aircraft.push(aircraft.clone());
+    if let Some((departure, arrival)) = departure.zip(arrival) {
+      // We can unwrap this because we already filtered out airspaces with no
+      // airports.
+      let dep_airport = departure.find_random_airport().unwrap();
+      let arr_airport = arrival.find_random_airport().unwrap();
+
+      let mut aircraft = Aircraft::random_flying();
+      aircraft.flight_plan = (dep_airport.id.clone(), arr_airport.id.clone());
+      aircraft.pos = dep_airport.center;
+      aircraft.heading =
+        angle_between_points(dep_airport.center, arr_airport.center);
+
+      aircraft.sync_targets();
+
+      self.world.aircraft.push(aircraft.clone());
+    }
 
     // TODO: update replies
     // let reply = if let AircraftIntention::Land = aircraft.intention {
