@@ -13,7 +13,7 @@ use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
   delta_angle,
   engine::OutgoingReply,
-  get_random_point_on_circle, inverse_degrees, move_point,
+  inverse_degrees, move_point,
   pathfinder::{Node, NodeBehavior, NodeKind, Object, Pathfinder},
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
