@@ -18,6 +18,40 @@ use crate::{
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TIME_SCALE,
 };
 
+pub fn find_random_airspace(
+  airspaces: &[Airspace],
+  auto: bool,
+  with_airports: bool,
+) -> Option<&Airspace> {
+  let mut rng = thread_rng();
+  let filtered_airspaces: Vec<&Airspace> = airspaces
+    .iter()
+    .filter(|a| {
+      if auto != a.auto {
+        return false;
+      }
+      if with_airports {
+        return !a.airports.is_empty();
+      }
+      true
+    })
+    .collect();
+
+  filtered_airspaces.choose(&mut rng).copied()
+}
+
+pub fn find_random_departure(airspaces: &[Airspace]) -> Option<&Airspace> {
+  // TODO: We should probably do `true` for the second bool, which specifies
+  // that a departure airspace needs an airport. This just saves us time
+  // when testing and messing about with single airspaces instead of those
+  // plus an airport.
+  find_random_airspace(airspaces, true, false)
+}
+
+pub fn find_random_arrival(airspaces: &[Airspace]) -> Option<&Airspace> {
+  find_random_airspace(airspaces, false, true)
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
@@ -39,41 +73,6 @@ impl World {
     }
 
     closest
-  }
-
-  fn find_random_airspace(
-    &self,
-    auto: bool,
-    with_airports: bool,
-  ) -> Option<&Airspace> {
-    let mut rng = thread_rng();
-    let airspaces: Vec<&Airspace> = self
-      .airspaces
-      .iter()
-      .filter(|a| {
-        if auto != a.auto {
-          return false;
-        }
-        if with_airports {
-          return !a.airports.is_empty();
-        }
-        true
-      })
-      .collect();
-
-    airspaces.choose(&mut rng).copied()
-  }
-
-  pub fn find_random_departure(&self) -> Option<&Airspace> {
-    // TODO: We should probably do `true` for the second bool, which specifies
-    // that a departure airspace needs an airport. This just saves us time
-    // when testing and messing about with single airspaces instead of those
-    // plus an airport.
-    self.find_random_airspace(true, false)
-  }
-
-  pub fn find_random_arrival(&self) -> Option<&Airspace> {
-    self.find_random_airspace(false, true)
   }
 }
 
@@ -295,6 +294,14 @@ pub struct AircraftTargets {
   pub altitude: f32,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum AircraftUpdate {
+  #[default]
+  None,
+
+  NewDeparture,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Aircraft {
   pub callsign: String,
@@ -414,19 +421,86 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn departure_from_arrival(&mut self) {
-    let mut rng = thread_rng();
+  pub fn random_parked(current: Node<Vec2>) -> Self {
+    Self {
+      callsign: Self::random_callsign(),
+      is_colliding: false,
+      flight_plan: (String::new(), String::new()),
+      state: AircraftState::Taxiing {
+        current: current.clone(),
+        waypoints: Vec::new(),
+      },
+      pos: current.value,
+      heading: 0.0,
+      speed: 0.0,
+      altitude: 00.0,
+      frequency: 118.6,
+      target: AircraftTargets::default(),
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
+      airspace: None,
+    }
+    .with_synced_targets()
+  }
 
-    // TODO: set intention to depart
-    // self.intention = AircraftIntention::Depart {
-    //   has_notified: false,
-    //   heading: rng.gen_range(0.0_f32..36.0).round() * 10.0,
-    // };
+  pub fn random_to_arrive(world: &World) -> Option<Self> {
+    let departure = find_random_departure(&world.airspaces);
+    let arrival = find_random_arrival(&world.airspaces);
+
+    if let Some((departure, arrival)) = departure.zip(arrival) {
+      // We can unwrap this because we already filtered out airspaces with no
+      // airports.
+
+      // TODO: when depart from airport
+      // let dep_airport = departure.find_random_airport().unwrap();
+      // let arr_airport = arrival.find_random_airport().unwrap();
+
+      // let mut aircraft = Aircraft::random_flying();
+      // aircraft.flight_plan = (dep_airport.id.clone(), arr_airport.id.clone());
+      // aircraft.pos = dep_airport.center;
+      // aircraft.heading =
+      //   angle_between_points(dep_airport.center, arr_airport.center);
+
+      let arr_airport = arrival.find_random_airport().unwrap();
+
+      let mut aircraft = Aircraft::random_flying();
+      aircraft.flight_plan = (departure.id.clone(), arr_airport.id.clone());
+      aircraft.pos = departure.pos;
+      aircraft.heading =
+        angle_between_points(departure.pos, arr_airport.center);
+
+      aircraft.sync_targets();
+
+      Some(aircraft)
+    } else {
+      None
+    }
+  }
+
+  pub fn created_now(&mut self) {
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)
       .unwrap_or(Duration::from_millis(0))
-      .add(Duration::from_secs(rng.gen_range(60..=180)))
       .as_millis();
+  }
+
+  pub fn departure_from_arrival(&mut self, airspaces: &[Airspace]) {
+    let mut rng = thread_rng();
+    // TODO: true when airports
+    let arrival = find_random_airspace(airspaces, true, false);
+
+    // TODO: when airport as destination
+    // TODO: handle errors
+    if let Some(arrival) = arrival {
+      self.flight_plan = (self.airspace.clone().unwrap(), arrival.id.clone());
+      self.created = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .add(Duration::from_secs(rng.gen_range(60..=180)))
+        .as_millis();
+    }
   }
 
   pub fn random_callsign() -> String {
@@ -523,7 +597,7 @@ impl Aircraft {
 
         info!("Initiating taxi for {}: {:?}", self.callsign, wps);
       } else {
-        error!("Failed to find waypoints for {}", self.callsign);
+        error!("Failed to find waypoints for {:?}", &self);
 
         return;
       }
@@ -585,25 +659,27 @@ impl Aircraft {
     self.pos = pos;
   }
 
-  fn update_to_departure(&mut self) {
-    // TODO: new system
-    // if let AircraftIntention::Land = self.intention {
-    //   if let AircraftState::Taxiing {
-    //     current:
-    //       Node {
-    //         kind: NodeKind::Gate,
-    //         value,
-    //         ..
-    //       },
-    //     waypoints,
-    //   } = &self.state
-    //   {
-    //     if self.pos == *value && waypoints.is_empty() {
-    //       self.departure_from_arrival();
-    //       self.do_hold_taxi(true);
-    //     }
-    //   }
-    // }
+  fn update_to_departure(&mut self) -> AircraftUpdate {
+    if let AircraftState::Taxiing {
+      current:
+        Node {
+          kind: NodeKind::Gate,
+          value,
+          ..
+        },
+      waypoints,
+    } = &self.state
+    {
+      if self.pos == *value
+        && waypoints.is_empty()
+        && Some(self.flight_plan.1.clone()) == self.airspace
+      {
+        self.do_hold_taxi(true);
+        return AircraftUpdate::NewDeparture;
+      }
+    }
+
+    AircraftUpdate::default()
   }
 
   fn update_taxi(&mut self) {
@@ -848,13 +924,15 @@ impl Aircraft {
     &mut self,
     dt: f32,
     sender: &async_broadcast::Sender<OutgoingReply>,
-  ) {
+  ) -> AircraftUpdate {
     self.update_landing(dt, sender);
     self.update_targets(dt);
     self.update_taxi();
     self.update_flying();
-    self.update_to_departure();
+    let update = self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);
+
+    update
   }
 }

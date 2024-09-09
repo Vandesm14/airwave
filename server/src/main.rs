@@ -7,7 +7,8 @@ use std::{path::PathBuf, sync::Arc};
 use clap::Parser;
 use engine::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
-  structs::{Airport, Airspace},
+  pathfinder::{Node, NodeBehavior, NodeKind},
+  structs::{Aircraft, Airport, Airspace},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
@@ -93,6 +94,32 @@ async fn main() {
   engine.world.airspaces.push(airspace_kjfk);
 
   engine.spawn_random_aircraft();
+
+  // Fill all gates with random aircraft
+  for airspace in engine.world.airspaces.iter() {
+    if !airspace.auto {
+      for airport in airspace.airports.iter() {
+        let mut now = true;
+        for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
+          let mut aircraft = Aircraft::random_parked(Node {
+            name: gate.id.clone(),
+            kind: NodeKind::Gate,
+            behavior: NodeBehavior::GoTo,
+            value: gate.pos,
+          });
+          aircraft.airspace = Some(airspace.id.clone());
+          aircraft.departure_from_arrival(&engine.world.airspaces);
+
+          if now {
+            aircraft.created_now();
+            now = false;
+          }
+
+          engine.world.aircraft.push(aircraft);
+        }
+      }
+    }
+  }
 
   tokio::task::spawn_blocking(move || engine.begin_loop());
 

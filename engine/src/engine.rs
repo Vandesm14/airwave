@@ -8,9 +8,8 @@ use async_channel::TryRecvError;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::{
-  angle_between_points,
-  structs::{Aircraft, AircraftState, CommandWithFreq, Task, World},
+use crate::structs::{
+  Aircraft, AircraftState, AircraftUpdate, CommandWithFreq, Task, World,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,32 +67,8 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    let departure = self.world.find_random_departure();
-    let arrival = self.world.find_random_arrival();
-
-    if let Some((departure, arrival)) = departure.zip(arrival) {
-      // We can unwrap this because we already filtered out airspaces with no
-      // airports.
-      // let dep_airport = departure.find_random_airport().unwrap();
-      // let arr_airport = arrival.find_random_airport().unwrap();
-
-      // let mut aircraft = Aircraft::random_flying();
-      // aircraft.flight_plan = (dep_airport.id.clone(), arr_airport.id.clone());
-      // aircraft.pos = dep_airport.center;
-      // aircraft.heading =
-      //   angle_between_points(dep_airport.center, arr_airport.center);
-
-      let arr_airport = arrival.find_random_airport().unwrap();
-
-      let mut aircraft = Aircraft::random_flying();
-      aircraft.flight_plan = (departure.id.clone(), arr_airport.id.clone());
-      aircraft.pos = departure.pos;
-      aircraft.heading =
-        angle_between_points(departure.pos, arr_airport.center);
-
-      aircraft.sync_targets();
-
-      self.world.aircraft.push(aircraft.clone());
+    if let Some(aircraft) = Aircraft::random_to_arrive(&self.world) {
+      self.world.aircraft.push(aircraft);
     }
 
     // TODO: update replies
@@ -130,8 +105,8 @@ impl Engine {
       {
         self.last_tick = Instant::now();
 
-        if self.world.aircraft.len() < 10
-          && self.last_spawn.elapsed() >= Duration::from_secs(150)
+        if self.world.aircraft.len() < 20
+          && self.last_spawn.elapsed() >= Duration::from_secs(180)
         {
           self.last_spawn = Instant::now();
           self.spawn_random_aircraft();
@@ -217,7 +192,13 @@ impl Engine {
   pub fn update(&mut self) {
     let dt = 1.0 / self.rate as f32;
     for aircraft in self.world.aircraft.iter_mut() {
-      aircraft.update(dt, &self.sender);
+      let result = aircraft.update(dt, &self.sender);
+      match result {
+        AircraftUpdate::None => {}
+        AircraftUpdate::NewDeparture => {
+          aircraft.departure_from_arrival(&self.world.airspaces)
+        }
+      }
 
       // TODO: switch this to find an airport with the name when we switch
       // automated flights to use real airports instead of empty airspaces
@@ -227,7 +208,7 @@ impl Engine {
         .iter()
         .find(|a| a.id == aircraft.flight_plan.1)
       {
-        if airspace.auto {
+        if Some(airspace.id.clone()) == aircraft.airspace && airspace.auto {
           aircraft.state = AircraftState::Deleted;
         }
       }
