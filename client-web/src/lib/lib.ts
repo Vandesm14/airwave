@@ -1,11 +1,5 @@
 import { Runway, Vec2 } from './types';
 
-export const airlines: Record<string, string> = {
-  AAL: 'American Airlines',
-  SKW: 'Sky West',
-  JBL: 'Jet Blue',
-};
-
 export const timeScale = 1;
 
 export const nauticalMilesToFeet = 6076.115;
@@ -21,10 +15,6 @@ export function degreesToHeading(degrees: number) {
 
 export const toDegrees = (degrees: number) => (degrees * 180) / Math.PI;
 export const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-
-export function callsignString(id: string): string {
-  return `${airlines[id.slice(0, 3)]} ${id.slice(3, 7)}`;
-}
 
 export function movePoint(
   x: number,
