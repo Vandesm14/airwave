@@ -92,6 +92,8 @@ impl Engine {
         angle_between_points(departure.pos, arr_airport.center);
 
       aircraft.sync_targets();
+      aircraft.target.speed = 400.0;
+      aircraft.target.altitude = 13_000.0;
 
       self.world.aircraft.push(aircraft.clone());
     }
