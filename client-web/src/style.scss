@@ -129,9 +129,13 @@ $transparent-black: #000a;
         }
 
         .callsign {
-          color: red;
+          color: #00dd00;
           font-weight: bold;
           margin-left: 5px;
+
+          &.atc {
+            color: red;
+          }
         }
 
         .text {

@@ -72,7 +72,14 @@ export default function Chatbox({
               }}
             >
               {showAll() ? <span class="frequency">{m.frequency}</span> : null}
-              <span class="callsign">{m.id}</span>
+              <span
+                classList={{
+                  callsign: true,
+                  atc: m.id === 'ATC',
+                }}
+              >
+                {m.id}
+              </span>
               <span class="text">{m.reply}</span>
             </div>
           ))}
