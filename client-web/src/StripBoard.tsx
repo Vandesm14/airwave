@@ -40,8 +40,28 @@ function Strip({ strip }: StripProps) {
 
   let sinceCreated = formatTime(Date.now() - strip.created);
   let overtime = !(
-    sinceCreated.startsWith('0') || sinceCreated.startsWith('-')
+    sinceCreated.startsWith('0') ||
+    sinceCreated.startsWith('1') ||
+    sinceCreated.startsWith('-')
   );
+  let topStatus = '';
+  let bottomStatus = '';
+
+  if (strip.state.type === 'landing') {
+    topStatus = 'ILS';
+    bottomStatus = strip.state.value.id;
+  } else if (strip.state.type === 'taxiing') {
+    let current = strip.state.value.current;
+    if (current.kind === 'gate') {
+      topStatus = 'GATE';
+    } else if (current.kind === 'runway') {
+      topStatus = 'RNWY';
+    } else if (current.kind === 'taxiway') {
+      topStatus = 'TXWY';
+    }
+
+    bottomStatus = current.name;
+  }
 
   function handleMouseDown() {
     setSelectedAircraft(strip.callsign);
@@ -63,8 +83,8 @@ function Strip({ strip }: StripProps) {
         <span>{strip.flight_plan[1]}</span>
       </td>
       <td class="vertical">
-        <span>FOO</span>
-        <span>BAR</span>
+        <span>{topStatus}</span>
+        <span>{bottomStatus}</span>
       </td>
       <td class="vertical">
         <span class="frequency">{strip.frequency}</span>
