@@ -38,7 +38,7 @@ export default function FreqSelector() {
 
   function swap() {
     let swapFreq = frequency();
-    setFrequency(secondary());
+    changeViaValue(secondary());
     setSecondary(swapFreq);
   }
 
