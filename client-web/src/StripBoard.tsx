@@ -10,7 +10,12 @@ import { Aircraft } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 
-type Strips = Record<string, Array<Aircraft>>;
+type Strips = {
+  Approach: Array<Aircraft>;
+  Tower: Array<Aircraft>;
+  Ground: Array<Aircraft>;
+  Departure: Array<Aircraft>;
+};
 
 const Separator = () => <div class="separator"></div>;
 
@@ -118,7 +123,7 @@ export default function StripBoard({
   aircrafts: Accessor<Array<Aircraft>>;
 }) {
   let [strips, setStrips] = createSignal<Strips>(
-    {},
+    { Approach: [], Tower: [], Ground: [], Departure: [] },
     {
       equals: false,
     }
@@ -145,7 +150,31 @@ export default function StripBoard({
       };
 
       for (let aircraft of aircrafts()) {
-        strips['Approach'].push(aircraft);
+        if (aircraft.state.type === 'landing') {
+          strips.Tower.push(aircraft);
+        } else if (aircraft.state.type === 'taxiing') {
+          if (
+            (aircraft.state.value.waypoints.length > 0 &&
+              aircraft.state.value.waypoints[0].kind === 'runway') ||
+            aircraft.state.value.current.kind === 'runway'
+          ) {
+            strips.Tower.push(aircraft);
+          } else {
+            strips.Ground.push(aircraft);
+          }
+        } else if (
+          // TODO: Don't hard-code this, use an airspace selector in the UI
+          aircraft.airspace === 'KSFO' &&
+          aircraft.airspace === aircraft.flight_plan[0]
+        ) {
+          strips.Departure.push(aircraft);
+        } else if (
+          // TODO: Don't hard-code this, use an airspace selector in the UI
+          aircraft.airspace === 'KSFO' &&
+          aircraft.airspace === aircraft.flight_plan[1]
+        ) {
+          strips.Approach.push(aircraft);
+        }
       }
 
       strips['Approach'].sort((a, b) => b.created - a.created);
