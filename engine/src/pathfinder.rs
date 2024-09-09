@@ -205,7 +205,7 @@ impl Pathfinder {
     &self,
     from: WaypointString,
     to: WaypointString,
-    vias: Vec<WaypointString>,
+    mut vias: Vec<WaypointString>,
     pos: Vec2,
     heading: f32,
   ) -> Option<Vec<Node<Vec2>>> {
@@ -217,6 +217,12 @@ impl Pathfinder {
       .graph
       .node_references()
       .find(|(_, n)| to.name_and_kind_eq(*n));
+
+    if let Some(first) = vias.first() {
+      if first.name_and_kind_eq(&from) {
+        vias.remove(0);
+      }
+    }
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
       let mut paths = simple_paths::all_simple_paths::<Vec<_>, _>(
