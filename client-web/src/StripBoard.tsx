@@ -127,7 +127,7 @@ function Strip({ strip }: StripProps) {
   } else if (strip.state.type === 'flying') {
     if (strip.state.value.waypoints.length > 0) {
       topStatus = 'DCT';
-      bottomStatus = strip.state.value.waypoints[0].name;
+      bottomStatus = strip.state.value.waypoints.at(-1).name;
     }
   }
 
