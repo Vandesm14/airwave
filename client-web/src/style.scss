@@ -219,6 +219,8 @@ $transparent-black: #000a;
         border: 1px solid grey;
         padding: 5px 10px;
 
+        gap: 15px;
+
         cursor: pointer;
         user-select: none;
 
@@ -226,6 +228,8 @@ $transparent-black: #000a;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
+
+          flex: 1;
         }
 
         .intention,

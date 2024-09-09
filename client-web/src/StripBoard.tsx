@@ -149,6 +149,8 @@ export default function StripBoard({
         strips['Approach'].push(aircraft);
       }
 
+      strips['Approach'].sort((a, b) => b.created - a.created);
+
       setStrips(strips);
     }
   });
