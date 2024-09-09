@@ -498,7 +498,7 @@ impl Aircraft {
       self.created = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or(Duration::from_millis(0))
-        .add(Duration::from_secs(rng.gen_range(60..=180)))
+        .add(Duration::from_secs(rng.gen_range(60..=300)))
         .as_millis();
     }
   }
