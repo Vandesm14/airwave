@@ -643,11 +643,11 @@ export default function Canvas({
         for (let runway of airport.runways) {
           drawRunway(ctx, runway);
         }
-
-        for (let wp of airport.waypoints) {
-          drawWaypoint(ctx, wp);
-        }
       }
+    }
+
+    for (let wp of world.waypoints) {
+      drawWaypoint(ctx, wp);
     }
 
     for (let aircraft of aircrafts.filter((a) => a.altitude >= 1000)) {

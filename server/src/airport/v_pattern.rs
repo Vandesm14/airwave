@@ -6,7 +6,7 @@ use engine::{
 };
 use glam::Vec2;
 
-pub fn setup(airport: &mut Airport) {
+pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
   let runway_20 = Runway {
     id: "20".into(),
     pos: airport.center + Vec2::new(0.0, 0.0),
@@ -168,10 +168,10 @@ pub fn setup(airport: &mut Airport) {
     ),
   };
 
-  airport.waypoints.push(wp_way);
-  airport.waypoints.push(wp_dude);
-  airport.waypoints.push(wp_road);
-  airport.waypoints.push(wp_safe);
+  waypoints.push(wp_way);
+  waypoints.push(wp_dude);
+  waypoints.push(wp_road);
+  waypoints.push(wp_safe);
 
   airport.add_runway(runway_20);
   airport.add_runway(runway_27);

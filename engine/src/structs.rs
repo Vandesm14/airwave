@@ -22,6 +22,7 @@ use crate::{
 pub struct World {
   pub airspaces: Vec<Airspace>,
   pub aircraft: Vec<Aircraft>,
+  pub waypoints: Vec<Node<Vec2>>,
 }
 
 impl World {
@@ -70,8 +71,6 @@ pub struct Airport {
   pub terminals: Vec<Terminal>,
   pub altitude_range: [f32; 2],
 
-  pub waypoints: Vec<Node<Vec2>>,
-
   #[serde(skip)]
   pub pathfinder: Pathfinder,
 }
@@ -85,8 +84,6 @@ impl Airport {
       taxiways: Vec::new(),
       terminals: Vec::new(),
       altitude_range: [0.0, 0.0],
-
-      waypoints: Vec::new(),
 
       pathfinder: Pathfinder::new(),
     }

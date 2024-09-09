@@ -49,7 +49,7 @@ async fn main() {
   tracing::debug!("Created {airspace_ksfo:?}");
 
   let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
-  airport::v_pattern::setup(&mut airport_ksfo);
+  airport::v_pattern::setup(&mut airport_ksfo, &mut engine.world.waypoints);
   airport_ksfo.cache_waypoints();
   tracing::debug!("Created {airport_ksfo:?}");
 
@@ -67,7 +67,7 @@ async fn main() {
   tracing::debug!("Created {airspace_klax:?}");
 
   let mut airport_klax = Airport::new("KLAX".into(), airspace_klax.pos);
-  airport::parallel::setup(&mut airport_klax);
+  airport::parallel::setup(&mut airport_klax, &mut engine.world.waypoints);
   airport_klax.cache_waypoints();
   tracing::debug!("Created {airport_klax:?}");
 

@@ -37,6 +37,7 @@ export let radarAtom = atom<RadarConfig>({
 export let isRecordingAtom = atom(false);
 export let worldAtom = atom<World>({
   airspaces: [],
+  waypoints: [],
 });
 export let frequencyAtom = atom(118.5);
 

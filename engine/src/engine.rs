@@ -272,22 +272,21 @@ impl Engine {
             Task::TaxiHold => aircraft.do_hold_taxi(false),
             Task::TaxiContinue => aircraft.do_continue_taxi(),
             Task::Direct(waypoint_str) => {
-              if let Some(ref airport) = airport {
-                let waypoints: Vec<_> = waypoint_str
-                  .iter()
-                  .map(|w| {
-                    airport
-                      .waypoints
-                      .iter()
-                      .find(|n| &n.name == w)
-                      .unwrap()
-                      .clone()
-                  })
-                  .rev()
-                  .collect();
+              let waypoints: Vec<_> = waypoint_str
+                .iter()
+                .map(|w| {
+                  self
+                    .world
+                    .waypoints
+                    .iter()
+                    .find(|n| &n.name == w)
+                    .unwrap()
+                    .clone()
+                })
+                .rev()
+                .collect();
 
-                aircraft.state = AircraftState::Flying { waypoints };
-              }
+              aircraft.state = AircraftState::Flying { waypoints };
             }
           }
         }

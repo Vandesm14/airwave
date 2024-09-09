@@ -1,11 +1,12 @@
 use engine::{
   move_point,
+  pathfinder::Node,
   structs::{Airport, Gate, Runway, Taxiway, Terminal},
   Line, DOWN, UP,
 };
 use glam::Vec2;
 
-pub fn setup(airport: &mut Airport) {
+pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
   const ENTRYWAY_TAXIWAY_DISTANCE: f32 = 500.0;
 
   // MARK: Right.
