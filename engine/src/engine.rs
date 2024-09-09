@@ -273,7 +273,15 @@ impl Engine {
                 }
               }
             }
-            Task::ResumeOwnNavigation => aircraft.resume_own_navigation(),
+            Task::ResumeOwnNavigation => {
+              let arrival = self
+                .world
+                .airspaces
+                .iter()
+                .find(|a| a.id == aircraft.flight_plan.1)
+                .unwrap();
+              aircraft.resume_own_navigation(arrival.pos);
+            }
             Task::Taxi(waypoints) => {
               if let Some(ref airport) = airport {
                 aircraft.do_taxi(waypoints.clone(), &airport.pathfinder);

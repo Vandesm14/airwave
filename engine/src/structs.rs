@@ -643,14 +643,12 @@ impl Aircraft {
     }
   }
 
-  pub fn resume_own_navigation(&mut self) {
+  pub fn resume_own_navigation(&mut self, pos: Vec2) {
     if let AircraftState::Flying { .. } = &self.state {
-      // TODO: new system
-      // if let AircraftIntention::Depart { heading, .. } = &self.intention {
-      //   self.target.heading = *heading;
-      //   self.target.speed = 400.0;
-      //   self.target.altitude = 13000.0;
-      // }
+      let heading = angle_between_points(self.pos, pos);
+      self.target.heading = heading;
+      self.target.speed = 400.0;
+      self.target.altitude = 13000.0;
     }
   }
 
