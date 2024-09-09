@@ -13,12 +13,21 @@ import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 type Strips = {
   Center: Array<Aircraft>;
   Approach: Array<Aircraft>;
-  Tower: Array<Aircraft>;
+  Landing: Array<Aircraft>;
   Ground: Array<Aircraft>;
+  Takeoff: Array<Aircraft>;
   Departure: Array<Aircraft>;
 };
 
 const Separator = () => <div class="separator"></div>;
+const newStrips = (): Strips => ({
+  Center: [],
+  Approach: [],
+  Landing: [],
+  Ground: [],
+  Takeoff: [],
+  Departure: [],
+});
 
 type StripProps = {
   strip: Aircraft;
@@ -40,32 +49,25 @@ function assignAircraftToStrips(aircraft: Aircraft): keyof Strips {
     }
   })();
 
-  const isDepartingFromThisAirport = aircraft.flight_plan[1] !== 'KSFO';
-
   // TODO: Don't hard-code this, use an airspace selector in the UI
   const isInLocalAirspace = aircraft.airspace === 'KSFO';
   const isDepartingFromLocalAirspace =
     isInLocalAirspace && aircraft.airspace === aircraft.flight_plan[0];
-  const isAtDepartureAltitude = aircraft.altitude > 0;
 
   const isArrivingToLocalAirspace =
     'KSFO' === aircraft.flight_plan[1] &&
     aircraft.airspace !== aircraft.flight_plan[0];
 
   if (isLanding) {
-    return 'Tower';
+    return 'Landing';
   } else if (isTaxiing) {
-    if (isTaxiingToRunway && isDepartingFromThisAirport) {
-      return 'Tower';
+    if (isTaxiingToRunway && isDepartingFromLocalAirspace) {
+      return 'Takeoff';
     } else {
       return 'Ground';
     }
   } else if (isDepartingFromLocalAirspace) {
-    if (isAtDepartureAltitude) {
-      return 'Departure';
-    } else {
-      return 'Tower';
-    }
+    return 'Departure';
   } else if (isArrivingToLocalAirspace) {
     return 'Approach';
   } else {
@@ -167,12 +169,9 @@ export default function StripBoard({
 }: {
   aircrafts: Accessor<Array<Aircraft>>;
 }) {
-  let [strips, setStrips] = createSignal<Strips>(
-    { Approach: [], Tower: [], Ground: [], Departure: [], Center: [] },
-    {
-      equals: false,
-    }
-  );
+  let [strips, setStrips] = createSignal<Strips>(newStrips(), {
+    equals: false,
+  });
 
   let stripEntries = createMemo(() => Object.entries(strips()));
 
@@ -183,13 +182,7 @@ export default function StripBoard({
     // loaded from the server yet. So, when we run the purge function to clean
     // up nonexistent callsigns from the strips, all are cleaned up.
     if (aircrafts().length > 0) {
-      let strips: Strips = {
-        Center: [],
-        Approach: [],
-        Tower: [],
-        Ground: [],
-        Departure: [],
-      };
+      let strips: Strips = newStrips();
 
       for (let aircraft of aircrafts()) {
         let category = assignAircraftToStrips(aircraft);
@@ -197,11 +190,10 @@ export default function StripBoard({
       }
 
       const sorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
-      strips.Center.sort(sorter);
-      strips.Approach.sort(sorter);
-      strips.Departure.sort(sorter);
-      strips.Ground.sort(sorter);
-      strips.Tower.sort(sorter);
+      Object.entries(strips).forEach(([key, list]) => {
+        list.sort(sorter);
+        setStrips({ ...strips, [key]: list });
+      });
 
       setStrips(strips);
     }
