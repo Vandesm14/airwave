@@ -17,6 +17,7 @@ type Strips = {
   Ground: Array<Aircraft>;
   Takeoff: Array<Aircraft>;
   Departure: Array<Aircraft>;
+  None: Array<Aircraft>;
 };
 
 const Separator = () => <div class="separator"></div>;
@@ -27,6 +28,7 @@ const newStrips = (): Strips => ({
   Ground: [],
   Takeoff: [],
   Departure: [],
+  None: [],
 });
 
 type StripProps = {
@@ -68,10 +70,14 @@ function assignAircraftToStrips(aircraft: Aircraft): keyof Strips {
     }
   } else if (isDepartingFromLocalAirspace) {
     return 'Departure';
-  } else if (isArrivingToLocalAirspace && isInLocalAirspace) {
-    return 'Approach';
+  } else if (isArrivingToLocalAirspace) {
+    if (isInLocalAirspace) {
+      return 'Approach';
+    } else {
+      return 'Center';
+    }
   } else {
-    return 'Center';
+    return 'None';
   }
 }
 
@@ -202,16 +208,18 @@ export default function StripBoard({
   return (
     <div id="stripboard">
       <div class="header">All ({aircrafts().length})</div>
-      {stripEntries().map(([key, list]) => (
-        <>
-          <div class="header">
-            {key} ({list.length})
-          </div>
-          {list.map((strip) => (
-            <Strip strip={strip}></Strip>
-          ))}
-        </>
-      ))}
+      {stripEntries().map(([key, list]) =>
+        key !== 'None' ? (
+          <>
+            <div class="header">
+              {key} ({list.length})
+            </div>
+            {list.map((strip) => (
+              <Strip strip={strip}></Strip>
+            ))}
+          </>
+        ) : null
+      )}
     </div>
   );
 }
