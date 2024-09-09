@@ -334,8 +334,9 @@ export default function Canvas({
     ctx.arc(pos.x, pos.y, scaleFeetToPixels(2000), 0, Math.PI * 2);
     ctx.stroke();
 
-    let spacing = scaleFeetToPixels(nauticalMilesToFeet * 0.8);
+    let spacing = scaleFeetToPixels(2000 + nauticalMilesToFeet * 0.2);
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
     ctx.fillText(wp.name, pos.x, pos.y - spacing);
   }
 
@@ -408,7 +409,7 @@ export default function Canvas({
     ctx.stroke();
 
     // Draw info
-    let spacing = scaleFeetToPixels(nauticalMilesToFeet * 0.8);
+    let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
     ctx.textAlign = 'left';
     ctx.fillStyle = '#44ff44';
     if (selectedAircraft() == aircraft.callsign) {
