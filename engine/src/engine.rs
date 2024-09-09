@@ -74,14 +74,22 @@ impl Engine {
     if let Some((departure, arrival)) = departure.zip(arrival) {
       // We can unwrap this because we already filtered out airspaces with no
       // airports.
-      let dep_airport = departure.find_random_airport().unwrap();
+      // let dep_airport = departure.find_random_airport().unwrap();
+      // let arr_airport = arrival.find_random_airport().unwrap();
+
+      // let mut aircraft = Aircraft::random_flying();
+      // aircraft.flight_plan = (dep_airport.id.clone(), arr_airport.id.clone());
+      // aircraft.pos = dep_airport.center;
+      // aircraft.heading =
+      //   angle_between_points(dep_airport.center, arr_airport.center);
+
       let arr_airport = arrival.find_random_airport().unwrap();
 
       let mut aircraft = Aircraft::random_flying();
-      aircraft.flight_plan = (dep_airport.id.clone(), arr_airport.id.clone());
-      aircraft.pos = dep_airport.center;
+      aircraft.flight_plan = (departure.id.clone(), arr_airport.id.clone());
+      aircraft.pos = departure.pos;
       aircraft.heading =
-        angle_between_points(dep_airport.center, arr_airport.center);
+        angle_between_points(departure.pos, arr_airport.center);
 
       aircraft.sync_targets();
 

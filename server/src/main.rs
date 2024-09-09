@@ -40,6 +40,7 @@ async fn main() {
     Some(PathBuf::from_str("assets/world.json").unwrap()),
   );
 
+  // Create a controlled KSFO airspace
   let mut airspace_ksfo = Airspace {
     id: "KSFO".into(),
     pos: Vec2::new(0.0, 0.0),
@@ -47,36 +48,50 @@ async fn main() {
     airports: vec![],
     auto: false,
   };
-  tracing::debug!("Created {airspace_ksfo:?}");
 
-  let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
-  airport::v_pattern::setup(&mut airport_ksfo, &mut engine.world.waypoints);
-  airport_ksfo.cache_waypoints();
-  tracing::debug!("Created {airport_ksfo:?}");
-
-  airspace_ksfo.airports.push(airport_ksfo);
-
-  let mut airspace_klax = Airspace {
+  // Create an uncontrolled (auto) KLAX airspace
+  let airspace_klax = Airspace {
     id: "KLAX".into(),
     pos: Vec2::new(
       -NAUTICALMILES_TO_FEET * 80.0,
       -NAUTICALMILES_TO_FEET * 40.0,
     ),
-    size: NAUTICALMILES_TO_FEET * 30.0,
+    size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
   };
-  tracing::debug!("Created {airspace_klax:?}");
 
-  let mut airport_klax = Airport::new("KLAX".into(), airspace_klax.pos);
-  airport::parallel::setup(&mut airport_klax, &mut engine.world.waypoints);
-  airport_klax.cache_waypoints();
-  tracing::debug!("Created {airport_klax:?}");
+  // Create an uncontrolled (auto) KPHL airspace
+  let airspace_kphl = Airspace {
+    id: "KPHL".into(),
+    pos: Vec2::new(NAUTICALMILES_TO_FEET * 10.0, NAUTICALMILES_TO_FEET * 80.0),
+    size: NAUTICALMILES_TO_FEET * 20.0,
+    airports: vec![],
+    auto: true,
+  };
 
-  airspace_klax.airports.push(airport_klax);
+  // Create an uncontrolled (auto) KJFK airspace
+  let airspace_kjfk = Airspace {
+    id: "KJFK".into(),
+    pos: Vec2::new(NAUTICALMILES_TO_FEET * 90.0, NAUTICALMILES_TO_FEET * -10.0),
+    size: NAUTICALMILES_TO_FEET * 20.0,
+    airports: vec![],
+    auto: true,
+  };
+
+  let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
+
+  airport::v_pattern::setup(&mut airport_ksfo, &mut engine.world.waypoints);
+
+  airport_ksfo.cache_waypoints();
+
+  airspace_ksfo.airports.push(airport_ksfo);
 
   engine.world.airspaces.push(airspace_ksfo);
   engine.world.airspaces.push(airspace_klax);
+  engine.world.airspaces.push(airspace_kphl);
+  engine.world.airspaces.push(airspace_kjfk);
+
   engine.spawn_random_aircraft();
 
   tokio::task::spawn_blocking(move || engine.begin_loop());

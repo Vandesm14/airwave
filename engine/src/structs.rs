@@ -65,7 +65,11 @@ impl World {
   }
 
   pub fn find_random_departure(&self) -> Option<&Airspace> {
-    self.find_random_airspace(true, true)
+    // TODO: We should probably do `true` for the second bool, which specifies
+    // that a departure airspace needs an airport. This just saves us time
+    // when testing and messing about with single airspaces instead of those
+    // plus an airport.
+    self.find_random_airspace(true, false)
   }
 
   pub fn find_random_arrival(&self) -> Option<&Airspace> {
@@ -95,11 +99,7 @@ impl Airspace {
 
   pub fn find_random_airport(&self) -> Option<&Airport> {
     let mut rng = thread_rng();
-    let airports: Vec<&Airport> = self
-      .airports
-      .iter()
-      .filter(|a| !a.terminals.is_empty())
-      .collect();
+    let airports: Vec<&Airport> = self.airports.iter().collect();
 
     airports.choose(&mut rng).copied()
   }
