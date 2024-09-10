@@ -1,4 +1,4 @@
-use engine::structs::Airport;
+use engine::objects::airport::Airport;
 
 pub fn setup(_airport: &mut Airport) {
   todo!()

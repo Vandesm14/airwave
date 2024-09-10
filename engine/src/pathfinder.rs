@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
   find_line_intersection,
-  structs::{Runway, Taxiway, Terminal},
+  objects::airport::{Runway, Taxiway, Terminal},
   Line,
 };
 

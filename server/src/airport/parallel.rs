@@ -1,7 +1,7 @@
 use engine::{
   inverse_degrees, move_point,
+  objects::airport::{Airport, Gate, Runway, Taxiway, Terminal},
   pathfinder::{Node, NodeBehavior, NodeKind},
-  structs::{Airport, Gate, Runway, Taxiway, Terminal},
   Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;

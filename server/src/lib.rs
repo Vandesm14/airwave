@@ -7,7 +7,9 @@ use async_openai::types::{
 };
 use engine::{
   engine::{IncomingUpdate, OutgoingReply},
-  structs::{Command, CommandReply, CommandReplyKind, CommandWithFreq},
+  objects::command::{
+    Command, CommandReply, CommandReplyKind, CommandWithFreq,
+  },
 };
 use futures_util::{
   stream::{SplitSink, SplitStream},

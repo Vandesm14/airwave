@@ -5,8 +5,8 @@ use nannou::{
 };
 
 use engine::{
+  objects::airport::{Gate, Runway, Taxiway, Terminal},
   pathfinder::Node,
-  structs::{Gate, Runway, Taxiway, Terminal},
 };
 
 fn glam_to_geom(v: Vec2) -> geom::Vec2 {

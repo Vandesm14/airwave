@@ -8,8 +8,12 @@ use async_channel::TryRecvError;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::structs::{
-  Aircraft, AircraftState, AircraftUpdate, CommandWithFreq, Task, World,
+use crate::{
+  objects::{
+    command::{CommandWithFreq, Task},
+    world::World,
+  },
+  structs::{Aircraft, AircraftState, AircraftUpdate},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

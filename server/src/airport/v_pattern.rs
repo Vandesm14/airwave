@@ -1,7 +1,7 @@
 use engine::{
   add_degrees, inverse_degrees, move_point,
+  objects::airport::{Airport, Gate, Runway, Taxiway, Terminal},
   pathfinder::{Node, NodeBehavior, NodeKind},
-  structs::{Airport, Gate, Runway, Taxiway, Terminal},
   subtract_degrees, Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
@@ -14,7 +14,7 @@ pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
     length: 7000.0,
   };
 
-  let runway_27: Runway = Runway {
+  let runway_27 = Runway {
     id: "27".into(),
     pos: airport.center + Vec2::new(-1000.0, 2400.0),
     heading: 270.0,

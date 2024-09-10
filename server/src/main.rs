@@ -7,8 +7,12 @@ use std::{path::PathBuf, sync::Arc};
 use clap::Parser;
 use engine::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
+  objects::{
+    airport::Airport,
+    airspace::{Airspace, Frequencies},
+  },
   pathfinder::{Node, NodeBehavior, NodeKind},
-  structs::{Aircraft, Airport, Airspace, Frequencies},
+  structs::Aircraft,
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;

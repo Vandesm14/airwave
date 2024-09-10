@@ -1,13 +1,15 @@
 use std::f32::consts::PI;
 
 use glam::Vec2;
+use objects::airport::{Runway, Taxiway, Terminal};
 use rand::Rng;
-use serde::{Deserialize, Serialize};
-use structs::{Runway, Taxiway, Terminal};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub mod engine;
 pub mod pathfinder;
 pub mod structs;
+
+pub mod objects;
 
 pub const TIME_SCALE: f32 = 1.0;
 
@@ -18,6 +20,28 @@ pub const UP: f32 = 0.0;
 pub const DOWN: f32 = 180.0;
 pub const LEFT: f32 = 270.0;
 pub const RIGHT: f32 = 90.0;
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct XY {
+  pub x: f32,
+  pub y: f32,
+}
+
+fn serialize_vec2<S>(pos: &Vec2, serializer: S) -> Result<S::Ok, S::Error>
+where
+  S: Serializer,
+{
+  XY { x: pos.x, y: pos.y }.serialize(serializer)
+}
+
+fn deserialize_vec2<'de, D>(deserializer: D) -> Result<Vec2, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let xy = XY::deserialize(deserializer)?;
+
+  Ok(Vec2::new(xy.x, xy.y))
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct Line(pub Vec2, pub Vec2);

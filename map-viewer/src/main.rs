@@ -6,8 +6,8 @@ use std::{
 
 use clap::Parser;
 use engine::{
+  objects::{airport::Runway, world::World},
   pathfinder::{Node, NodeBehavior, NodeKind},
-  structs::{Runway, World},
 };
 use glam::Vec2;
 use map_viewer::Draw;
