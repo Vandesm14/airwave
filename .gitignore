@@ -9,6 +9,7 @@ client-web/dist/
 # Editors
 .vscode/
 .zed/
+.obsidian/
 
 # Environment
 .env
