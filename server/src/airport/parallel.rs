@@ -230,6 +230,15 @@ pub fn setup(
     ),
   };
 
+  waypoint_sets.approach.insert(
+    "FOAM".to_owned(),
+    vec![
+      waypoint_foam.name.clone(),
+      waypoint_cork.name.clone(),
+      waypoint_tack.name.clone(),
+    ],
+  );
+
   waypoints.push(waypoint_tack);
   waypoints.push(waypoint_cork);
   waypoints.push(waypoint_foam);
@@ -264,6 +273,15 @@ pub fn setup(
       NAUTICALMILES_TO_FEET * 8.0,
     ),
   };
+
+  waypoint_sets.approach.insert(
+    "BALL".to_owned(),
+    vec![
+      waypoint_ball.name.clone(),
+      waypoint_jest.name.clone(),
+      waypoint_lord.name.clone(),
+    ],
+  );
 
   waypoints.push(waypoint_lord);
   waypoints.push(waypoint_jest);
@@ -300,6 +318,16 @@ pub fn setup(
     ),
   };
 
+  waypoint_sets.departure.insert(
+    "IDEA".to_owned(),
+    vec![waypoint_note.name.clone(), waypoint_idea.name.clone()],
+  );
+
+  waypoint_sets.departure.insert(
+    "BULB".to_owned(),
+    vec![waypoint_note.name.clone(), waypoint_bulb.name.clone()],
+  );
+
   waypoints.push(waypoint_note);
   waypoints.push(waypoint_idea);
   waypoints.push(waypoint_bulb);
@@ -334,6 +362,16 @@ pub fn setup(
       NAUTICALMILES_TO_FEET * 8.0,
     ),
   };
+
+  waypoint_sets.departure.insert(
+    "TOWN".to_owned(),
+    vec![waypoint_king.name.clone(), waypoint_town.name.clone()],
+  );
+
+  waypoint_sets.departure.insert(
+    "GOLD".to_owned(),
+    vec![waypoint_king.name.clone(), waypoint_gold.name.clone()],
+  );
 
   waypoints.push(waypoint_king);
   waypoints.push(waypoint_town);
