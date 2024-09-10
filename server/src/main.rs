@@ -45,12 +45,20 @@ async fn main() {
     Some(PathBuf::from_str("assets/world.json").unwrap()),
   );
 
-  let frequencies = Frequencies {
+  let player_one_frequencies = Frequencies {
     approach: 118.5,
     departure: 118.5,
     tower: 118.5,
+    ground: 118.5,
+    center: 118.5,
+  };
+
+  let player_two_frequencies = Frequencies {
+    approach: 118.6,
+    departure: 118.6,
+    tower: 118.6,
     ground: 118.6,
-    center: 118.7,
+    center: 118.6,
   };
 
   // Create a controlled KSFO airspace
@@ -60,7 +68,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 30.0,
     airports: vec![],
     auto: false,
-    frequencies: frequencies.clone(),
+    frequencies: player_one_frequencies.clone(),
   };
 
   // Create a controlled EGLL airspace
@@ -70,7 +78,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 30.0,
     airports: vec![],
     auto: false,
-    frequencies: frequencies.clone(),
+    frequencies: player_two_frequencies.clone(),
   };
 
   // Create an uncontrolled (auto) KLAX airspace
@@ -83,7 +91,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
-    frequencies: frequencies.clone(),
+    frequencies: player_one_frequencies.clone(),
   };
 
   // Create an uncontrolled (auto) KPHL airspace
@@ -93,7 +101,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
-    frequencies: frequencies.clone(),
+    frequencies: player_one_frequencies.clone(),
   };
 
   // Create an uncontrolled (auto) KJFK airspace
@@ -103,7 +111,7 @@ async fn main() {
     size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
-    frequencies: frequencies.clone(),
+    frequencies: player_one_frequencies.clone(),
   };
 
   let mut airport_ksfo =
