@@ -2,9 +2,9 @@ use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
-use crate::{objects::aircraft::Aircraft, pathfinder::Node};
+use crate::pathfinder::Node;
 
-use super::{airport::Airport, airspace::Airspace};
+use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
 
 pub fn find_random_airspace(
   airspaces: &[Airspace],
