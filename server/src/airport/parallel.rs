@@ -1,19 +1,29 @@
 use engine::{
-  move_point,
-  pathfinder::Node,
+  inverse_degrees, move_point,
+  pathfinder::{Node, NodeBehavior, NodeKind},
   structs::{Airport, Gate, Runway, Taxiway, Terminal},
-  Line, DOWN, UP,
+  Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
 
 pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
-  const ENTRYWAY_TAXIWAY_DISTANCE: f32 = 500.0;
+  /// In feet (ft).
+  ///
+  /// This is the minimum runway spacing approved by the ICAO and FAA.
+  // TODO: Is the above information definitely correct?
+  const RUNWAY_SPACING: f32 = 3400.0;
+  /// In feet (ft).
+  ///
+  /// This is the minimum separation distance between the centre lines of two
+  /// taxiways approved by the ICAO.
+  // TODO: Is the above information definitely correct?
+  const ENTRYWAY_TAXIWAY_DISTANCE: f32 = 300.0;
 
   // MARK: Right.
 
   let runway_27r = Runway {
     id: "27R".into(),
-    pos: airport.center + Vec2::Y * 1500.0,
+    pos: airport.center + Vec2::Y * RUNWAY_SPACING / 2.0,
     heading: 270.0,
     length: 7000.0,
   };
@@ -74,7 +84,7 @@ pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
 
   let runway_27l = Runway {
     id: "27L".into(),
-    pos: airport.center + Vec2::Y * -1500.0,
+    pos: airport.center + Vec2::Y * -(RUNWAY_SPACING / 2.0),
     heading: 270.0,
     length: 7000.0,
   };
@@ -181,6 +191,146 @@ pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
       ),
     });
   }
+
+  // MARK: Right Arrival Waypoints.
+
+  let waypoint_tack = Node {
+    name: "TACK".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_27r.start(),
+      inverse_degrees(runway_27r.heading),
+      NAUTICALMILES_TO_FEET * 12.0,
+    ),
+  };
+
+  let waypoint_cork = Node {
+    name: "CORK".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(waypoint_tack.value, RIGHT, NAUTICALMILES_TO_FEET * 4.0),
+  };
+
+  let waypoint_foam = Node {
+    name: "FOAM".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_cork.value,
+      RIGHT - 45.0,
+      NAUTICALMILES_TO_FEET * 8.0,
+    ),
+  };
+
+  waypoints.push(waypoint_tack);
+  waypoints.push(waypoint_cork);
+  waypoints.push(waypoint_foam);
+
+  // MARK: Left Arrival Waypoints.
+
+  let waypoint_lord = Node {
+    name: "LORD".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_27l.start(),
+      inverse_degrees(runway_27l.heading),
+      NAUTICALMILES_TO_FEET * 14.0,
+    ),
+  };
+
+  let waypoint_jest = Node {
+    name: "JEST".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(waypoint_lord.value, RIGHT, NAUTICALMILES_TO_FEET * 4.0),
+  };
+
+  let waypoint_ball = Node {
+    name: "BALL".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_jest.value,
+      RIGHT + 45.0,
+      NAUTICALMILES_TO_FEET * 8.0,
+    ),
+  };
+
+  waypoints.push(waypoint_lord);
+  waypoints.push(waypoint_jest);
+  waypoints.push(waypoint_ball);
+
+  // MARK: Right Departure Waypoints.
+
+  let waypoint_note = Node {
+    name: "NOTE".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_27r.end(),
+      runway_27r.heading,
+      NAUTICALMILES_TO_FEET * 8.0,
+    ),
+  };
+
+  let waypoint_idea = Node {
+    name: "IDEA".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(waypoint_note.value, LEFT, NAUTICALMILES_TO_FEET * 8.0),
+  };
+
+  let waypoint_bulb = Node {
+    name: "BULB".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_note.value,
+      LEFT + 45.0,
+      NAUTICALMILES_TO_FEET * 8.0,
+    ),
+  };
+
+  waypoints.push(waypoint_note);
+  waypoints.push(waypoint_idea);
+  waypoints.push(waypoint_bulb);
+
+  // MARK: Left Departure Waypoints.
+
+  let waypoint_king = Node {
+    name: "KING".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_27l.end(),
+      runway_27l.heading,
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_town = Node {
+    name: "TOWN".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(waypoint_king.value, LEFT, NAUTICALMILES_TO_FEET * 8.0),
+  };
+
+  let waypoint_gold = Node {
+    name: "GOLD".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_king.value,
+      LEFT - 45.0,
+      NAUTICALMILES_TO_FEET * 8.0,
+    ),
+  };
+
+  waypoints.push(waypoint_king);
+  waypoints.push(waypoint_town);
+  waypoints.push(waypoint_gold);
 
   // MARK: Right.
 
