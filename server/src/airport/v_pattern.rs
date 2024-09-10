@@ -131,8 +131,8 @@ pub fn setup(
     b: move_point(runway_20.end(), inverse_degrees(runway_20.heading), 2500.0),
   };
 
-  let wp_way = Node {
-    name: "WAY".to_owned(),
+  let wp_cat = Node {
+    name: "CAT".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: move_point(
@@ -147,7 +147,7 @@ pub fn setup(
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: move_point(
-      wp_way.value,
+      wp_cat.value,
       subtract_degrees(runway_27.heading, 90.0),
       NAUTICALMILES_TO_FEET * 8.0,
     ),
@@ -175,14 +175,16 @@ pub fn setup(
     ),
   };
 
-  let appr_red: Vec<String> = vec![wp_dude.name.clone(), wp_way.name.clone()];
-  let appr_green: Vec<String> =
-    vec![wp_safe.name.clone(), wp_road.name.clone()];
+  waypoint_set.approach.insert(
+    "DUDE".to_owned(),
+    vec![wp_dude.name.clone(), wp_cat.name.clone()],
+  );
+  waypoint_set.approach.insert(
+    "SAFE".to_owned(),
+    vec![wp_safe.name.clone(), wp_road.name.clone()],
+  );
 
-  waypoint_set.approach.insert("RED".to_owned(), appr_red);
-  waypoint_set.approach.insert("GREEN".to_owned(), appr_green);
-
-  waypoints.push(wp_way);
+  waypoints.push(wp_cat);
   waypoints.push(wp_dude);
   waypoints.push(wp_road);
   waypoints.push(wp_safe);
