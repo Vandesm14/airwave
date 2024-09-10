@@ -9,7 +9,7 @@ use super::{airport::Airport, airspace::Airspace};
 pub fn find_random_airspace(
   airspaces: &[Airspace],
   auto: bool,
-  with_airports: bool,
+  require_airports: bool,
 ) -> Option<&Airspace> {
   let mut rng = thread_rng();
   let filtered_airspaces: Vec<&Airspace> = airspaces
@@ -18,7 +18,7 @@ pub fn find_random_airspace(
       if auto != a.auto {
         return false;
       }
-      if with_airports {
+      if require_airports {
         return !a.airports.is_empty();
       }
       true
