@@ -210,7 +210,10 @@ export default function StripBoard({
 
   return (
     <div id="stripboard">
-      <div class="header">All ({aircrafts().length})</div>
+      <div class="header">
+        Yours: {aircrafts().length - strips().None.length} (All:{' '}
+        {aircrafts().length})
+      </div>
       {stripEntries().map(([key, list]) =>
         key !== 'None' ? (
           <>
