@@ -45,6 +45,7 @@ pub fn find_random_arrival(airspaces: &[Airspace]) -> Option<&Airspace> {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WaypointSet {
   pub approach: HashMap<String, Vec<String>>,
+  pub departure: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

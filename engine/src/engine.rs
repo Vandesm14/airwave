@@ -317,6 +317,26 @@ impl Engine {
                 }
               }
             }
+            Task::Depart(depart_str) => {
+              if let Some(depart) =
+                self.world.waypoint_sets.departure.get(depart_str)
+              {
+                if let Some(waypoints) = depart
+                  .iter()
+                  .map(|w| {
+                    self.world.waypoints.iter().find(|n| &n.name == w).cloned()
+                  })
+                  .rev()
+                  .try_fold(Vec::new(), |mut vec, item| {
+                    vec.push(item?);
+
+                    Some(vec)
+                  })
+                {
+                  aircraft.state = AircraftState::Flying { waypoints };
+                }
+              }
+            }
           }
         }
 

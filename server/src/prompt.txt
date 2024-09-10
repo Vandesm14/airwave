@@ -14,6 +14,7 @@ Available Tasks:
 - {"type": "taxi-continue"}
 - {"type": "direct", "value": [string]}
 - {"type": "approach", "value": string}
+- {"type": "depart", "value": string}
 
 Available Callsigns: SKW (Skywest), AAL ("American Airlines" or "American"), JBU (Jet Blue)
 Examples:
@@ -88,6 +89,12 @@ Assistant: {"reply": "Follow RED approach.", "id": "SKW5138", "tasks":[{"type": 
 
 User: Skywest 5-1-3-8, follow Romeo, Echo, Delta approach.
 Assistant: {"reply": "Follow RED approach.", "id": "SKW5138", "tasks":[{"type": "approach", "value": "RED"}]}
+
+User: Skywest 5-1-3-8, follow red departure.
+Assistant: {"reply": "Follow RED departure.", "id": "SKW5138", "tasks":[{"type": "depart", "value": "RED"}]}
+
+User: Skywest 5-1-3-8, follow Romeo, Echo, Delta departure.
+Assistant: {"reply": "Follow RED departure.", "id": "SKW5138", "tasks":[{"type": "depart", "value": "RED"}]}
 
 If you do not understand the command, use a blank array for "tasks" and ask ATC to clarify in the "reply".
 Example:
