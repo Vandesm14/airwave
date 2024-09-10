@@ -1,7 +1,7 @@
 import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
 import { Aircraft } from './lib/types';
 import { useAtom } from 'solid-jotai';
-import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
+import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 
 type Strips = {
   Center: Array<Aircraft>;
@@ -28,7 +28,10 @@ type StripProps = {
   strip: Aircraft;
 };
 
-function assignAircraftToStrips(aircraft: Aircraft): keyof Strips {
+function assignAircraftToStrips(
+  aircraft: Aircraft,
+  ourAirspace: string
+): keyof Strips {
   const isLanding = aircraft.state.type === 'landing';
   const isTaxiing = aircraft.state.type === 'taxiing';
 
@@ -53,13 +56,15 @@ function assignAircraftToStrips(aircraft: Aircraft): keyof Strips {
     'KSFO' === aircraft.flight_plan[1] &&
     aircraft.airspace !== aircraft.flight_plan[0];
 
-  if (isLanding) {
+  if (isInLocalAirspace && isLanding) {
     return 'Landing';
   } else if (isTaxiing) {
     if (isTaxiingToRunway && isDepartingFromLocalAirspace) {
       return 'Takeoff';
-    } else {
+    } else if (isInLocalAirspace) {
       return 'Ground';
+    } else {
+      return 'None';
     }
   } else if (isDepartingFromLocalAirspace) {
     return 'Departure';
@@ -176,6 +181,9 @@ export default function StripBoard({
 
   let stripEntries = createMemo(() => Object.entries(strips()));
 
+  let [control] = useAtom(controlAtom);
+  let [airspace] = useAtom(control().airspace);
+
   createEffect(() => {
     // This is to prevent initial loading state from removing saved strips.
     //
@@ -186,7 +194,7 @@ export default function StripBoard({
       let strips: Strips = newStrips();
 
       for (let aircraft of aircrafts()) {
-        let category = assignAircraftToStrips(aircraft);
+        let category = assignAircraftToStrips(aircraft, airspace());
         strips[category].push(aircraft);
       }
 
