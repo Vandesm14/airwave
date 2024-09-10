@@ -1,15 +1,3 @@
-# Airwave
-
-Airwave is an ATC (Air Traffic Control) simulator based on real-world units and commands. It features:
-
-1. Landing, taxiing, and departing operations
-2. Frequency switching
-3. Multiplayer
-4. Tower/approach and ground radar
-5. Voice control powered by OpenAI's Whisper model
-6. Natural language parsing powered by GPT-4o-mini (also by OpenAI)
-7. Multiple runways and airports (coming soon)
-
 ## Getting Started
 
 ### Installation
