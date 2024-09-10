@@ -8,10 +8,10 @@ export default function FreqSelector() {
   let [frequency, setFrequency] = useAtom(frequencyAtom);
   let [world] = useAtom(worldAtom);
   let [secondary, setSecondary] = makePersisted(createSignal(frequency()));
+  let [key, setKey] = createSignal<keyof Frequencies>('approach');
 
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
-  let [key, setKey] = createSignal<keyof Frequencies>('approach');
 
   let foundAirspace = createMemo(() =>
     world().airspaces.find((a) => a.id === airspace())
@@ -61,11 +61,7 @@ export default function FreqSelector() {
   return (
     <div id="freq-selector">
       <div class="row">
-        <select
-          name="frequency"
-          id=""
-          onchange={(e) => changeViaKey(e.target.value)}
-        >
+        <select name="frequency" onchange={(e) => changeViaKey(e.target.value)}>
           {foundAirspace()?.frequencies
             ? Object.keys(foundAirspace()?.frequencies).map((k) => (
                 <option value={k} selected={k === key()}>
@@ -83,11 +79,17 @@ export default function FreqSelector() {
         />
       </div>
       <div class="row">
+        <select name="airspace">
+          {world().airspaces.map((a) => (
+            <option value={a.id} selected={a.id === airspace()}>
+              {a.id}
+            </option>
+          ))}
+        </select>
         <input type="button" value="Swap" onClick={swap} />
         <input
           type="number"
           value={secondary()}
-          class="live"
           oninput={(e) => setSecondary(parseFloat(e.target.value))}
           step=".1"
         />
