@@ -8,12 +8,10 @@ use async_channel::TryRecvError;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::{
-  objects::{
-    command::{CommandWithFreq, Task},
-    world::World,
-  },
-  structs::{Aircraft, AircraftState, AircraftUpdate},
+use crate::objects::{
+  aircraft::{Aircraft, AircraftState, AircraftUpdate, GoAroundReason},
+  command::{CommandWithFreq, Task},
+  world::World,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -252,8 +250,9 @@ impl Engine {
                 tracing::warn!("no airport found for {}", aircraft.callsign);
               }
             }
-            Task::GoAround => aircraft
-              .do_go_around(&self.sender, crate::structs::GoAroundReason::None),
+            Task::GoAround => {
+              aircraft.do_go_around(&self.sender, GoAroundReason::None)
+            }
             Task::Takeoff(runway) => {
               if let Some(ref airport) = airport {
                 let target = airport.runways.iter().find(|r| &r.id == runway);

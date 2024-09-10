@@ -2,7 +2,7 @@ use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
-use crate::{pathfinder::Node, structs::Aircraft};
+use crate::{objects::aircraft::Aircraft, pathfinder::Node};
 
 use super::{airport::Airport, airspace::Airspace};
 

@@ -7,7 +7,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub mod engine;
 pub mod pathfinder;
-pub mod structs;
 
 pub mod objects;
 

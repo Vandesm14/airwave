@@ -8,11 +8,11 @@ use clap::Parser;
 use engine::{
   engine::{Engine, IncomingUpdate, OutgoingReply},
   objects::{
+    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
   pathfinder::{Node, NodeBehavior, NodeKind},
-  structs::Aircraft,
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
