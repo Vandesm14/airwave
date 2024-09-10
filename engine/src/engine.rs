@@ -227,7 +227,7 @@ impl Engine {
           match task {
             Task::Altitude(alt) => aircraft.target.altitude = *alt,
             Task::Heading(hdg) => {
-              aircraft.clear_waypoints();
+              aircraft.do_clear_waypoints();
               aircraft.target.heading = *hdg;
             }
             Task::Speed(spd) => aircraft.target.speed = *spd,
@@ -268,8 +268,8 @@ impl Engine {
                 .iter()
                 .find(|a| a.id == aircraft.flight_plan.1)
                 .unwrap();
-              aircraft.resume_own_navigation(arrival.pos);
-              aircraft.clear_waypoints();
+              aircraft.do_resume_own_navigation(arrival.pos);
+              aircraft.do_clear_waypoints();
             }
             Task::Taxi(waypoints) => {
               if let Some(ref airport) = airport {

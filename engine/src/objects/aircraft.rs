@@ -90,6 +90,13 @@ pub enum GoAroundReason {
 }
 
 impl Aircraft {
+  pub fn created_now(&mut self) {
+    self.created = SystemTime::now()
+      .duration_since(SystemTime::UNIX_EPOCH)
+      .unwrap_or(Duration::from_millis(0))
+      .as_millis();
+  }
+
   pub fn sync_targets(&mut self) {
     self.target.heading = self.heading;
     self.target.speed = self.speed;
@@ -99,6 +106,23 @@ impl Aircraft {
   pub fn with_synced_targets(mut self) -> Self {
     self.sync_targets();
     self
+  }
+
+  pub fn departure_from_arrival(&mut self, airspaces: &[Airspace]) {
+    let mut rng = thread_rng();
+    // TODO: true when airports
+    let arrival = find_random_airspace(airspaces, true, false);
+
+    // TODO: when airport as destination
+    // TODO: handle errors
+    if let Some(arrival) = arrival {
+      self.flight_plan = (self.airspace.clone().unwrap(), arrival.id.clone());
+      self.created = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .add(Duration::from_secs(rng.gen_range(60..=300)))
+        .as_millis();
+    }
   }
 
   pub fn random_flying() -> Self {
@@ -183,30 +207,6 @@ impl Aircraft {
     }
   }
 
-  pub fn created_now(&mut self) {
-    self.created = SystemTime::now()
-      .duration_since(SystemTime::UNIX_EPOCH)
-      .unwrap_or(Duration::from_millis(0))
-      .as_millis();
-  }
-
-  pub fn departure_from_arrival(&mut self, airspaces: &[Airspace]) {
-    let mut rng = thread_rng();
-    // TODO: true when airports
-    let arrival = find_random_airspace(airspaces, true, false);
-
-    // TODO: when airport as destination
-    // TODO: handle errors
-    if let Some(arrival) = arrival {
-      self.flight_plan = (self.airspace.clone().unwrap(), arrival.id.clone());
-      self.created = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .add(Duration::from_secs(rng.gen_range(60..=300)))
-        .as_millis();
-    }
-  }
-
   pub fn random_callsign() -> String {
     let mut string = String::new();
     let airlines = ["AAL", "SKW", "JBU"];
@@ -223,149 +223,39 @@ impl Aircraft {
 
     string
   }
+}
 
+impl Aircraft {
   pub fn speed_in_feet(&self) -> f32 {
     self.speed * KNOT_TO_FEET_PER_SECOND
   }
 
-  pub fn do_go_around(
-    &mut self,
-    sender: &async_broadcast::Sender<OutgoingReply>,
-    reason: GoAroundReason,
-  ) {
-    if let AircraftState::Landing(_) = &self.state {
-      if self.target.speed < 250.0 {
-        self.target.speed = 250.0;
-      }
-
-      if self.target.altitude < 3000.0 {
-        self.target.altitude = 3000.0;
-      }
-    }
-
-    self.state = AircraftState::Flying {
-      waypoints: Vec::new(),
-    };
-
-    let text = match reason {
-      GoAroundReason::TooHigh => {
-        format!("Tower, {} is going around, too high.", self.callsign)
-      }
-      GoAroundReason::WrongAngle => {
-        format!("Tower, {} is going around, missed approach.", self.callsign)
-      }
-      GoAroundReason::None => return,
-    };
-
-    sender
-      .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
-        id: self.callsign.clone(),
-        frequency: self.frequency,
-        reply: CommandReply {
-          callsign: self.callsign.clone(),
-          kind: CommandReplyKind::WithCallsign { text },
-        }
-        .to_string(),
-        tasks: Vec::new(),
-      }))
-      .unwrap();
+  fn dt_climb_speed(&self, dt: f32) -> f32 {
+    TIME_SCALE * (2000.0_f32 / 60.0_f32).round() * dt
   }
 
-  pub fn do_takeoff(&mut self, runway: &Runway) {
-    self.pos = runway.start();
-    self.heading = runway.heading;
-    self.target.heading = runway.heading;
-
-    self.state = AircraftState::TakingOff(runway.clone());
+  fn dt_turn_speed(&self, dt: f32) -> f32 {
+    TIME_SCALE * 2.0 * dt
   }
 
-  pub fn do_taxi(&mut self, waypoints: Vec<Node<()>>, pathfinder: &Pathfinder) {
-    if let AircraftState::Taxiing {
-      waypoints: wps,
-      current,
-      ..
-    } = &mut self.state
-    {
-      let waypoints = pathfinder.path_to(
-        Node {
-          name: current.name.clone(),
-          kind: current.kind,
-          behavior: NodeBehavior::GoTo,
-          value: (),
-        },
-        waypoints.last().unwrap().clone(),
-        waypoints,
-        self.pos,
-        self.heading,
-      );
-
-      if let Some(mut waypoints) = waypoints {
-        waypoints.reverse();
-        *wps = waypoints;
-
-        info!(
-          "Initiating taxi for {}: {:?}",
-          self.callsign,
-          wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
-        );
+  fn dt_speed_speed(&self, dt: f32) -> f32 {
+    // Taxi speed
+    if self.altitude == 0.0 {
+      // If landing
+      if self.speed > 20.0 {
+        TIME_SCALE * 4.0 * dt
+        // If taxiing
       } else {
-        error!("Failed to find waypoints for {:?}", &self);
-
-        return;
+        TIME_SCALE * 5.0 * dt
       }
-
-      if wps.is_empty() {
-        return;
-      }
-    }
-
-    if let AircraftState::Taxiing { .. } = self.state {
-      self.do_continue_taxi()
+      // Air speed
+    } else {
+      TIME_SCALE * 2.0 * dt
     }
   }
+}
 
-  pub fn do_hold_taxi(&mut self, _fast: bool) {
-    // TODO: if we don't do a fast stop for taxiing, holding short won't hold
-    // short of the waypoint since we slow *after* reaching it, such that
-    // we will overshoot and won't be directly over our destination.
-    self.target.speed = 0.0;
-    if self.speed <= 20.0 {
-      self.speed = 0.0;
-    }
-  }
-
-  pub fn do_continue_taxi(&mut self) {
-    // TODO: Both hold and continue should modify speed only. Once an aircraft
-    // passes a HoldShort waypoint, it should be deleted such that even if it
-    // passes the waypoint, it can still continue.
-    // if let AircraftState::Taxiing { current, .. } = &mut self.state {
-    //   if current.pos == self.pos {
-    //     current.behavior = TaxiWaypointBehavior::GoTo;
-    //   }
-    // }
-
-    self.target.speed = 20.0;
-  }
-
-  pub fn clear_waypoints(&mut self) {
-    if let AircraftState::Flying { .. } = self.state {
-      self.state = AircraftState::Flying {
-        waypoints: Vec::new(),
-      };
-    } else if let AircraftState::Taxiing { waypoints, .. } = &mut self.state {
-      waypoints.clear();
-    }
-  }
-
-  pub fn resume_own_navigation(&mut self, pos: Vec2) {
-    if let AircraftState::Flying { .. } = &self.state {
-      let heading = angle_between_points(self.pos, pos);
-      self.target.heading = heading;
-      self.target.speed = 400.0;
-      self.target.altitude = 13000.0;
-    }
-  }
-
+impl Aircraft {
   fn update_position(&mut self, dt: f32) {
     let pos = move_point(self.pos, self.heading, self.speed_in_feet() * dt);
     self.pos = pos;
@@ -561,30 +451,6 @@ impl Aircraft {
     }
   }
 
-  fn dt_climb_speed(&self, dt: f32) -> f32 {
-    TIME_SCALE * (2000.0_f32 / 60.0_f32).round() * dt
-  }
-
-  fn dt_turn_speed(&self, dt: f32) -> f32 {
-    TIME_SCALE * 2.0 * dt
-  }
-
-  fn dt_speed_speed(&self, dt: f32) -> f32 {
-    // Taxi speed
-    if self.altitude == 0.0 {
-      // If landing
-      if self.speed > 20.0 {
-        TIME_SCALE * 4.0 * dt
-        // If taxiing
-      } else {
-        TIME_SCALE * 5.0 * dt
-      }
-      // Air speed
-    } else {
-      TIME_SCALE * 2.0 * dt
-    }
-  }
-
   fn update_targets(&mut self, dt: f32) {
     // TODO: change speeds for takeoff and taxi (turn and speed speeds)
 
@@ -646,5 +512,145 @@ impl Aircraft {
     self.update_position(dt);
 
     update
+  }
+}
+
+impl Aircraft {
+  pub fn do_clear_waypoints(&mut self) {
+    if let AircraftState::Flying { .. } = self.state {
+      self.state = AircraftState::Flying {
+        waypoints: Vec::new(),
+      };
+    } else if let AircraftState::Taxiing { waypoints, .. } = &mut self.state {
+      waypoints.clear();
+    }
+  }
+
+  pub fn do_resume_own_navigation(&mut self, pos: Vec2) {
+    if let AircraftState::Flying { .. } = &self.state {
+      let heading = angle_between_points(self.pos, pos);
+      self.target.heading = heading;
+      self.target.speed = 400.0;
+      self.target.altitude = 13000.0;
+    }
+  }
+
+  pub fn do_go_around(
+    &mut self,
+    sender: &async_broadcast::Sender<OutgoingReply>,
+    reason: GoAroundReason,
+  ) {
+    if let AircraftState::Landing(_) = &self.state {
+      if self.target.speed < 250.0 {
+        self.target.speed = 250.0;
+      }
+
+      if self.target.altitude < 3000.0 {
+        self.target.altitude = 3000.0;
+      }
+    }
+
+    self.state = AircraftState::Flying {
+      waypoints: Vec::new(),
+    };
+
+    let text = match reason {
+      GoAroundReason::TooHigh => {
+        format!("Tower, {} is going around, too high.", self.callsign)
+      }
+      GoAroundReason::WrongAngle => {
+        format!("Tower, {} is going around, missed approach.", self.callsign)
+      }
+      GoAroundReason::None => return,
+    };
+
+    sender
+      .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
+        id: self.callsign.clone(),
+        frequency: self.frequency,
+        reply: CommandReply {
+          callsign: self.callsign.clone(),
+          kind: CommandReplyKind::WithCallsign { text },
+        }
+        .to_string(),
+        tasks: Vec::new(),
+      }))
+      .unwrap();
+  }
+
+  pub fn do_takeoff(&mut self, runway: &Runway) {
+    self.pos = runway.start();
+    self.heading = runway.heading;
+    self.target.heading = runway.heading;
+
+    self.state = AircraftState::TakingOff(runway.clone());
+  }
+
+  pub fn do_taxi(&mut self, waypoints: Vec<Node<()>>, pathfinder: &Pathfinder) {
+    if let AircraftState::Taxiing {
+      waypoints: wps,
+      current,
+      ..
+    } = &mut self.state
+    {
+      let waypoints = pathfinder.path_to(
+        Node {
+          name: current.name.clone(),
+          kind: current.kind,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        waypoints.last().unwrap().clone(),
+        waypoints,
+        self.pos,
+        self.heading,
+      );
+
+      if let Some(mut waypoints) = waypoints {
+        waypoints.reverse();
+        *wps = waypoints;
+
+        info!(
+          "Initiating taxi for {}: {:?}",
+          self.callsign,
+          wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
+        );
+      } else {
+        error!("Failed to find waypoints for {:?}", &self);
+
+        return;
+      }
+
+      if wps.is_empty() {
+        return;
+      }
+    }
+
+    if let AircraftState::Taxiing { .. } = self.state {
+      self.do_continue_taxi()
+    }
+  }
+
+  pub fn do_hold_taxi(&mut self, _fast: bool) {
+    // TODO: if we don't do a fast stop for taxiing, holding short won't hold
+    // short of the waypoint since we slow *after* reaching it, such that
+    // we will overshoot and won't be directly over our destination.
+    self.target.speed = 0.0;
+    if self.speed <= 20.0 {
+      self.speed = 0.0;
+    }
+  }
+
+  pub fn do_continue_taxi(&mut self) {
+    // TODO: Both hold and continue should modify speed only. Once an aircraft
+    // passes a HoldShort waypoint, it should be deleted such that even if it
+    // passes the waypoint, it can still continue.
+    // if let AircraftState::Taxiing { current, .. } = &mut self.state {
+    //   if current.pos == self.pos {
+    //     current.behavior = TaxiWaypointBehavior::GoTo;
+    //   }
+    // }
+
+    self.target.speed = 20.0;
   }
 }
