@@ -4,6 +4,7 @@ import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 
 type Strips = {
+  Selected: Array<Aircraft>;
   Center: Array<Aircraft>;
   Approach: Array<Aircraft>;
   Landing: Array<Aircraft>;
@@ -13,8 +14,8 @@ type Strips = {
   None: Array<Aircraft>;
 };
 
-const Separator = () => <div class="separator"></div>;
 const newStrips = (): Strips => ({
+  Selected: [],
   Center: [],
   Approach: [],
   Landing: [],
@@ -30,7 +31,8 @@ type StripProps = {
 
 function assignAircraftToStrips(
   aircraft: Aircraft,
-  ourAirspace: string
+  ourAirspace: string,
+  selectedAircraft: string
 ): keyof Strips {
   const isLanding = aircraft.state.type === 'landing';
   const isTaxiing = aircraft.state.type === 'taxiing';
@@ -75,7 +77,11 @@ function assignAircraftToStrips(
       return 'Center';
     }
   } else {
-    return 'None';
+    if (aircraft.callsign === selectedAircraft) {
+      return 'Selected';
+    } else {
+      return 'None';
+    }
   }
 }
 
@@ -180,6 +186,7 @@ export default function StripBoard({
   });
 
   let stripEntries = createMemo(() => Object.entries(strips()));
+  let [selectedAircraft] = useAtom(selectedAircraftAtom);
 
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
@@ -194,7 +201,11 @@ export default function StripBoard({
       let strips: Strips = newStrips();
 
       for (let aircraft of aircrafts()) {
-        let category = assignAircraftToStrips(aircraft, airspace());
+        let category = assignAircraftToStrips(
+          aircraft,
+          airspace(),
+          selectedAircraft()
+        );
         strips[category].push(aircraft);
       }
 
@@ -214,8 +225,16 @@ export default function StripBoard({
         Yours: {aircrafts().length - strips().None.length} (All:{' '}
         {aircrafts().length})
       </div>
+      {strips().Selected.length > 0 ? (
+        <>
+          <div class="header">Selected</div>
+          {strips().Selected.map((strip) => (
+            <Strip strip={strip}></Strip>
+          ))}
+        </>
+      ) : null}
       {stripEntries().map(([key, list]) =>
-        key !== 'None' ? (
+        key !== 'None' && key !== 'Selected' ? (
           <>
             <div class="header">
               {key}
