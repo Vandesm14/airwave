@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
@@ -41,10 +43,16 @@ pub fn find_random_arrival(airspaces: &[Airspace]) -> Option<&Airspace> {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WaypointSet {
+  pub approach: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
   pub aircraft: Vec<Aircraft>,
   pub waypoints: Vec<Node<Vec2>>,
+  pub waypoint_sets: WaypointSet,
 }
 
 impl World {

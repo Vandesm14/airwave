@@ -97,7 +97,11 @@ async fn main() {
   };
 
   let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
-  airport::v_pattern::setup(&mut airport_ksfo, &mut engine.world.waypoints);
+  airport::v_pattern::setup(
+    &mut airport_ksfo,
+    &mut engine.world.waypoints,
+    &mut engine.world.waypoint_sets,
+  );
   airport_ksfo.cache_waypoints();
   airspace_ksfo.airports.push(airport_ksfo);
 

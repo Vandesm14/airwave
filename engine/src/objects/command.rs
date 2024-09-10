@@ -24,6 +24,7 @@ pub enum Task {
   TaxiContinue,
 
   Direct(Vec<String>),
+  Approach(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

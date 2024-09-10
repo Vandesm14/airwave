@@ -278,6 +278,7 @@ impl Engine {
             }
             Task::TaxiHold => aircraft.do_hold_taxi(false),
             Task::TaxiContinue => aircraft.do_continue_taxi(),
+
             Task::Direct(waypoint_str) => {
               if let Some(waypoints) = waypoint_str
                 .iter()
@@ -294,6 +295,26 @@ impl Engine {
                 aircraft.state = AircraftState::Flying { waypoints };
               } else {
                 tracing::warn!("Bad waypoints: {:?}", waypoint_str);
+              }
+            }
+            Task::Approach(approach_str) => {
+              if let Some(approach) =
+                self.world.waypoint_sets.approach.get(approach_str)
+              {
+                if let Some(waypoints) = approach
+                  .iter()
+                  .map(|w| {
+                    self.world.waypoints.iter().find(|n| &n.name == w).cloned()
+                  })
+                  .rev()
+                  .try_fold(Vec::new(), |mut vec, item| {
+                    vec.push(item?);
+
+                    Some(vec)
+                  })
+                {
+                  aircraft.state = AircraftState::Flying { waypoints };
+                }
               }
             }
           }

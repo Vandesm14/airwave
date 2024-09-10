@@ -1,12 +1,19 @@
 use engine::{
   add_degrees, inverse_degrees, move_point,
-  objects::airport::{Airport, Gate, Runway, Taxiway, Terminal},
+  objects::{
+    airport::{Airport, Gate, Runway, Taxiway, Terminal},
+    world::WaypointSet,
+  },
   pathfinder::{Node, NodeBehavior, NodeKind},
   subtract_degrees, Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
 
-pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
+pub fn setup(
+  airport: &mut Airport,
+  waypoints: &mut Vec<Node<Vec2>>,
+  waypoint_set: &mut WaypointSet,
+) {
   let runway_20 = Runway {
     id: "20".into(),
     pos: airport.center + Vec2::new(0.0, 0.0),
@@ -167,6 +174,13 @@ pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
       NAUTICALMILES_TO_FEET * 8.0,
     ),
   };
+
+  let appr_red: Vec<String> = vec![wp_dude.name.clone(), wp_way.name.clone()];
+  let appr_green: Vec<String> =
+    vec![wp_safe.name.clone(), wp_road.name.clone()];
+
+  waypoint_set.approach.insert("RED".to_owned(), appr_red);
+  waypoint_set.approach.insert("GREEN".to_owned(), appr_green);
 
   waypoints.push(wp_way);
   waypoints.push(wp_dude);
