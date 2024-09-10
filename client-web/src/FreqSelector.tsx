@@ -11,7 +11,7 @@ export default function FreqSelector() {
   let [key, setKey] = createSignal<keyof Frequencies>('approach');
 
   let [control] = useAtom(controlAtom);
-  let [airspace] = useAtom(control().airspace);
+  let [airspace, setAirspace] = useAtom(control().airspace);
 
   let foundAirspace = createMemo(() =>
     world().airspaces.find((a) => a.id === airspace())
@@ -79,7 +79,7 @@ export default function FreqSelector() {
         />
       </div>
       <div class="row">
-        <select name="airspace">
+        <select name="airspace" onchange={(e) => setAirspace(e.target.value)}>
           {world().airspaces.map((a) => (
             <option value={a.id} selected={a.id === airspace()}>
               {a.id}
