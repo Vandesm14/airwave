@@ -1,12 +1,19 @@
 use engine::{
   inverse_degrees, move_point,
-  objects::airport::{Airport, Gate, Runway, Taxiway, Terminal},
+  objects::{
+    airport::{Airport, Gate, Runway, Taxiway, Terminal},
+    world::WaypointSet,
+  },
   pathfinder::{Node, NodeBehavior, NodeKind},
   Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
 
-pub fn setup(airport: &mut Airport, waypoints: &mut Vec<Node<Vec2>>) {
+pub fn setup(
+  airport: &mut Airport,
+  waypoints: &mut Vec<Node<Vec2>>,
+  waypoint_sets: &mut WaypointSet,
+) {
   /// In feet (ft).
   ///
   /// This is the minimum runway spacing approved by the ICAO and FAA.

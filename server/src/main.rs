@@ -63,6 +63,16 @@ async fn main() {
     frequencies: frequencies.clone(),
   };
 
+  // Create a controlled EGLL airspace
+  let mut airspace_egll = Airspace {
+    id: "EGLL".into(),
+    pos: Vec2::new(NAUTICALMILES_TO_FEET * 20.0, -NAUTICALMILES_TO_FEET * 70.0),
+    size: NAUTICALMILES_TO_FEET * 30.0,
+    airports: vec![],
+    auto: false,
+    frequencies: frequencies.clone(),
+  };
+
   // Create an uncontrolled (auto) KLAX airspace
   let airspace_klax = Airspace {
     id: "KLAX".into(),
@@ -96,7 +106,8 @@ async fn main() {
     frequencies: frequencies.clone(),
   };
 
-  let mut airport_ksfo = Airport::new("KSFO".into(), airspace_ksfo.pos);
+  let mut airport_ksfo =
+    Airport::new(airspace_ksfo.id.clone(), airspace_ksfo.pos);
   airport::v_pattern::setup(
     &mut airport_ksfo,
     &mut engine.world.waypoints,
@@ -105,10 +116,21 @@ async fn main() {
   airport_ksfo.cache_waypoints();
   airspace_ksfo.airports.push(airport_ksfo);
 
+  let mut airport_egll =
+    Airport::new(airspace_egll.id.clone(), airspace_egll.pos);
+  airport::parallel::setup(
+    &mut airport_egll,
+    &mut engine.world.waypoints,
+    &mut engine.world.waypoint_sets,
+  );
+  airport_egll.cache_waypoints();
+  airspace_egll.airports.push(airport_egll);
+
   engine.world.airspaces.push(airspace_ksfo);
   engine.world.airspaces.push(airspace_klax);
   engine.world.airspaces.push(airspace_kphl);
   engine.world.airspaces.push(airspace_kjfk);
+  engine.world.airspaces.push(airspace_egll);
 
   engine.spawn_random_aircraft();
 
