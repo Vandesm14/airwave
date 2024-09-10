@@ -8,7 +8,7 @@ use crate::pathfinder::Node;
 
 use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
 
-pub fn find_random_airspace(
+pub fn find_random_airspace_with(
   airspaces: &[Airspace],
   auto: bool,
   require_airports: bool,
@@ -30,16 +30,21 @@ pub fn find_random_airspace(
   filtered_airspaces.choose(&mut rng).copied()
 }
 
+pub fn find_random_airspace(airspaces: &[Airspace]) -> Option<&Airspace> {
+  let mut rng = thread_rng();
+  airspaces.choose(&mut rng)
+}
+
 pub fn find_random_departure(airspaces: &[Airspace]) -> Option<&Airspace> {
   // TODO: We should probably do `true` for the second bool, which specifies
   // that a departure airspace needs an airport. This just saves us time
   // when testing and messing about with single airspaces instead of those
   // plus an airport.
-  find_random_airspace(airspaces, true, false)
+  find_random_airspace_with(airspaces, true, false)
 }
 
 pub fn find_random_arrival(airspaces: &[Airspace]) -> Option<&Airspace> {
-  find_random_airspace(airspaces, false, true)
+  find_random_airspace_with(airspaces, false, true)
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

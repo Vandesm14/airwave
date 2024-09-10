@@ -18,13 +18,16 @@ use crate::{
     airspace::Airspace,
     command::{CommandReply, CommandReplyKind, CommandWithFreq},
     world::{
-      find_random_airspace, find_random_arrival, find_random_departure, World,
+      find_random_airspace_with, find_random_arrival, find_random_departure,
+      World,
     },
   },
   pathfinder::{Node, NodeBehavior, NodeKind, Pathfinder},
   serialize_vec2, Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
   TIME_SCALE,
 };
+
+use super::world::find_random_airspace;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -111,7 +114,7 @@ impl Aircraft {
   pub fn departure_from_arrival(&mut self, airspaces: &[Airspace]) {
     let mut rng = thread_rng();
     // TODO: true when airports
-    let arrival = find_random_airspace(airspaces, true, false);
+    let arrival = find_random_airspace(airspaces);
 
     // TODO: when airport as destination
     // TODO: handle errors
