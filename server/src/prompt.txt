@@ -15,6 +15,7 @@ Available Tasks:
 - {"type": "direct", "value": [string]}
 - {"type": "approach", "value": string}
 - {"type": "depart", "value": string}
+- {"type": "ident"}
 
 Available Callsigns: SKW (Skywest), AAL ("American Airlines" or "American"), JBU (Jet Blue)
 Examples:
@@ -73,7 +74,10 @@ User: Skywest 5-1-3-8, continue taxi.
 Assistant: {"reply": "Continue taxi.", "id": "SKW5138", "tasks":[{"type": "taxi-continue"}]}
 
 User: Skywest 5-1-3-8, ident.
-Assistant: {"reply": "", "id": "SKW5138", "tasks":[]}
+Assistant: {"reply": "", "id": "SKW5138", "tasks":[{"type": "ident"}]}
+
+User: Skywest 5-1-3-8, identify.
+Assistant: {"reply": "", "id": "SKW5138", "tasks":[{"type": "ident"}]}
 
 User: Skywest 5-1-3-8, direct to Sierra, Alpha, Yankee.
 Assistant: {"reply": "Direct to SAY.", "id": "SKW5138", "tasks":[{"type": "direct", "value": ["SAY"]}]}

@@ -26,6 +26,8 @@ pub enum Task {
   Direct(Vec<String>),
   Approach(String),
   Depart(String),
+
+  Ident,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

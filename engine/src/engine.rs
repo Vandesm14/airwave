@@ -337,6 +337,19 @@ impl Engine {
                 }
               }
             }
+            Task::Ident => {
+              self
+                .sender
+                .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
+                  id: command.id.clone(),
+                  frequency: command.frequency,
+                  reply: "".to_owned(),
+                  tasks: vec![],
+                }))
+                .unwrap();
+
+              return;
+            }
           }
         }
 
