@@ -218,7 +218,8 @@ export default function StripBoard({
         key !== 'None' ? (
           <>
             <div class="header">
-              {key} ({list.length})
+              {key}
+              {list.length > 0 ? ` (${list.length})` : ''}
             </div>
             {list.map((strip) => (
               <Strip strip={strip}></Strip>
