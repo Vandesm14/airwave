@@ -70,7 +70,6 @@ pub struct Model {
   world: World,
   egui: Egui,
   _watcher: INotifyWatcher,
-  waypoints: Vec<Node<Vec2>>,
 
   update_receiver: Receiver<Result<notify::Event, notify::Error>>,
 }
@@ -121,21 +120,11 @@ fn model(app: &App) -> Model {
     world,
     egui,
     _watcher,
-    waypoints: Vec::new(),
     update_receiver: rx,
   };
 
   model.load_world();
-
-  let airport = model
-    .world
-    .airspaces
-    .first_mut()
-    .unwrap()
-    .airports
-    .first_mut()
-    .unwrap();
-  airport.cache_waypoints();
+  model.world.calculate_airport_waypoints();
 
   // std::fs::write(
   //   "graph.dot",
@@ -211,48 +200,6 @@ fn update(_app: &App, model: &mut Model, update: Update) {
     ui.add(
       egui::widgets::DragValue::new(&mut model.settings.scale).speed(0.05),
     );
-
-    ui.collapsing("Objects", |ui| {
-      ui.collapsing("Airspaces", |ui| {
-        for airspace in model.world.airspaces.iter_mut() {
-          ui.collapsing("Airports", |ui| {
-            for airport in airspace.airports.iter_mut() {
-              ui.collapsing(airport.id.as_str(), |ui| {
-                ui.collapsing("Runways", |ui| {
-                  airport.runways.iter_mut().for_each(|runway| {
-                    ui.label("Runway:");
-                    ui.add(egui::widgets::TextEdit::singleline(&mut runway.id));
-                    ui.label("X:");
-                    let runway_x =
-                      ui.add(egui::widgets::DragValue::new(&mut runway.pos.x));
-
-                    if has_changed(runway_x) {
-                      println!("try");
-                    }
-
-                    ui.label("Y:");
-                    ui.add(egui::widgets::DragValue::new(&mut runway.pos.y));
-                    ui.label("Heading:");
-                    ui.add(egui::widgets::DragValue::new(&mut runway.heading));
-                    // ui.horizontal(|ui| {
-                    // if ui.button("Remove").clicked() {
-                    //   let index = airport
-                    //     .runways
-                    //     .iter()
-                    //     .position(|r| r == runway)
-                    //     .unwrap();
-                    //   airport.runways.remove(index);
-                    // }
-                    // });
-                    ui.separator();
-                  });
-                });
-              });
-            }
-          });
-        }
-      });
-    });
   });
 }
 
@@ -298,8 +245,6 @@ fn view(app: &App, model: &Model, frame: Frame) {
       }
     }
   }
-
-  model.waypoints.draw(&draw, scale);
 
   // TODO: draw a scale for 1, 10, 100, and 1000 feet
 

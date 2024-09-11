@@ -6,7 +6,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::pathfinder::Node;
 
-use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
+use super::{
+  aircraft::Aircraft,
+  airport::Airport,
+  airspace::{self, Airspace},
+};
 
 pub fn find_random_airspace_with(
   airspaces: &[Airspace],
@@ -88,5 +92,13 @@ impl World {
     }
 
     closest
+  }
+
+  pub fn calculate_airport_waypoints(&mut self) {
+    for airspace in self.airspaces.iter_mut() {
+      for airport in airspace.airports.iter_mut() {
+        airport.calculate_waypoints();
+      }
+    }
   }
 }

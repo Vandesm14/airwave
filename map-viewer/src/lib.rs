@@ -5,8 +5,11 @@ use nannou::{
 };
 
 use engine::{
-  objects::airport::{Gate, Runway, Taxiway, Terminal},
-  pathfinder::Node,
+  objects::{
+    airport::{Gate, Runway, Taxiway, Terminal},
+    airspace::Airspace,
+  },
+  pathfinder::{Node, NodeBehavior, NodeKind},
 };
 
 fn glam_to_geom(v: Vec2) -> geom::Vec2 {

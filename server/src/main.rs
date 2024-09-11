@@ -121,7 +121,7 @@ async fn main() {
     &mut engine.world.waypoints,
     &mut engine.world.waypoint_sets,
   );
-  airport_ksfo.cache_waypoints();
+  airport_ksfo.calculate_waypoints();
   airspace_ksfo.airports.push(airport_ksfo);
 
   let mut airport_egll =
@@ -131,7 +131,7 @@ async fn main() {
     &mut engine.world.waypoints,
     &mut engine.world.waypoint_sets,
   );
-  airport_egll.cache_waypoints();
+  airport_egll.calculate_waypoints();
   airspace_egll.airports.push(airport_egll);
 
   engine.world.airspaces.push(airspace_ksfo);

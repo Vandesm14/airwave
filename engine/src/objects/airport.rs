@@ -44,7 +44,7 @@ impl Airport {
     self.runways.push(runway);
   }
 
-  pub fn cache_waypoints(&mut self) {
+  pub fn calculate_waypoints(&mut self) {
     let mut nodes: Vec<Object> = Vec::new();
     nodes.extend(self.runways.iter().map(|r| r.clone().into()));
     nodes.extend(self.taxiways.iter().map(|t| t.clone().into()));
