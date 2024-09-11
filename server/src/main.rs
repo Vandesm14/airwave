@@ -149,7 +149,7 @@ async fn main() {
       for airport in airspace.airports.iter() {
         let mut now = true;
         for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          if rng.gen_bool(0.2) {
+          if rng.gen_bool(0.4) {
             let mut aircraft = Aircraft::random_parked(gate.clone());
             aircraft.airspace = Some(airspace.id.clone());
             aircraft.departure_from_arrival(&engine.world.airspaces);
