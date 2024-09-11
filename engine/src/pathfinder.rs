@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
   find_line_intersection,
-  objects::airport::{Runway, Taxiway, Terminal},
+  objects::airport::{Gate, Runway, Taxiway, Terminal},
   Line,
 };
 
@@ -58,6 +58,17 @@ impl<T> Node<T> {
 impl<T> Node<T> {
   pub fn name_and_kind_eq<U>(&self, other: &Node<U>) -> bool {
     self.name == other.name && self.kind == other.kind
+  }
+}
+
+impl From<Gate> for Node<Vec2> {
+  fn from(value: Gate) -> Self {
+    Self {
+      name: value.id,
+      kind: NodeKind::Gate,
+      behavior: NodeBehavior::GoTo,
+      value: value.pos,
+    }
   }
 }
 

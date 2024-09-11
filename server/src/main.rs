@@ -148,12 +148,7 @@ async fn main() {
       for airport in airspace.airports.iter() {
         let mut now = true;
         for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          let mut aircraft = Aircraft::random_parked(Node {
-            name: gate.id.clone(),
-            kind: NodeKind::Gate,
-            behavior: NodeBehavior::GoTo,
-            value: gate.pos,
-          });
+          let mut aircraft = Aircraft::random_parked(gate.clone());
           aircraft.airspace = Some(airspace.id.clone());
           aircraft.departure_from_arrival(&engine.world.airspaces);
           aircraft.frequency = airspace.frequencies.ground;

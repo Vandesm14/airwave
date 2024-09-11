@@ -1,13 +1,12 @@
 use glam::Vec2;
 
 use engine::{
-  add_degrees, find_line_intersection, find_projected_intersection,
-  inverse_degrees, move_point,
+  add_degrees, find_projected_intersection, inverse_degrees, move_point,
   objects::{
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
-  pathfinder::{Node, NodeBehavior, NodeKind},
+  pathfinder::Node,
   Line, CLOCKWISE, COUNTERCLOCKWISE,
 };
 
@@ -136,54 +135,123 @@ pub fn setup(
     b: taxiway_d.b.lerp(taxiway_d.a, 0.0),
   };
 
-  let terminal_a_a = find_projected_intersection(
-    taxiway_e2.clone().into(),
-    taxiway_f2.clone().into(),
-  )
-  .unwrap();
-  let terminal_a_b = move_point(
-    terminal_a_a,
-    runway_13.heading,
-    taxiway_f2.a.distance(taxiway_f4.a),
-  );
+  let terminal_a_a = taxiway_e4.b;
+  let terminal_a_b = taxiway_e3.b;
   let terminal_a_c = find_projected_intersection(
-    taxiway_e4.clone().into(),
-    taxiway_f4.clone().into(),
+    taxiway_f3.clone().into(),
+    taxiway_e3.clone().into(),
   )
   .unwrap();
-  let terminal_a_d = move_point(
-    terminal_a_c,
-    inverse_degrees(runway_13.heading),
-    taxiway_e2.b.distance(taxiway_e4.b),
-  );
+  let terminal_a_d = find_projected_intersection(
+    taxiway_f3.clone().into(),
+    taxiway_e4.clone().into(),
+  )
+  .unwrap();
 
-  let terminal_a = Terminal {
+  let mut terminal_a = Terminal {
     id: 'A',
     a: terminal_a_a,
     b: terminal_a_b,
     c: terminal_a_c,
     d: terminal_a_d,
     gates: Vec::new(),
-    apron: Line::default(),
+    apron: Line::new(
+      terminal_a_a.lerp(terminal_a_b, 0.5),
+      terminal_a_c.lerp(terminal_a_d, 0.5),
+    )
+    .extend(10.0),
   };
 
-  let taxiway_g1 = Taxiway {
-    id: "G1".into(),
-    a: terminal_a_d.lerp(terminal_a_a, 0.1),
-    b: taxiway_e4.b.lerp(taxiway_e2.b, 0.1),
+  let total_gates = 6;
+  for i in 1..=total_gates {
+    let gate = Gate {
+      id: format!("A{}", i),
+      pos: move_point(
+        terminal_a
+          .apron
+          .0
+          .lerp(terminal_a.apron.1, i as f32 / (total_gates + 1) as f32),
+        inverse_degrees(runway_22.heading),
+        terminal_a.a.distance(terminal_a.b) * 0.35,
+      ),
+      heading: inverse_degrees(runway_22.heading),
+    };
+    terminal_a.gates.push(gate);
+  }
+  for i in 1..=total_gates {
+    let gate = Gate {
+      id: format!("A{}", i + total_gates),
+      pos: move_point(
+        terminal_a
+          .apron
+          .0
+          .lerp(terminal_a.apron.1, i as f32 / (total_gates + 1) as f32),
+        runway_22.heading,
+        terminal_a.a.distance(terminal_a.b) * 0.35,
+      ),
+      heading: runway_22.heading,
+    };
+    terminal_a.gates.push(gate);
+  }
+
+  let terminal_b_a = taxiway_f3.a;
+  let terminal_b_b = taxiway_f4.a;
+  let terminal_b_c = find_projected_intersection(
+    taxiway_f4.clone().into(),
+    taxiway_e3.clone().into(),
+  )
+  .unwrap();
+  let terminal_b_d = find_projected_intersection(
+    taxiway_f3.clone().into(),
+    taxiway_e3.clone().into(),
+  )
+  .unwrap();
+
+  let mut terminal_b = Terminal {
+    id: 'B',
+    a: terminal_b_a,
+    b: terminal_b_b,
+    c: terminal_b_c,
+    d: terminal_b_d,
+    gates: Vec::new(),
+    apron: Line::new(
+      terminal_b_a.lerp(terminal_b_b, 0.5),
+      terminal_b_c.lerp(terminal_b_d, 0.5),
+    )
+    .extend(10.0),
   };
 
-  let taxiway_g2 = Taxiway {
-    id: "G2".into(),
-    a: terminal_a_d.lerp(terminal_a_a, 0.5),
-    b: taxiway_e4.b.lerp(taxiway_e2.b, 0.5),
-  };
-
-  let taxiway_g3 = Taxiway {
-    id: "G3".into(),
-    a: terminal_a_d.lerp(terminal_a_a, 0.9),
-    b: taxiway_e4.b.lerp(taxiway_e2.b, 0.9),
-  };
+  let total_gates = 6;
+  for i in 1..=total_gates {
+    let gate = Gate {
+      id: format!("B{}", i),
+      pos: move_point(
+        terminal_b
+          .apron
+          .0
+          .lerp(terminal_b.apron.1, i as f32 / (total_gates + 1) as f32),
+        inverse_degrees(runway_13.heading),
+        terminal_b.a.distance(terminal_b.b) * 0.35,
+      ),
+      heading: inverse_degrees(runway_13.heading),
+    };
+    terminal_b.gates.push(gate);
+  }
+  for i in 1..=total_gates {
+    let gate = Gate {
+      id: format!("B{}", i + total_gates),
+      pos: move_point(
+        terminal_b
+          .apron
+          .0
+          .lerp(terminal_b.apron.1, i as f32 / (total_gates + 1) as f32),
+        runway_13.heading,
+        terminal_b.a.distance(terminal_b.b) * 0.35,
+      ),
+      heading: runway_13.heading,
+    };
+    terminal_b.gates.push(gate);
+  }
 
   airport.add_runway(runway_13);
   airport.add_runway(runway_22);
@@ -203,9 +271,6 @@ pub fn setup(
   airport.add_taxiway(taxiway_f3);
   airport.add_taxiway(taxiway_f4);
 
-  airport.add_taxiway(taxiway_g1);
-  airport.add_taxiway(taxiway_g2);
-  airport.add_taxiway(taxiway_g3);
-
   airport.terminals.push(terminal_a);
+  airport.terminals.push(terminal_b);
 }

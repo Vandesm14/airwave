@@ -56,6 +56,17 @@ impl Line {
   pub fn midpoint(&self) -> Vec2 {
     self.0.midpoint(self.1)
   }
+
+  pub fn extend(&self, padding: f32) -> Self {
+    Self(
+      self.0.move_towards(self.1, -padding),
+      self.1.move_towards(self.0, -padding),
+    )
+  }
+
+  pub fn length(&self) -> f32 {
+    self.0.distance(self.1)
+  }
 }
 
 impl From<Runway> for Line {

@@ -24,7 +24,7 @@ use crate::{
   TIME_SCALE,
 };
 
-use super::world::find_random_airspace;
+use super::{airport::Gate, world::find_random_airspace};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -148,17 +148,17 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn random_parked(current: Node<Vec2>) -> Self {
+  pub fn random_parked(gate: Gate) -> Self {
     Self {
       callsign: Self::random_callsign(),
       is_colliding: false,
       flight_plan: (String::new(), String::new()),
       state: AircraftState::Taxiing {
-        current: current.clone(),
+        current: gate.clone().into(),
         waypoints: Vec::new(),
       },
-      pos: current.value,
-      heading: 0.0,
+      pos: gate.pos,
+      heading: gate.heading,
       speed: 0.0,
       altitude: 00.0,
       frequency: 118.6,
