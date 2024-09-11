@@ -6,8 +6,8 @@ use engine::{
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
-  pathfinder::Node,
-  Line, CLOCKWISE, COUNTERCLOCKWISE,
+  pathfinder::{Node, NodeBehavior, NodeKind},
+  Line, CLOCKWISE, COUNTERCLOCKWISE, NAUTICALMILES_TO_FEET,
 };
 
 pub fn setup(
@@ -252,6 +252,340 @@ pub fn setup(
     };
     terminal_b.gates.push(gate);
   }
+
+  let waypoint_vista = Node {
+    name: "VISTA".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_13.start(),
+      inverse_degrees(runway_13.heading),
+      NAUTICALMILES_TO_FEET * 12.0,
+    ),
+  };
+
+  let waypoint_orbit = Node {
+    name: "ORBIT".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_vista.value,
+      inverse_degrees(runway_13.heading),
+      NAUTICALMILES_TO_FEET * 4.0,
+    ),
+  };
+
+  let waypoint_crest = Node {
+    name: "CREST".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_orbit.value,
+      inverse_degrees(runway_13.heading),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_blaze = Node {
+    name: "BLAZE".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_orbit.value,
+      add_degrees(inverse_degrees(runway_13.heading), -45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_swift = Node {
+    name: "SWIFT".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_orbit.value,
+      add_degrees(inverse_degrees(runway_13.heading), 45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  //
+
+  let waypoint_sonic = Node {
+    name: "SONIC".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_22.start(),
+      inverse_degrees(runway_22.heading),
+      NAUTICALMILES_TO_FEET * 12.0,
+    ),
+  };
+
+  let waypoint_ready = Node {
+    name: "READY".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_sonic.value,
+      inverse_degrees(runway_22.heading),
+      NAUTICALMILES_TO_FEET * 4.0,
+    ),
+  };
+
+  let waypoint_short = Node {
+    name: "SHORT".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_ready.value,
+      inverse_degrees(runway_22.heading),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_quick = Node {
+    name: "QUICK".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_ready.value,
+      add_degrees(inverse_degrees(runway_22.heading), -45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_arrow = Node {
+    name: "ARROW".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_ready.value,
+      add_degrees(inverse_degrees(runway_22.heading), 45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  //
+
+  let waypoint_paper = Node {
+    name: "PAPER".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_13.end(),
+      runway_13.heading,
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_ghost = Node {
+    name: "GHOST".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_paper.value,
+      runway_13.heading,
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_ocean = Node {
+    name: "OCEAN".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_ghost.value,
+      add_degrees(runway_13.heading, -45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_goose = Node {
+    name: "GOOSE".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_ghost.value,
+      add_degrees(runway_13.heading, 45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  //
+
+  let waypoint_quack = Node {
+    name: "QUACK".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      runway_22.end(),
+      runway_22.heading,
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_state = Node {
+    name: "STATE".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_quack.value,
+      runway_22.heading,
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_unite = Node {
+    name: "UNITE".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_state.value,
+      add_degrees(runway_22.heading, -45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  let waypoint_royal = Node {
+    name: "ROYAL".to_owned(),
+    kind: NodeKind::Runway,
+    behavior: NodeBehavior::GoTo,
+    value: move_point(
+      waypoint_state.value,
+      add_degrees(runway_22.heading, 45.0),
+      NAUTICALMILES_TO_FEET * 6.0,
+    ),
+  };
+
+  //
+
+  waypoint_sets.approach.insert(
+    waypoint_blaze.name.clone(),
+    vec![
+      waypoint_blaze.name.clone(),
+      waypoint_orbit.name.clone(),
+      waypoint_vista.name.clone(),
+    ],
+  );
+
+  waypoint_sets.approach.insert(
+    waypoint_crest.name.clone(),
+    vec![
+      waypoint_crest.name.clone(),
+      waypoint_orbit.name.clone(),
+      waypoint_vista.name.clone(),
+    ],
+  );
+
+  waypoint_sets.approach.insert(
+    waypoint_swift.name.clone(),
+    vec![
+      waypoint_swift.name.clone(),
+      waypoint_orbit.name.clone(),
+      waypoint_vista.name.clone(),
+    ],
+  );
+
+  //
+
+  waypoint_sets.approach.insert(
+    waypoint_quick.name.clone(),
+    vec![
+      waypoint_quick.name.clone(),
+      waypoint_ready.name.clone(),
+      waypoint_sonic.name.clone(),
+    ],
+  );
+
+  waypoint_sets.approach.insert(
+    waypoint_short.name.clone(),
+    vec![
+      waypoint_short.name.clone(),
+      waypoint_ready.name.clone(),
+      waypoint_sonic.name.clone(),
+    ],
+  );
+
+  waypoint_sets.approach.insert(
+    waypoint_arrow.name.clone(),
+    vec![
+      waypoint_arrow.name.clone(),
+      waypoint_ready.name.clone(),
+      waypoint_sonic.name.clone(),
+    ],
+  );
+
+  //
+
+  waypoint_sets.departure.insert(
+    waypoint_royal.name.clone(),
+    vec![
+      waypoint_quack.name.clone(),
+      waypoint_state.name.clone(),
+      waypoint_royal.name.clone(),
+    ],
+  );
+
+  waypoint_sets.departure.insert(
+    waypoint_state.name.clone(),
+    vec![waypoint_quack.name.clone(), waypoint_state.name.clone()],
+  );
+
+  waypoint_sets.departure.insert(
+    waypoint_unite.name.clone(),
+    vec![
+      waypoint_quack.name.clone(),
+      waypoint_state.name.clone(),
+      waypoint_unite.name.clone(),
+    ],
+  );
+
+  //
+
+  waypoint_sets.departure.insert(
+    waypoint_goose.name.clone(),
+    vec![
+      waypoint_paper.name.clone(),
+      waypoint_ghost.name.clone(),
+      waypoint_goose.name.clone(),
+    ],
+  );
+
+  waypoint_sets.departure.insert(
+    waypoint_ghost.name.clone(),
+    vec![waypoint_paper.name.clone(), waypoint_ghost.name.clone()],
+  );
+
+  waypoint_sets.departure.insert(
+    waypoint_ocean.name.clone(),
+    vec![
+      waypoint_paper.name.clone(),
+      waypoint_ghost.name.clone(),
+      waypoint_ocean.name.clone(),
+    ],
+  );
+
+  waypoints.push(waypoint_vista);
+  waypoints.push(waypoint_orbit);
+  waypoints.push(waypoint_crest);
+  waypoints.push(waypoint_blaze);
+  waypoints.push(waypoint_swift);
+
+  waypoints.push(waypoint_sonic);
+  waypoints.push(waypoint_ready);
+  waypoints.push(waypoint_short);
+  waypoints.push(waypoint_quick);
+  waypoints.push(waypoint_arrow);
+
+  waypoints.push(waypoint_paper);
+  waypoints.push(waypoint_ghost);
+  waypoints.push(waypoint_ocean);
+  waypoints.push(waypoint_goose);
+
+  waypoints.push(waypoint_quack);
+  waypoints.push(waypoint_state);
+  waypoints.push(waypoint_unite);
+  waypoints.push(waypoint_royal);
 
   airport.add_runway(runway_13);
   airport.add_runway(runway_22);
