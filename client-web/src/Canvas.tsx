@@ -147,7 +147,7 @@ export default function Canvas({
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
-          let maxScale = 40.0;
+          let maxScale = 50.0;
           let minScale = 0.1;
 
           if (e.deltaY > 0) {
@@ -323,8 +323,8 @@ export default function Canvas({
 
   function drawWaypoint(ctx: Ctx, wp: NodeVec2) {
     let pos = scalePoint(arrToVec2(wp.value));
-    ctx.fillStyle = '#888';
-    ctx.strokeStyle = '#888';
+    ctx.fillStyle = '#444';
+    ctx.strokeStyle = '#444';
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, scaleFeetToPixels(500), 0, Math.PI * 2);
     ctx.fill();
