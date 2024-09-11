@@ -326,7 +326,7 @@ export default function Canvas({
     ctx.fillStyle = '#444';
     ctx.strokeStyle = '#444';
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeetToPixels(500), 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, scaleFeetToPixels(700), 0, Math.PI * 2);
     ctx.fill();
 
     // Draw the separation circle
