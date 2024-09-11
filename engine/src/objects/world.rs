@@ -6,11 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::pathfinder::Node;
 
-use super::{
-  aircraft::Aircraft,
-  airport::Airport,
-  airspace::{self, Airspace},
-};
+use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
 
 pub fn find_random_airspace_with(
   airspaces: &[Airspace],

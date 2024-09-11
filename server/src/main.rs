@@ -12,11 +12,11 @@ use engine::{
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
-  pathfinder::{Node, NodeBehavior, NodeKind},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
 use glam::Vec2;
+use rand::{thread_rng, Rng};
 use server::airport;
 use tokio::net::TcpListener;
 
@@ -77,7 +77,7 @@ async fn main() {
     pos: Vec2::new(NAUTICALMILES_TO_FEET * 20.0, -NAUTICALMILES_TO_FEET * 70.0),
     size: NAUTICALMILES_TO_FEET * 30.0,
     airports: vec![],
-    auto: false,
+    auto: true,
     frequencies: player_two_frequencies.clone(),
   };
 
@@ -143,22 +143,25 @@ async fn main() {
   engine.spawn_random_aircraft();
 
   // Fill all gates with random aircraft
+  let mut rng = thread_rng();
   for airspace in engine.world.airspaces.iter() {
     if !airspace.auto {
       for airport in airspace.airports.iter() {
         let mut now = true;
         for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          let mut aircraft = Aircraft::random_parked(gate.clone());
-          aircraft.airspace = Some(airspace.id.clone());
-          aircraft.departure_from_arrival(&engine.world.airspaces);
-          aircraft.frequency = airspace.frequencies.ground;
+          if rng.gen_bool(0.2) {
+            let mut aircraft = Aircraft::random_parked(gate.clone());
+            aircraft.airspace = Some(airspace.id.clone());
+            aircraft.departure_from_arrival(&engine.world.airspaces);
+            aircraft.frequency = airspace.frequencies.ground;
 
-          if now {
-            aircraft.created_now();
-            now = false;
+            if now {
+              aircraft.created_now();
+              now = false;
+            }
+
+            engine.world.aircraft.push(aircraft);
           }
-
-          engine.world.aircraft.push(aircraft);
         }
       }
     }
