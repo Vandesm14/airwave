@@ -2,4 +2,5 @@
 
 # Getting Started
 
-- [Installation](./installation.md)
+- [Installation](./getting-started/installation.md)
+- [Interface](./getting-started/interface.md)
