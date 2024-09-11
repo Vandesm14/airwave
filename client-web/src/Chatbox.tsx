@@ -13,12 +13,23 @@ export default function Chatbox({
   sendMessage: (text: string) => void;
 }) {
   let chatbox;
+  let chatboxInput;
   let [messages, setMessages] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [selectedAircraft] = useAtom(selectedAircraftAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
+
+  createEffect(() => {
+    if (selectedAircraft()) {
+      if (chatboxInput instanceof HTMLInputElement) {
+        if (document.activeElement !== chatboxInput) {
+          setText(`${selectedAircraft()} `);
+        }
+      }
+    }
+  });
 
   createEffect(() => {
     if (chatbox instanceof HTMLDivElement) {
@@ -90,6 +101,7 @@ export default function Chatbox({
           value={text()}
           oninput={(e) => setText(e.currentTarget.value)}
           onkeydown={(e) => e.key === 'Enter' && handleSendMessage(text())}
+          ref={chatboxInput}
           placeholder="Type a message..."
         />
         <input
