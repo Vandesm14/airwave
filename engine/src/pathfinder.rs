@@ -154,7 +154,6 @@ impl Pathfinder {
   }
 
   pub fn calculate(&mut self, mut segments: Vec<Object>) {
-    println!("segments: {:#?}", segments);
     let mut graph = WaypointGraph::new_undirected();
     if segments.is_empty() || segments.len() < 2 {
       tracing::error!("No segments to calculate path for");
