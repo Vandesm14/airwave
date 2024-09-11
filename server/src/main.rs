@@ -72,10 +72,10 @@ async fn main() {
   };
 
   // Create a controlled EGLL airspace
-  let mut airspace_egll = Airspace {
+  let airspace_egll = Airspace {
     id: "EGLL".into(),
     pos: Vec2::new(NAUTICALMILES_TO_FEET * 20.0, -NAUTICALMILES_TO_FEET * 70.0),
-    size: NAUTICALMILES_TO_FEET * 30.0,
+    size: NAUTICALMILES_TO_FEET * 20.0,
     airports: vec![],
     auto: true,
     frequencies: player_two_frequencies.clone(),
@@ -124,15 +124,15 @@ async fn main() {
   airport_ksfo.calculate_waypoints();
   airspace_ksfo.airports.push(airport_ksfo);
 
-  let mut airport_egll =
-    Airport::new(airspace_egll.id.clone(), airspace_egll.pos);
-  airport::parallel::setup(
-    &mut airport_egll,
-    &mut engine.world.waypoints,
-    &mut engine.world.waypoint_sets,
-  );
-  airport_egll.calculate_waypoints();
-  airspace_egll.airports.push(airport_egll);
+  // let mut airport_egll =
+  //   Airport::new(airspace_egll.id.clone(), airspace_egll.pos);
+  // airport::parallel::setup(
+  //   &mut airport_egll,
+  //   &mut engine.world.waypoints,
+  //   &mut engine.world.waypoint_sets,
+  // );
+  // airport_egll.calculate_waypoints();
+  // airspace_egll.airports.push(airport_egll);
 
   engine.world.airspaces.push(airspace_ksfo);
   engine.world.airspaces.push(airspace_klax);
