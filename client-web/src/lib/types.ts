@@ -89,6 +89,8 @@ export type Terminal = {
   c: Vec2;
   d: Vec2;
 
+  apron: [[number, number], [number, number]];
+
   gates: Array<Gate>;
 };
 

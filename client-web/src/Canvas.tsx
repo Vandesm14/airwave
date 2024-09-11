@@ -147,7 +147,7 @@ export default function Canvas({
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
-          let maxScale = 30.0;
+          let maxScale = 40.0;
           let minScale = 0.1;
 
           if (e.deltaY > 0) {
@@ -480,6 +480,17 @@ export default function Canvas({
     ctx.lineTo(d.x, d.y);
     ctx.lineTo(a.x, a.y);
     ctx.fill();
+
+    // TODO: we should show aprons nicer than a debug line
+    let apron_a = scalePoint(arrToVec2(terminal.apron[0]));
+    let apron_b = scalePoint(arrToVec2(terminal.apron[1]));
+
+    ctx.strokeStyle = '#00aa00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(apron_a.x, apron_a.y);
+    ctx.lineTo(apron_b.x, apron_b.y);
+    ctx.stroke();
 
     for (let i = 0; i < terminal.gates.length; i++) {
       let gate = terminal.gates[i];
