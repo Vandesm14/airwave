@@ -1,0 +1,21 @@
+layout {
+  pane split_direction="horizontal" {
+    pane size=1 borderless=true {
+      plugin location="tab-bar"
+    }
+    pane split_direction="vertical" {
+      pane name="client reloader" command="pnpm" {
+        args "client-web:build" "--watch"
+      }
+      pane name="client server" command="cargo" {
+        args "run" "--bin" "serve" "--" "client-web/dist" "--address" "0.0.0.0:8080"
+      }
+      pane name="engine server" command="cargo" {
+        args "run" "--bin" "server" "--" "--address" "0.0.0.0:9001"
+      }
+    }
+    pane size=2 borderless=true {
+      plugin location="status-bar"
+    }
+  }
+}

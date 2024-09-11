@@ -116,7 +116,7 @@ async fn main() {
 
   let mut airport_ksfo =
     Airport::new(airspace_ksfo.id.clone(), airspace_ksfo.pos);
-  airport::v_pattern::setup(
+  airport::new_v_pattern::setup(
     &mut airport_ksfo,
     &mut engine.world.waypoints,
     &mut engine.world.waypoint_sets,

@@ -20,6 +20,9 @@ pub const DOWN: f32 = 180.0;
 pub const LEFT: f32 = 270.0;
 pub const RIGHT: f32 = 90.0;
 
+pub const CLOCKWISE: f32 = 90.0;
+pub const COUNTERCLOCKWISE: f32 = 270.0;
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct XY {
   pub x: f32,
@@ -143,6 +146,31 @@ pub fn find_line_intersection(a: Line, b: Line) -> Option<Vec2> {
   if !(0.0..=1.0).contains(&t) || !(0.0..=1.0).contains(&s) {
     return None;
   }
+
+  // Calculate the intersection point
+  let intersection = a.0 + line1_dir * t;
+
+  Some(intersection)
+}
+
+pub fn find_projected_intersection(a: Line, b: Line) -> Option<Vec2> {
+  // Calculate direction vectors
+  let line1_dir = a.1 - a.0;
+  let line2_dir = b.1 - b.0;
+
+  // Calculate the determinant
+  let det = line1_dir.x * line2_dir.y - line1_dir.y * line2_dir.x;
+
+  // Check if lines are parallel (or coincident)
+  if det.abs() < f32::EPSILON {
+    return None;
+  }
+
+  // Calculate the differences between start points
+  let dp = b.0 - a.0;
+
+  // Calculate the parameters t and s
+  let t = (dp.x * line2_dir.y - dp.y * line2_dir.x) / det;
 
   // Calculate the intersection point
   let intersection = a.0 + line1_dir * t;

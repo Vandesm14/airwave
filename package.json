@@ -6,7 +6,8 @@
     "client-web:dev": "pnpm --dir client-web dev",
     "client-web:build": "pnpm --dir client-web build",
     "client-web:preview": "pnpm --dir client-web preview",
-    "run-all": "zellij --layout zellij.kdl"
+    "run-all": "zellij --layout zellij.kdl",
+    "run-all:debug": "zellij --layout zellij-debug.kdl"
   },
   "devDependencies": {
     "typescript": "^5.5.4"
