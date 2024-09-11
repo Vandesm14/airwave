@@ -49,7 +49,7 @@ async fn main() {
     approach: 118.5,
     departure: 118.5,
     tower: 118.5,
-    ground: 118.5,
+    ground: 118.6,
     center: 118.5,
   };
 
