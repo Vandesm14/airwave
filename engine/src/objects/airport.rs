@@ -16,7 +16,6 @@ pub struct Airport {
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
   pub terminals: Vec<Terminal>,
-  pub altitude_range: [f32; 2],
 
   #[serde(skip)]
   pub pathfinder: Pathfinder,
@@ -30,7 +29,6 @@ impl Airport {
       runways: Vec::new(),
       taxiways: Vec::new(),
       terminals: Vec::new(),
-      altitude_range: [0.0, 0.0],
 
       pathfinder: Pathfinder::new(),
     }
