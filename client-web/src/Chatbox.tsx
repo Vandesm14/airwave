@@ -21,13 +21,21 @@ export default function Chatbox({
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
 
+  function resetText() {
+    if (selectedAircraft()) {
+      setText(`${selectedAircraft()} `);
+    } else {
+      setText('');
+    }
+  }
+
   createEffect(() => {
     if (
       selectedAircraft() &&
       chatboxInput instanceof HTMLInputElement &&
       document.activeElement !== chatboxInput
     ) {
-      setText(`${selectedAircraft()} `);
+      resetText();
     }
   });
 
@@ -54,7 +62,7 @@ export default function Chatbox({
 
   function handleSendMessage(text) {
     sendMessage(text);
-    setText('');
+    resetText();
   }
 
   return (
