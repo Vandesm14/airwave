@@ -22,12 +22,12 @@ export default function Chatbox({
   let [text, setText] = createSignal('');
 
   createEffect(() => {
-    if (selectedAircraft()) {
-      if (chatboxInput instanceof HTMLInputElement) {
-        if (document.activeElement !== chatboxInput) {
-          setText(`${selectedAircraft()} `);
-        }
-      }
+    if (
+      selectedAircraft() &&
+      chatboxInput instanceof HTMLInputElement &&
+      document.activeElement !== chatboxInput
+    ) {
+      setText(`${selectedAircraft()} `);
     }
   });
 
