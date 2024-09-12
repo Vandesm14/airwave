@@ -1,21 +1,35 @@
 layout {
-  pane split_direction="horizontal" {
-    pane size=1 borderless=true {
-      plugin location="tab-bar"
+  tab name="client" {
+    pane split_direction="horizontal" {
+      pane size=1 borderless=true {
+        plugin location="tab-bar"
+      }
+      pane split_direction="vertical" {
+        pane name="client builder" command="pnpm" {
+          args "client-web:build" "--watch"
+        }
+        pane name="client server" command="cargo" {
+          args "run" "--bin" "serve" "--" "client-web/dist" "--address" "0.0.0.0:8080"
+        }
+      }
+      pane size=2 borderless=true {
+        plugin location="status-bar"
+      }
     }
-    pane split_direction="vertical" {
-      pane name="client reloader" command="pnpm" {
-        args "client-web:build" "--watch"
+  }
+  tab name="server" {
+    pane split_direction="horizontal" {
+      pane size=1 borderless=true {
+        plugin location="tab-bar"
       }
-      pane name="client server" command="cargo" {
-        args "run" "--bin" "serve" "--" "client-web/dist" "--address" "0.0.0.0:8080"
+      pane split_direction="vertical" {
+        pane name="engine server" command="cargo" {
+          args "run" "--bin" "server" "--release" "--" "--address" "0.0.0.0:9001" "--world-radius" "500" "--airport" "new_v_pattern"
+        }
       }
-      pane name="engine server" command="cargo" {
-        args "run" "--bin" "server" "--release" "--" "--address" "0.0.0.0:9001" "--world-radius" "500" "--airport" "new_v_pattern"
+      pane size=2 borderless=true {
+        plugin location="status-bar"
       }
-    }
-    pane size=2 borderless=true {
-      plugin location="status-bar"
     }
   }
 }
