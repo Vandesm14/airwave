@@ -1,5 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import {
+  controlAtom,
   radarAtom,
   renderAtom,
   selectedAircraftAtom,
@@ -53,6 +54,9 @@ export default function Canvas({
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
   let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
+
+  let [control] = useAtom(controlAtom);
+  let [ourAirspace] = useAtom(control().airspace);
 
   function scaleFeetToPixels(num: number): number {
     const FEET_TO_PIXELS = 0.003;
@@ -427,6 +431,8 @@ export default function Canvas({
     ctx.fillStyle = '#44ff44';
     if (selectedAircraft() == aircraft.callsign) {
       ctx.fillStyle = '#FFE045';
+    } else if (aircraft.flight_plan[0] === ourAirspace()) {
+      ctx.fillStyle = '#3087f2';
     }
 
     // Draw callsign
