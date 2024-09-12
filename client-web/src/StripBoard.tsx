@@ -51,8 +51,9 @@ function assignAircraftToStrips(
 
   // TODO: Don't hard-code this, use an airspace selector in the UI
   const isInLocalAirspace = aircraft.airspace === ourAirspace;
-  const isDepartingFromLocalAirspace =
-    aircraft.airspace === aircraft.flight_plan[0];
+  const isDepartingAndInLocalAirspace =
+    isInLocalAirspace && aircraft.airspace === aircraft.flight_plan[0];
+  const isDepartingFromLocalAirspace = ourAirspace === aircraft.flight_plan[0];
 
   const isArrivingToLocalAirspace =
     ourAirspace === aircraft.flight_plan[1] &&
@@ -61,11 +62,7 @@ function assignAircraftToStrips(
   if (isInLocalAirspace && isLanding) {
     return 'Landing';
   } else if (isTaxiing) {
-    if (
-      isTaxiingToRunway &&
-      isInLocalAirspace &&
-      isDepartingFromLocalAirspace
-    ) {
+    if (isTaxiingToRunway && isDepartingAndInLocalAirspace) {
       return 'Takeoff';
     } else if (isInLocalAirspace) {
       return 'Ground';
