@@ -6,7 +6,6 @@ use std::{
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info};
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
@@ -445,7 +444,7 @@ impl Aircraft {
 
       self.target.speed = target_knots.min(180.0);
 
-      debug!("target_altitude: {}", target_altitude);
+      tracing::debug!("target_altitude: {}", target_altitude);
       // If we are too high, descend.
       if self.altitude > target_altitude {
         self.target.altitude = target_altitude;
@@ -588,55 +587,14 @@ impl Aircraft {
     self.state = AircraftState::TakingOff(runway.clone());
   }
 
-  pub fn do_taxi(
-    &mut self,
-    mut all_waypoints: Vec<Node<()>>,
-    pathfinder: &Pathfinder,
-  ) {
+  pub fn do_taxi(&mut self, waypoints: Vec<Node<()>>, pathfinder: &Pathfinder) {
     if let AircraftState::Taxiing {
       waypoints: wps,
       current,
       ..
     } = &mut self.state
     {
-      //   let waypoints = pathfinder.path_to(
-      //     Node {
-      //       name: current.name.clone(),
-      //       kind: current.kind,
-      //       behavior: NodeBehavior::GoTo,
-      //       value: (),
-      //     },
-      //     waypoints.last().unwrap().clone(),
-      //     waypoints,
-      //     self.pos,
-      //     self.heading,
-      //   );
-
-      //   if let Some(mut waypoints) = waypoints {
-      //     waypoints.reverse();
-      //     *wps = waypoints;
-
-      //     info!(
-      //       "Initiating taxi for {}: {:?}",
-      //       self.callsign,
-      //       wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
-      //     );
-      //   } else {
-      //     error!(
-      //       "Failed to find waypoints for {}: {:?}",
-      //       &self.callsign, &wps
-      //     );
-
-      //     return;
-      //   }
-
-      //   if wps.is_empty() {
-      //     return;
-      //   }
-      // }
-
-      let destinations = all_waypoints.iter();
-
+      let destinations = waypoints.iter();
       let mut all_waypoints: Vec<Node<Vec2>> = Vec::new();
 
       let mut pos = self.pos;
@@ -651,7 +609,6 @@ impl Aircraft {
             value: (),
           },
           destination.clone(),
-          Vec::new(),
           pos,
           heading,
         );
@@ -675,7 +632,7 @@ impl Aircraft {
       all_waypoints.reverse();
       *wps = all_waypoints;
 
-      info!(
+      tracing::info!(
         "Initiating taxi for {}: {:?}",
         self.callsign,
         wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()

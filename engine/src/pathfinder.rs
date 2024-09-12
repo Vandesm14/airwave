@@ -238,7 +238,6 @@ impl Pathfinder {
     &self,
     from: WaypointString,
     to: WaypointString,
-    mut vias: Vec<WaypointString>,
     pos: Vec2,
     heading: f32,
   ) -> Option<PathfinderPath> {
@@ -250,15 +249,6 @@ impl Pathfinder {
       .graph
       .node_references()
       .find(|(_, n)| to.name_and_kind_eq(*n));
-
-    // If we are already on the first via, remove it.
-    // Example: Aircraft is on A, and if you tell them to go via A, this will
-    // remove A from the vias list (because it's already on A).
-    if let Some(first) = vias.first() {
-      if first.name_and_kind_eq(&from) {
-        vias.remove(0);
-      }
-    }
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
       let paths = simple_paths::all_simple_paths::<Vec<_>, _>(
@@ -319,6 +309,7 @@ impl Pathfinder {
 
           waypoints
         })
+        // Turn the Vec<Node<Vec2>> paths into PathfinderPaths
         .map(|path| {
           let mut pos = pos;
           let mut heading = heading;
@@ -345,10 +336,6 @@ impl Pathfinder {
         })
         // Filter out paths that don't fulfill our requirements
         .filter(|path| {
-          // println!("         path      : {:?}", display_vec_node_vec2(path));
-
-          let mut via = vias.iter().peekable();
-
           let mut pos = pos;
           let mut heading = heading;
 
@@ -367,50 +354,19 @@ impl Pathfinder {
             if first.kind != NodeKind::Gate
               && delta_angle(heading, angle).abs() >= 175.0
             {
-              // println!(
-              //   "filtered path (ang): {:?}",
-              //   display_vec_node_vec2(path)
-              // );
               return false;
             }
 
             // If the waypoint is a runway and we haven't instructed to go to
             // it, don't use this path.
-            if wp.kind == NodeKind::Runway
-              && !(vias.iter().any(|v| v.name_and_kind_eq(wp))
-                || to.name_and_kind_eq(wp))
-            {
-              // println!(
-              //   "filtered path (rwy): {:?}",
-              //   display_vec_node_vec2(path)
-              // );
+            if wp.kind == NodeKind::Runway && !to.name_and_kind_eq(wp) {
               return false;
             }
 
             pos = first.value;
             heading = angle;
 
-            // If we have a via, check if it's our waypoint
-            if let Some(v) = via.peek().copied() {
-              if v.name_and_kind_eq(wp) {
-                // If it is, clear that via
-                via.next();
-              }
-            }
-
             first = wp;
-          }
-
-          if let Some(v) = via.peek().copied() {
-            if v.name_and_kind_eq(first) {
-              via.next();
-            }
-          }
-
-          // If we didn't fulfill our via's
-          if via.peek().is_some() {
-            // println!("filtered path (via): {:?}", display_vec_node_vec2(path));
-            return false;
           }
 
           true
@@ -419,8 +375,8 @@ impl Pathfinder {
 
       // TODO: The distance function is broken for some reason so we won't
       // sort by it for now until its fixed.
+      //
       // paths.sort_by(|a, b| {
-      //   // TODO: unwrapping might cause errors with NaN's and Infinity's
       //   total_distance(a, pos)
       //     .partial_cmp(&total_distance(b, pos))
       //     .unwrap()
@@ -445,23 +401,7 @@ impl Pathfinder {
         println!("chosen path: {:?}", display_vec_node_vec2(&first_path.path));
       }
 
-      // iterate through the path and add the behavior from the vias
-      first_path.map(|first_path| PathfinderPath {
-        path: first_path
-          .path
-          .iter()
-          .map(|wp| {
-            let mut wp = wp.clone();
-            if let Some(via) = vias.iter().find(|v| v.name_and_kind_eq(&wp)) {
-              wp.behavior = via.behavior
-            }
-
-            wp
-          })
-          .collect(),
-        final_heading: first_path.final_heading,
-        final_pos: first_path.final_pos,
-      })
+      first_path.cloned()
     } else {
       None
     }
