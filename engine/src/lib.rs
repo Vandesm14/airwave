@@ -260,7 +260,12 @@ fn closest_point_on_line(
   line_start + line_dir_normalized * projection
 }
 
-pub fn circle_circle_intersection(lhs_position: Vec2, rhs_position: Vec2, lhs_radius: f32, rhs_radius: f32) -> bool {
+pub fn circle_circle_intersection(
+  lhs_position: Vec2,
+  rhs_position: Vec2,
+  lhs_radius: f32,
+  rhs_radius: f32,
+) -> bool {
   let dx = lhs_position.x - rhs_position.x;
   let dy = lhs_position.y - rhs_position.y;
   let d = (dx * dx + dy * dy).sqrt();

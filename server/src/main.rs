@@ -79,11 +79,12 @@ async fn main() {
   // airport_egll.calculate_waypoints();
   // airspace_egll.airports.push(airport_egll);
 
-  // engine.spawn_random_aircraft();
+  engine.spawn_random_aircraft();
 
   const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
   const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
   const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+  const CENTER_WAYPOINT_RADIUS: f32 = NAUTICALMILES_TO_FEET * 15.0;
 
   let airspace_names = [
     "KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL",
@@ -195,6 +196,82 @@ async fn main() {
       }
     }
   }
+
+  // Generating waypoints between sufficiently close airspaces.
+  let mut i = 0;
+  let mut iota = || {
+    let t = i;
+    i += 1;
+    t
+  };
+
+  fn n_to_an(i: usize) -> String {
+    let n = i % 9;
+    let n = n + 1;
+
+    let wraps = u8::try_from(i / 9).unwrap();
+
+    if wraps > b'Z' {
+      tracing::error!("Too many waypoints to generate a unique one");
+      std::process::exit(1);
+    }
+
+    let l = (b'A' + wraps) as char;
+
+    format!("{l}{n}")
+  }
+
+  for airspace in engine.world.airspaces.iter() {
+    'second: for other_airspace in engine.world.airspaces.iter() {
+      let waypoint = airspace.pos.lerp(other_airspace.pos, 0.5);
+
+      for intersection_test_airspace in engine.world.airspaces.iter() {
+        if circle_circle_intersection(
+          intersection_test_airspace.pos,
+          waypoint,
+          intersection_test_airspace.size,
+          CENTER_WAYPOINT_RADIUS,
+        ) {
+          tracing::trace!(
+            "Skipping waypoint at {} between {} and {}",
+            waypoint,
+            airspace.id,
+            other_airspace.id
+          );
+          continue 'second;
+        }
+      }
+
+      for intersection_test_waypoint in engine.world.waypoints.iter() {
+        if circle_circle_intersection(
+          intersection_test_waypoint.value,
+          waypoint,
+          CENTER_WAYPOINT_RADIUS,
+          CENTER_WAYPOINT_RADIUS,
+        ) {
+          tracing::trace!(
+            "Skipping waypoint at {} between {} ({}) ({})",
+            waypoint,
+            intersection_test_waypoint.value,
+            intersection_test_waypoint.name,
+            waypoint == intersection_test_waypoint.value,
+          );
+          continue 'second;
+        }
+      }
+
+      let waypoint_id = iota();
+
+      engine.world.waypoints.push(Node {
+        name: n_to_an(waypoint_id),
+        kind: NodeKind::Runway,
+        behavior: NodeBehavior::GoTo,
+        value: waypoint,
+      });
+    }
+  }
+
+  //
 
   tokio::task::spawn_blocking(move || engine.begin_loop());
 
