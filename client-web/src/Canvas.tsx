@@ -116,6 +116,21 @@ export default function Canvas({
 
       doRender(canvas);
 
+      document.addEventListener('keydown', (e) => {
+        let zoomAmount = 7.0;
+        if (e.key === 'PageUp') {
+          setRadar((radar) => {
+            radar.scale = radar.scale * zoomAmount;
+            return { ...radar };
+          });
+        } else if (e.key === 'PageDown') {
+          setRadar((radar) => {
+            radar.scale = (radar.scale * 1) / zoomAmount;
+            return { ...radar };
+          });
+        }
+      });
+
       canvas.addEventListener('mousedown', (e) => {
         setRadar((radar) => {
           radar.isDragging = true;
