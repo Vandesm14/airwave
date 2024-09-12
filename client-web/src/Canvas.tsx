@@ -253,8 +253,21 @@ export default function Canvas({
   function drawAirspace(ctx: Ctx, airspace: Airspace) {
     resetTransform(ctx);
     let pos = scalePoint(airspace.pos);
-
     ctx.strokeStyle = airspace.auto ? '#444' : 'white';
+
+    let selected = selectedAircraft();
+    if (selected) {
+      let aircraft = aircrafts().find((a) => a.callsign === selected);
+      if (aircraft) {
+        if (
+          airspace.id !== aircraft.airspace &&
+          aircraft.flight_plan[1] === airspace.id
+        ) {
+          ctx.strokeStyle = '#ffff00';
+        }
+      }
+    }
+
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, scaleFeetToPixels(airspace.size), 0, Math.PI * 2);
     ctx.stroke();
