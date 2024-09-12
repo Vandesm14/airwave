@@ -28,6 +28,7 @@ pub enum Task {
   Depart(String),
 
   Ident,
+  DirectionOfTravel,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -75,6 +76,7 @@ pub enum CommandReplyKind {
   HoldShortRunway { runway: String },
   ReadyForDeparture { airport: String },
   TaxiToGates { runway: String },
+  DirectionOfDeparture { direction: String },
 }
 
 impl fmt::Display for CommandReply {
@@ -114,6 +116,13 @@ impl fmt::Display for CommandReply {
           f,
           "Ground, {} is at {}, requesting taxi to the gates.",
           decoded_callsign, runway
+        )
+      }
+      CommandReplyKind::DirectionOfDeparture { direction } => {
+        write!(
+          f,
+          "Clearence, {} is departing to the {direction}.",
+          decoded_callsign,
         )
       }
     }

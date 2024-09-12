@@ -8,10 +8,13 @@ use async_channel::TryRecvError;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::objects::{
-  aircraft::{Aircraft, AircraftState, AircraftUpdate, GoAroundReason},
-  command::{CommandWithFreq, Task},
-  world::World,
+use crate::{
+  angle_between_points, heading_to_direction,
+  objects::{
+    aircraft::{Aircraft, AircraftState, AircraftUpdate, GoAroundReason},
+    command::{CommandReply, CommandReplyKind, CommandWithFreq, Task},
+    world::World,
+  },
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -349,6 +352,34 @@ impl Engine {
                 .unwrap();
 
               return;
+            }
+            Task::DirectionOfTravel => {
+              if let Some(arrival) = self
+                .world
+                .airspaces
+                .iter()
+                .find(|a| a.id == aircraft.flight_plan.1)
+              {
+                let heading = angle_between_points(aircraft.pos, arrival.pos);
+                let direction = heading_to_direction(heading);
+
+                self
+                  .sender
+                  .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
+                    id: command.id.clone(),
+                    frequency: command.frequency,
+                    reply: CommandReply {
+                      callsign: aircraft.callsign.clone(),
+                      kind: CommandReplyKind::DirectionOfDeparture {
+                        direction: direction.into(),
+                      },
+                    }
+                    .to_string(),
+                    tasks: command.tasks,
+                  }))
+                  .unwrap();
+                return;
+              }
             }
           }
         }
