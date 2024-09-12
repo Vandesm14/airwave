@@ -1,6 +1,5 @@
 use core::{
-  net::{IpAddr, Ipv4Addr, SocketAddr},
-  str::FromStr as _,
+  fmt, net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr
 };
 use std::{path::PathBuf, sync::Arc};
 
@@ -15,7 +14,7 @@ use engine::{
 use futures_util::StreamExt as _;
 use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng, Rng};
-use server::airport;
+use server::airport::{self, AirportSetupFn};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -29,7 +28,7 @@ async fn main() {
     .expect("OPENAI_API_KEY must be set")
     .into();
 
-  let Cli { address, world_radius } = Cli::parse();
+  let Cli { address, world_radius, airport } = Cli::parse();
   let world_radius = NAUTICALMILES_TO_FEET * world_radius;
 
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
@@ -76,12 +75,6 @@ async fn main() {
   const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
   const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 
-  let airport_setups = [
-    airport::new_v_pattern::setup,
-    airport::v_pattern::setup,
-    airport::parallel::setup,
-  ];
-
   let airspace_names = ["KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL", "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI"];
 
   let mut rng = thread_rng();
@@ -102,7 +95,7 @@ async fn main() {
     ..Default::default()
   };
 
-  (airport_setups.choose(&mut rng).unwrap())(
+  airport.setup(&mut rng)(
     &mut airport_ksfo,
     &mut engine.world.waypoints,
     &mut engine.world.waypoint_sets,
@@ -226,7 +219,67 @@ struct Cli {
   #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))]
   address: SocketAddr,
 
+  /// The airport variation that should be used.
+  #[arg(long, default_value_t = AirportChoice::Random)]
+  airport: AirportChoice,
   /// The radius of the entire world in nautical miles (NM).
   #[arg(long, default_value_t = 500.0)]
   world_radius: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AirportChoice {
+  Random,
+  NewVPattern,
+  VPattern,
+  Parallel,
+}
+
+impl AirportChoice {
+  fn setup<R>(&self, rng: &mut R) -> AirportSetupFn
+  where
+    R: ?Sized + Rng,
+  {
+    static AIRPORT_SETUPS: &[AirportSetupFn] = &[
+      airport::new_v_pattern::setup,
+      airport::v_pattern::setup,
+      airport::parallel::setup,
+    ];
+
+    match self {
+      Self::Random => AIRPORT_SETUPS.choose(rng).copied().unwrap(),
+      Self::NewVPattern => airport::new_v_pattern::setup,
+      Self::VPattern => airport::v_pattern::setup,
+      Self::Parallel => airport::parallel::setup,
+    }
+  }
+
+  const fn as_str(&self) -> &str {
+    match self {
+      Self::Random => "random",
+      Self::NewVPattern => "new_v_pattern",
+      Self::VPattern => "v_pattern",
+      Self::Parallel => "parallel"
+    }
+  }
+}
+
+impl FromStr for AirportChoice {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "random" => Ok(Self::Random),
+      "new_v_pattern" => Ok(Self::NewVPattern),
+      "v_pattern" => Ok(Self::VPattern),
+      "parallel" => Ok(Self::Parallel),
+      _ => Err(format!("'{s}' is an invalid airport type")),
+    }
+  }
+}
+
+impl fmt::Display for AirportChoice {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.as_str())
+  }
 }
