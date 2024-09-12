@@ -31,13 +31,13 @@ pub struct PromptObject {
 
 #[derive(Error, Debug)]
 pub enum LoadPromptError {
-  #[error("failed to serialize: {0}")]
-  Serialize(#[from] serde_json::Error),
+  #[error("failed to deserialize: {0}")]
+  Deserialize(#[from] serde_json::Error),
   #[error("failed to load file: {0}")]
   FS(#[from] std::io::Error),
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct CallsignAndRequest {
   pub callsign: String,
   pub request: String,
@@ -51,6 +51,8 @@ pub struct Prompter {
 
 #[derive(Error, Debug)]
 pub enum Error {
+  #[error("failed to deserialize: {0}")]
+  Deserialize(#[from] serde_json::Error),
   #[error("{0}")]
   LoadPromptError(#[from] LoadPromptError),
   #[error("error from OpenAI: {0}")]
@@ -70,7 +72,7 @@ impl Prompter {
   fn load_prompt(path: PathBuf) -> Result<String, LoadPromptError> {
     let prompt = fs::read_to_string(path)?;
     let object: PromptObject =
-      serde_json::from_str(&prompt).map_err(LoadPromptError::Serialize)?;
+      serde_json::from_str(&prompt).map_err(LoadPromptError::Deserialize)?;
 
     Ok(object.prompt.join("\n"))
   }
@@ -80,6 +82,21 @@ impl Prompter {
     let result =
       send_chatgpt_request(prompt.clone(), self.message.clone()).await?;
     if let Some(result) = result {
+      let json: CallsignAndRequest =
+        serde_json::from_str(&result).map_err(LoadPromptError::Deserialize)?;
+
+      Ok(json)
+    } else {
+      Err(Error::NoResult(prompt))
+    }
+  }
+
+  async fn classify_request(
+    request: String,
+  ) -> Result<CallsignAndRequest, Error> {
+    let prompt = Self::load_prompt("server/prompts/classifier.json".into())?;
+    let result = send_chatgpt_request(prompt.clone(), request).await?;
+    if let Some(result) = result {
       panic!("result: {}", result);
     } else {
       Err(Error::NoResult(prompt))
@@ -87,7 +104,8 @@ impl Prompter {
   }
 
   pub async fn execute(&self) -> Result<(), Error> {
-    self.split_message().await?;
+    let split = self.split_message().await?;
+    let _ = Self::classify_request(split.request).await?;
 
     Ok(())
   }

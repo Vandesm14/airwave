@@ -1,0 +1,22 @@
+{
+  "prompt": [
+    "Your job is to classify an ATC request into commands. You only need to split the textual information, no parsing or inferencing is required.",
+    "Example:",
+    "For this request: \"Turn left heading 220, then decrease speed to 200 knots, cleared to land runway 20.\"",
+    "You would reply:",
+    [
+      {
+        "type": "heading",
+        "value": "Turn left heading 220"
+      },
+      {
+        "type": "speed",
+        "value": "Decrease speed to 200 knots"
+      },
+      {
+        "type": "land",
+        "value": "Cleared to land runway 20"
+      }
+    ]
+  ]
+}
