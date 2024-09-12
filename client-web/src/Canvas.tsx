@@ -117,7 +117,7 @@ export default function Canvas({
       doRender(canvas);
 
       document.addEventListener('keydown', (e) => {
-        let zoomAmount = 7.0;
+        let zoomAmount = 2.0;
         if (e.key === 'PageUp') {
           setRadar((radar) => {
             radar.scale = radar.scale * zoomAmount;

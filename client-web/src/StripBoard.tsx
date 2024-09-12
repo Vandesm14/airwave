@@ -214,11 +214,15 @@ export default function StripBoard({
         strips[category].push(aircraft);
       }
 
-      const sorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
+      const timeSorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
+      const nameSorter = (a: Aircraft, b: Aircraft) =>
+        ('' + a.callsign).localeCompare(b.callsign);
+
       Object.entries(strips).forEach(([key, list]) => {
-        list.sort(sorter);
+        list.sort(nameSorter);
         setStrips({ ...strips, [key]: list });
       });
+      // strips.Center.sort(nameSorter);
 
       setStrips(strips);
     }
