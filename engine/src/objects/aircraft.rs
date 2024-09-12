@@ -588,43 +588,98 @@ impl Aircraft {
     self.state = AircraftState::TakingOff(runway.clone());
   }
 
-  pub fn do_taxi(&mut self, waypoints: Vec<Node<()>>, pathfinder: &Pathfinder) {
+  pub fn do_taxi(
+    &mut self,
+    mut all_waypoints: Vec<Node<()>>,
+    pathfinder: &Pathfinder,
+  ) {
     if let AircraftState::Taxiing {
       waypoints: wps,
       current,
       ..
     } = &mut self.state
     {
-      let waypoints = pathfinder.path_to(
-        Node {
-          name: current.name.clone(),
-          kind: current.kind,
-          behavior: NodeBehavior::GoTo,
-          value: (),
-        },
-        waypoints.last().unwrap().clone(),
-        waypoints,
-        self.pos,
-        self.heading,
-      );
+      //   let waypoints = pathfinder.path_to(
+      //     Node {
+      //       name: current.name.clone(),
+      //       kind: current.kind,
+      //       behavior: NodeBehavior::GoTo,
+      //       value: (),
+      //     },
+      //     waypoints.last().unwrap().clone(),
+      //     waypoints,
+      //     self.pos,
+      //     self.heading,
+      //   );
 
-      if let Some(mut waypoints) = waypoints {
-        waypoints.reverse();
-        *wps = waypoints;
+      //   if let Some(mut waypoints) = waypoints {
+      //     waypoints.reverse();
+      //     *wps = waypoints;
 
-        info!(
-          "Initiating taxi for {}: {:?}",
-          self.callsign,
-          wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
+      //     info!(
+      //       "Initiating taxi for {}: {:?}",
+      //       self.callsign,
+      //       wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
+      //     );
+      //   } else {
+      //     error!(
+      //       "Failed to find waypoints for {}: {:?}",
+      //       &self.callsign, &wps
+      //     );
+
+      //     return;
+      //   }
+
+      //   if wps.is_empty() {
+      //     return;
+      //   }
+      // }
+
+      let destinations = all_waypoints.iter();
+
+      let mut all_waypoints: Vec<Node<Vec2>> = Vec::new();
+
+      let mut pos = self.pos;
+      let mut heading = self.heading;
+      let mut current: Node<Vec2> = current.clone();
+      for destination in destinations {
+        let path = pathfinder.path_to(
+          Node {
+            name: current.name.clone(),
+            kind: current.kind,
+            behavior: current.behavior,
+            value: (),
+          },
+          destination.clone(),
+          Vec::new(),
+          pos,
+          heading,
         );
-      } else {
-        error!(
-          "Failed to find waypoints for {}: {:?}",
-          &self.callsign, &wps
-        );
 
-        return;
+        if let Some(path) = path {
+          pos = path.final_pos;
+          heading = path.final_heading;
+          current = path.path.last().unwrap().clone();
+
+          all_waypoints.extend(path.path);
+        } else {
+          tracing::error!(
+            "Failed to find path for destination: {:?}, from: {:?}",
+            destination,
+            current
+          );
+          return;
+        }
       }
+
+      all_waypoints.reverse();
+      *wps = all_waypoints;
+
+      info!(
+        "Initiating taxi for {}: {:?}",
+        self.callsign,
+        wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
+      );
 
       if wps.is_empty() {
         return;

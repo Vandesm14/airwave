@@ -168,6 +168,13 @@ type WaypointGraph = Graph<Node<Line>, Vec2, Undirected>;
 type WaypointString = Node<()>;
 
 #[derive(Debug, Clone, Default)]
+pub struct PathfinderPath {
+  pub path: Vec<Node<Vec2>>,
+  pub final_heading: f32,
+  pub final_pos: Vec2,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct Pathfinder {
   pub graph: WaypointGraph,
 }
@@ -234,7 +241,7 @@ impl Pathfinder {
     mut vias: Vec<WaypointString>,
     pos: Vec2,
     heading: f32,
-  ) -> Option<Vec<Node<Vec2>>> {
+  ) -> Option<PathfinderPath> {
     let from_node = self
       .graph
       .node_references()
@@ -262,7 +269,7 @@ impl Pathfinder {
         None,
       );
 
-      let mut paths: Vec<Vec<Node<Vec2>>> = paths
+      let mut paths: Vec<PathfinderPath> = paths
         .map(|path| {
           path
             .into_iter()
@@ -312,9 +319,33 @@ impl Pathfinder {
 
           waypoints
         })
+        .map(|path| {
+          let mut pos = pos;
+          let mut heading = heading;
+
+          let mut first = &Node {
+            name: from.name.clone(),
+            kind: from.kind,
+            behavior: NodeBehavior::GoTo,
+            value: pos,
+          };
+          for wp in path.iter() {
+            let angle = angle_between_points(pos, wp.value);
+
+            pos = first.value;
+            heading = angle;
+            first = wp;
+          }
+
+          PathfinderPath {
+            path,
+            final_heading: heading,
+            final_pos: pos,
+          }
+        })
         // Filter out paths that don't fulfill our requirements
         .filter(|path| {
-          println!("         path      : {:?}", display_vec_node_vec2(path));
+          // println!("         path      : {:?}", display_vec_node_vec2(path));
 
           let mut via = vias.iter().peekable();
 
@@ -327,7 +358,7 @@ impl Pathfinder {
             behavior: NodeBehavior::GoTo,
             value: pos,
           };
-          for wp in path.iter() {
+          for wp in path.path.iter() {
             let angle = angle_between_points(pos, wp.value);
             // If our waypoint is not a gate and we are not heading towards it,
             // don't use this path.
@@ -336,22 +367,23 @@ impl Pathfinder {
             if first.kind != NodeKind::Gate
               && delta_angle(heading, angle).abs() >= 175.0
             {
-              println!(
-                "filtered path (ang): {:?}",
-                display_vec_node_vec2(path)
-              );
+              // println!(
+              //   "filtered path (ang): {:?}",
+              //   display_vec_node_vec2(path)
+              // );
               return false;
             }
 
             // If the waypoint is a runway and we haven't instructed to go to
             // it, don't use this path.
             if wp.kind == NodeKind::Runway
-              && !vias.iter().any(|v| v.name_and_kind_eq(wp))
+              && !(vias.iter().any(|v| v.name_and_kind_eq(wp))
+                || to.name_and_kind_eq(wp))
             {
-              println!(
-                "filtered path (rwy): {:?}",
-                display_vec_node_vec2(path)
-              );
+              // println!(
+              //   "filtered path (rwy): {:?}",
+              //   display_vec_node_vec2(path)
+              // );
               return false;
             }
 
@@ -377,7 +409,7 @@ impl Pathfinder {
 
           // If we didn't fulfill our via's
           if via.peek().is_some() {
-            println!("filtered path (via): {:?}", display_vec_node_vec2(path));
+            // println!("filtered path (via): {:?}", display_vec_node_vec2(path));
             return false;
           }
 
@@ -393,28 +425,30 @@ impl Pathfinder {
       //     .partial_cmp(&total_distance(b, pos))
       //     .unwrap()
       // });
-      paths.sort_by_key(|p| p.len());
+      paths.sort_by_key(|p| p.path.len());
 
       for path in paths.iter() {
         println!(
           "path: {:?} ({} ft)",
           path
+            .path
             .iter()
             .map(|n| n.name.clone())
             .collect::<Vec<_>>()
             .join(", "),
-          total_distance_squared(path, pos).sqrt()
+          total_distance_squared(&path.path, pos).sqrt()
         );
       }
 
       let first_path = paths.first();
       if let Some(first_path) = first_path {
-        println!("chosen path: {:?}", display_vec_node_vec2(first_path));
+        println!("chosen path: {:?}", display_vec_node_vec2(&first_path.path));
       }
 
       // iterate through the path and add the behavior from the vias
-      first_path.map(|first_path| {
-        first_path
+      first_path.map(|first_path| PathfinderPath {
+        path: first_path
+          .path
           .iter()
           .map(|wp| {
             let mut wp = wp.clone();
@@ -424,7 +458,9 @@ impl Pathfinder {
 
             wp
           })
-          .collect()
+          .collect(),
+        final_heading: first_path.final_heading,
+        final_pos: first_path.final_pos,
       })
     } else {
       None
