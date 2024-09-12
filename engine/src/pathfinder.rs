@@ -385,6 +385,8 @@ impl Pathfinder {
         })
         .collect();
 
+      // TODO: The distance function is broken for some reason so we won't
+      // sort by it for now until its fixed.
       // paths.sort_by(|a, b| {
       //   // TODO: unwrapping might cause errors with NaN's and Infinity's
       //   total_distance(a, pos)
