@@ -618,7 +618,10 @@ impl Aircraft {
           wps.iter().map(|w| w.name.clone()).collect::<Vec<_>>()
         );
       } else {
-        error!("Failed to find waypoints for {:?}", &self);
+        error!(
+          "Failed to find waypoints for {}: {:?}",
+          &self.callsign, &wps
+        );
 
         return;
       }

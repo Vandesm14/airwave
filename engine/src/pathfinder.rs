@@ -138,7 +138,7 @@ impl From<Object> for Node<Line> {
   }
 }
 
-pub fn total_distance(path: &[Node<Vec2>], current_pos: Vec2) -> f32 {
+pub fn total_distance_squared(path: &[Node<Vec2>], current_pos: Vec2) -> f32 {
   let mut distance = 0.0;
   let mut first = current_pos;
   for next in path.iter() {
@@ -147,6 +147,21 @@ pub fn total_distance(path: &[Node<Vec2>], current_pos: Vec2) -> f32 {
   }
 
   distance
+}
+
+pub fn display_vec_node_vec2(path: &[Node<Vec2>]) -> String {
+  path
+    .iter()
+    .enumerate()
+    .fold(String::new(), |mut acc, (i, n)| {
+      if i > 0 {
+        acc.push_str(", ");
+      }
+
+      acc.push_str(&format!("{:?}: {}", n.kind, n.name));
+
+      acc
+    })
 }
 
 type WaypointGraph = Graph<Node<Line>, Vec2, Undirected>;
@@ -239,15 +254,13 @@ impl Pathfinder {
     }
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
-      let mut paths = simple_paths::all_simple_paths::<Vec<_>, _>(
+      let paths = simple_paths::all_simple_paths::<Vec<_>, _>(
         &self.graph,
         from_node.0,
         to_node.0,
         0,
         None,
       );
-
-      paths.next()?;
 
       let mut paths: Vec<Vec<Node<Vec2>>> = paths
         .map(|path| {
@@ -301,6 +314,8 @@ impl Pathfinder {
         })
         // Filter out paths that don't fulfill our requirements
         .filter(|path| {
+          println!("         path      : {:?}", display_vec_node_vec2(path));
+
           let mut via = vias.iter().peekable();
 
           let mut pos = pos;
@@ -321,6 +336,10 @@ impl Pathfinder {
             if first.kind != NodeKind::Gate
               && delta_angle(heading, angle).abs() >= 175.0
             {
+              println!(
+                "filtered path (ang): {:?}",
+                display_vec_node_vec2(path)
+              );
               return false;
             }
 
@@ -329,6 +348,10 @@ impl Pathfinder {
             if wp.kind == NodeKind::Runway
               && !vias.iter().any(|v| v.name_and_kind_eq(wp))
             {
+              println!(
+                "filtered path (rwy): {:?}",
+                display_vec_node_vec2(path)
+              );
               return false;
             }
 
@@ -354,6 +377,7 @@ impl Pathfinder {
 
           // If we didn't fulfill our via's
           if via.peek().is_some() {
+            println!("filtered path (via): {:?}", display_vec_node_vec2(path));
             return false;
           }
 
@@ -361,27 +385,30 @@ impl Pathfinder {
         })
         .collect();
 
-      paths.sort_by(|a, b| {
-        // TODO: unwrapping might cause errors with NaN's and Infinity's
-        total_distance(a, pos)
-          .partial_cmp(&total_distance(b, pos))
-          .unwrap()
-      });
-      // paths.sort_by_key(|p| p.len());
+      // paths.sort_by(|a, b| {
+      //   // TODO: unwrapping might cause errors with NaN's and Infinity's
+      //   total_distance(a, pos)
+      //     .partial_cmp(&total_distance(b, pos))
+      //     .unwrap()
+      // });
+      paths.sort_by_key(|p| p.len());
 
       for path in paths.iter() {
-        tracing::info!(
+        println!(
           "path: {:?} ({} ft)",
           path
             .iter()
             .map(|n| n.name.clone())
             .collect::<Vec<_>>()
             .join(", "),
-          total_distance(path, pos).sqrt()
+          total_distance_squared(path, pos).sqrt()
         );
       }
 
       let first_path = paths.first();
+      if let Some(first_path) = first_path {
+        println!("chosen path: {:?}", display_vec_node_vec2(first_path));
+      }
 
       // iterate through the path and add the behavior from the vias
       first_path.map(|first_path| {
@@ -400,5 +427,70 @@ impl Pathfinder {
     } else {
       None
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn total_distance_two_points() {
+    let a = Vec2::new(0.0, 0.0);
+    let b = Vec2::new(1.0, 1.0);
+
+    assert_eq!(
+      total_distance_squared(
+        &[Node {
+          name: "B".into(),
+          kind: NodeKind::Apron,
+          behavior: NodeBehavior::GoTo,
+          value: b
+        }],
+        a
+      ),
+      a.distance_squared(b)
+    );
+  }
+
+  #[test]
+  fn total_distance_multiple_points() {
+    let a = Vec2::new(0.0, 0.0);
+    let b = Vec2::new(1.0, 0.0);
+    let c = Vec2::new(1.0, 1.0);
+    let d = Vec2::new(0.0, 1.0);
+
+    let ab = a.distance_squared(b);
+    let bc = b.distance_squared(c);
+    let cd = c.distance_squared(d);
+
+    let distance = ab + bc + cd;
+
+    assert_eq!(
+      total_distance_squared(
+        &[
+          Node {
+            name: "B".into(),
+            kind: NodeKind::Apron,
+            behavior: NodeBehavior::GoTo,
+            value: b
+          },
+          Node {
+            name: "C".into(),
+            kind: NodeKind::Apron,
+            behavior: NodeBehavior::GoTo,
+            value: c
+          },
+          Node {
+            name: "D".into(),
+            kind: NodeKind::Apron,
+            behavior: NodeBehavior::GoTo,
+            value: d
+          }
+        ],
+        a
+      ),
+      distance
+    );
   }
 }

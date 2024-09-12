@@ -1,15 +1,21 @@
 use core::{
-  fmt, net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr
+  fmt,
+  net::{IpAddr, Ipv4Addr, SocketAddr},
+  str::FromStr,
 };
 use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use engine::{
-  circle_circle_intersection, engine::{Engine, IncomingUpdate, OutgoingReply}, objects::{
+  circle_circle_intersection,
+  engine::{Engine, IncomingUpdate, OutgoingReply},
+  objects::{
     aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
-  }, pathfinder::{Node, NodeBehavior, NodeKind}, NAUTICALMILES_TO_FEET
+  },
+  pathfinder::{Node, NodeBehavior, NodeKind},
+  NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
 use glam::Vec2;
@@ -28,7 +34,11 @@ async fn main() {
     .expect("OPENAI_API_KEY must be set")
     .into();
 
-  let Cli { address, world_radius, airport } = Cli::parse();
+  let Cli {
+    address,
+    world_radius,
+    airport,
+  } = Cli::parse();
   let world_radius = NAUTICALMILES_TO_FEET * world_radius;
 
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
@@ -46,8 +56,8 @@ async fn main() {
   let player_one_frequencies = Frequencies {
     approach: 118.5,
     departure: 118.5,
-    tower: 118.6,
-    ground: 118.6,
+    tower: 118.5,
+    ground: 118.5,
     center: 118.7,
   };
 
@@ -75,7 +85,10 @@ async fn main() {
   const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
   const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 
-  let airspace_names = ["KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL", "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI"];
+  let airspace_names = [
+    "KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL",
+    "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
+  ];
 
   let mut rng = thread_rng();
 
@@ -115,16 +128,26 @@ async fn main() {
 
     let airspace_position = 'outer: loop {
       if i >= 1000 {
-        tracing::error!("Unable to find a place for airspace '{airspace_name}'");
+        tracing::error!(
+          "Unable to find a place for airspace '{airspace_name}'"
+        );
         std::process::exit(1);
       }
 
       i += 1;
 
-      let position = Vec2::new((rng.gen::<f32>() - 0.5) * world_radius, (rng.gen::<f32>() - 0.5) * world_radius);
+      let position = Vec2::new(
+        (rng.gen::<f32>() - 0.5) * world_radius,
+        (rng.gen::<f32>() - 0.5) * world_radius,
+      );
 
       for airspace in engine.world.airspaces.iter() {
-        if circle_circle_intersection(position, airspace.pos, AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS, airspace.size + TOWER_AIRSPACE_PADDING_RADIUS) {
+        if circle_circle_intersection(
+          position,
+          airspace.pos,
+          AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
+          airspace.size + TOWER_AIRSPACE_PADDING_RADIUS,
+        ) {
           continue 'outer;
         }
       }
@@ -259,7 +282,7 @@ impl AirportChoice {
       Self::Random => "random",
       Self::NewVPattern => "new_v_pattern",
       Self::VPattern => "v_pattern",
-      Self::Parallel => "parallel"
+      Self::Parallel => "parallel",
     }
   }
 }
