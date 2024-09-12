@@ -6,17 +6,15 @@ use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use engine::{
-  engine::{Engine, IncomingUpdate, OutgoingReply},
-  objects::{
+  circle_circle_intersection, engine::{Engine, IncomingUpdate, OutgoingReply}, objects::{
     aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
-  },
-  NAUTICALMILES_TO_FEET,
+  }, pathfinder::{Node, NodeBehavior, NodeKind}, NAUTICALMILES_TO_FEET
 };
 use futures_util::StreamExt as _;
 use glam::Vec2;
-use rand::{thread_rng, Rng};
+use rand::{seq::SliceRandom, thread_rng, Rng};
 use server::airport;
 use tokio::net::TcpListener;
 
@@ -31,7 +29,8 @@ async fn main() {
     .expect("OPENAI_API_KEY must be set")
     .into();
 
-  let Cli { address } = Cli::parse();
+  let Cli { address, world_radius } = Cli::parse();
+  let world_radius = NAUTICALMILES_TO_FEET * world_radius;
 
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
   let (mut update_tx, update_rx) =
@@ -48,81 +47,18 @@ async fn main() {
   let player_one_frequencies = Frequencies {
     approach: 118.5,
     departure: 118.5,
-    tower: 118.5,
-    ground: 118.6,
-    center: 118.5,
-  };
-
-  let player_two_frequencies = Frequencies {
-    approach: 118.6,
-    departure: 118.6,
     tower: 118.6,
     ground: 118.6,
-    center: 118.6,
+    center: 118.7,
   };
 
-  // Create a controlled KSFO airspace
-  let mut airspace_ksfo = Airspace {
-    id: "KSFO".into(),
-    pos: Vec2::new(0.0, 0.0),
-    size: NAUTICALMILES_TO_FEET * 30.0,
-    airports: vec![],
-    auto: false,
-    frequencies: player_one_frequencies.clone(),
-  };
-
-  // Create a controlled EGLL airspace
-  let airspace_egll = Airspace {
-    id: "EGLL".into(),
-    pos: Vec2::new(NAUTICALMILES_TO_FEET * 20.0, -NAUTICALMILES_TO_FEET * 70.0),
-    size: NAUTICALMILES_TO_FEET * 20.0,
-    airports: vec![],
-    auto: true,
-    frequencies: player_two_frequencies.clone(),
-  };
-
-  // Create an uncontrolled (auto) KLAX airspace
-  let airspace_klax = Airspace {
-    id: "KLAX".into(),
-    pos: Vec2::new(
-      -NAUTICALMILES_TO_FEET * 80.0,
-      -NAUTICALMILES_TO_FEET * 40.0,
-    ),
-    size: NAUTICALMILES_TO_FEET * 20.0,
-    airports: vec![],
-    auto: true,
-    frequencies: player_one_frequencies.clone(),
-  };
-
-  // Create an uncontrolled (auto) KPHL airspace
-  let airspace_kphl = Airspace {
-    id: "KPHL".into(),
-    pos: Vec2::new(NAUTICALMILES_TO_FEET * 10.0, NAUTICALMILES_TO_FEET * 80.0),
-    size: NAUTICALMILES_TO_FEET * 20.0,
-    airports: vec![],
-    auto: true,
-    frequencies: player_one_frequencies.clone(),
-  };
-
-  // Create an uncontrolled (auto) KJFK airspace
-  let airspace_kjfk = Airspace {
-    id: "KJFK".into(),
-    pos: Vec2::new(NAUTICALMILES_TO_FEET * 90.0, NAUTICALMILES_TO_FEET * -10.0),
-    size: NAUTICALMILES_TO_FEET * 20.0,
-    airports: vec![],
-    auto: true,
-    frequencies: player_one_frequencies.clone(),
-  };
-
-  let mut airport_ksfo =
-    Airport::new(airspace_ksfo.id.clone(), airspace_ksfo.pos);
-  airport::new_v_pattern::setup(
-    &mut airport_ksfo,
-    &mut engine.world.waypoints,
-    &mut engine.world.waypoint_sets,
-  );
-  airport_ksfo.calculate_waypoints();
-  airspace_ksfo.airports.push(airport_ksfo);
+  // let player_two_frequencies = Frequencies {
+  //   approach: 118.6,
+  //   departure: 118.6,
+  //   tower: 118.6,
+  //   ground: 118.6,
+  //   center: 118.6,
+  // };
 
   // let mut airport_egll =
   //   Airport::new(airspace_egll.id.clone(), airspace_egll.pos);
@@ -134,16 +70,93 @@ async fn main() {
   // airport_egll.calculate_waypoints();
   // airspace_egll.airports.push(airport_egll);
 
-  engine.world.airspaces.push(airspace_ksfo);
-  engine.world.airspaces.push(airspace_klax);
-  engine.world.airspaces.push(airspace_kphl);
-  engine.world.airspaces.push(airspace_kjfk);
-  engine.world.airspaces.push(airspace_egll);
+  // engine.spawn_random_aircraft();
 
-  engine.spawn_random_aircraft();
+  const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
+  const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+  const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 
-  // Fill all gates with random aircraft
+  let airport_setups = [
+    airport::new_v_pattern::setup,
+    airport::v_pattern::setup,
+    airport::parallel::setup,
+  ];
+
+  let airspace_names = ["KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL", "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI"];
+
   let mut rng = thread_rng();
+
+  // Create a controlled KSFO airspace
+  let mut airspace_ksfo = Airspace {
+    id: "KSFO".into(),
+    pos: Vec2::ZERO,
+    size: MANUAL_TOWER_AIRSPACE_RADIUS,
+    airports: vec![],
+    auto: false,
+    frequencies: player_one_frequencies.clone(),
+  };
+
+  let mut airport_ksfo = Airport {
+    id: "KSFO".into(),
+    center: airspace_ksfo.pos,
+    ..Default::default()
+  };
+
+  (airport_setups.choose(&mut rng).unwrap())(
+    &mut airport_ksfo,
+    &mut engine.world.waypoints,
+    &mut engine.world.waypoint_sets,
+  );
+
+  airport_ksfo.calculate_waypoints();
+  airspace_ksfo.airports.push(airport_ksfo);
+  engine.world.airspaces.push(airspace_ksfo);
+
+  // Generate randomly positioned uncontrolled airspaces.
+  for airspace_name in airspace_names {
+    // TODO: This is a brute-force approach. A better solution would be to use
+    //       some form of jitter or other, potentially, less infinite-loop-prone
+    //       solution.
+
+    let mut i = 0;
+
+    let airspace_position = 'outer: loop {
+      if i >= 1000 {
+        tracing::error!("Unable to find a place for airspace '{airspace_name}'");
+        std::process::exit(1);
+      }
+
+      i += 1;
+
+      let position = Vec2::new((rng.gen::<f32>() - 0.5) * world_radius, (rng.gen::<f32>() - 0.5) * world_radius);
+
+      for airspace in engine.world.airspaces.iter() {
+        if circle_circle_intersection(position, airspace.pos, AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS, airspace.size + TOWER_AIRSPACE_PADDING_RADIUS) {
+          continue 'outer;
+        }
+      }
+
+      break position;
+    };
+
+    engine.world.airspaces.push(Airspace {
+      id: airspace_name.into(),
+      pos: airspace_position,
+      size: AUTO_TOWER_AIRSPACE_RADIUS,
+      airports: vec![],
+      auto: true,
+      frequencies: player_one_frequencies.clone(),
+    });
+
+    engine.world.waypoints.push(Node {
+      name: airspace_name.into(),
+      kind: NodeKind::Runway,
+      behavior: NodeBehavior::GoTo,
+      value: airspace_position,
+    });
+  }
+
+  // Fill all gates with random aircraft.
   for airspace in engine.world.airspaces.iter() {
     if !airspace.auto {
       for airport in airspace.airports.iter() {
@@ -212,4 +225,8 @@ struct Cli {
   /// The socket address to bind the WebSocket server to.
   #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))]
   address: SocketAddr,
+
+  /// The radius of the entire world in nautical miles (NM).
+  #[arg(long, default_value_t = 500.0)]
+  world_radius: f32,
 }
