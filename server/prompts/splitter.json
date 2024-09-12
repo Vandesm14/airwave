@@ -1,0 +1,10 @@
+{
+  "prompt": [
+    "Split the following message from Air Traffic Control into a JSON object into callsign and request like so:",
+    {
+      "callsign": "SKW1234",
+      "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
+    },
+    "Available Callsigns: SKW (Skywest), AAL (\"American Airlines\" or \"American\"), JBU (Jet Blue)\""
+  ]
+}

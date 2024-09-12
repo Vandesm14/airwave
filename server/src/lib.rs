@@ -10,14 +10,13 @@ use async_openai::{
 };
 use engine::{
   engine::{IncomingUpdate, OutgoingReply},
-  objects::command::{
-    Command, CommandReply, CommandReplyKind, CommandWithFreq,
-  },
+  objects::command::CommandWithFreq,
 };
 use futures_util::{
   stream::{SplitSink, SplitStream},
   SinkExt as _, StreamExt as _,
 };
+use prompter::Prompter;
 use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
@@ -27,6 +26,7 @@ use tokio_tungstenite::{
 };
 
 pub mod airport;
+pub mod prompter;
 
 pub async fn broadcast_updates_to(
   mut writer: SplitSink<WebSocketStream<TcpStream>, Message>,
@@ -229,27 +229,30 @@ async fn complete_atc_request(
   message: String,
   freq: f32,
 ) -> Option<CommandWithFreq> {
-  let response =
-    send_chatgpt_request(include_str!("prompt.txt").into(), message).await;
-  if let Ok(Some(text)) = response {
-    match serde_json::from_str::<Command>(&text) {
-      Ok(reply) => {
-        return Some(CommandWithFreq {
-          id: reply.id.clone(),
-          frequency: freq,
-          reply: CommandReply {
-            callsign: reply.id,
-            kind: CommandReplyKind::WithCallsign { text: reply.reply },
-          }
-          .to_string(),
-          tasks: reply.tasks,
-        })
-      }
-      Err(e) => {
-        tracing::error!("Unable to parse command: {} (raw: {})", e, text);
-      }
-    }
-  }
+  // let response =
+  //   send_chatgpt_request(include_str!("prompt.txt").into(), message).await;
+  // if let Ok(Some(text)) = response {
+  //   match serde_json::from_str::<Command>(&text) {
+  //     Ok(reply) => {
+  //       return Some(CommandWithFreq {
+  //         id: reply.id.clone(),
+  //         frequency: freq,
+  //         reply: CommandReply {
+  //           callsign: reply.id,
+  //           kind: CommandReplyKind::WithCallsign { text: reply.reply },
+  //         }
+  //         .to_string(),
+  //         tasks: reply.tasks,
+  //       })
+  //     }
+  //     Err(e) => {
+  //       tracing::error!("Unable to parse command: {} (raw: {})", e, text);
+  //     }
+  //   }
+  // }
+
+  let prompter = Prompter::new(message);
+  prompter.execute().await.unwrap();
 
   None
 }
