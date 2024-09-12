@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use async_openai::types::{
-  ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
-  ChatCompletionRequestUserMessage, ChatCompletionRequestUserMessageContent,
-  CreateChatCompletionRequest,
+use async_openai::{
+  error::OpenAIError,
+  types::{
+    ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
+    ChatCompletionRequestUserMessage, ChatCompletionRequestUserMessageContent,
+    CreateChatCompletionRequest,
+  },
 };
 use engine::{
   engine::{IncomingUpdate, OutgoingReply},
@@ -188,21 +191,21 @@ pub async fn receive_commands_from(
 
 // pub async fn speech_to_text() {}
 
-async fn complete_atc_request(
-  string: String,
-  freq: f32,
-) -> Option<CommandWithFreq> {
+async fn send_chatgpt_request(
+  prompt: String,
+  message: String,
+) -> Result<Option<String>, OpenAIError> {
   let client = async_openai::Client::new();
   let request = CreateChatCompletionRequest {
     messages: vec![
       ChatCompletionRequestMessage::System(
         ChatCompletionRequestSystemMessage {
-          content: include_str!("prompt.txt").to_owned(),
+          content: prompt,
           name: None,
         },
       ),
       ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
-        content: ChatCompletionRequestUserMessageContent::Text(string),
+        content: ChatCompletionRequestUserMessageContent::Text(message),
         name: None,
       }),
     ],
@@ -211,26 +214,39 @@ async fn complete_atc_request(
   };
 
   let response = client.chat().create(request).await;
-  if let Ok(response) = response {
-    if let Some(choice) = response.choices.first() {
-      if let Some(ref text) = choice.message.content {
-        match serde_json::from_str::<Command>(text) {
-          Ok(reply) => {
-            return Some(CommandWithFreq {
-              id: reply.id.clone(),
-              frequency: freq,
-              reply: CommandReply {
-                callsign: reply.id,
-                kind: CommandReplyKind::WithCallsign { text: reply.reply },
-              }
-              .to_string(),
-              tasks: reply.tasks,
-            })
+  match response {
+    Ok(response) => Ok(
+      response
+        .choices
+        .first()
+        .and_then(|c| c.message.content.clone()),
+    ),
+    Err(err) => Err(err),
+  }
+}
+
+async fn complete_atc_request(
+  message: String,
+  freq: f32,
+) -> Option<CommandWithFreq> {
+  let response =
+    send_chatgpt_request(include_str!("prompt.txt").into(), message).await;
+  if let Ok(Some(text)) = response {
+    match serde_json::from_str::<Command>(&text) {
+      Ok(reply) => {
+        return Some(CommandWithFreq {
+          id: reply.id.clone(),
+          frequency: freq,
+          reply: CommandReply {
+            callsign: reply.id,
+            kind: CommandReplyKind::WithCallsign { text: reply.reply },
           }
-          Err(e) => {
-            tracing::error!("Unable to parse command: {} (raw: {})", e, text);
-          }
-        }
+          .to_string(),
+          tasks: reply.tasks,
+        })
+      }
+      Err(e) => {
+        tracing::error!("Unable to parse command: {} (raw: {})", e, text);
       }
     }
   }
