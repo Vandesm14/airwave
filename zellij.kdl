@@ -11,7 +11,7 @@ layout {
         args "run" "--bin" "serve" "--" "client-web/dist" "--address" "0.0.0.0:8080"
       }
       pane name="engine server" command="cargo" {
-        args "run" "--bin" "server" "--release" "--" "--address" "0.0.0.0:9001"
+        args "run" "--bin" "server" "--release" "--" "--address" "0.0.0.0:9001" "--world-radius" "500"
       }
     }
     pane size=2 borderless=true {
