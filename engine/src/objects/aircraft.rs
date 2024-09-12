@@ -197,9 +197,6 @@ impl Aircraft {
       aircraft.pos = departure.pos;
       aircraft.heading =
         angle_between_points(departure.pos, arr_airport.center);
-      aircraft.speed = 400.0;
-      aircraft.altitude = 13000.0;
-
       aircraft.sync_targets();
 
       aircraft.frequency = arrival.frequencies.approach;
