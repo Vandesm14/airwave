@@ -1,0 +1,28 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Frequency commands are returned as a numeric value in MHz. For named frequencies, use the 'named-frequency' type instead."
+  ],
+  "examples": [
+    {
+      "user": "Tune to 123.4.",
+      "assistant": [
+        {
+          "type": "frequency",
+          "value": 123.4
+        }
+      ]
+    },
+    {
+      "user": "Contact approach on 123.4.",
+      "assistant": [
+        {
+          "type": "frequency",
+          "value": 123.4
+        }
+      ]
+    }
+  ]
+}

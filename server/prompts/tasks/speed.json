@@ -1,0 +1,28 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Speed commands are returned as a speed in knots."
+  ],
+  "examples": [
+    {
+      "user": "Maintain 200 knots.",
+      "assistant": [
+        {
+          "type": "speed",
+          "value": 200
+        }
+      ]
+    },
+    {
+      "user": "Increase speed to 250 knots.",
+      "assistant": [
+        {
+          "type": "speed",
+          "value": 250
+        }
+      ]
+    }
+  ]
+}

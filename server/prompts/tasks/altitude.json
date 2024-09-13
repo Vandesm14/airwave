@@ -1,0 +1,28 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Altitude commands are returned as an altitude in feet."
+  ],
+  "examples": [
+    {
+      "user": "Climb and maintain 2000 feet.",
+      "assistant": [
+        {
+          "type": "altitude",
+          "value": 2000
+        }
+      ]
+    },
+    {
+      "user": "Maintain flight level 130.",
+      "assistant": [
+        {
+          "type": "altitude",
+          "value": 13000
+        }
+      ]
+    }
+  ]
+}

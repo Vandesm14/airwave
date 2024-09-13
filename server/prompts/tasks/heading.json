@@ -1,0 +1,19 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Heading commands are returned as a heading in degrees."
+  ],
+  "examples": [
+    {
+      "user": "Turn left heading 200.",
+      "assistant": [
+        {
+          "type": "heading",
+          "value": 200
+        }
+      ]
+    }
+  ]
+}
