@@ -130,13 +130,14 @@ impl Prompter {
     let prompt = fs::read_to_string(path)?;
     let object: PromptObject =
       serde_json::from_str(&prompt).map_err(LoadPromptError::Deserialize)?;
-    let mut full_prompt: Vec<String> = object.prompt;
+    let mut full_prompt: Vec<String> = Vec::new();
 
     for path in object.imports {
       let lines = Self::load_prompt(path.into())?;
-      full_prompt.extend_from_slice(&lines);
+      full_prompt.extend(lines);
     }
 
+    full_prompt.extend(object.prompt);
     full_prompt.extend(object.examples.iter().map(|e| e.to_string()));
 
     Ok(full_prompt)
