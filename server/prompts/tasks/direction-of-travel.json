@@ -1,0 +1,34 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Direction of travel commands are returned as a simple task with no additional value."
+  ],
+  "examples": [
+    {
+      "user": "Say direction of travel.",
+      "assistant": [
+        {
+          "type": "direction-of-travel"
+        }
+      ]
+    },
+    {
+      "user": "Report direction of departure.",
+      "assistant": [
+        {
+          "type": "direction-of-travel"
+        }
+      ]
+    },
+    {
+      "user": "Where are you departing to?.",
+      "assistant": [
+        {
+          "type": "direction-of-travel"
+        }
+      ]
+    }
+  ]
+}

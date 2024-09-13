@@ -1,0 +1,44 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Direct commands are returned as an array of waypoint strings. Multiple waypoints can be specified in a single command."
+  ],
+  "examples": [
+    {
+      "user": "Direct to Sierra, Alpha, Yankee.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            "SAY"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Direct to road.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            "ROAD"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Direct to dude then road.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            "DUDE",
+            "ROAD"
+          ]
+        }
+      ]
+    }
+  ]
+}

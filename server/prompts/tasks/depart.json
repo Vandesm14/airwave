@@ -1,0 +1,37 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Departure commands are returned with the departure name as a string. If the departure is spelled out using the phonetic alphabet, combine the letters into a single word."
+  ],
+  "examples": [
+    {
+      "user": "Follow red departure.",
+      "assistant": [
+        {
+          "type": "depart",
+          "value": "RED"
+        }
+      ]
+    },
+    {
+      "user": "Follow Romeo, Echo, Delta departure.",
+      "assistant": [
+        {
+          "type": "depart",
+          "value": "RED"
+        }
+      ]
+    },
+    {
+      "user": "Depart via OCEAN.",
+      "assistant": [
+        {
+          "type": "depart",
+          "value": "OCEAN"
+        }
+      ]
+    }
+  ]
+}

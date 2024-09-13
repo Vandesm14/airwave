@@ -1,0 +1,26 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Resume own navigation commands are returned as a simple task with no additional value."
+  ],
+  "examples": [
+    {
+      "user": "Resume own navigation.",
+      "assistant": [
+        {
+          "type": "resume"
+        }
+      ]
+    },
+    {
+      "user": "Resume as filed.",
+      "assistant": [
+        {
+          "type": "resume"
+        }
+      ]
+    }
+  ]
+}

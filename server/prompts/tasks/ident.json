@@ -1,0 +1,26 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Ident commands are returned as a simple task with no additional value. Both 'ident' and 'identify' should be interpreted as ident commands."
+  ],
+  "examples": [
+    {
+      "user": "Ident.",
+      "assistant": [
+        {
+          "type": "ident"
+        }
+      ]
+    },
+    {
+      "user": "Identify.",
+      "assistant": [
+        {
+          "type": "ident"
+        }
+      ]
+    }
+  ]
+}

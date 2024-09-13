@@ -1,0 +1,18 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json"
+  ],
+  "prompt": [
+    "Taxi hold commands are returned as a simple task with no additional value."
+  ],
+  "examples": [
+    {
+      "user": "Hold position.",
+      "assistant": [
+        {
+          "type": "taxi-hold"
+        }
+      ]
+    }
+  ]
+}

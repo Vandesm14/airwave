@@ -23,6 +23,24 @@
           "value": 123.4
         }
       ]
+    },
+    {
+      "user": "Contact approach.",
+      "assistant": [
+        {
+          "type": "named-frequency",
+          "value": "approach"
+        }
+      ]
+    },
+    {
+      "user": "Contact center.",
+      "assistant": [
+        {
+          "type": "named-frequency",
+          "value": "center"
+        }
+      ]
     }
   ]
 }

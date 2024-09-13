@@ -8,27 +8,25 @@ use crate::pathfinder::Node;
 #[serde(rename_all = "kebab-case")]
 #[serde(tag = "type", content = "value")]
 pub enum Task {
-  Land(String),
-  GoAround,
   Altitude(f32),
-  Heading(f32),
-  Speed(f32),
-  Frequency(f32),
-  NamedFrequency(String),
-  Takeoff(String),
-  #[serde(rename = "resume")]
-  ResumeOwnNavigation,
-
-  Taxi(Vec<Node<()>>),
-  TaxiHold,
-  TaxiContinue,
-
-  Direct(Vec<String>),
   Approach(String),
   Depart(String),
-
-  Ident,
+  Direct(Vec<String>),
   DirectionOfTravel,
+  Frequency(f32),
+  GoAround,
+  Heading(f32),
+  Ident,
+  Land(String),
+  NamedFrequency(String),
+  #[serde(rename = "resume")]
+  ResumeOwnNavigation,
+  Speed(f32),
+  Takeoff(String),
+
+  Taxi(Vec<Node<()>>),
+  TaxiContinue,
+  TaxiHold,
 }
 
 pub type Tasks = Vec<Task>;
