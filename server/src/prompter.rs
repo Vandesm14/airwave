@@ -203,9 +203,24 @@ impl Prompter {
     Ok(tasks)
   }
 
-  pub async fn execute(&self) -> Result<Command, Error> {
+  async fn execute_hidden(&self) -> Result<Command, Error> {
     let split = self.split_message().await?;
     let raw_commands = Self::classify_request(split.request.clone()).await?;
+
+    if raw_commands.iter().any(|t| t.command == "unknown") {
+      return Ok(Command {
+        id: split.callsign.clone(),
+        reply: CommandReply::new(
+          split.callsign,
+          CommandReplyKind::WithCallsign {
+            text: "Say again.".into(),
+          },
+        )
+        .to_string(),
+        tasks: Vec::new(),
+      });
+    }
+
     let tasks = Self::parse_tasks(raw_commands).await?;
 
     let command = Command {
@@ -219,6 +234,12 @@ impl Prompter {
       .to_string(),
       tasks,
     };
+
+    Ok(command)
+  }
+
+  pub async fn execute(&self) -> Result<Command, Error> {
+    let command = self.execute_hidden().await?;
 
     tracing::debug!("execution result: {:?}", command);
 
