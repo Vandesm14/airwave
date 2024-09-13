@@ -219,7 +219,7 @@ export default function StripBoard({
         ('' + a.callsign).localeCompare(b.callsign);
 
       Object.entries(strips).forEach(([key, list]) => {
-        list.sort(nameSorter);
+        list.sort(timeSorter);
         setStrips({ ...strips, [key]: list });
       });
       // strips.Center.sort(nameSorter);
