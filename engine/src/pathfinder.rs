@@ -125,7 +125,7 @@ impl From<Object> for Node<Line> {
       Object::Runway(value) => Node {
         name: value.id.clone(),
         kind: NodeKind::Runway,
-        behavior: NodeBehavior::HoldShort,
+        behavior: NodeBehavior::GoTo,
         value: value.into(),
       },
       Object::Terminal(value) => Node {
@@ -396,12 +396,31 @@ impl Pathfinder {
         );
       }
 
-      let first_path = paths.first();
-      if let Some(first_path) = first_path {
+      let first_path = paths.first().map(|p| {
+        let mut p = p.clone();
+        p.path = p
+          .path
+          .into_iter()
+          .rev()
+          .enumerate()
+          .map(|(i, wp)| {
+            let mut wp = wp.clone();
+            if i == 0 {
+              wp.behavior = to.behavior;
+            }
+
+            wp
+          })
+          .rev()
+          .collect();
+
+        p
+      });
+      if let Some(first_path) = &first_path {
         println!("chosen path: {:?}", display_vec_node_vec2(&first_path.path));
       }
 
-      first_path.cloned()
+      first_path
     } else {
       None
     }
@@ -470,5 +489,187 @@ mod tests {
       ),
       distance
     );
+  }
+
+  mod pathfinder {
+    use super::*;
+
+    #[test]
+    fn calculate_two_taxiways() {
+      let mut pathfinder = Pathfinder::new();
+
+      let mut segments = Vec::new();
+      let taxiway_a =
+        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+
+      let taxiway_b =
+        Taxiway::new("B".into(), Vec2::new(5.0, -5.0), Vec2::new(5.0, 5.0));
+
+      segments.push(Object::Taxiway(taxiway_a));
+      segments.push(Object::Taxiway(taxiway_b));
+      pathfinder.calculate(segments);
+
+      let path = pathfinder.path_to(
+        Node {
+          name: "A".into(),
+          kind: NodeKind::Taxiway,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        Node {
+          name: "B".into(),
+          kind: NodeKind::Taxiway,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        Vec2::new(0.0, 0.0),
+        90.0,
+      );
+
+      assert!(path.is_some());
+      if let Some(path) = path {
+        assert_eq!(path.path.len(), 1);
+        assert_eq!(path.path[0].name, "B");
+        assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
+      }
+    }
+
+    #[test]
+    fn calculate_two_taxiways_2() {
+      let mut pathfinder = Pathfinder::new();
+
+      let mut segments = Vec::new();
+      let taxiway_a =
+        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+
+      let taxiway_b =
+        Taxiway::new("B".into(), Vec2::new(5.0, -5.0), Vec2::new(5.0, 5.0));
+
+      segments.push(Object::Taxiway(taxiway_a));
+      segments.push(Object::Taxiway(taxiway_b));
+      pathfinder.calculate(segments);
+
+      let path = pathfinder.path_to(
+        Node {
+          name: "A".into(),
+          kind: NodeKind::Taxiway,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        Node {
+          name: "B".into(),
+          kind: NodeKind::Taxiway,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        Vec2::new(2.0, 0.0),
+        90.0,
+      );
+
+      assert!(path.is_some());
+      if let Some(path) = path {
+        assert_eq!(path.path.len(), 1);
+        assert_eq!(path.path[0].name, "B");
+        assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
+      }
+    }
+
+    #[test]
+    fn taxiway_before_runway() {
+      let mut pathfinder = Pathfinder::new();
+
+      let mut segments = Vec::new();
+      let taxiway_a =
+        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+
+      let runway_36 = Runway {
+        id: "36".into(),
+        pos: Vec2::new(5.0, 0.0),
+        heading: 360.0,
+        length: 500.0,
+      };
+
+      segments.push(Object::Taxiway(taxiway_a));
+      segments.push(Object::Runway(runway_36));
+      pathfinder.calculate(segments);
+
+      let path = pathfinder.path_to(
+        Node {
+          name: "A".into(),
+          kind: NodeKind::Taxiway,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        Node {
+          name: "36".into(),
+          kind: NodeKind::Runway,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        Vec2::new(2.0, 0.0),
+        90.0,
+      );
+
+      assert!(path.is_some());
+      if let Some(path) = path {
+        assert_eq!(path.path.len(), 1);
+        assert_eq!(path.path[0].name, "36");
+        assert_eq!(path.path[0].behavior, NodeBehavior::GoTo);
+        // This is slightly off due to floating-point math, so we can't
+        // assert the coordinates of the intersection.
+        //
+        // TODO: use intersection math to assert
+        // assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
+      }
+    }
+
+    #[test]
+    fn taxiway_before_runway_hold_short() {
+      let mut pathfinder = Pathfinder::new();
+
+      let mut segments = Vec::new();
+      let taxiway_a =
+        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+
+      let runway_36 = Runway {
+        id: "36".into(),
+        pos: Vec2::new(5.0, 0.0),
+        heading: 360.0,
+        length: 500.0,
+      };
+
+      segments.push(Object::Taxiway(taxiway_a));
+      segments.push(Object::Runway(runway_36));
+      pathfinder.calculate(segments);
+
+      let path = pathfinder.path_to(
+        Node {
+          name: "A".into(),
+          kind: NodeKind::Taxiway,
+          behavior: NodeBehavior::GoTo,
+          value: (),
+        },
+        Node {
+          name: "36".into(),
+          kind: NodeKind::Runway,
+          behavior: NodeBehavior::HoldShort,
+          value: (),
+        },
+        Vec2::new(2.0, 0.0),
+        90.0,
+      );
+
+      assert!(path.is_some());
+      if let Some(path) = path {
+        assert_eq!(path.path.len(), 1);
+        assert_eq!(path.path[0].name, "36");
+        assert_eq!(path.path[0].behavior, NodeBehavior::HoldShort);
+        // This is slightly off due to floating-point math, so we can't
+        // assert the coordinates of the intersection.
+        //
+        // TODO: use intersection math to assert
+        // assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
+      }
+    }
   }
 }
