@@ -1,9 +1,9 @@
 {
   "prompt": [
     "You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of commands for your aircraft.",
-    "You only need to split the textual information, no parsing or inferencing is required.",
+    "You only need to split the textual information, no parsing or inferencing is required. ONLY classify the input to the available tasks below. DO NOT make up tasks that are not in the provided task list.",
     "",
-    "Available Tasks:",
+    "Available Tasks (key: task, value: description):",
     {
       "altitude": "Change altitude",
       "approach": "Cleared via an approach fix",
@@ -18,11 +18,11 @@
       "resume": "Resume own navigation or Resume as filed",
       "speed": "Change speed",
       "takeoff": "Cleared for takeoff",
-      "taxi": "Taxi to instructions",
-      "taxi-continue": "Continue taxi command",
-      "taxi-hold": "Hold taxi command"
+      "taxi": "Taxi instructions (to a runway, gate, or another taxiway)",
+      "taxi-continue": "\"Continue taxi\" command",
+      "taxi-hold": "\"Hold position\" command"
     },
-    "For unknown commands or commands you are unsure of, return an unknown command:",
+    "For unknown commands or tasks you are unsure of, return an unknown command:",
     [
       {
         "command": "unknown",
