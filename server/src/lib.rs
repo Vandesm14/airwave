@@ -189,8 +189,6 @@ pub async fn receive_commands_from(
     .await;
 }
 
-// pub async fn speech_to_text() {}
-
 async fn send_chatgpt_request(
   prompt: String,
   message: String,
@@ -200,12 +198,12 @@ async fn send_chatgpt_request(
     messages: vec![
       ChatCompletionRequestMessage::System(
         ChatCompletionRequestSystemMessage {
-          content: prompt,
+          content: prompt.clone(),
           name: None,
         },
       ),
       ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
-        content: ChatCompletionRequestUserMessageContent::Text(message),
+        content: ChatCompletionRequestUserMessageContent::Text(message.clone()),
         name: None,
       }),
     ],
@@ -215,12 +213,13 @@ async fn send_chatgpt_request(
 
   let response = client.chat().create(request).await;
   match response {
-    Ok(response) => Ok(
-      response
-        .choices
-        .first()
-        .and_then(|c| c.message.content.clone()),
-    ),
+    Ok(response) => Ok(response.choices.first().and_then(|c| {
+      let c = c.message.content.clone();
+      tracing::debug!(
+        "**sent prompt:**\n{prompt}\n\n**message:**\n{message}\n\n**response:**\n{c:?}",
+      );
+      c
+    })),
     Err(err) => Err(err),
   }
 }

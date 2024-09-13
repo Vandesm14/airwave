@@ -18,7 +18,17 @@ where
   struct VecString(Vec<Value>);
 
   let vec_string = VecString::deserialize(deserializer)?;
-  let vec: Vec<String> = vec_string.0.iter().map(|v| v.to_string()).collect();
+  let vec: Vec<String> = vec_string
+    .0
+    .iter()
+    .map(|v| {
+      if v.is_string() {
+        String::deserialize(v).unwrap()
+      } else {
+        v.to_string()
+      }
+    })
+    .collect();
 
   Ok(vec)
 }
