@@ -96,6 +96,22 @@
           ]
         }
       ]
+    },
+    {
+      "user": "Hold position.",
+      "assistant": [
+        {
+          "type": "taxi-hold"
+        }
+      ]
+    },
+    {
+      "user": "Continue taxi.",
+      "assistant": [
+        {
+          "type": "taxi-continue"
+        }
+      ]
     }
   ]
 }

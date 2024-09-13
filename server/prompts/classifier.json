@@ -18,9 +18,7 @@
       "resume": "Resume own navigation or Resume as filed",
       "speed": "Change speed",
       "takeoff": "Cleared for takeoff",
-      "taxi": "Taxi instructions (to a runway, gate, or another taxiway)",
-      "taxi-continue": "\"Continue taxi\" command",
-      "taxi-hold": "\"Hold position\" command"
+      "taxi": "Taxi instructions (to a runway, gate, or another taxiway; hold position; continue taxi)"
     },
     "For unknown commands or tasks you are unsure of, return an unknown command:",
     [
