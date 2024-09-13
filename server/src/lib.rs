@@ -226,34 +226,22 @@ async fn send_chatgpt_request(
 
 async fn complete_atc_request(
   message: String,
-  freq: f32,
+  frequency: f32,
 ) -> Option<CommandWithFreq> {
-  // let response =
-  //   send_chatgpt_request(include_str!("prompt.txt").into(), message).await;
-  // if let Ok(Some(text)) = response {
-  //   match serde_json::from_str::<Command>(&text) {
-  //     Ok(reply) => {
-  //       return Some(CommandWithFreq {
-  //         id: reply.id.clone(),
-  //         frequency: freq,
-  //         reply: CommandReply {
-  //           callsign: reply.id,
-  //           kind: CommandReplyKind::WithCallsign { text: reply.reply },
-  //         }
-  //         .to_string(),
-  //         tasks: reply.tasks,
-  //       })
-  //     }
-  //     Err(e) => {
-  //       tracing::error!("Unable to parse command: {} (raw: {})", e, text);
-  //     }
-  //   }
-  // }
-
   let prompter = Prompter::new(message);
-  prompter.execute().await.unwrap();
-
-  None
+  let result = prompter.execute().await;
+  match result {
+    Ok(command) => Some(CommandWithFreq {
+      id: command.id,
+      frequency,
+      reply: command.reply,
+      tasks: command.tasks,
+    }),
+    Err(err) => {
+      tracing::error!("Unable to parse command: {}", err);
+      None
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

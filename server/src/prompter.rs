@@ -1,7 +1,7 @@
 use std::{fs, os::linux::raw, path::PathBuf};
 
 use async_openai::error::OpenAIError;
-use engine::objects::command::{Task, Tasks};
+use engine::objects::command::{Command, CommandWithFreq, Task, Tasks};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -162,16 +162,22 @@ impl Prompter {
       tasks.extend_from_slice(&task_chunk);
     }
 
-    println!("tasks: {tasks:?}");
-
     Ok(tasks)
   }
 
-  pub async fn execute(&self) -> Result<(), Error> {
+  pub async fn execute(&self) -> Result<Command, Error> {
     let split = self.split_message().await?;
     let raw_commands = Self::classify_request(split.request).await?;
-    let _ = Self::parse_tasks(raw_commands).await?;
+    let tasks = Self::parse_tasks(raw_commands).await?;
 
-    Ok(())
+    let command = Command {
+      id: split.callsign,
+      reply: "No reply.".into(),
+      tasks,
+    };
+
+    tracing::debug!("execution result: {:?}", command);
+
+    Ok(command)
   }
 }

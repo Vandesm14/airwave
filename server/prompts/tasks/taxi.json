@@ -3,8 +3,9 @@
     "server/prompts/tasks/PREFIX.json"
   ],
   "prompt": [
+    "Taxi commands are returned as a list of waypoints. Waypoints are implicitly taxiways unless they are explicitly mentioned as a runway or a gate. Only hold short of a waypoint if it is preceted with \"hold short of\" or \"hold at\"",
     {
-      "user": "Taxi to and hold short of runway 18 left via Alpha Bravo.",
+      "user": "Taxi to and hold short of runway 18 left via Alpha then Bravo.",
       "assistant": [
         {
           "type": "taxi",
@@ -29,8 +30,69 @@
       ]
     },
     {
-      "user": "Change speed to 200 knots.",
-      "assistant": []
+      "user": "Taxi to Alpha, Bravo, and cross runway 18 left.",
+      "assistant": [
+        {
+          "type": "taxi",
+          "value": [
+            {
+              "name": "A",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "B",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "18L",
+              "kind": "runway",
+              "behavior": "goto"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Taxi to gate Alpha 1 via Bravo then Charlie.",
+      "assistant": [
+        {
+          "type": "taxi",
+          "value": [
+            {
+              "name": "B",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "C",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "A1",
+              "kind": "gate",
+              "behavior": "goto"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Taxi to Alpha.",
+      "assistant": [
+        {
+          "type": "taxi",
+          "value": [
+            {
+              "name": "A",
+              "kind": "taxiway",
+              "behavior": "goto"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
