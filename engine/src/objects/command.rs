@@ -68,6 +68,12 @@ pub struct CommandReply {
   pub kind: CommandReplyKind,
 }
 
+impl CommandReply {
+  pub fn new(callsign: String, kind: CommandReplyKind) -> Self {
+    Self { callsign, kind }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CommandReplyKind {
   WithCallsign { text: String },
