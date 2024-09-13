@@ -383,18 +383,18 @@ impl Pathfinder {
       // });
       paths.sort_by_key(|p| p.path.len());
 
-      for path in paths.iter() {
-        println!(
-          "path: {:?} ({} ft)",
-          path
-            .path
-            .iter()
-            .map(|n| n.name.clone())
-            .collect::<Vec<_>>()
-            .join(", "),
-          total_distance_squared(&path.path, pos).sqrt()
-        );
-      }
+      // for path in paths.iter() {
+      //   println!(
+      //     "path: {:?} ({} ft)",
+      //     path
+      //       .path
+      //       .iter()
+      //       .map(|n| n.name.clone())
+      //       .collect::<Vec<_>>()
+      //       .join(", "),
+      //     total_distance_squared(&path.path, pos).sqrt()
+      //   );
+      // }
 
       let first_path = paths.first().map(|p| {
         let mut p = p.clone();
