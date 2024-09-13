@@ -1,5 +1,5 @@
 use std::{
-  ops::Add,
+  ops::{Add, RangeInclusive},
   time::{Duration, SystemTime},
 };
 
@@ -24,6 +24,8 @@ use crate::{
 };
 
 use super::{airport::Gate, world::find_random_airspace};
+
+const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 120..=600;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -119,7 +121,7 @@ impl Aircraft {
       self.created = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or(Duration::from_millis(0))
-        .add(Duration::from_secs(rng.gen_range(60..=300)))
+        .add(Duration::from_secs(rng.gen_range(DEPARTURE_WAIT_RANGE)))
         .as_millis();
     }
   }
