@@ -1,12 +1,31 @@
-use std::{fs, os::linux::raw, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use async_openai::error::OpenAIError;
-use engine::objects::command::{Command, CommandWithFreq, Task, Tasks};
+use engine::objects::command::{Command, Task, Tasks};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
 use crate::send_chatgpt_request;
+
+fn deserialize_string_or_any<'de, D>(
+  deserializer: D,
+) -> Result<String, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+  struct AnyString(Value);
+
+  let v = AnyString::deserialize(deserializer)?;
+  let any_string = if v.0.is_string() {
+    String::deserialize(v.0).unwrap()
+  } else {
+    v.0.to_string()
+  };
+
+  Ok(any_string)
+}
 
 fn deserialize_vec_of_strings<'de, D>(
   deserializer: D,
@@ -34,11 +53,29 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Example {
+  #[serde(deserialize_with = "deserialize_string_or_any")]
+  pub user: String,
+  #[serde(deserialize_with = "deserialize_string_or_any")]
+  pub assistant: String,
+}
+
+impl core::fmt::Display for Example {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "User: {}\n Assistant:{}", self.user, self.assistant)?;
+
+    Ok(())
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PromptObject {
   #[serde(default)]
   pub imports: Vec<String>,
   #[serde(deserialize_with = "deserialize_vec_of_strings")]
   pub prompt: Vec<String>,
+  #[serde(default)]
+  pub examples: Vec<Example>,
 }
 
 #[derive(Error, Debug)]
@@ -87,32 +124,30 @@ impl Prompter {
     }
   }
 
-  fn load_prompt_raw(path: PathBuf) -> Result<Vec<String>, LoadPromptError> {
+  fn load_prompt(path: PathBuf) -> Result<Vec<String>, LoadPromptError> {
     let prompt = fs::read_to_string(path)?;
     let object: PromptObject =
       serde_json::from_str(&prompt).map_err(LoadPromptError::Deserialize)?;
-
-    Ok(object.prompt)
-  }
-
-  fn load_prompt(path: PathBuf) -> Result<String, LoadPromptError> {
-    let prompt = fs::read_to_string(path)?;
-    let object: PromptObject =
-      serde_json::from_str(&prompt).map_err(LoadPromptError::Deserialize)?;
-    let mut full_prompt: Vec<String> = Vec::new();
+    let mut full_prompt: Vec<String> = object.prompt;
 
     for path in object.imports {
-      let strings = Self::load_prompt_raw(path.into())?;
-      full_prompt.extend_from_slice(&strings);
+      let lines = Self::load_prompt(path.into())?;
+      full_prompt.extend_from_slice(&lines);
     }
 
-    full_prompt.extend(object.prompt);
+    full_prompt.extend(object.examples.iter().map(|e| e.to_string()));
 
-    Ok(full_prompt.join("\n"))
+    Ok(full_prompt)
+  }
+
+  fn load_prompt_as_string(path: PathBuf) -> Result<String, LoadPromptError> {
+    let lines = Self::load_prompt(path)?;
+    Ok(lines.join("\n"))
   }
 
   async fn split_message(&self) -> Result<CallsignAndRequest, Error> {
-    let prompt = Self::load_prompt("server/prompts/splitter.json".into())?;
+    let prompt =
+      Self::load_prompt_as_string("server/prompts/splitter.json".into())?;
     let result =
       send_chatgpt_request(prompt.clone(), self.message.clone()).await?;
     if let Some(result) = result {
@@ -126,7 +161,8 @@ impl Prompter {
   }
 
   async fn classify_request(request: String) -> Result<Vec<TypeValue>, Error> {
-    let prompt = Self::load_prompt("server/prompts/classifier.json".into())?;
+    let prompt =
+      Self::load_prompt_as_string("server/prompts/classifier.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), request).await?;
     if let Some(result) = result {
       let json: Vec<TypeValue> =
@@ -139,7 +175,7 @@ impl Prompter {
   }
 
   async fn parse_task(raw_command: TypeValue) -> Result<Tasks, Error> {
-    let prompt = Self::load_prompt(
+    let prompt = Self::load_prompt_as_string(
       format!("server/prompts/tasks/{}.json", raw_command.command).into(),
     )?
     .replace("{{type}}", &raw_command.command);

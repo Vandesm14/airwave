@@ -1,6 +1,7 @@
 {
   "prompt": [
-    "Your job is to classify an ATC request into commands. You only need to split the textual information, no parsing or inferencing is required.",
+    "You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of commands for your aircraft.",
+    "You only need to split the textual information, no parsing or inferencing is required.",
     "Example:",
     "For this request: \"Turn left heading 220, then decrease speed to 200 knots, cleared to land runway 20.\"",
     "You would reply:",

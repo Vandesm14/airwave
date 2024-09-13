@@ -3,7 +3,10 @@
     "server/prompts/tasks/PREFIX.json"
   ],
   "prompt": [
-    "Taxi commands are returned as a list of waypoints. Waypoints are implicitly taxiways unless they are explicitly mentioned as a runway or a gate. Only hold short of a waypoint if it is preceted with \"hold short of\" or \"hold at\"",
+    "Taxi commands are returned as a list of waypoints. Waypoints are implicitly taxiways unless they are explicitly mentioned as a runway or a gate. Only hold short of a waypoint if it is preceted with \"hold short of\" or \"hold at\". Always use capital letters and numbers when creating gate or taxiway names.",
+    "Examples:"
+  ],
+  "examples": [
     {
       "user": "Taxi to and hold short of runway 18 left via Alpha then Bravo.",
       "assistant": [
@@ -80,13 +83,13 @@
       ]
     },
     {
-      "user": "Taxi to Alpha.",
+      "user": "Taxi to Alpha seven.",
       "assistant": [
         {
           "type": "taxi",
           "value": [
             {
-              "name": "A",
+              "name": "A7",
               "kind": "taxiway",
               "behavior": "goto"
             }
