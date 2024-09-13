@@ -6,15 +6,15 @@
     "You would reply:",
     [
       {
-        "type": "heading",
+        "command": "heading",
         "value": "Turn left heading 220"
       },
       {
-        "type": "speed",
+        "command": "speed",
         "value": "Decrease speed to 200 knots"
       },
       {
-        "type": "land",
+        "command": "land",
         "value": "Cleared to land runway 20"
       }
     ]

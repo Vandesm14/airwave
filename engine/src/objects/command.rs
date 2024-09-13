@@ -31,6 +31,8 @@ pub enum Task {
   DirectionOfTravel,
 }
 
+pub type Tasks = Vec<Task>;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Command {
   pub id: String,

@@ -1,0 +1,7 @@
+{
+  "prompt": [
+    "Please parse the following plaintext {{type}} command into a command object. If the command is not a valid {{type}} command (doesn't fit the examples), then return an empty array.",
+    "The field \"user\" is the user's request (text command) and \"assistant\" is your reply (JSON list of tasks). ONLY reply with a list of tasks (can be empty).",
+    "Examples of valid {{type}} commands:"
+  ]
+}
