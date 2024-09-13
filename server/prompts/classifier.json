@@ -47,6 +47,42 @@
           "value": "Cleared to land runway 20"
         }
       ]
+    },
+    {
+      "user": "Taxi to runway 14L.",
+      "assistant": [
+        {
+          "command": "taxi",
+          "value": "Taxi to runway 14L"
+        }
+      ]
+    },
+    {
+      "user": "Taxi to runway 14L via Bravo then Charlie 7.",
+      "assistant": [
+        {
+          "command": "taxi",
+          "value": "Taxi to runway 14L via Bravo then Charlie 7"
+        }
+      ]
+    },
+    {
+      "user": "Continue taxi.",
+      "assistant": [
+        {
+          "command": "taxi",
+          "value": "Continue taxi"
+        }
+      ]
+    },
+    {
+      "user": "Hold position.",
+      "assistant": [
+        {
+          "command": "taxi",
+          "value": "Hold position"
+        }
+      ]
     }
   ]
 }
