@@ -35,13 +35,33 @@
       "user": "Cleared to KPHL via OCEAN departure. Climb and maintain 7000 feet.",
       "assistant": [
         {
-          "type": "approach",
+          "type": "clearance",
           "value": {
-            "type": "clearance",
-            "value": {
-              "departure": "OCEAN",
-              "altitude": 7000
-            }
+            "departure": "OCEAN",
+            "altitude": 7000
+          }
+        }
+      ]
+    },
+    {
+      "user": "Cleared to destination via OCEAN departure. Climb and maintain 7000 feet.",
+      "assistant": [
+        {
+          "type": "clearance",
+          "value": {
+            "departure": "OCEAN",
+            "altitude": 7000
+          }
+        }
+      ]
+    },
+    {
+      "user": "Cleared via OCEAN departure.",
+      "assistant": [
+        {
+          "type": "clearance",
+          "value": {
+            "departure": "OCEAN"
           }
         }
       ]

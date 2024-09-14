@@ -2,12 +2,13 @@
   "prompt": [
     "You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of commands for your aircraft.",
     "You only need to split the textual information, no parsing or inferencing is required. ONLY classify the input to the available tasks below. DO NOT make up tasks that are not in the provided task list.",
+    "ALWAYS return tasks as an array, even if there is just one task, or no tasks (empty array).",
     "",
     "Available Tasks (key: task, value: description):",
     {
       "altitude": "Change altitude",
       "approach": "Cleared via an approach fix",
-      "clearance": "IFR clearance instructions",
+      "clearance": "IFR clearance instructions (cleared via)",
       "depart": "Cleared via a departure route",
       "direction-of-travel": "Report the direction of departure or travel",
       "direct": "Follow a list of waypoints",
@@ -29,6 +30,7 @@
       }
     ],
     "",
+    "Important: If a clearance command is present, catagorize all instructions as the clearance command.",
     "Examples:"
   ],
   "examples": [
@@ -86,11 +88,29 @@
       ]
     },
     {
-      "user": "Cleared to KPHL via OCEAN departure. Climb and maintain 7000 feet and 300 knots.",
+      "user": "Cleared via OCEAN departure. Climb and maintain 7000 feet and 300 knots.",
       "assistant": [
         {
           "command": "clearance",
-          "value": "Cleared to KPHL via OCEAN departure. Climb and maintain 7000 feet and 300 knots."
+          "value": "Cleared via OCEAN departure. Climb and maintain 7000 feet and 300 knots."
+        }
+      ]
+    },
+    {
+      "user": "Cleared for takeoff, runway 18 left.",
+      "assistant": [
+        {
+          "command": "takeoff",
+          "value": "Cleared for takeoff, runway 18 left."
+        }
+      ]
+    },
+    {
+      "user": "Cleared to land runway 18 left.",
+      "assistant": [
+        {
+          "command": "land",
+          "value": "Cleared to land runway 18 left."
         }
       ]
     }
