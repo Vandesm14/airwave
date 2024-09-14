@@ -60,11 +60,32 @@ pub enum AircraftUpdate {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FlightPlan {
+  pub departing: String,
+  pub arriving: String,
+  pub altitude: f32,
+  pub speed: f32,
+  pub waypoints: Vec<Node<Vec2>>,
+}
+
+impl FlightPlan {
+  pub fn new(departing: String, arriving: String) -> Self {
+    Self {
+      departing,
+      arriving,
+      altitude: 3000.0,
+      speed: 220.0,
+      waypoints: Vec::new(),
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Aircraft {
   pub callsign: String,
 
   pub is_colliding: bool,
-  pub flight_plan: (String, String),
+  pub flight_plan: FlightPlan,
   pub state: AircraftState,
 
   #[serde(flatten)]
@@ -117,7 +138,8 @@ impl Aircraft {
     // TODO: when airport as destination
     // TODO: handle errors
     if let Some(arrival) = arrival {
-      self.flight_plan = (self.airspace.clone().unwrap(), arrival.id.clone());
+      self.flight_plan =
+        FlightPlan::new(self.airspace.clone().unwrap(), arrival.id.clone());
       self.created = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or(Duration::from_millis(0))
@@ -130,7 +152,7 @@ impl Aircraft {
     Self {
       callsign: Self::random_callsign(),
       is_colliding: false,
-      flight_plan: (String::new(), String::new()),
+      flight_plan: FlightPlan::new(String::new(), String::new()),
       state: AircraftState::Flying {
         waypoints: Vec::new(),
       },
@@ -153,7 +175,7 @@ impl Aircraft {
     Self {
       callsign: Self::random_callsign(),
       is_colliding: false,
-      flight_plan: (String::new(), String::new()),
+      flight_plan: FlightPlan::new(String::new(), String::new()),
       state: AircraftState::Taxiing {
         current: gate.clone().into(),
         waypoints: Vec::new(),
@@ -194,7 +216,8 @@ impl Aircraft {
       let arr_airport = arrival.find_random_airport().unwrap();
 
       let mut aircraft = Aircraft::random_flying();
-      aircraft.flight_plan = (departure.id.clone(), arr_airport.id.clone());
+      aircraft.flight_plan =
+        FlightPlan::new(departure.id.clone(), arr_airport.id.clone());
       aircraft.pos = departure.pos;
       aircraft.heading =
         angle_between_points(departure.pos, arr_airport.center);
@@ -278,7 +301,7 @@ impl Aircraft {
     {
       if self.pos == *value
         && waypoints.is_empty()
-        && Some(self.flight_plan.1.clone()) == self.airspace
+        && Some(self.flight_plan.arriving.clone()) == self.airspace
       {
         self.do_hold_taxi(true);
         return AircraftUpdate::NewDeparture;
@@ -354,12 +377,12 @@ impl Aircraft {
         self.target.heading = runway.heading;
 
         self.speed = 170.0;
-        self.target.speed = 220.0;
+        self.target.speed = self.flight_plan.altitude;
 
-        self.target.altitude = 3000.0;
+        self.target.altitude = self.flight_plan.altitude;
 
         self.state = AircraftState::Flying {
-          waypoints: Vec::new(),
+          waypoints: self.flight_plan.waypoints.clone(),
         };
       } else {
         todo!("not at or lined up to runway {}", runway.id)

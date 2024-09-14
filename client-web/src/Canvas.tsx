@@ -280,7 +280,7 @@ export default function Canvas({
       if (aircraft) {
         if (
           airspace.id !== aircraft.airspace &&
-          aircraft.flight_plan[1] === airspace.id
+          aircraft.flight_plan.arriving === airspace.id
         ) {
           ctx.strokeStyle = '#ffff00';
         }
@@ -446,7 +446,7 @@ export default function Canvas({
     ctx.fillStyle = '#44ff44';
     if (selectedAircraft() == aircraft.callsign) {
       ctx.fillStyle = '#FFE045';
-    } else if (aircraft.flight_plan[0] === ourAirspace()) {
+    } else if (aircraft.flight_plan.departing === ourAirspace()) {
       ctx.fillStyle = '#3087f2';
     }
 

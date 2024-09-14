@@ -7,6 +7,7 @@
     {
       "altitude": "Change altitude",
       "approach": "Cleared via an approach fix",
+      "clearance": "IFR clearance instructions",
       "depart": "Cleared via a departure route",
       "direction-of-travel": "Report the direction of departure or travel",
       "direct": "Follow a list of waypoints",
@@ -81,6 +82,15 @@
         {
           "command": "taxi",
           "value": "Hold position"
+        }
+      ]
+    },
+    {
+      "user": "Cleared to KPHL via OCEAN departure. Climb and maintain 7000 feet and 300 knots.",
+      "assistant": [
+        {
+          "command": "clearance",
+          "value": "Cleared to KPHL via OCEAN departure. Climb and maintain 7000 feet and 300 knots."
         }
       ]
     }

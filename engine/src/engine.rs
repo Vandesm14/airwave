@@ -185,7 +185,7 @@ impl Engine {
         .world
         .airspaces
         .iter()
-        .find(|a| a.id == aircraft.flight_plan.1)
+        .find(|a| a.id == aircraft.flight_plan.arriving)
       {
         if Some(airspace.id.clone()) == aircraft.airspace && airspace.auto {
           aircraft.state = AircraftState::Deleted;
@@ -269,7 +269,7 @@ impl Engine {
                 .world
                 .airspaces
                 .iter()
-                .find(|a| a.id == aircraft.flight_plan.1)
+                .find(|a| a.id == aircraft.flight_plan.arriving)
                 .unwrap();
               aircraft.do_resume_own_navigation(arrival.pos);
               aircraft.do_clear_waypoints();
@@ -358,7 +358,7 @@ impl Engine {
                 .world
                 .airspaces
                 .iter()
-                .find(|a| a.id == aircraft.flight_plan.1)
+                .find(|a| a.id == aircraft.flight_plan.arriving)
               {
                 let heading = angle_between_points(aircraft.pos, arrival.pos);
                 let direction = heading_to_direction(heading);
@@ -379,6 +379,39 @@ impl Engine {
                   }))
                   .unwrap();
                 return;
+              }
+            }
+            Task::Clearance {
+              departure,
+              altitude,
+              speed,
+            } => {
+              if let Some(depart) = departure
+                .as_ref()
+                .and_then(|d| self.world.waypoint_sets.departure.get(d))
+              {
+                if let Some(waypoints) = depart
+                  .iter()
+                  .map(|w| {
+                    self.world.waypoints.iter().find(|n| &n.name == w).cloned()
+                  })
+                  .rev()
+                  .try_fold(Vec::new(), |mut vec, item| {
+                    vec.push(item?);
+
+                    Some(vec)
+                  })
+                {
+                  aircraft.flight_plan.waypoints = waypoints.clone();
+                }
+              }
+
+              if let Some(altitude) = altitude {
+                aircraft.flight_plan.altitude = *altitude;
+              }
+
+              if let Some(speed) = speed {
+                aircraft.flight_plan.speed = *speed;
               }
             }
           }

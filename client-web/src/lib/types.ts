@@ -51,7 +51,10 @@ export type Aircraft = {
           waypoints: Array<NodeVec2>;
         };
       };
-  flight_plan: [string, string];
+  flight_plan: {
+    departing: string;
+    arriving: string;
+  };
 
   created: number;
 

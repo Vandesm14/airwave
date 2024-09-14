@@ -52,12 +52,13 @@ function assignAircraftToStrips(
   // TODO: Don't hard-code this, use an airspace selector in the UI
   const isInLocalAirspace = aircraft.airspace === ourAirspace;
   const isDepartingAndInLocalAirspace =
-    isInLocalAirspace && aircraft.airspace === aircraft.flight_plan[0];
-  const isDepartingFromLocalAirspace = ourAirspace === aircraft.flight_plan[0];
+    isInLocalAirspace && aircraft.airspace === aircraft.flight_plan.departing;
+  const isDepartingFromLocalAirspace =
+    ourAirspace === aircraft.flight_plan.departing;
 
   const isArrivingToLocalAirspace =
-    ourAirspace === aircraft.flight_plan[1] &&
-    aircraft.airspace !== aircraft.flight_plan[0];
+    ourAirspace === aircraft.flight_plan.arriving &&
+    aircraft.airspace !== aircraft.flight_plan.departing;
 
   if (isInLocalAirspace && isLanding) {
     return 'Landing';
@@ -166,8 +167,8 @@ function Strip({ strip }: StripProps) {
         <span></span>
       </div>
       <div class="vertical">
-        <span>{strip.flight_plan[0]}</span>
-        <span>{strip.flight_plan[1]}</span>
+        <span>{strip.flight_plan.departing}</span>
+        <span>{strip.flight_plan.arriving}</span>
       </div>
       <div class="vertical">
         <span>{topStatus}</span>
