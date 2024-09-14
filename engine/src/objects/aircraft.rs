@@ -377,7 +377,7 @@ impl Aircraft {
         self.target.heading = runway.heading;
 
         self.speed = 170.0;
-        self.target.speed = self.flight_plan.altitude;
+        self.target.speed = self.flight_plan.speed;
 
         self.target.altitude = self.flight_plan.altitude;
 
