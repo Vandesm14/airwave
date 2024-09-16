@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Clearance commands are returned with the departure, altitude, and speed. If the departure is spelled out using the phonetic alphabet, combine the letters into a single word."
   ],

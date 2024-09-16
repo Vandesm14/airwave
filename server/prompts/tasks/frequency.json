@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Frequency commands are returned as a numeric value in MHz. For named frequencies, use the 'named-frequency' type instead."
   ],

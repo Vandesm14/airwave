@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Direction of travel commands are returned as a simple task with no additional value."
   ],

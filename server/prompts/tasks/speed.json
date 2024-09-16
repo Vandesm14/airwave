@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Speed commands are returned as a speed in knots."
   ],

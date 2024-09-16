@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Ident commands are returned as a simple task with no additional value. Both 'ident' and 'identify' should be interpreted as ident commands."
   ],

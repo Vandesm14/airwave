@@ -85,7 +85,7 @@ pub enum LoadPromptError {
   #[error("failed to deserialize: {0}")]
   Deserialize(#[from] serde_json::Error),
   #[error("failed to load file: {0}")]
-  FS(#[from] std::io::Error),
+  FS(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -127,7 +127,8 @@ impl Prompter {
   }
 
   fn load_prompt(path: PathBuf) -> Result<Vec<String>, LoadPromptError> {
-    let prompt = fs::read_to_string(path)?;
+    let prompt = fs::read_to_string(path.clone())
+      .map_err(|_| LoadPromptError::FS(path.to_str().unwrap().into()))?;
     let object: PromptObject =
       serde_json::from_str(&prompt).map_err(LoadPromptError::Deserialize)?;
     let mut full_prompt: Vec<String> = Vec::new();
@@ -163,27 +164,10 @@ impl Prompter {
     }
   }
 
-  async fn classify_request(request: String) -> Result<Vec<TypeValue>, Error> {
+  async fn parse_tasks(string: String) -> Result<Tasks, Error> {
     let prompt =
-      Self::load_prompt_as_string("server/prompts/classifier.json".into())?;
-    let result = send_chatgpt_request(prompt.clone(), request).await?;
-    if let Some(result) = result {
-      let json: Vec<TypeValue> =
-        serde_json::from_str(&result).map_err(LoadPromptError::Deserialize)?;
-
-      Ok(json)
-    } else {
-      Err(Error::NoResult(prompt))
-    }
-  }
-
-  async fn parse_task(raw_command: TypeValue) -> Result<Tasks, Error> {
-    let prompt = Self::load_prompt_as_string(
-      format!("server/prompts/tasks/{}.json", raw_command.command).into(),
-    )?
-    .replace("{{type}}", &raw_command.command);
-    let result =
-      send_chatgpt_request(prompt.clone(), raw_command.value).await?;
+      Self::load_prompt_as_string("server/prompts/main.json".into())?;
+    let result = send_chatgpt_request(prompt.clone(), string).await?;
     if let Some(result) = result {
       let json: Tasks =
         serde_json::from_str(&result).map_err(LoadPromptError::Deserialize)?;
@@ -194,35 +178,9 @@ impl Prompter {
     }
   }
 
-  async fn parse_tasks(raw_commands: Vec<TypeValue>) -> Result<Tasks, Error> {
-    let mut tasks: Tasks = Vec::new();
-    for raw_command in raw_commands {
-      let task_chunk = Self::parse_task(raw_command).await?;
-      tasks.extend_from_slice(&task_chunk);
-    }
-
-    Ok(tasks)
-  }
-
   async fn execute_hidden(&self) -> Result<Command, Error> {
     let split = self.split_message().await?;
-    let raw_commands = Self::classify_request(split.request.clone()).await?;
-
-    if raw_commands.iter().any(|t| t.command == "unknown") {
-      return Ok(Command {
-        id: split.callsign.clone(),
-        reply: CommandReply::new(
-          split.callsign,
-          CommandReplyKind::WithCallsign {
-            text: "Say again.".into(),
-          },
-        )
-        .to_string(),
-        tasks: Vec::new(),
-      });
-    }
-
-    let tasks = Self::parse_tasks(raw_commands).await?;
+    let tasks = Self::parse_tasks(split.request.clone()).await?;
 
     let command = Command {
       id: split.callsign.clone(),

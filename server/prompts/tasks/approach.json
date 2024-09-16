@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Approach commands are returned with the approach name as a string. If the approach is spelled out using the phonetic alphabet, combine the letters into a single word."
   ],

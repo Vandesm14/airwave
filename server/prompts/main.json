@@ -1,0 +1,7 @@
+{
+  "imports": [
+    "server/prompts/tasks/PREFIX.json",
+    "server/prompts/tasks/ALL.json"
+  ],
+  "prompt": []
+}

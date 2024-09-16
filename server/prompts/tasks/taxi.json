@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Taxi commands are returned as a list of waypoints. Waypoints are implicitly taxiways unless they are explicitly mentioned as a runway or a gate. Only hold short of a waypoint if it is preceted with \"hold short of\" or \"hold at\". Always use capital letters and numbers when creating gate or taxiway names.",
     "Examples:"

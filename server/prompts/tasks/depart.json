@@ -1,7 +1,4 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
   "prompt": [
     "Departure commands are returned with the departure name as a string. If the departure is spelled out using the phonetic alphabet, combine the letters into a single word."
   ],
