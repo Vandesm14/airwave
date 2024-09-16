@@ -15,6 +15,7 @@ use crate::{
     command::{CommandReply, CommandReplyKind, CommandWithFreq, Task},
     world::World,
   },
+  pathfinder::{Node, NodeBehavior, NodeKind},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -265,14 +266,21 @@ impl Engine {
               }
             }
             Task::ResumeOwnNavigation => {
+              aircraft.do_clear_waypoints();
+
               let arrival = self
                 .world
                 .airspaces
                 .iter()
-                .find(|a| a.id == aircraft.flight_plan.arriving)
-                .unwrap();
-              aircraft.do_resume_own_navigation(arrival.pos);
-              aircraft.do_clear_waypoints();
+                .find(|a| a.id == aircraft.flight_plan.arriving);
+              if let Some(arrival) = arrival {
+                aircraft.do_resume_own_navigation(Node {
+                  name: arrival.id.clone(),
+                  kind: NodeKind::Runway,
+                  behavior: NodeBehavior::GoTo,
+                  value: arrival.pos,
+                });
+              }
             }
             Task::Taxi(waypoints) => {
               if let Some(ref airport) = airport {

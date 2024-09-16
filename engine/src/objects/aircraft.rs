@@ -556,12 +556,12 @@ impl Aircraft {
     }
   }
 
-  pub fn do_resume_own_navigation(&mut self, pos: Vec2) {
-    if let AircraftState::Flying { .. } = &self.state {
-      let heading = angle_between_points(self.pos, pos);
-      self.target.heading = heading;
+  pub fn do_resume_own_navigation(&mut self, waypoint: Node<Vec2>) {
+    if let AircraftState::Flying { waypoints } = &mut self.state {
       self.target.speed = 400.0;
       self.target.altitude = 13000.0;
+
+      waypoints.push(waypoint);
     }
   }
 
