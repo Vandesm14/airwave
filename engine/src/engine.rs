@@ -283,6 +283,10 @@ impl Engine {
             Task::TaxiContinue => aircraft.do_continue_taxi(),
 
             Task::Direct(waypoint_str) => {
+              if !matches!(aircraft.state, AircraftState::Flying { .. }) {
+                return;
+              }
+
               if let Some(waypoints) = waypoint_str
                 .iter()
                 .map(|w| {
@@ -301,6 +305,10 @@ impl Engine {
               }
             }
             Task::Approach(approach_str) => {
+              if !matches!(aircraft.state, AircraftState::Flying { .. }) {
+                return;
+              }
+
               if let Some(approach) =
                 self.world.waypoint_sets.approach.get(approach_str)
               {
@@ -321,6 +329,10 @@ impl Engine {
               }
             }
             Task::Depart(depart_str) => {
+              if !matches!(aircraft.state, AircraftState::Flying { .. }) {
+                return;
+              }
+
               if let Some(depart) =
                 self.world.waypoint_sets.departure.get(depart_str)
               {
