@@ -183,6 +183,7 @@ async fn main() {
           if rng.gen_bool(0.4) {
             let mut aircraft = Aircraft::random_parked(gate.clone());
             aircraft.airspace = Some(airspace.id.clone());
+            aircraft.flight_plan.arriving = airspace.id.clone();
             aircraft.departure_from_arrival(&engine.world.airspaces);
 
             if now {
