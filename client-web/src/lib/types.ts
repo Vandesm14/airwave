@@ -107,6 +107,7 @@ export type Airport = {
 };
 
 export type Frequencies = {
+  clearance: number;
   approach: number;
   departure: number;
   tower: number;

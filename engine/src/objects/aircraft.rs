@@ -133,11 +133,13 @@ impl Aircraft {
   pub fn departure_from_arrival(&mut self, airspaces: &[Airspace]) {
     let mut rng = thread_rng();
     // TODO: true when airports
+    let departure =
+      airspaces.iter().find(|a| a.id == self.flight_plan.arriving);
     let arrival = find_random_airspace(airspaces);
 
     // TODO: when airport as destination
     // TODO: handle errors
-    if let Some(arrival) = arrival {
+    if let Some((arrival, departure)) = arrival.zip(departure) {
       self.flight_plan =
         FlightPlan::new(self.airspace.clone().unwrap(), arrival.id.clone());
       self.created = SystemTime::now()
@@ -145,6 +147,7 @@ impl Aircraft {
         .unwrap_or(Duration::from_millis(0))
         .add(Duration::from_secs(rng.gen_range(DEPARTURE_WAIT_RANGE)))
         .as_millis();
+      self.frequency = departure.frequencies.clearance;
     }
   }
 

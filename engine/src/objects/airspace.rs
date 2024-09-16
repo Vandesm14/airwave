@@ -8,6 +8,7 @@ use super::airport::Airport;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Frequencies {
+  pub clearance: f32,
   pub approach: f32,
   pub departure: f32,
   pub tower: f32,
@@ -18,10 +19,11 @@ pub struct Frequencies {
 impl Default for Frequencies {
   fn default() -> Self {
     Self {
+      clearance: 118.5,
       approach: 118.5,
       departure: 118.5,
       tower: 118.5,
-      ground: 118.6,
+      ground: 118.5,
       center: 118.5,
     }
   }
@@ -30,6 +32,7 @@ impl Default for Frequencies {
 impl Frequencies {
   pub fn from_string(&self, s: &str) -> f32 {
     match s {
+      "clearance" => self.clearance,
       "approach" => self.approach,
       "departure" => self.departure,
       "tower" => self.tower,

@@ -54,6 +54,7 @@ async fn main() {
   );
 
   let player_one_frequencies = Frequencies {
+    clearance: 118.6,
     approach: 118.5,
     departure: 118.5,
     tower: 118.5,
@@ -183,7 +184,6 @@ async fn main() {
             let mut aircraft = Aircraft::random_parked(gate.clone());
             aircraft.airspace = Some(airspace.id.clone());
             aircraft.departure_from_arrival(&engine.world.airspaces);
-            aircraft.frequency = airspace.frequencies.ground;
 
             if now {
               aircraft.created_now();
