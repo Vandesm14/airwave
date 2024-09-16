@@ -95,6 +95,21 @@
       ]
     },
     {
+      "user": "Taxi to Echo 1.",
+      "assistant": [
+        {
+          "type": "taxi",
+          "value": [
+            {
+              "name": "E1",
+              "kind": "taxiway",
+              "behavior": "goto"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "user": "Hold position.",
       "assistant": [
         {
