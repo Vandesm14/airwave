@@ -1,7 +1,8 @@
 import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
-import { Aircraft } from './lib/types';
+import { Aircraft, arrToVec2 } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
+import { calculateDistance, nauticalMilesToFeet } from './lib/lib';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -115,6 +116,21 @@ function Strip({ strip }: StripProps) {
   let [airspace] = useAtom(control().airspace);
 
   let sinceCreated = formatTime(Date.now() - strip.created);
+
+  if (strip.state.type === 'flying') {
+    let current = { x: strip.x, y: strip.y };
+    let distance = 0;
+    strip.state.value.waypoints.forEach((waypoint) => {
+      distance += calculateDistance(current, arrToVec2(waypoint.value));
+      current = arrToVec2(waypoint.value);
+    });
+
+    let distanceInNm = distance / nauticalMilesToFeet;
+    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
+
+    sinceCreated = formatTime(time);
+  }
+
   let overtime = !(
     sinceCreated.startsWith('0') ||
     sinceCreated.startsWith('1') ||
