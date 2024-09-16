@@ -258,6 +258,12 @@ $transparent-black: #000a;
           opacity: 0.5;
         }
 
+        &.departure {
+          .callsign {
+            color: #3087f2;
+          }
+        }
+
         &.selected {
           .callsign {
             color: #ffe045;

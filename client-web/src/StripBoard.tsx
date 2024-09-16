@@ -111,6 +111,9 @@ function Strip({ strip }: StripProps) {
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
+  let [control] = useAtom(controlAtom);
+  let [airspace] = useAtom(control().airspace);
+
   let sinceCreated = formatTime(Date.now() - strip.created);
   let overtime = !(
     sinceCreated.startsWith('0') ||
@@ -159,6 +162,7 @@ function Strip({ strip }: StripProps) {
         theirs,
         overtime,
         selected: selectedAircraft() === strip.callsign,
+        departure: airspace() === strip.flight_plan.departing,
       }}
       onmousedown={handleMouseDown}
     >
