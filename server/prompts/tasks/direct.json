@@ -1,7 +1,5 @@
 {
-  "imports": [
-    "server/prompts/tasks/PREFIX.json"
-  ],
+  "imports": ["server/prompts/tasks/PREFIX.json"],
   "prompt": [
     "Direct commands are returned as an array of waypoint strings. Multiple waypoints can be specified in a single command."
   ],
@@ -11,9 +9,7 @@
       "assistant": [
         {
           "type": "direct",
-          "value": [
-            "SAY"
-          ]
+          "value": ["SAY"]
         }
       ]
     },
@@ -22,9 +18,7 @@
       "assistant": [
         {
           "type": "direct",
-          "value": [
-            "ROAD"
-          ]
+          "value": ["ROAD"]
         }
       ]
     },
@@ -33,10 +27,16 @@
       "assistant": [
         {
           "type": "direct",
-          "value": [
-            "DUDE",
-            "ROAD"
-          ]
+          "value": ["DUDE", "ROAD"]
+        }
+      ]
+    },
+    {
+      "user": "Direct to Alpha Seven.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": ["A7"]
         }
       ]
     }
