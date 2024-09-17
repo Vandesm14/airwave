@@ -133,7 +133,9 @@ function Strip({ strip }: StripProps) {
   if (strip.state.type === 'flying') {
     let current = { x: strip.x, y: strip.y };
     let distance = 0;
-    strip.state.value.waypoints.forEach((waypoint) => {
+    let waypoints = strip.state.value.waypoints.slice();
+    waypoints.reverse();
+    waypoints.forEach((waypoint) => {
       distance += calculateDistance(current, arrToVec2(waypoint.value));
       current = arrToVec2(waypoint.value);
     });
