@@ -19,6 +19,7 @@ type Strips = {
   Center: Array<Aircraft>;
   Approach: Array<Aircraft>;
   Landing: Array<Aircraft>;
+  Parked: Array<Aircraft>;
   Ground: Array<Aircraft>;
   Takeoff: Array<Aircraft>;
   Departure: Array<Aircraft>;
@@ -30,6 +31,7 @@ const newStrips = (): Strips => ({
   Center: [],
   Approach: [],
   Landing: [],
+  Parked: [],
   Ground: [],
   Takeoff: [],
   Departure: [],
@@ -77,7 +79,11 @@ function assignAircraftToStrips(
     if (isTaxiingToRunway && isDepartingAndInLocalAirspace) {
       return 'Takeoff';
     } else if (isInLocalAirspace) {
-      return 'Ground';
+      if (aircraft.created < Date.now()) {
+        return 'Ground';
+      } else {
+        return 'Parked';
+      }
     } else {
       return 'None';
     }
@@ -127,8 +133,8 @@ function Strip({ strip }: StripProps) {
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
 
-  // let sinceCreated = formatTime(Date.now() - strip.created);
-  let sinceCreated = `--:--`;
+  let sinceCreated = formatTime(Date.now() - strip.created);
+  // let sinceCreated = `--:--`;
 
   if (strip.state.type === 'flying') {
     let current = { x: strip.x, y: strip.y };
