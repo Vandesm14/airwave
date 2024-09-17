@@ -2,6 +2,7 @@
   "imports": [
     "server/prompts/tasks/altitude.json",
     "server/prompts/tasks/approach.json",
+    "server/prompts/tasks/arrival.json",
     "server/prompts/tasks/clearance.json",
     "server/prompts/tasks/depart.json",
     "server/prompts/tasks/direct.json",

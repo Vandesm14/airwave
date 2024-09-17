@@ -1,0 +1,34 @@
+{
+  "prompt": [
+    "Arrival commands are returned with the arrival name as a string. If the arrival is spelled out using the phonetic alphabet, combine the letters into a single word."
+  ],
+  "examples": [
+    {
+      "user": "Follow red arrival.",
+      "assistant": [
+        {
+          "type": "arrival",
+          "value": "RED"
+        }
+      ]
+    },
+    {
+      "user": "Follow Romeo, Echo, Delta arrival.",
+      "assistant": [
+        {
+          "type": "arrival",
+          "value": "RED"
+        }
+      ]
+    },
+    {
+      "user": "arrival via OCEAN.",
+      "assistant": [
+        {
+          "type": "arrival",
+          "value": "OCEAN"
+        }
+      ]
+    }
+  ]
+}

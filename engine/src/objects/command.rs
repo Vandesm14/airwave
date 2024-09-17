@@ -10,6 +10,7 @@ use crate::pathfinder::Node;
 pub enum Task {
   Altitude(f32),
   Approach(String),
+  Arrival(String),
 
   Clearance {
     departure: Option<String>,

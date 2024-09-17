@@ -516,6 +516,58 @@ pub fn setup(
 
   //
 
+  waypoint_sets.arrival.insert(
+    "A6".into(),
+    vec![
+      "A6".into(),
+      waypoint_blaze.name.clone(),
+      waypoint_orbit.name.clone(),
+      waypoint_vista.name.clone(),
+    ],
+  );
+
+  waypoint_sets.arrival.insert(
+    "E4".into(),
+    vec![
+      "E4".into(),
+      waypoint_crest.name.clone(),
+      waypoint_orbit.name.clone(),
+      waypoint_vista.name.clone(),
+    ],
+  );
+
+  waypoint_sets.arrival.insert(
+    "A5".into(),
+    vec![
+      "A5".into(),
+      waypoint_swift.name.clone(),
+      waypoint_orbit.name.clone(),
+      waypoint_vista.name.clone(),
+    ],
+  );
+
+  waypoint_sets.arrival.insert(
+    "A9".into(),
+    vec![
+      "A9".into(),
+      waypoint_short.name.clone(),
+      waypoint_ready.name.clone(),
+      waypoint_sonic.name.clone(),
+    ],
+  );
+
+  waypoint_sets.arrival.insert(
+    "B1".into(),
+    vec![
+      "B1".into(),
+      waypoint_arrow.name.clone(),
+      waypoint_ready.name.clone(),
+      waypoint_sonic.name.clone(),
+    ],
+  );
+
+  //
+
   waypoint_sets.approach.insert(
     waypoint_blaze.name.clone(),
     vec![

@@ -54,6 +54,7 @@ pub fn find_random_arrival<'a>(
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WaypointSet {
+  pub arrival: HashMap<String, Vec<String>>,
   pub approach: HashMap<String, Vec<String>>,
   pub departure: HashMap<String, Vec<String>>,
 }
