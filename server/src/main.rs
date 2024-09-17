@@ -198,6 +198,8 @@ async fn main() {
     }
   }
 
+  engine.spawn_random_aircraft();
+
   // Generating waypoints between sufficiently close airspaces.
   let mut i = 0;
   let mut iota = || {
