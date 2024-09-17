@@ -73,7 +73,22 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    if let Some(aircraft) = Aircraft::random_to_arrive(&self.world) {
+    if let Some(mut aircraft) = Aircraft::random_to_arrive(&self.world) {
+      aircraft.do_clear_waypoints();
+
+      let arrival = self
+        .world
+        .airspaces
+        .iter()
+        .find(|a| a.id == aircraft.flight_plan.arriving);
+      if let Some(arrival) = arrival {
+        aircraft.do_resume_own_navigation(Node {
+          name: arrival.id.clone(),
+          kind: NodeKind::Runway,
+          behavior: NodeBehavior::GoTo,
+          value: arrival.pos,
+        });
+      }
       self.world.aircraft.push(aircraft);
     }
   }
