@@ -10,7 +10,7 @@ engine = { path = "../engine" }
 nannou = "0.19.0"
 serde_json.workspace = true
 glam.workspace = true
-rand.workspace = true
+turborand.workspace = true
 petgraph.workspace = true
 
 serde.workspace = true

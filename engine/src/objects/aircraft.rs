@@ -4,8 +4,8 @@ use std::{
 };
 
 use glam::Vec2;
-use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
+use turborand::{rng::Rng, TurboRand};
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
@@ -133,7 +133,7 @@ impl Aircraft {
   pub fn departure_from_arrival(
     &mut self,
     airspaces: &[Airspace],
-    rng: &mut StdRng,
+    rng: &mut Rng,
   ) {
     // TODO: true when airports
     let departure =
@@ -148,13 +148,15 @@ impl Aircraft {
       self.created = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or(Duration::from_millis(0))
-        .add(Duration::from_secs(rng.gen_range(DEPARTURE_WAIT_RANGE)))
+        .add(Duration::from_secs(
+          rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+        ))
         .as_millis();
       self.frequency = departure.frequencies.clearance;
     }
   }
 
-  pub fn random_flying(rng: &mut StdRng) -> Self {
+  pub fn random_flying(rng: &mut Rng) -> Self {
     Self {
       callsign: Self::random_callsign(rng),
       is_colliding: false,
@@ -177,7 +179,7 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn random_parked(gate: Gate, rng: &mut StdRng) -> Self {
+  pub fn random_parked(gate: Gate, rng: &mut Rng) -> Self {
     Self {
       callsign: Self::random_callsign(rng),
       is_colliding: false,
@@ -201,7 +203,7 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn random_to_arrive(world: &World, rng: &mut StdRng) -> Option<Self> {
+  pub fn random_to_arrive(world: &World, rng: &mut Rng) -> Option<Self> {
     let departure = find_random_departure(&world.airspaces, rng);
     let arrival = find_random_arrival(&world.airspaces, rng);
 
@@ -240,18 +242,18 @@ impl Aircraft {
     }
   }
 
-  pub fn random_callsign(rng: &mut StdRng) -> String {
+  pub fn random_callsign(rng: &mut Rng) -> String {
     let mut string = String::new();
     let airlines = ["AAL", "SKW", "JBU"];
 
-    let airline = airlines.choose(rng).unwrap();
+    let airline = rng.sample(&airlines).unwrap();
 
     string.push_str(airline);
 
-    string.push_str(&rng.gen_range(0..=9).to_string());
-    string.push_str(&rng.gen_range(0..=9).to_string());
-    string.push_str(&rng.gen_range(0..=9).to_string());
-    string.push_str(&rng.gen_range(0..=9).to_string());
+    string.push_str(&rng.sample_iter(0..=9).unwrap().to_string());
+    string.push_str(&rng.sample_iter(0..=9).unwrap().to_string());
+    string.push_str(&rng.sample_iter(0..=9).unwrap().to_string());
+    string.push_str(&rng.sample_iter(0..=9).unwrap().to_string());
 
     string
   }

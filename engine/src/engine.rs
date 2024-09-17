@@ -7,6 +7,7 @@ use std::{
 use async_channel::TryRecvError;
 use serde::{Deserialize, Serialize};
 use tracing::error;
+use turborand::rng::Rng;
 
 use crate::{
   angle_between_points, heading_to_direction,
@@ -47,7 +48,7 @@ pub struct Engine {
   pub incoming_sender: async_channel::Sender<IncomingUpdate>,
 
   pub save_to: Option<PathBuf>,
-  pub rng: rand::rngs::StdRng,
+  pub rng: Rng,
 
   last_tick: Instant,
   last_spawn: Instant,
@@ -60,7 +61,7 @@ impl Engine {
     outgoing_sender: async_broadcast::Sender<OutgoingReply>,
     incoming_sender: async_channel::Sender<IncomingUpdate>,
     save_to: Option<PathBuf>,
-    rng: rand::rngs::StdRng,
+    rng: Rng,
   ) -> Self {
     Self {
       world: World::default(),

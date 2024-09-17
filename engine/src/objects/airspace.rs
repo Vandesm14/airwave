@@ -1,6 +1,6 @@
 use glam::Vec2;
-use rand::{rngs::StdRng, seq::SliceRandom};
 use serde::{Deserialize, Serialize};
+use turborand::{rng::Rng, TurboRand};
 
 use crate::{deserialize_vec2, serialize_vec2};
 
@@ -64,9 +64,7 @@ impl Airspace {
     distance <= self.size.powf(2.0)
   }
 
-  pub fn find_random_airport(&self, rng: &mut StdRng) -> Option<&Airport> {
-    let airports: Vec<&Airport> = self.airports.iter().collect();
-
-    airports.choose(rng).copied()
+  pub fn find_random_airport(&self, rng: &mut Rng) -> Option<&Airport> {
+    rng.sample_iter(self.airports.iter())
   }
 }

@@ -19,9 +19,9 @@ use engine::{
 };
 use futures_util::StreamExt as _;
 use glam::Vec2;
-use rand::{seq::SliceRandom, Rng, SeedableRng};
 use server::airport::{self, AirportSetupFn};
 use tokio::net::TcpListener;
+use turborand::{rng::Rng, SeededCore, TurboRand};
 
 #[tokio::main]
 async fn main() {
@@ -47,7 +47,7 @@ async fn main() {
 
   update_tx.set_overflow(true);
 
-  let mut rng = rand::rngs::StdRng::seed_from_u64(0);
+  let rng = Rng::with_seed(0);
   let mut engine = Engine::new(
     command_rx,
     update_tx.clone(),
@@ -140,8 +140,8 @@ async fn main() {
       i += 1;
 
       let position = Vec2::new(
-        (engine.rng.gen::<f32>() - 0.5) * world_radius,
-        (engine.rng.gen::<f32>() - 0.5) * world_radius,
+        (engine.rng.f32() - 0.5) * world_radius,
+        (engine.rng.f32() - 0.5) * world_radius,
       );
 
       for airspace in engine.world.airspaces.iter() {
@@ -184,7 +184,7 @@ async fn main() {
       for airport in airspace.airports.iter() {
         let mut now = true;
         for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          if engine.rng.gen_bool(0.4) {
+          if engine.rng.chance(0.4) {
             let mut aircraft =
               Aircraft::random_parked(gate.clone(), &mut engine.rng);
             aircraft.airspace = Some(airspace.id.clone());
@@ -348,10 +348,7 @@ enum AirportChoice {
 }
 
 impl AirportChoice {
-  fn setup<R>(&self, rng: &mut R) -> AirportSetupFn
-  where
-    R: ?Sized + Rng,
-  {
+  fn setup(&self, rng: &mut Rng) -> AirportSetupFn {
     static AIRPORT_SETUPS: &[AirportSetupFn] = &[
       airport::new_v_pattern::setup,
       airport::v_pattern::setup,
@@ -359,7 +356,7 @@ impl AirportChoice {
     ];
 
     match self {
-      Self::Random => AIRPORT_SETUPS.choose(rng).copied().unwrap(),
+      Self::Random => *rng.sample(AIRPORT_SETUPS).unwrap(),
       Self::NewVPattern => airport::new_v_pattern::setup,
       Self::VPattern => airport::v_pattern::setup,
       Self::Parallel => airport::parallel::setup,

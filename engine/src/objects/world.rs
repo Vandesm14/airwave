@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use glam::Vec2;
-use rand::{rngs::StdRng, seq::SliceRandom};
 use serde::{Deserialize, Serialize};
+use turborand::{rng::Rng, TurboRand};
 
 use crate::pathfinder::{Node, WaypointNodeData};
 
@@ -12,34 +12,31 @@ pub fn find_random_airspace_with<'a>(
   airspaces: &'a [Airspace],
   auto: bool,
   require_airports: bool,
-  rng: &mut StdRng,
+  rng: &mut Rng,
 ) -> Option<&'a Airspace> {
-  let filtered_airspaces: Vec<&Airspace> = airspaces
-    .iter()
-    .filter(|a| {
-      if auto != a.auto {
-        return false;
-      }
-      if require_airports {
-        return !a.airports.is_empty();
-      }
-      true
-    })
-    .collect();
+  let filtered_airspaces = airspaces.iter().filter(|a| {
+    if auto != a.auto {
+      return false;
+    }
+    if require_airports {
+      return !a.airports.is_empty();
+    }
+    true
+  });
 
-  filtered_airspaces.choose(rng).copied()
+  rng.sample_iter(filtered_airspaces)
 }
 
 pub fn find_random_airspace<'a>(
   airspaces: &'a [Airspace],
-  rng: &mut StdRng,
+  rng: &mut Rng,
 ) -> Option<&'a Airspace> {
-  airspaces.choose(rng)
+  rng.sample(airspaces)
 }
 
 pub fn find_random_departure<'a>(
   airspaces: &'a [Airspace],
-  rng: &mut StdRng,
+  rng: &mut Rng,
 ) -> Option<&'a Airspace> {
   // TODO: We should probably do `true` for the second bool, which specifies
   // that a departure airspace needs an airport. This just saves us time
@@ -50,7 +47,7 @@ pub fn find_random_departure<'a>(
 
 pub fn find_random_arrival<'a>(
   airspaces: &'a [Airspace],
-  rng: &mut StdRng,
+  rng: &mut Rng,
 ) -> Option<&'a Airspace> {
   find_random_airspace_with(airspaces, false, true, rng)
 }

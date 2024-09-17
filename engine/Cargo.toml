@@ -6,7 +6,7 @@ publish.workspace = true
 
 [dependencies]
 glam.workspace = true
-rand.workspace = true
+turborand.workspace = true
 
 tokio.workspace = true
 

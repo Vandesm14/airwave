@@ -2,8 +2,8 @@ use std::f32::consts::PI;
 
 use glam::Vec2;
 use objects::airport::{Runway, Taxiway, Terminal};
-use rand::{rngs::StdRng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use turborand::{rng::Rng, TurboRand};
 
 pub mod engine;
 pub mod pathfinder;
@@ -198,10 +198,10 @@ pub struct CirclePoint {
 pub fn get_random_point_on_circle(
   center: Vec2,
   radius: f32,
-  rng: &mut StdRng,
+  rng: &mut Rng,
 ) -> CirclePoint {
   // Generate a random angle in radians
-  let random_angle = rng.r#gen::<f32>() * 2.0 * PI;
+  let random_angle = rng.f32() * 2.0 * PI;
 
   // Calculate the position of the point on the circle
   let offset = Vec2::from_angle(random_angle) * radius;
