@@ -280,7 +280,7 @@ pub fn setup(
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 4.0,
       ),
-      then: vec![],
+      then: vec![Task::Altitude(4000.0), Task::Speed(250.0)],
     },
   };
 
@@ -352,7 +352,7 @@ pub fn setup(
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 4.0,
       ),
-      then: vec![],
+      then: vec![Task::Altitude(4000.0), Task::Speed(250.0)],
     },
   };
 
