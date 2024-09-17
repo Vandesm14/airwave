@@ -1,8 +1,13 @@
 import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
 import { Aircraft, arrToVec2 } from './lib/types';
 import { useAtom } from 'solid-jotai';
-import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
-import { calculateDistance, nauticalMilesToFeet } from './lib/lib';
+import {
+  controlAtom,
+  frequencyAtom,
+  selectedAircraftAtom,
+  worldAtom,
+} from './lib/atoms';
+import { calculateDistance, nauticalMilesToFeet, runwayInfo } from './lib/lib';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -129,13 +134,30 @@ function Strip({ strip }: StripProps) {
     let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
 
     sinceCreated = formatTime(time);
+  } else if (strip.state.type === 'taxiing') {
+    let current = { x: strip.x, y: strip.y };
+    let distance = 0;
+    strip.state.value.waypoints.forEach((waypoint) => {
+      distance += calculateDistance(current, arrToVec2(waypoint.value));
+      current = arrToVec2(waypoint.value);
+    });
+
+    let distanceInNm = distance / nauticalMilesToFeet;
+    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
+
+    sinceCreated = formatTime(time);
+  } else if (strip.state.type === 'landing') {
+    let distance = calculateDistance(
+      { x: strip.x, y: strip.y },
+      runwayInfo(strip.state.value).ils.end
+    );
+
+    let distanceInNm = distance / nauticalMilesToFeet;
+    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
+
+    sinceCreated = formatTime(time);
   }
 
-  let overtime = !(
-    sinceCreated.startsWith('0') ||
-    sinceCreated.startsWith('1') ||
-    sinceCreated.startsWith('-')
-  );
   let topStatus = '';
   let bottomStatus = '';
   let theirs = strip.frequency !== ourFrequency();
@@ -176,7 +198,6 @@ function Strip({ strip }: StripProps) {
       classList={{
         strip: true,
         theirs,
-        overtime,
         selected: selectedAircraft() === strip.callsign,
         departure: airspace() === strip.flight_plan.departing,
       }}
@@ -214,6 +235,8 @@ export default function StripBoard({
   let stripEntries = createMemo(() => Object.entries(strips()));
   let [selectedAircraft] = useAtom(selectedAircraftAtom);
 
+  let [world] = useAtom(worldAtom);
+
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
 
@@ -235,12 +258,28 @@ export default function StripBoard({
         strips[category].push(aircraft);
       }
 
+      const distanceToDestination = (aircraft: Aircraft) => {
+        let current = { x: aircraft.x, y: aircraft.y };
+        let distance = 0;
+        let destination = world().airspaces.find(
+          (a) => a.id === aircraft.flight_plan.arriving
+        );
+        if (destination) {
+          distance = calculateDistance(current, destination.pos);
+        }
+
+        return distance;
+      };
+
       const timeSorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
       const nameSorter = (a: Aircraft, b: Aircraft) =>
         ('' + a.callsign).localeCompare(b.callsign);
+      const distanteToAirportSorter = (a: Aircraft, b: Aircraft) => {
+        return distanceToDestination(b) - distanceToDestination(a);
+      };
 
       Object.entries(strips).forEach(([key, list]) => {
-        list.sort(timeSorter);
+        list.sort(distanteToAirportSorter);
         setStrips({ ...strips, [key]: list });
       });
       // strips.Center.sort(nameSorter);
