@@ -1,4 +1,4 @@
-import { Runway, Vec2 } from './types';
+import { Aircraft, Runway, Vec2, World } from './types';
 
 export const timeScale = 1;
 
@@ -28,6 +28,22 @@ export function movePoint(
   const newX = x + length * Math.sin(directionRadians);
   const newY = y + length * Math.cos(directionRadians);
   return { x: newX, y: newY };
+}
+
+export function distanceToDestination(
+  aircraft: Aircraft,
+  world: World
+): number {
+  let current = { x: aircraft.x, y: aircraft.y };
+  let distance = 0;
+  let destination = world.airspaces.find(
+    (a) => a.id === aircraft.flight_plan.arriving
+  );
+  if (destination) {
+    distance = calculateDistance(current, destination.pos);
+  }
+
+  return distance;
 }
 
 export function angleBetweenPoints(a: Vec2, b: Vec2): number {
