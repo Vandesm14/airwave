@@ -151,24 +151,6 @@ function Strip({ strip }: StripProps) {
     let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
 
     sinceCreated = formatTime(time);
-  } else if (
-    strip.state.type === 'taxiing' &&
-    strip.state.value.waypoints.length > 0 &&
-    strip.speed > 0
-  ) {
-    let current = { x: strip.x, y: strip.y };
-    let distance = 0;
-    let waypoints = strip.state.value.waypoints.slice();
-    waypoints.reverse();
-    waypoints.forEach((waypoint) => {
-      distance += calculateDistance(current, arrToVec2(waypoint.value));
-      current = arrToVec2(waypoint.value);
-    });
-
-    let distanceInNm = distance / nauticalMilesToFeet;
-    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
-
-    sinceCreated = formatTime(time);
   } else if (strip.state.type === 'landing') {
     let distance = calculateDistance(
       { x: strip.x, y: strip.y },
