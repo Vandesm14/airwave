@@ -1,5 +1,10 @@
 import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
-import { Aircraft, arrToVec2, isAircraftFlying, isAircraftTaxiing } from './lib/types';
+import {
+  Aircraft,
+  arrToVec2,
+  isAircraftFlying,
+  isAircraftTaxiing,
+} from './lib/types';
 import { useAtom } from 'solid-jotai';
 import {
   controlAtom,
@@ -148,7 +153,7 @@ function Strip({ strip }: StripProps) {
     });
 
     let distanceInNm = distance / nauticalMilesToFeet;
-    let time = (distanceInNm / strip.target.speed) * 1000 * 60 * 60;
+    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
 
     sinceCreated = formatTime(time);
   } else if (strip.state.type === 'landing') {
@@ -158,7 +163,7 @@ function Strip({ strip }: StripProps) {
     );
 
     let distanceInNm = distance / nauticalMilesToFeet;
-    let time = (distanceInNm / strip.target.speed) * 1000 * 60 * 60;
+    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
 
     sinceCreated = formatTime(time);
   }
