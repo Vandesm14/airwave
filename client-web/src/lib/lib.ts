@@ -30,20 +30,26 @@ export function movePoint(
   return { x: newX, y: newY };
 }
 
-export function distanceToDestination(
+export function distanceToAirspace(
   aircraft: Aircraft,
-  world: World
+  world: World,
+  airspace: string
 ): number {
   let current = { x: aircraft.x, y: aircraft.y };
   let distance = 0;
-  let destination = world.airspaces.find(
-    (a) => a.id === aircraft.flight_plan.arriving
-  );
+  let destination = world.airspaces.find((a) => a.id === airspace);
   if (destination) {
     distance = calculateDistance(current, destination.pos);
   }
 
   return distance;
+}
+
+export function distanceToDestination(
+  aircraft: Aircraft,
+  world: World
+): number {
+  return distanceToAirspace(aircraft, world, aircraft.flight_plan.arriving);
 }
 
 export function angleBetweenPoints(a: Vec2, b: Vec2): number {

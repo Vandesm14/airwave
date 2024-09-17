@@ -9,6 +9,7 @@ import {
 } from './lib/atoms';
 import {
   calculateDistance,
+  distanceToAirspace,
   distanceToDestination,
   nauticalMilesToFeet,
   runwayInfo,
@@ -211,7 +212,7 @@ function Strip({ strip }: StripProps) {
     }
   }
 
-  let distance = distanceToDestination(strip, world());
+  let distance = distanceToAirspace(strip, world(), airspace());
 
   function handleMouseDown() {
     setSelectedAircraft(strip.callsign);
@@ -289,7 +290,8 @@ export default function StripBoard({
         ('' + a.callsign).localeCompare(b.callsign);
       const distanteToAirportSorter = (a: Aircraft, b: Aircraft) => {
         return (
-          distanceToDestination(b, world()) - distanceToDestination(a, world())
+          distanceToAirspace(b, world(), airspace()) -
+          distanceToAirspace(a, world(), airspace())
         );
       };
 
@@ -298,6 +300,8 @@ export default function StripBoard({
         setStrips({ ...strips, [key]: list });
       });
       // strips.Center.sort(nameSorter);
+      strips.Parked.sort(timeSorter);
+      strips.Ground.sort(nameSorter);
 
       setStrips(strips);
     }
