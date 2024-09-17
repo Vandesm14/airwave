@@ -140,22 +140,25 @@ function Strip({ strip }: StripProps) {
   let [airspace] = useAtom(control().airspace);
 
   let sinceCreated = formatTime(Date.now() - strip.created);
-  // let sinceCreated = `--:--`;
 
   if (isAircraftFlying(strip.state)) {
-    let current = { x: strip.x, y: strip.y };
-    let distance = 0;
-    let waypoints = strip.state.value.waypoints.slice();
-    waypoints.reverse();
-    waypoints.forEach((waypoint) => {
-      distance += calculateDistance(current, arrToVec2(waypoint.value.to));
-      current = arrToVec2(waypoint.value.to);
-    });
+    if (strip.state.value.waypoints.length > 0) {
+      let current = { x: strip.x, y: strip.y };
+      let distance = 0;
+      let waypoints = strip.state.value.waypoints.slice();
+      waypoints.reverse();
+      waypoints.forEach((waypoint) => {
+        distance += calculateDistance(current, arrToVec2(waypoint.value.to));
+        current = arrToVec2(waypoint.value.to);
+      });
 
-    let distanceInNm = distance / nauticalMilesToFeet;
-    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
+      let distanceInNm = distance / nauticalMilesToFeet;
+      let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
 
-    sinceCreated = formatTime(time);
+      sinceCreated = formatTime(time);
+    } else {
+      sinceCreated = `--:--`;
+    }
   } else if (strip.state.type === 'landing') {
     let distance = calculateDistance(
       { x: strip.x, y: strip.y },
