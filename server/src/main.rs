@@ -19,7 +19,7 @@ use engine::{
 };
 use futures_util::StreamExt as _;
 use glam::Vec2;
-use rand::{seq::SliceRandom, thread_rng, Rng};
+use rand::{seq::SliceRandom, Rng, SeedableRng};
 use server::airport::{self, AirportSetupFn};
 use tokio::net::TcpListener;
 
@@ -47,11 +47,13 @@ async fn main() {
 
   update_tx.set_overflow(true);
 
+  let mut rng = rand::rngs::StdRng::seed_from_u64(0);
   let mut engine = Engine::new(
     command_rx,
     update_tx.clone(),
     command_tx.clone(),
     Some(PathBuf::from_str("assets/world.json").unwrap()),
+    rng,
   );
 
   let player_one_frequencies = Frequencies {
@@ -93,8 +95,6 @@ async fn main() {
     "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
   ];
 
-  let mut rng = thread_rng();
-
   // Create a controlled KSFO airspace
   let mut airspace_ksfo = Airspace {
     id: "KSFO".into(),
@@ -111,7 +111,7 @@ async fn main() {
     ..Default::default()
   };
 
-  airport.setup(&mut rng)(
+  airport.setup(&mut engine.rng)(
     &mut airport_ksfo,
     &mut engine.world.waypoints,
     &mut engine.world.waypoint_sets,
@@ -140,8 +140,8 @@ async fn main() {
       i += 1;
 
       let position = Vec2::new(
-        (rng.gen::<f32>() - 0.5) * world_radius,
-        (rng.gen::<f32>() - 0.5) * world_radius,
+        (engine.rng.gen::<f32>() - 0.5) * world_radius,
+        (engine.rng.gen::<f32>() - 0.5) * world_radius,
       );
 
       for airspace in engine.world.airspaces.iter() {
@@ -184,11 +184,13 @@ async fn main() {
       for airport in airspace.airports.iter() {
         let mut now = true;
         for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          if rng.gen_bool(0.4) {
-            let mut aircraft = Aircraft::random_parked(gate.clone());
+          if engine.rng.gen_bool(0.4) {
+            let mut aircraft =
+              Aircraft::random_parked(gate.clone(), &mut engine.rng);
             aircraft.airspace = Some(airspace.id.clone());
             aircraft.flight_plan.arriving = airspace.id.clone();
-            aircraft.departure_from_arrival(&engine.world.airspaces);
+            aircraft
+              .departure_from_arrival(&engine.world.airspaces, &mut engine.rng);
 
             if now {
               aircraft.created_now();

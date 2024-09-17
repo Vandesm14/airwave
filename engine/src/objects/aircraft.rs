@@ -4,7 +4,7 @@ use std::{
 };
 
 use glam::Vec2;
-use rand::{seq::SliceRandom, thread_rng, Rng};
+use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -130,12 +130,15 @@ impl Aircraft {
     self
   }
 
-  pub fn departure_from_arrival(&mut self, airspaces: &[Airspace]) {
-    let mut rng = thread_rng();
+  pub fn departure_from_arrival(
+    &mut self,
+    airspaces: &[Airspace],
+    rng: &mut StdRng,
+  ) {
     // TODO: true when airports
     let departure =
       airspaces.iter().find(|a| a.id == self.flight_plan.arriving);
-    let arrival = find_random_airspace(airspaces);
+    let arrival = find_random_airspace(airspaces, rng);
 
     // TODO: when airport as destination
     // TODO: handle errors
@@ -151,9 +154,9 @@ impl Aircraft {
     }
   }
 
-  pub fn random_flying() -> Self {
+  pub fn random_flying(rng: &mut StdRng) -> Self {
     Self {
-      callsign: Self::random_callsign(),
+      callsign: Self::random_callsign(rng),
       is_colliding: false,
       flight_plan: FlightPlan::new(String::new(), String::new()),
       state: AircraftState::Flying {
@@ -174,9 +177,9 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn random_parked(gate: Gate) -> Self {
+  pub fn random_parked(gate: Gate, rng: &mut StdRng) -> Self {
     Self {
-      callsign: Self::random_callsign(),
+      callsign: Self::random_callsign(rng),
       is_colliding: false,
       flight_plan: FlightPlan::new(String::new(), String::new()),
       state: AircraftState::Taxiing {
@@ -198,9 +201,9 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn random_to_arrive(world: &World) -> Option<Self> {
-    let departure = find_random_departure(&world.airspaces);
-    let arrival = find_random_arrival(&world.airspaces);
+  pub fn random_to_arrive(world: &World, rng: &mut StdRng) -> Option<Self> {
+    let departure = find_random_departure(&world.airspaces, rng);
+    let arrival = find_random_arrival(&world.airspaces, rng);
 
     if let Some((departure, arrival)) = departure.zip(arrival) {
       // We can unwrap this because we already filtered out airspaces with no
@@ -216,9 +219,9 @@ impl Aircraft {
       // aircraft.heading =
       //   angle_between_points(dep_airport.center, arr_airport.center);
 
-      let arr_airport = arrival.find_random_airport().unwrap();
+      let arr_airport = arrival.find_random_airport(rng).unwrap();
 
-      let mut aircraft = Aircraft::random_flying();
+      let mut aircraft = Aircraft::random_flying(rng);
       aircraft.flight_plan =
         FlightPlan::new(departure.id.clone(), arr_airport.id.clone());
       aircraft.pos = departure.pos;
@@ -237,12 +240,11 @@ impl Aircraft {
     }
   }
 
-  pub fn random_callsign() -> String {
+  pub fn random_callsign(rng: &mut StdRng) -> String {
     let mut string = String::new();
     let airlines = ["AAL", "SKW", "JBU"];
 
-    let mut rng = thread_rng();
-    let airline = airlines.choose(&mut rng).unwrap();
+    let airline = airlines.choose(rng).unwrap();
 
     string.push_str(airline);
 

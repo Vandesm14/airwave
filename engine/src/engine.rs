@@ -47,6 +47,7 @@ pub struct Engine {
   pub incoming_sender: async_channel::Sender<IncomingUpdate>,
 
   pub save_to: Option<PathBuf>,
+  pub rng: rand::rngs::StdRng,
 
   last_tick: Instant,
   last_spawn: Instant,
@@ -59,6 +60,7 @@ impl Engine {
     outgoing_sender: async_broadcast::Sender<OutgoingReply>,
     incoming_sender: async_channel::Sender<IncomingUpdate>,
     save_to: Option<PathBuf>,
+    rng: rand::rngs::StdRng,
   ) -> Self {
     Self {
       world: World::default(),
@@ -68,6 +70,7 @@ impl Engine {
       incoming_sender,
 
       save_to,
+      rng,
 
       last_tick: Instant::now(),
       last_spawn: Instant::now(),
@@ -76,7 +79,9 @@ impl Engine {
   }
 
   pub fn spawn_random_aircraft(&mut self) {
-    if let Some(mut aircraft) = Aircraft::random_to_arrive(&self.world) {
+    if let Some(mut aircraft) =
+      Aircraft::random_to_arrive(&self.world, &mut self.rng)
+    {
       aircraft.do_clear_waypoints();
 
       let arrival = self
@@ -195,7 +200,7 @@ impl Engine {
       match result {
         AircraftUpdate::None => {}
         AircraftUpdate::NewDeparture => {
-          aircraft.departure_from_arrival(&self.world.airspaces)
+          aircraft.departure_from_arrival(&self.world.airspaces, &mut self.rng)
         }
       }
 

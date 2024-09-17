@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 
 use glam::Vec2;
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{rngs::StdRng, seq::SliceRandom};
 use serde::{Deserialize, Serialize};
 
 use crate::pathfinder::{Node, WaypointNodeData};
 
 use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
 
-pub fn find_random_airspace_with(
-  airspaces: &[Airspace],
+pub fn find_random_airspace_with<'a>(
+  airspaces: &'a [Airspace],
   auto: bool,
   require_airports: bool,
-) -> Option<&Airspace> {
-  let mut rng = thread_rng();
+  rng: &mut StdRng,
+) -> Option<&'a Airspace> {
   let filtered_airspaces: Vec<&Airspace> = airspaces
     .iter()
     .filter(|a| {
@@ -27,24 +27,32 @@ pub fn find_random_airspace_with(
     })
     .collect();
 
-  filtered_airspaces.choose(&mut rng).copied()
+  filtered_airspaces.choose(rng).copied()
 }
 
-pub fn find_random_airspace(airspaces: &[Airspace]) -> Option<&Airspace> {
-  let mut rng = thread_rng();
-  airspaces.choose(&mut rng)
+pub fn find_random_airspace<'a>(
+  airspaces: &'a [Airspace],
+  rng: &mut StdRng,
+) -> Option<&'a Airspace> {
+  airspaces.choose(rng)
 }
 
-pub fn find_random_departure(airspaces: &[Airspace]) -> Option<&Airspace> {
+pub fn find_random_departure<'a>(
+  airspaces: &'a [Airspace],
+  rng: &mut StdRng,
+) -> Option<&'a Airspace> {
   // TODO: We should probably do `true` for the second bool, which specifies
   // that a departure airspace needs an airport. This just saves us time
   // when testing and messing about with single airspaces instead of those
   // plus an airport.
-  find_random_airspace_with(airspaces, true, false)
+  find_random_airspace_with(airspaces, true, false, rng)
 }
 
-pub fn find_random_arrival(airspaces: &[Airspace]) -> Option<&Airspace> {
-  find_random_airspace_with(airspaces, false, true)
+pub fn find_random_arrival<'a>(
+  airspaces: &'a [Airspace],
+  rng: &mut StdRng,
+) -> Option<&'a Airspace> {
+  find_random_airspace_with(airspaces, false, true, rng)
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

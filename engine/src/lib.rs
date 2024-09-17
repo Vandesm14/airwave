@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use glam::Vec2;
 use objects::airport::{Runway, Taxiway, Terminal};
-use rand::Rng;
+use rand::{rngs::StdRng, Rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub mod engine;
@@ -195,9 +195,11 @@ pub struct CirclePoint {
   pub angle: f32,
 }
 
-pub fn get_random_point_on_circle(center: Vec2, radius: f32) -> CirclePoint {
-  let mut rng = rand::thread_rng();
-
+pub fn get_random_point_on_circle(
+  center: Vec2,
+  radius: f32,
+  rng: &mut StdRng,
+) -> CirclePoint {
   // Generate a random angle in radians
   let random_angle = rng.r#gen::<f32>() * 2.0 * PI;
 
