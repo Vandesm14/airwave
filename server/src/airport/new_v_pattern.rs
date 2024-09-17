@@ -4,6 +4,7 @@ use engine::{
   add_degrees, find_projected_intersection, inverse_degrees, move_point,
   objects::{
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
+    command::Task,
     world::WaypointSet,
   },
   pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
@@ -265,7 +266,7 @@ pub fn setup(
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![],
+      then: vec![Task::Land(runway_13.id.clone())],
     },
   };
 
@@ -337,7 +338,7 @@ pub fn setup(
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![],
+      then: vec![Task::Land(runway_22.id.clone())],
     },
   };
 
