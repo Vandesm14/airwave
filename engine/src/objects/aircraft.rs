@@ -678,6 +678,10 @@ impl Aircraft {
   }
 
   pub fn do_hold_taxi(&mut self, _fast: bool) {
+    if !matches!(self.state, AircraftState::Taxiing { .. }) {
+      return;
+    }
+
     // TODO: if we don't do a fast stop for taxiing, holding short won't hold
     // short of the waypoint since we slow *after* reaching it, such that
     // we will overshoot and won't be directly over our destination.
@@ -688,6 +692,10 @@ impl Aircraft {
   }
 
   pub fn do_continue_taxi(&mut self) {
+    if !matches!(self.state, AircraftState::Taxiing { .. }) {
+      return;
+    }
+
     // TODO: Both hold and continue should modify speed only. Once an aircraft
     // passes a HoldShort waypoint, it should be deleted such that even if it
     // passes the waypoint, it can still continue.
