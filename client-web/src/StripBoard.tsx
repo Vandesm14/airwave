@@ -1,5 +1,5 @@
 import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
-import { Aircraft, arrToVec2 } from './lib/types';
+import { Aircraft, arrToVec2, isAircraftFlying, isAircraftTaxiing } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import {
   controlAtom,
@@ -52,11 +52,11 @@ function assignAircraftToStrips(
   const isTaxiing = aircraft.state.type === 'taxiing';
 
   const isTaxiingToRunway = (() => {
-    if (aircraft.state.type === 'taxiing') {
+    if (isAircraftTaxiing(aircraft.state)) {
       return (
-        (aircraft.state.value.waypoints.length === 1 &&
+        aircraft.state.value.waypoints.length === 1 /* ( &&
           aircraft.state.value.waypoints[0].kind === 'runway') ||
-        aircraft.state.value.current.kind === 'runway'
+        aircraft.state.value.current.kind === 'runway' */
       );
     } else {
       return false;
@@ -137,14 +137,14 @@ function Strip({ strip }: StripProps) {
   let sinceCreated = formatTime(Date.now() - strip.created);
   // let sinceCreated = `--:--`;
 
-  if (strip.state.type === 'flying') {
+  if (isAircraftFlying(strip.state)) {
     let current = { x: strip.x, y: strip.y };
     let distance = 0;
     let waypoints = strip.state.value.waypoints.slice();
     waypoints.reverse();
     waypoints.forEach((waypoint) => {
-      distance += calculateDistance(current, arrToVec2(waypoint.value));
-      current = arrToVec2(waypoint.value);
+      distance += calculateDistance(current, arrToVec2(waypoint.value.to));
+      current = arrToVec2(waypoint.value.to);
     });
 
     let distanceInNm = distance / nauticalMilesToFeet;
@@ -178,9 +178,9 @@ function Strip({ strip }: StripProps) {
     let current = strip.state.value.current;
     if (current.kind === 'gate') {
       topStatus = 'GATE';
-    } else if (current.kind === 'runway') {
+    } /* else if (current.kind === 'runway') {
       topStatus = 'RNWY';
-    } else if (current.kind === 'taxiway') {
+      } */ else if (current.kind === 'taxiway') {
       topStatus = 'TXWY';
     } else if (current.kind === 'apron') {
       topStatus = 'APRN';

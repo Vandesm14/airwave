@@ -4,7 +4,7 @@ use glam::Vec2;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
-use crate::pathfinder::Node;
+use crate::pathfinder::{Node, WaypointNodeData};
 
 use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
 
@@ -57,7 +57,7 @@ pub struct WaypointSet {
 pub struct World {
   pub airspaces: Vec<Airspace>,
   pub aircraft: Vec<Aircraft>,
-  pub waypoints: Vec<Node<Vec2>>,
+  pub waypoints: Vec<Node<WaypointNodeData>>,
   pub waypoint_sets: WaypointSet,
 }
 

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
   delta_angle, deserialize_vec2,
-  engine::OutgoingReply,
+  engine::{IncomingUpdate, OutgoingReply},
   inverse_degrees, move_point,
   objects::{
     airport::Runway,
@@ -18,7 +18,7 @@ use crate::{
     command::{CommandReply, CommandReplyKind, CommandWithFreq},
     world::{find_random_arrival, find_random_departure, World},
   },
-  pathfinder::{Node, NodeBehavior, NodeKind, Pathfinder},
+  pathfinder::{Node, NodeBehavior, NodeKind, Pathfinder, WaypointNodeData},
   serialize_vec2, Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
   TIME_SCALE,
 };
@@ -32,7 +32,7 @@ const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
 #[serde(tag = "type", content = "value")]
 pub enum AircraftState {
   Flying {
-    waypoints: Vec<Node<Vec2>>,
+    waypoints: Vec<Node<WaypointNodeData>>,
   },
   Landing(Runway),
   Taxiing {
@@ -65,7 +65,7 @@ pub struct FlightPlan {
   pub arriving: String,
   pub altitude: f32,
   pub speed: f32,
-  pub waypoints: Vec<Node<Vec2>>,
+  pub waypoints: Vec<Node<WaypointNodeData>>,
 }
 
 impl FlightPlan {
@@ -354,20 +354,40 @@ impl Aircraft {
     }
   }
 
-  fn update_flying(&mut self) {
+  fn update_flying(
+    &mut self,
+    incoming_sender: &async_channel::Sender<IncomingUpdate>,
+  ) {
     let speed_in_feet = self.speed_in_feet();
     if let AircraftState::Flying { waypoints, .. } = &mut self.state {
       if let Some(current) = waypoints.last() {
-        let heading = angle_between_points(self.pos, current.value);
+        let heading = angle_between_points(self.pos, current.value.to);
 
         self.target.heading = heading;
 
-        let distance = self.pos.distance_squared(current.value);
+        let distance = self.pos.distance_squared(current.value.to);
         let movement_speed = speed_in_feet.powf(2.0);
 
         if movement_speed >= distance {
-          self.pos = current.value;
-          waypoints.pop();
+          self.pos = current.value.to;
+
+          // NOTE: This is fine because we check that it exists above.
+          let last_waypoint = waypoints.pop().unwrap();
+
+          match incoming_sender.send_blocking(IncomingUpdate::Command(
+            CommandWithFreq {
+              id: self.callsign.clone(),
+              frequency: self.frequency,
+              reply: String::new(),
+              tasks: last_waypoint.value.then,
+            },
+          )) {
+            Ok(()) => {}
+            Err(e) => tracing::error!(
+              "Unable to follow waypoint {} commands: {e}",
+              last_waypoint.name
+            ),
+          };
         }
       }
     }
@@ -530,12 +550,13 @@ impl Aircraft {
   pub fn update(
     &mut self,
     dt: f32,
-    sender: &async_broadcast::Sender<OutgoingReply>,
+    outgoing_sender: &async_broadcast::Sender<OutgoingReply>,
+    incoming_sender: &async_channel::Sender<IncomingUpdate>,
   ) -> AircraftUpdate {
-    self.update_landing(dt, sender);
+    self.update_landing(dt, outgoing_sender);
     self.update_targets(dt);
     self.update_taxi();
-    self.update_flying();
+    self.update_flying(incoming_sender);
     let update = self.update_to_departure();
     self.update_takeoff();
     self.update_position(dt);
@@ -560,7 +581,15 @@ impl Aircraft {
       self.target.speed = 400.0;
       self.target.altitude = 13000.0;
 
-      waypoints.push(waypoint);
+      waypoints.push(Node {
+        name: waypoint.name,
+        kind: waypoint.kind,
+        behavior: waypoint.behavior,
+        value: WaypointNodeData {
+          to: waypoint.value,
+          then: Vec::new(),
+        },
+      });
     }
   }
 

@@ -6,13 +6,15 @@ use engine::{
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
-  pathfinder::{Node, NodeBehavior, NodeKind},
+  pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
   Line, CLOCKWISE, COUNTERCLOCKWISE, NAUTICALMILES_TO_FEET,
 };
 
+// TODO: Add tasks to the correct waypoints to clear landings, et cetera.
+
 pub fn setup(
   airport: &mut Airport,
-  waypoints: &mut Vec<Node<Vec2>>,
+  waypoints: &mut Vec<Node<WaypointNodeData>>,
   waypoint_sets: &mut WaypointSet,
 ) {
   const TAXIWAY_DISTANCE: f32 = 400.0;
@@ -257,55 +259,70 @@ pub fn setup(
     name: "VISTA".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_13.start(),
-      inverse_degrees(runway_13.heading),
-      NAUTICALMILES_TO_FEET * 12.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_13.start(),
+        inverse_degrees(runway_13.heading),
+        NAUTICALMILES_TO_FEET * 12.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_orbit = Node {
     name: "ORBIT".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_vista.value,
-      inverse_degrees(runway_13.heading),
-      NAUTICALMILES_TO_FEET * 4.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_vista.value.to,
+        inverse_degrees(runway_13.heading),
+        NAUTICALMILES_TO_FEET * 4.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_crest = Node {
     name: "CREST".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_orbit.value,
-      inverse_degrees(runway_13.heading),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_orbit.value.to,
+        inverse_degrees(runway_13.heading),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_blaze = Node {
     name: "BLAZE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_orbit.value,
-      add_degrees(inverse_degrees(runway_13.heading), -45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_orbit.value.to,
+        add_degrees(inverse_degrees(runway_13.heading), -45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_swift = Node {
     name: "SWIFT".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_orbit.value,
-      add_degrees(inverse_degrees(runway_13.heading), 45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_orbit.value.to,
+        add_degrees(inverse_degrees(runway_13.heading), 45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   //
@@ -314,55 +331,70 @@ pub fn setup(
     name: "SONIC".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_22.start(),
-      inverse_degrees(runway_22.heading),
-      NAUTICALMILES_TO_FEET * 12.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_22.start(),
+        inverse_degrees(runway_22.heading),
+        NAUTICALMILES_TO_FEET * 12.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_ready = Node {
     name: "READY".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_sonic.value,
-      inverse_degrees(runway_22.heading),
-      NAUTICALMILES_TO_FEET * 4.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_sonic.value.to,
+        inverse_degrees(runway_22.heading),
+        NAUTICALMILES_TO_FEET * 4.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_short = Node {
     name: "SHORT".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_ready.value,
-      inverse_degrees(runway_22.heading),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_ready.value.to,
+        inverse_degrees(runway_22.heading),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_quick = Node {
     name: "QUICK".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_ready.value,
-      add_degrees(inverse_degrees(runway_22.heading), -45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_ready.value.to,
+        add_degrees(inverse_degrees(runway_22.heading), -45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_arrow = Node {
     name: "ARROW".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_ready.value,
-      add_degrees(inverse_degrees(runway_22.heading), 45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_ready.value.to,
+        add_degrees(inverse_degrees(runway_22.heading), 45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   //
@@ -371,44 +403,56 @@ pub fn setup(
     name: "PAPER".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_13.end(),
-      runway_13.heading,
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_13.end(),
+        runway_13.heading,
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_ghost = Node {
     name: "GHOST".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_paper.value,
-      runway_13.heading,
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_paper.value.to,
+        runway_13.heading,
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_ocean = Node {
     name: "OCEAN".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_ghost.value,
-      add_degrees(runway_13.heading, -45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_ghost.value.to,
+        add_degrees(runway_13.heading, -45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_goose = Node {
     name: "GOOSE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_ghost.value,
-      add_degrees(runway_13.heading, 45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_ghost.value.to,
+        add_degrees(runway_13.heading, 45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   //
@@ -417,44 +461,56 @@ pub fn setup(
     name: "QUACK".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_22.end(),
-      runway_22.heading,
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_22.end(),
+        runway_22.heading,
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_state = Node {
     name: "STATE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_quack.value,
-      runway_22.heading,
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_quack.value.to,
+        runway_22.heading,
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_unite = Node {
     name: "UNITE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_state.value,
-      add_degrees(runway_22.heading, -45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_state.value.to,
+        add_degrees(runway_22.heading, -45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_royal = Node {
     name: "ROYAL".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_state.value,
-      add_degrees(runway_22.heading, 45.0),
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_state.value.to,
+        add_degrees(runway_22.heading, 45.0),
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   //

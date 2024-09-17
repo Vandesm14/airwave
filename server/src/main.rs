@@ -14,7 +14,7 @@ use engine::{
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
-  pathfinder::{Node, NodeBehavior, NodeKind},
+  pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
@@ -50,6 +50,7 @@ async fn main() {
   let mut engine = Engine::new(
     command_rx,
     update_tx.clone(),
+    command_tx.clone(),
     Some(PathBuf::from_str("assets/world.json").unwrap()),
   );
 
@@ -170,7 +171,10 @@ async fn main() {
       name: airspace_name.into(),
       kind: NodeKind::Runway,
       behavior: NodeBehavior::GoTo,
-      value: airspace_position,
+      value: WaypointNodeData {
+        to: airspace_position,
+        then: vec![],
+      },
     });
   }
 
@@ -247,7 +251,7 @@ async fn main() {
 
       for intersection_test_waypoint in engine.world.waypoints.iter() {
         if circle_circle_intersection(
-          intersection_test_waypoint.value,
+          intersection_test_waypoint.value.to,
           waypoint,
           CENTER_WAYPOINT_RADIUS,
           CENTER_WAYPOINT_RADIUS,
@@ -255,9 +259,9 @@ async fn main() {
           tracing::trace!(
             "Skipping waypoint at {} between {} ({}) ({})",
             waypoint,
-            intersection_test_waypoint.value,
+            intersection_test_waypoint.value.to,
             intersection_test_waypoint.name,
-            waypoint == intersection_test_waypoint.value,
+            waypoint == intersection_test_waypoint.value.to,
           );
           continue 'second;
         }
@@ -269,7 +273,10 @@ async fn main() {
         name: n_to_an(waypoint_id),
         kind: NodeKind::Runway,
         behavior: NodeBehavior::GoTo,
-        value: waypoint,
+        value: WaypointNodeData {
+          to: waypoint,
+          then: vec![],
+        },
       });
     }
   }

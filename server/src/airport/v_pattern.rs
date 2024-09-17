@@ -4,14 +4,16 @@ use engine::{
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
-  pathfinder::{Node, NodeBehavior, NodeKind},
+  pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
   subtract_degrees, Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
 
+// TODO: Add tasks to the correct waypoints to clear landings, et cetera.
+
 pub fn setup(
   airport: &mut Airport,
-  waypoints: &mut Vec<Node<Vec2>>,
+  waypoints: &mut Vec<Node<WaypointNodeData>>,
   waypoint_set: &mut WaypointSet,
 ) {
   let runway_20 = Runway {
@@ -135,44 +137,56 @@ pub fn setup(
     name: "CAT".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_27.start(),
-      inverse_degrees(runway_27.heading),
-      NAUTICALMILES_TO_FEET * 18.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_27.start(),
+        inverse_degrees(runway_27.heading),
+        NAUTICALMILES_TO_FEET * 18.0,
+      ),
+      then: vec![],
+    },
   };
 
   let wp_dude = Node {
     name: "DUDE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      wp_cat.value,
-      subtract_degrees(runway_27.heading, 90.0),
-      NAUTICALMILES_TO_FEET * 8.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        wp_cat.value.to,
+        subtract_degrees(runway_27.heading, 90.0),
+        NAUTICALMILES_TO_FEET * 8.0,
+      ),
+      then: vec![],
+    },
   };
 
   let wp_road = Node {
     name: "ROAD".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_20.start(),
-      inverse_degrees(runway_20.heading),
-      NAUTICALMILES_TO_FEET * 18.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_20.start(),
+        inverse_degrees(runway_20.heading),
+        NAUTICALMILES_TO_FEET * 18.0,
+      ),
+      then: vec![],
+    },
   };
 
   let wp_safe = Node {
     name: "SAFE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      wp_road.value,
-      add_degrees(runway_20.heading, 90.0),
-      NAUTICALMILES_TO_FEET * 8.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        wp_road.value.to,
+        add_degrees(runway_20.heading, 90.0),
+        NAUTICALMILES_TO_FEET * 8.0,
+      ),
+      then: vec![],
+    },
   };
 
   waypoint_set.approach.insert(

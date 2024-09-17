@@ -43,7 +43,8 @@ pub struct Engine {
   pub world: World,
 
   pub receiver: async_channel::Receiver<IncomingUpdate>,
-  pub sender: async_broadcast::Sender<OutgoingReply>,
+  pub outgoing_sender: async_broadcast::Sender<OutgoingReply>,
+  pub incoming_sender: async_channel::Sender<IncomingUpdate>,
 
   pub save_to: Option<PathBuf>,
 
@@ -55,14 +56,16 @@ pub struct Engine {
 impl Engine {
   pub fn new(
     receiver: async_channel::Receiver<IncomingUpdate>,
-    sender: async_broadcast::Sender<OutgoingReply>,
+    outgoing_sender: async_broadcast::Sender<OutgoingReply>,
+    incoming_sender: async_channel::Sender<IncomingUpdate>,
     save_to: Option<PathBuf>,
   ) -> Self {
     Self {
       world: World::default(),
 
       receiver,
-      sender,
+      outgoing_sender,
+      incoming_sender,
 
       save_to,
 
@@ -155,14 +158,14 @@ impl Engine {
 
   fn broadcast_aircraft(&self) {
     let _ = self
-      .sender
+      .outgoing_sender
       .try_broadcast(OutgoingReply::Aircraft(self.world.aircraft.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
   }
 
   fn broadcast_world(&self) {
     let _ = self
-      .sender
+      .outgoing_sender
       .try_broadcast(OutgoingReply::World(self.world.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
   }
@@ -187,7 +190,8 @@ impl Engine {
   pub fn update(&mut self) {
     let dt = 1.0 / self.rate as f32;
     for aircraft in self.world.aircraft.iter_mut() {
-      let result = aircraft.update(dt, &self.sender);
+      let result =
+        aircraft.update(dt, &self.outgoing_sender, &self.incoming_sender);
       match result {
         AircraftUpdate::None => {}
         AircraftUpdate::NewDeparture => {
@@ -270,7 +274,7 @@ impl Engine {
               }
             }
             Task::GoAround => {
-              aircraft.do_go_around(&self.sender, GoAroundReason::None)
+              aircraft.do_go_around(&self.outgoing_sender, GoAroundReason::None)
             }
             Task::Takeoff(runway) => {
               if let Some(ref airport) = airport {
@@ -377,7 +381,7 @@ impl Engine {
             }
             Task::Ident => {
               self
-                .sender
+                .outgoing_sender
                 .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
                   id: command.id.clone(),
                   frequency: command.frequency,
@@ -399,7 +403,7 @@ impl Engine {
                 let direction = heading_to_direction(heading);
 
                 self
-                  .sender
+                  .outgoing_sender
                   .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
                     id: command.id.clone(),
                     frequency: command.frequency,
@@ -453,7 +457,7 @@ impl Engine {
         }
 
         self
-          .sender
+          .outgoing_sender
           .try_broadcast(OutgoingReply::Reply(command))
           .unwrap();
       }

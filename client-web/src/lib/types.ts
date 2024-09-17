@@ -4,14 +4,41 @@ export type TaxiWaypointBehavior = {
 
 export type NodeVec2 = {
   name: string;
-  kind: 'taxiway' | 'runway' | 'gate' | 'apron';
+  kind: 'taxiway' | 'gate' | 'apron';
   behavior: 'goto' | 'holdshort';
   value: [number, number];
+};
+
+export type NodeWaypoint = {
+  name: string;
+  kind: 'runway';
+  behavior: 'goto' | 'holdshort';
+  value: { to: [number, number] };
 };
 
 export function arrToVec2(arr: [number, number]): Vec2 {
   return { x: arr[0], y: arr[1] };
 }
+
+export type AircraftStateFlying = {
+  type: 'flying';
+  value: { waypoints: Array<NodeWaypoint> };
+};
+
+export type AircraftStateLanding = {
+  type: 'landing';
+  value: Runway;
+};
+
+export type AircraftStateTaxiing = {
+  type: 'taxiing';
+  value: {
+    current: NodeVec2;
+    waypoints: Array<NodeVec2>;
+  };
+};
+
+export type AircraftState = AircraftStateFlying | AircraftStateLanding | AircraftStateTaxiing;
 
 export type Aircraft = {
   x: number;
@@ -38,19 +65,7 @@ export type Aircraft = {
   altitude: number;
   callsign: string;
 
-  state:
-    | {
-        type: 'flying';
-        value: { waypoints: Array<NodeVec2> };
-      }
-    | { type: 'landing'; value: Runway }
-    | {
-        type: 'taxiing';
-        value: {
-          current: NodeVec2;
-          waypoints: Array<NodeVec2>;
-        };
-      };
+  state: AircraftState;
   flight_plan: {
     departing: string;
     arriving: string;
@@ -60,6 +75,18 @@ export type Aircraft = {
 
   airspace: string | null;
 };
+
+export function isAircraftFlying(state: AircraftState): state is AircraftStateFlying {
+  return state.type === 'flying';
+}
+
+export function isAircraftLanding(state: AircraftState): state is AircraftStateLanding {
+  return state.type === 'landing';
+}
+
+export function isAircraftTaxiing(state: AircraftState): state is AircraftStateTaxiing {
+  return state.type === 'taxiing';
+}
 
 export type Vec2 = { x: number; y: number };
 
@@ -126,7 +153,7 @@ export type Airspace = {
 
 export type World = {
   airspaces: Array<Airspace>;
-  waypoints: Array<NodeVec2>;
+  waypoints: Array<NodeWaypoint>;
 };
 
 export type RadioMessage = {

@@ -12,6 +12,7 @@ import {
   arrToVec2,
   Gate,
   NodeVec2,
+  NodeWaypoint,
   Runway,
   Taxiway,
   Terminal,
@@ -353,8 +354,8 @@ export default function Canvas({
     }
   }
 
-  function drawWaypoint(ctx: Ctx, wp: NodeVec2) {
-    let pos = scalePoint(arrToVec2(wp.value));
+  function drawWaypoint(ctx: Ctx, wp: NodeWaypoint) {
+    let pos = scalePoint(arrToVec2(wp.value.to));
     ctx.fillStyle = '#444';
     ctx.strokeStyle = '#444';
     ctx.beginPath();
@@ -385,14 +386,14 @@ export default function Canvas({
       ctx.moveTo(pos.x, pos.y);
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let pos = scalePoint(arrToVec2(wp.value));
+        let pos = scalePoint(arrToVec2(wp.value.to));
         ctx.lineTo(pos.x, pos.y);
       }
       ctx.stroke();
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
         ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
-        let pos = scalePoint(arrToVec2(wp.value));
+        let pos = scalePoint(arrToVec2(wp.value.to));
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
         ctx.fill();

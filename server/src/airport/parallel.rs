@@ -2,16 +2,19 @@ use engine::{
   inverse_degrees, move_point,
   objects::{
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
+    command::Task,
     world::WaypointSet,
   },
-  pathfinder::{Node, NodeBehavior, NodeKind},
+  pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
   Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
 
+// TODO: Add tasks to the correct waypoints to clear landings, et cetera.
+
 pub fn setup(
   airport: &mut Airport,
-  waypoints: &mut Vec<Node<Vec2>>,
+  waypoints: &mut Vec<Node<WaypointNodeData>>,
   waypoint_sets: &mut WaypointSet,
 ) {
   /// In feet (ft).
@@ -205,29 +208,42 @@ pub fn setup(
     name: "TACK".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_27r.start(),
-      inverse_degrees(runway_27r.heading),
-      NAUTICALMILES_TO_FEET * 12.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_27r.start(),
+        inverse_degrees(runway_27r.heading),
+        NAUTICALMILES_TO_FEET * 12.0,
+      ),
+      then: vec![Task::Land(runway_27r.id.clone())],
+    },
   };
 
   let waypoint_cork = Node {
     name: "CORK".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(waypoint_tack.value, RIGHT, NAUTICALMILES_TO_FEET * 4.0),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_tack.value.to,
+        RIGHT,
+        NAUTICALMILES_TO_FEET * 4.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_foam = Node {
     name: "FOAM".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_cork.value,
-      RIGHT - 45.0,
-      NAUTICALMILES_TO_FEET * 8.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_cork.value.to,
+        RIGHT - 45.0,
+        NAUTICALMILES_TO_FEET * 8.0,
+      ),
+      then: vec![],
+    },
   };
 
   waypoint_sets.approach.insert(
@@ -249,29 +265,42 @@ pub fn setup(
     name: "LORD".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_27l.start(),
-      inverse_degrees(runway_27l.heading),
-      NAUTICALMILES_TO_FEET * 14.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_27l.start(),
+        inverse_degrees(runway_27l.heading),
+        NAUTICALMILES_TO_FEET * 14.0,
+      ),
+      then: vec![Task::Land(runway_27l.id.clone())],
+    },
   };
 
   let waypoint_jest = Node {
     name: "JEST".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(waypoint_lord.value, RIGHT, NAUTICALMILES_TO_FEET * 4.0),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_lord.value.to,
+        RIGHT,
+        NAUTICALMILES_TO_FEET * 4.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_ball = Node {
     name: "BALL".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_jest.value,
-      RIGHT + 45.0,
-      NAUTICALMILES_TO_FEET * 8.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_jest.value.to,
+        RIGHT + 45.0,
+        NAUTICALMILES_TO_FEET * 8.0,
+      ),
+      then: vec![],
+    },
   };
 
   waypoint_sets.approach.insert(
@@ -293,29 +322,38 @@ pub fn setup(
     name: "NOTE".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_27r.end(),
-      runway_27r.heading,
-      NAUTICALMILES_TO_FEET * 8.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_27r.end(),
+        runway_27r.heading,
+        NAUTICALMILES_TO_FEET * 8.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_idea = Node {
     name: "IDEA".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(waypoint_note.value, LEFT, NAUTICALMILES_TO_FEET * 8.0),
+    value: WaypointNodeData {
+      to: move_point(waypoint_note.value.to, LEFT, NAUTICALMILES_TO_FEET * 8.0),
+      then: vec![],
+    },
   };
 
   let waypoint_bulb = Node {
     name: "BULB".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_note.value,
-      LEFT + 45.0,
-      NAUTICALMILES_TO_FEET * 8.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_note.value.to,
+        LEFT + 45.0,
+        NAUTICALMILES_TO_FEET * 8.0,
+      ),
+      then: vec![],
+    },
   };
 
   waypoint_sets.departure.insert(
@@ -338,29 +376,38 @@ pub fn setup(
     name: "KING".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      runway_27l.end(),
-      runway_27l.heading,
-      NAUTICALMILES_TO_FEET * 6.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        runway_27l.end(),
+        runway_27l.heading,
+        NAUTICALMILES_TO_FEET * 6.0,
+      ),
+      then: vec![],
+    },
   };
 
   let waypoint_town = Node {
     name: "TOWN".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(waypoint_king.value, LEFT, NAUTICALMILES_TO_FEET * 8.0),
+    value: WaypointNodeData {
+      to: move_point(waypoint_king.value.to, LEFT, NAUTICALMILES_TO_FEET * 8.0),
+      then: vec![],
+    },
   };
 
   let waypoint_gold = Node {
     name: "GOLD".to_owned(),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
-    value: move_point(
-      waypoint_king.value,
-      LEFT - 45.0,
-      NAUTICALMILES_TO_FEET * 8.0,
-    ),
+    value: WaypointNodeData {
+      to: move_point(
+        waypoint_king.value.to,
+        LEFT - 45.0,
+        NAUTICALMILES_TO_FEET * 8.0,
+      ),
+      then: vec![],
+    },
   };
 
   waypoint_sets.departure.insert(

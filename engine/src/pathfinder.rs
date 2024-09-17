@@ -9,7 +9,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
   find_line_intersection,
-  objects::airport::{Gate, Runway, Taxiway, Terminal},
+  objects::{
+    airport::{Gate, Runway, Taxiway, Terminal},
+    command::Task,
+  },
   Line,
 };
 
@@ -27,6 +30,13 @@ pub enum NodeKind {
 pub enum NodeBehavior {
   GoTo,
   HoldShort,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct WaypointNodeData {
+  pub to: Vec2,
+  #[serde(skip)]
+  pub then: Vec<Task>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
