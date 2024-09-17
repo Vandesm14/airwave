@@ -473,7 +473,6 @@ impl Aircraft {
 
       self.target.speed = target_knots.min(180.0);
 
-      tracing::debug!("target_altitude: {}", target_altitude);
       // If we are too high, descend.
       if self.altitude > target_altitude {
         self.target.altitude = target_altitude;
