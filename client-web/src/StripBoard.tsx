@@ -301,7 +301,7 @@ export default function StripBoard({
       });
       // strips.Center.sort(nameSorter);
       strips.Parked.sort(timeSorter);
-      strips.Ground.sort(nameSorter);
+      strips.Ground.sort(timeSorter);
 
       setStrips(strips);
     }
