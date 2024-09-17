@@ -25,7 +25,7 @@ use crate::{
 
 use super::{airport::Gate, world::find_random_airspace};
 
-const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 120..=600;
+const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
