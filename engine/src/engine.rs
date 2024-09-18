@@ -50,9 +50,15 @@ pub struct Bundle {
   pub dt: f32,
 }
 
-type AircraftEvent = fn(&Aircraft, &Event, &mut Bundle);
-type AircraftEffect = fn(&Aircraft, &mut Bundle);
-type AircraftAction = fn(&mut Aircraft, &Action, &mut Bundle);
+pub trait AircraftEventHandler {
+  fn run(aircraft: &Aircraft, event: &Event, bundle: &mut Bundle);
+}
+pub trait AircraftEffectHandler {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle);
+}
+pub trait AircraftActionHandler {
+  fn run(aircraft: &mut Aircraft, action: &Action, bundle: &mut Bundle);
+}
 
 // Consts
 impl Aircraft {
@@ -74,11 +80,28 @@ impl Aircraft {
 }
 
 // Event Handlers
-impl Aircraft {
-  fn handle_event(&self, event: &Event, bundle: &mut Bundle) {
+// impl Aircraft {
+//   fn handle_event(&self, event: &Event, bundle: &mut Bundle) {
+//     match event {
+//       Event::TargetSpeed(speed) => {
+//         bundle.actions.push(Action::Speed(*speed));
+//       }
+//       Event::TargetHeading(heading) => {
+//         bundle.actions.push(Action::TargetHeading(*heading));
+//       }
+//       Event::TargetAltitude(altitude) => {
+//         bundle.actions.push(Action::TargetAltitude(*altitude));
+//       }
+//     }
+//   }
+// }
+
+struct HandleAircraftEvent;
+impl AircraftEventHandler for HandleAircraftEvent {
+  fn run(_: &Aircraft, event: &Event, bundle: &mut Bundle) {
     match event {
       Event::TargetSpeed(speed) => {
-        bundle.actions.push(Action::Speed(*speed));
+        bundle.actions.push(Action::TargetSpeed(*speed));
       }
       Event::TargetHeading(heading) => {
         bundle.actions.push(Action::TargetHeading(*heading));
@@ -91,69 +114,75 @@ impl Aircraft {
 }
 
 // Effects
-impl Aircraft {
-  pub fn update_from_targets(&self, bundle: &mut Bundle) {
-    // TODO: change speeds for takeoff and taxi (turn and speed speeds)
-
+struct AircraftUpdateFromTargetsEffect;
+impl AircraftEffectHandler for AircraftUpdateFromTargetsEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     // In feet per second
-    let climb_speed = self.dt_climb_sp(bundle.dt);
+    let climb_speed = aircraft.dt_climb_sp(bundle.dt);
     // In degrees per second
-    let turn_speed = self.dt_turn_speed(bundle.dt);
+    let turn_speed = aircraft.dt_turn_speed(bundle.dt);
     // In knots per second
-    let speed_speed = self.dt_speed_speed(bundle.dt);
+    let speed_speed = aircraft.dt_speed_speed(bundle.dt);
 
-    if (self.altitude - self.target.altitude).abs() < climb_speed {
-      bundle.actions.push(Action::Altitude(self.target.altitude));
-    }
-    if (self.heading - self.target.heading).abs() < turn_speed {
+    if (aircraft.altitude - aircraft.target.altitude).abs() < climb_speed {
       bundle
         .actions
-        .push(Action::Heading(normalize_angle(self.target.heading)));
+        .push(Action::Altitude(aircraft.target.altitude));
     }
-    if (self.speed - self.target.speed).abs() < speed_speed {
-      bundle.actions.push(Action::Speed(self.target.speed));
+    if (aircraft.heading - aircraft.target.heading).abs() < turn_speed {
+      bundle
+        .actions
+        .push(Action::Heading(normalize_angle(aircraft.target.heading)));
+    }
+    if (aircraft.speed - aircraft.target.speed).abs() < speed_speed {
+      bundle.actions.push(Action::Speed(aircraft.target.speed));
     }
 
     // Change based on speed if not equal
-    if self.altitude != self.target.altitude {
-      if self.altitude < self.target.altitude {
+    if aircraft.altitude != aircraft.target.altitude {
+      if aircraft.altitude < aircraft.target.altitude {
         bundle
           .actions
-          .push(Action::Altitude(self.altitude + climb_speed));
+          .push(Action::Altitude(aircraft.altitude + climb_speed));
       } else {
         bundle
           .actions
-          .push(Action::Altitude(self.altitude - climb_speed));
+          .push(Action::Altitude(aircraft.altitude - climb_speed));
       }
     }
-    if self.heading != self.target.heading {
-      let delta_angle = delta_angle(self.heading, self.target.heading);
+    if aircraft.heading != aircraft.target.heading {
+      let delta_angle = delta_angle(aircraft.heading, aircraft.target.heading);
       if delta_angle < 0.0 {
-        // self.heading -= turn_speed;
+        // aircraft.heading -= turn_speed;
+      } else {
+        bundle.actions.push(Action::Heading(normalize_angle(
+          aircraft.heading + turn_speed,
+        )));
+      }
+    }
+    if aircraft.speed != aircraft.target.speed {
+      if aircraft.speed < aircraft.target.speed {
+        bundle
+          .actions
+          .push(Action::Speed(aircraft.speed + speed_speed));
       } else {
         bundle
           .actions
-          .push(Action::Heading(normalize_angle(self.heading + turn_speed)));
-      }
-    }
-    if self.speed != self.target.speed {
-      if self.speed < self.target.speed {
-        bundle.actions.push(Action::Speed(self.speed + speed_speed));
-      } else {
-        bundle.actions.push(Action::Speed(self.speed - speed_speed));
+          .push(Action::Speed(aircraft.speed - speed_speed));
       }
     }
   }
+}
 
-  pub fn update_position(&self, bundle: &mut Bundle) {
-    let pos =
-      move_point(self.pos, self.heading, self.speed_in_feet() * bundle.dt);
-    // self.pos = pos;
+struct AircraftUpdatePositionEffect;
+impl AircraftEffectHandler for AircraftUpdatePositionEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    let pos = move_point(
+      aircraft.pos,
+      aircraft.heading,
+      aircraft.speed_in_feet() * bundle.dt,
+    );
     bundle.actions.push(Action::Pos(pos));
-  }
-
-  pub fn update_all(&mut self) -> impl Iterator<Item = AircraftEffect> {
-    [Self::update_from_targets, Self::update_position].into_iter()
   }
 }
 
@@ -190,7 +219,7 @@ impl Engine {
 
     for aircraft in self.aircraft.iter_mut() {
       for event in self.events.iter() {
-        aircraft.handle_event(event, &mut bundle);
+        HandleAircraftEvent::run(aircraft, event, &mut bundle);
 
         // Apply all actions after each event
         for action in bundle.actions.drain(..) {
@@ -198,20 +227,14 @@ impl Engine {
         }
       }
 
-      aircraft.update_from_targets(&mut bundle);
-
-      // Apply all actions after each event
+      AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
       for action in bundle.actions.drain(..) {
         aircraft.apply_action(&action);
       }
 
-      for effect in aircraft.update_all() {
-        effect(aircraft, &mut bundle);
-
-        // Apply all actions after each event
-        for action in bundle.actions.drain(..) {
-          aircraft.apply_action(&action);
-        }
+      AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
+      for action in bundle.actions.drain(..) {
+        aircraft.apply_action(&action);
       }
     }
 
