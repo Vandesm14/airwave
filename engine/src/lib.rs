@@ -1,14 +1,14 @@
 use std::f32::consts::PI;
 
 use glam::Vec2;
-use objects::airport::{Runway, Taxiway, Terminal};
+// use objects::airport::{Runway, Taxiway, Terminal};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use turborand::{rng::Rng, TurboRand};
 
 pub mod engine;
 pub mod pathfinder;
 
-pub mod objects;
+pub mod entities;
 
 pub const TIME_SCALE: f32 = 1.0;
 
@@ -69,25 +69,25 @@ impl Line {
   }
 }
 
-impl From<Runway> for Line {
-  fn from(value: Runway) -> Self {
-    Line::new(value.start(), value.end())
-  }
-}
+// impl From<Runway> for Line {
+//   fn from(value: Runway) -> Self {
+//     Line::new(value.start(), value.end())
+//   }
+// }
 
-impl From<Taxiway> for Line {
-  fn from(value: Taxiway) -> Self {
-    Line::new(value.a, value.b)
-  }
-}
+// impl From<Taxiway> for Line {
+//   fn from(value: Taxiway) -> Self {
+//     Line::new(value.a, value.b)
+//   }
+// }
 
-impl From<Terminal> for Line {
-  fn from(value: Terminal) -> Self {
-    // TODO: This means that terminals can only have one enterance, AB
+// impl From<Terminal> for Line {
+//   fn from(value: Terminal) -> Self {
+//     // TODO: This means that terminals can only have one enterance, AB
 
-    Line::new(value.a, value.b)
-  }
-}
+//     Line::new(value.a, value.b)
+//   }
+// }
 
 pub fn calculate_ils_altitude(distance: f32) -> f32 {
   let slope_radians = 7.0_f32.to_radians();
