@@ -77,3 +77,12 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
     bundle.actions.push(Action::Pos(pos));
   }
 }
+
+pub struct AircraftIsPast205Effect;
+impl AircraftEffect for AircraftIsPast205Effect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if bundle.prev.speed < 205.0 && aircraft.speed >= 205.0 {
+      println!("Past 205");
+    }
+  }
+}

@@ -1,4 +1,5 @@
 use actions::AircraftActionHandler;
+use effects::AircraftIsPast205Effect;
 
 use crate::entities::aircraft::{
   actions::AircraftAllActionHandler,
@@ -25,6 +26,8 @@ impl Engine {
     };
 
     for aircraft in self.aircraft.iter_mut() {
+      bundle.prev = aircraft.clone();
+
       for event in self.events.iter() {
         HandleAircraftEvent::run(aircraft, event, &mut bundle);
 
@@ -40,6 +43,11 @@ impl Engine {
       }
 
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
+      for action in bundle.actions.drain(..) {
+        AircraftAllActionHandler::run(aircraft, &action);
+      }
+
+      AircraftIsPast205Effect::run(aircraft, &mut bundle);
       for action in bundle.actions.drain(..) {
         AircraftAllActionHandler::run(aircraft, &action);
       }

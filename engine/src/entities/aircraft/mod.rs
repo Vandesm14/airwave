@@ -30,6 +30,7 @@ pub enum Action {
 
 #[derive(Debug, Default)]
 pub struct Bundle {
+  pub prev: Aircraft,
   pub events: Vec<Event>,
   pub actions: Vec<Action>,
   pub dt: f32,
