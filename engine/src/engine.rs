@@ -1,6 +1,6 @@
 use glam::Vec2;
 
-use crate::{delta_angle, KNOT_TO_FEET_PER_SECOND, TIME_SCALE};
+use crate::{delta_angle, move_point, KNOT_TO_FEET_PER_SECOND, TIME_SCALE};
 
 #[derive(Debug, Clone, PartialEq)]
 
@@ -138,8 +138,14 @@ impl Aircraft {
     self.heading = (360.0 + self.heading) % 360.0;
   }
 
+  pub fn update_position(&mut self, dt: f32) {
+    let pos = move_point(self.pos, self.heading, self.speed_in_feet() * dt);
+    self.pos = pos;
+  }
+
   pub fn update_all(&mut self, actions: &mut Vec<Action>, dt: f32) {
     self.update_mains(actions, dt);
+    self.update_position(dt);
   }
 }
 
