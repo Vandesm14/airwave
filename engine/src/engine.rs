@@ -30,30 +30,18 @@ impl Engine {
 
       for event in self.events.iter() {
         HandleAircraftEvent::run(aircraft, event, &mut bundle);
-
-        // Apply all actions after each event
-        for action in bundle.actions.drain(..) {
-          AircraftAllActionHandler::run(aircraft, &action);
-        }
       }
 
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
-      for action in bundle.actions.drain(..) {
-        AircraftAllActionHandler::run(aircraft, &action);
-      }
-
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
-      for action in bundle.actions.drain(..) {
-        AircraftAllActionHandler::run(aircraft, &action);
-      }
-
       AircraftIsPast205Effect::run(aircraft, &mut bundle);
+
       for action in bundle.actions.drain(..) {
         AircraftAllActionHandler::run(aircraft, &action);
       }
     }
 
-    self.events.clear();
-    self.actions.clear();
+    self.events = core::mem::take(&mut bundle.events);
+    self.actions = core::mem::take(&mut bundle.actions);
   }
 }
