@@ -47,7 +47,7 @@ impl Aircraft {
     self.speed * KNOT_TO_FEET_PER_SECOND
   }
 
-  pub fn dt_climb_speed(&self, dt: f32) -> f32 {
+  pub fn dt_climb_sp(&self, dt: f32) -> f32 {
     (2000.0_f32 / 60.0_f32).round() * dt
   }
 
@@ -95,7 +95,7 @@ impl Aircraft {
     // TODO: change speeds for takeoff and taxi (turn and speed speeds)
 
     // In feet per second
-    let climb_speed = self.dt_climb_speed(dt);
+    let climb_speed = self.dt_climb_sp(dt);
     // In degrees per second
     let turn_speed = self.dt_turn_speed(dt);
     // In knots per second
@@ -182,11 +182,14 @@ pub struct Engine {
 }
 
 impl Engine {
-  fn update_all(&mut self) {
+  pub fn tick(&mut self) {
     for aircraft in self.aircraft.iter_mut() {
       aircraft.handle_all_events(&self.events, &mut self.actions);
       aircraft.apply_actions(&self.actions);
       aircraft.update_all(&mut self.actions, 0.5);
     }
+
+    self.events.clear();
+    self.actions.clear();
   }
 }
