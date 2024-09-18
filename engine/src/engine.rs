@@ -1,5 +1,11 @@
+use actions::AircraftActionHandler;
+
 use crate::entities::aircraft::{
-  effects::{AircraftUpdateFromTargetsEffect, AircraftUpdatePositionEffect},
+  actions::AircraftAllActionHandler,
+  effects::{
+    AircraftEffect, AircraftUpdateFromTargetsEffect,
+    AircraftUpdatePositionEffect,
+  },
   events::{AircraftEventHandler, HandleAircraftEvent},
   *,
 };

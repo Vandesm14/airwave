@@ -1,6 +1,10 @@
+use super::{Action, Aircraft, Bundle};
+
 use crate::{delta_angle, move_point, normalize_angle};
 
-use super::{Action, Aircraft, AircraftEffect, Bundle};
+pub trait AircraftEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle);
+}
 
 pub struct AircraftUpdateFromTargetsEffect;
 impl AircraftEffect for AircraftUpdateFromTargetsEffect {
