@@ -1,4 +1,8 @@
-use crate::entities::aircraft::*;
+use crate::entities::aircraft::{
+  effects::{AircraftUpdateFromTargetsEffect, AircraftUpdatePositionEffect},
+  events::{AircraftEventHandler, HandleAircraftEvent},
+  *,
+};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Engine {
