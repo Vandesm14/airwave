@@ -1,6 +1,8 @@
 use glam::Vec2;
 
-use crate::{delta_angle, move_point, KNOT_TO_FEET_PER_SECOND, TIME_SCALE};
+use crate::{
+  delta_angle, move_point, normalize_angle, KNOT_TO_FEET_PER_SECOND,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 
@@ -41,6 +43,10 @@ pub struct Aircraft {
   pub target: AircraftTargets,
 }
 
+type AircraftEvent = dyn Fn(&mut Aircraft, &mut Vec<Action>, f32);
+type AircraftEffect = dyn Fn(&mut Aircraft, &mut Vec<Action>, f32);
+type AircraftAction = dyn Fn(&mut Aircraft, &mut Vec<Action>);
+
 // Consts
 impl Aircraft {
   pub fn speed_in_feet(&self) -> f32 {
@@ -60,7 +66,7 @@ impl Aircraft {
   }
 }
 
-// Handlers
+// Event Handlers
 impl Aircraft {
   pub fn handle_target_events(
     &self,
@@ -89,9 +95,9 @@ impl Aircraft {
   }
 }
 
-// Updaters
+// Effects
 impl Aircraft {
-  pub fn update_mains(&mut self, actions: &mut Vec<Action>, dt: f32) {
+  pub fn update_from_targets(&self, actions: &mut Vec<Action>, dt: f32) {
     // TODO: change speeds for takeoff and taxi (turn and speed speeds)
 
     // In feet per second
@@ -102,40 +108,39 @@ impl Aircraft {
     let speed_speed = self.dt_speed_speed(dt);
 
     if (self.altitude - self.target.altitude).abs() < climb_speed {
-      self.altitude = self.target.altitude;
+      actions.push(Action::Altitude(self.target.altitude));
     }
     if (self.heading - self.target.heading).abs() < turn_speed {
-      self.heading = self.target.heading;
+      actions.push(Action::Heading(normalize_angle(self.target.heading)));
     }
     if (self.speed - self.target.speed).abs() < speed_speed {
-      self.speed = self.target.speed;
+      actions.push(Action::Speed(self.target.speed));
     }
 
     // Change based on speed if not equal
     if self.altitude != self.target.altitude {
       if self.altitude < self.target.altitude {
-        self.altitude += climb_speed;
+        actions.push(Action::Altitude(self.altitude + climb_speed));
       } else {
-        self.altitude -= climb_speed;
+        actions.push(Action::Altitude(self.altitude - climb_speed));
       }
     }
     if self.heading != self.target.heading {
       let delta_angle = delta_angle(self.heading, self.target.heading);
       if delta_angle < 0.0 {
-        self.heading -= turn_speed;
+        // self.heading -= turn_speed;
       } else {
-        self.heading += turn_speed;
+        actions
+          .push(Action::Heading(normalize_angle(self.heading + turn_speed)));
       }
     }
     if self.speed != self.target.speed {
       if self.speed < self.target.speed {
-        self.speed += speed_speed;
+        actions.push(Action::Speed(self.speed + speed_speed));
       } else {
-        self.speed -= speed_speed;
+        actions.push(Action::Speed(self.speed - speed_speed));
       }
     }
-
-    self.heading = (360.0 + self.heading) % 360.0;
   }
 
   pub fn update_position(&mut self, dt: f32) {
@@ -144,7 +149,7 @@ impl Aircraft {
   }
 
   pub fn update_all(&mut self, actions: &mut Vec<Action>, dt: f32) {
-    self.update_mains(actions, dt);
+    self.update_from_targets(actions, dt);
     self.update_position(dt);
   }
 }
@@ -191,8 +196,8 @@ impl Engine {
   pub fn tick(&mut self) {
     for aircraft in self.aircraft.iter_mut() {
       aircraft.handle_all_events(&self.events, &mut self.actions);
-      aircraft.apply_actions(&self.actions);
       aircraft.update_all(&mut self.actions, 0.5);
+      aircraft.apply_actions(&self.actions);
     }
 
     self.events.clear();

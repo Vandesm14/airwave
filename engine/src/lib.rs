@@ -23,20 +23,24 @@ pub const RIGHT: f32 = 90.0;
 pub const CLOCKWISE: f32 = 90.0;
 pub const COUNTERCLOCKWISE: f32 = 270.0;
 
+pub fn normalize_angle(angle: f32) -> f32 {
+  (angle + 360.0) % 360.0
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct XY {
   pub x: f32,
   pub y: f32,
 }
 
-fn serialize_vec2<S>(pos: &Vec2, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_vec2<S>(pos: &Vec2, serializer: S) -> Result<S::Ok, S::Error>
 where
   S: Serializer,
 {
   XY { x: pos.x, y: pos.y }.serialize(serializer)
 }
 
-fn deserialize_vec2<'de, D>(deserializer: D) -> Result<Vec2, D::Error>
+pub fn deserialize_vec2<'de, D>(deserializer: D) -> Result<Vec2, D::Error>
 where
   D: Deserializer<'de>,
 {
