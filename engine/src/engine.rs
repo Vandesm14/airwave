@@ -43,9 +43,16 @@ pub struct Aircraft {
   pub target: AircraftTargets,
 }
 
-type AircraftEvent = dyn Fn(&mut Aircraft, &mut Vec<Action>, f32);
-type AircraftEffect = dyn Fn(&mut Aircraft, &mut Vec<Action>, f32);
-type AircraftAction = dyn Fn(&mut Aircraft, &mut Vec<Action>);
+#[derive(Debug, Default)]
+pub struct Bundle {
+  pub events: Vec<Event>,
+  pub actions: Vec<Action>,
+  pub dt: f32,
+}
+
+type AircraftEvent = fn(&Aircraft, &Event, &mut Bundle);
+type AircraftEffect = fn(&Aircraft, &mut Bundle);
+type AircraftAction = fn(&mut Aircraft, &Action, &mut Bundle);
 
 // Consts
 impl Aircraft {
@@ -68,61 +75,55 @@ impl Aircraft {
 
 // Event Handlers
 impl Aircraft {
-  pub fn handle_target_events(
-    &self,
-    events: &[Event],
-    actions: &mut Vec<Action>,
-  ) {
-    for event in events {
-      match event {
-        Event::TargetSpeed(speed) => {
-          actions.push(Action::TargetSpeed(*speed));
-        }
-        Event::TargetHeading(heading) => {
-          actions.push(Action::TargetHeading(*heading));
-        }
-        Event::TargetAltitude(altitude) => {
-          actions.push(Action::TargetAltitude(*altitude));
-        }
-
-        _ => {}
+  fn handle_event(&self, event: &Event, bundle: &mut Bundle) {
+    match event {
+      Event::TargetSpeed(speed) => {
+        bundle.actions.push(Action::Speed(*speed));
+      }
+      Event::TargetHeading(heading) => {
+        bundle.actions.push(Action::TargetHeading(*heading));
+      }
+      Event::TargetAltitude(altitude) => {
+        bundle.actions.push(Action::TargetAltitude(*altitude));
       }
     }
-  }
-
-  pub fn handle_all_events(&self, events: &[Event], actions: &mut Vec<Action>) {
-    self.handle_target_events(events, actions);
   }
 }
 
 // Effects
 impl Aircraft {
-  pub fn update_from_targets(&self, actions: &mut Vec<Action>, dt: f32) {
+  pub fn update_from_targets(&self, bundle: &mut Bundle) {
     // TODO: change speeds for takeoff and taxi (turn and speed speeds)
 
     // In feet per second
-    let climb_speed = self.dt_climb_sp(dt);
+    let climb_speed = self.dt_climb_sp(bundle.dt);
     // In degrees per second
-    let turn_speed = self.dt_turn_speed(dt);
+    let turn_speed = self.dt_turn_speed(bundle.dt);
     // In knots per second
-    let speed_speed = self.dt_speed_speed(dt);
+    let speed_speed = self.dt_speed_speed(bundle.dt);
 
     if (self.altitude - self.target.altitude).abs() < climb_speed {
-      actions.push(Action::Altitude(self.target.altitude));
+      bundle.actions.push(Action::Altitude(self.target.altitude));
     }
     if (self.heading - self.target.heading).abs() < turn_speed {
-      actions.push(Action::Heading(normalize_angle(self.target.heading)));
+      bundle
+        .actions
+        .push(Action::Heading(normalize_angle(self.target.heading)));
     }
     if (self.speed - self.target.speed).abs() < speed_speed {
-      actions.push(Action::Speed(self.target.speed));
+      bundle.actions.push(Action::Speed(self.target.speed));
     }
 
     // Change based on speed if not equal
     if self.altitude != self.target.altitude {
       if self.altitude < self.target.altitude {
-        actions.push(Action::Altitude(self.altitude + climb_speed));
+        bundle
+          .actions
+          .push(Action::Altitude(self.altitude + climb_speed));
       } else {
-        actions.push(Action::Altitude(self.altitude - climb_speed));
+        bundle
+          .actions
+          .push(Action::Altitude(self.altitude - climb_speed));
       }
     }
     if self.heading != self.target.heading {
@@ -130,58 +131,46 @@ impl Aircraft {
       if delta_angle < 0.0 {
         // self.heading -= turn_speed;
       } else {
-        actions
+        bundle
+          .actions
           .push(Action::Heading(normalize_angle(self.heading + turn_speed)));
       }
     }
     if self.speed != self.target.speed {
       if self.speed < self.target.speed {
-        actions.push(Action::Speed(self.speed + speed_speed));
+        bundle.actions.push(Action::Speed(self.speed + speed_speed));
       } else {
-        actions.push(Action::Speed(self.speed - speed_speed));
+        bundle.actions.push(Action::Speed(self.speed - speed_speed));
       }
     }
   }
 
-  pub fn update_position(&mut self, dt: f32) {
-    let pos = move_point(self.pos, self.heading, self.speed_in_feet() * dt);
-    self.pos = pos;
+  pub fn update_position(&self, bundle: &mut Bundle) {
+    let pos =
+      move_point(self.pos, self.heading, self.speed_in_feet() * bundle.dt);
+    // self.pos = pos;
+    bundle.actions.push(Action::Pos(pos));
   }
 
-  pub fn update_all(&mut self, actions: &mut Vec<Action>, dt: f32) {
-    self.update_from_targets(actions, dt);
-    self.update_position(dt);
+  pub fn update_all(&mut self) -> impl Iterator<Item = AircraftEffect> {
+    [Self::update_from_targets, Self::update_position].into_iter()
   }
 }
 
 // Appliers
 impl Aircraft {
-  pub fn apply_targets(&mut self, actions: &[Action]) {
-    for action in actions {
-      match action {
-        Action::TargetSpeed(speed) => self.target.speed = *speed,
-        Action::TargetHeading(heading) => self.target.heading = *heading,
-        Action::TargetAltitude(altitude) => self.target.altitude = *altitude,
+  pub fn apply_action(&mut self, action: &Action) {
+    match action {
+      Action::TargetSpeed(speed) => self.target.speed = *speed,
+      Action::TargetHeading(heading) => self.target.heading = *heading,
+      Action::TargetAltitude(altitude) => self.target.altitude = *altitude,
 
-        _ => {}
-      }
+      Action::Speed(speed) => self.speed = *speed,
+      Action::Heading(heading) => self.heading = *heading,
+      Action::Altitude(altitude) => self.altitude = *altitude,
+
+      Action::Pos(pos) => self.pos = *pos,
     }
-  }
-  pub fn apply_mains(&mut self, actions: &[Action]) {
-    for action in actions {
-      match action {
-        Action::Speed(speed) => self.speed = *speed,
-        Action::Heading(heading) => self.heading = *heading,
-        Action::Altitude(altitude) => self.altitude = *altitude,
-
-        _ => {}
-      }
-    }
-  }
-
-  pub fn apply_actions(&mut self, actions: &[Action]) {
-    self.apply_targets(actions);
-    self.apply_mains(actions);
   }
 }
 
@@ -194,10 +183,36 @@ pub struct Engine {
 
 impl Engine {
   pub fn tick(&mut self) {
+    let mut bundle = Bundle {
+      dt: 0.5,
+      ..Default::default()
+    };
+
     for aircraft in self.aircraft.iter_mut() {
-      aircraft.handle_all_events(&self.events, &mut self.actions);
-      aircraft.update_all(&mut self.actions, 0.5);
-      aircraft.apply_actions(&self.actions);
+      for event in self.events.iter() {
+        aircraft.handle_event(event, &mut bundle);
+
+        // Apply all actions after each event
+        for action in bundle.actions.drain(..) {
+          aircraft.apply_action(&action);
+        }
+      }
+
+      aircraft.update_from_targets(&mut bundle);
+
+      // Apply all actions after each event
+      for action in bundle.actions.drain(..) {
+        aircraft.apply_action(&action);
+      }
+
+      for effect in aircraft.update_all() {
+        effect(aircraft, &mut bundle);
+
+        // Apply all actions after each event
+        for action in bundle.actions.drain(..) {
+          aircraft.apply_action(&action);
+        }
+      }
     }
 
     self.events.clear();

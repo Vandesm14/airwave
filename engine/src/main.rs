@@ -19,10 +19,24 @@ fn main() {
   engine.events.push(Event::TargetHeading(45.0));
 
   println!("{engine:?}");
-
   engine.tick();
   println!("{engine:?}");
-
+  engine.tick();
+  println!("{engine:?}");
+  engine.tick();
+  println!("{engine:?}");
+  engine.tick();
+  println!("{engine:?}");
+  engine.tick();
+  println!("{engine:?}");
+  engine.tick();
+  println!("{engine:?}");
+  engine.tick();
+  println!("{engine:?}");
+  engine.tick();
+  println!("{engine:?}");
+  engine.tick();
+  println!("{engine:?}");
   engine.tick();
   println!("{engine:?}");
 }
