@@ -1,17 +1,17 @@
-use engine::engine::{Aircraft, Engine, Event};
+use engine::{
+  engine::Engine,
+  entities::aircraft::{Aircraft, Event},
+};
 
 fn main() {
   let mut engine = Engine::default();
 
-  let mut aircraft = Aircraft::default();
-  aircraft.speed = 200.0;
-  // aircraft.target.speed = 250.0;
-
-  aircraft.altitude = 2000.0;
-  // aircraft.target.altitude = 4000.0;
-
-  aircraft.heading = 0.0;
-  // aircraft.target.heading = 45.0;
+  let aircraft = Aircraft {
+    speed: 200.0,
+    altitude: 2000.0,
+    heading: 0.0,
+    ..Default::default()
+  };
 
   engine.aircraft.push(aircraft);
   engine.events.push(Event::TargetSpeed(250.0));
