@@ -1,4 +1,4 @@
-use super::{Action, Aircraft, AircraftState};
+use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
@@ -21,29 +21,36 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     let speed_speed = aircraft.dt_speed_speed(bundle.dt);
 
     if (aircraft.altitude - aircraft.target.altitude).abs() < climb_speed {
-      bundle
-        .actions
-        .push(Action::Altitude(aircraft.target.altitude));
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::Altitude(aircraft.target.altitude),
+      ));
     }
     if (aircraft.heading - aircraft.target.heading).abs() < turn_speed {
-      bundle
-        .actions
-        .push(Action::Heading(normalize_angle(aircraft.target.heading)));
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::Heading(normalize_angle(aircraft.target.heading)),
+      ));
     }
     if (aircraft.speed - aircraft.target.speed).abs() < speed_speed {
-      bundle.actions.push(Action::Speed(aircraft.target.speed));
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::Speed(aircraft.target.speed),
+      ));
     }
 
     // Change based on speed if not equal
     if aircraft.altitude != aircraft.target.altitude {
       if aircraft.altitude < aircraft.target.altitude {
-        bundle
-          .actions
-          .push(Action::Altitude(aircraft.altitude + climb_speed));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Altitude(aircraft.altitude + climb_speed),
+        ));
       } else {
-        bundle
-          .actions
-          .push(Action::Altitude(aircraft.altitude - climb_speed));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Altitude(aircraft.altitude - climb_speed),
+        ));
       }
     }
     if aircraft.heading != aircraft.target.heading {
@@ -51,20 +58,23 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
       if delta_angle < 0.0 {
         // aircraft.heading -= turn_speed;
       } else {
-        bundle.actions.push(Action::Heading(normalize_angle(
-          aircraft.heading + turn_speed,
-        )));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Heading(normalize_angle(aircraft.heading + turn_speed)),
+        ));
       }
     }
     if aircraft.speed != aircraft.target.speed {
       if aircraft.speed < aircraft.target.speed {
-        bundle
-          .actions
-          .push(Action::Speed(aircraft.speed + speed_speed));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Speed(aircraft.speed + speed_speed),
+        ));
       } else {
-        bundle
-          .actions
-          .push(Action::Speed(aircraft.speed - speed_speed));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Speed(aircraft.speed - speed_speed),
+        ));
       }
     }
   }
@@ -78,7 +88,9 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
       aircraft.heading,
       KNOT_TO_FEET_PER_SECOND * bundle.dt,
     );
-    bundle.actions.push(Action::Pos(pos));
+    bundle
+      .actions
+      .push(Action::new(aircraft.id, ActionKind::Pos(pos)));
   }
 }
 
@@ -87,7 +99,9 @@ impl AircraftEffect for AircraftUpdateAirspaceEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     for airspace in bundle.airspaces.iter() {
       if airspace.contains_point(aircraft.pos) {
-        bundle.actions.push(Action::Airspace(airspace.id));
+        bundle
+          .actions
+          .push(Action::new(aircraft.id, ActionKind::Airspace(airspace.id)));
 
         break;
       }
@@ -164,7 +178,10 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.4);
 
       let heading_to_point = angle_between_points(aircraft.pos, landing_point);
-      bundle.actions.push(Action::TargetHeading(heading_to_point));
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::TargetHeading(heading_to_point),
+      ));
 
       // If we aren't within the localizer beacon (+/- 5 degrees), don't do
       // anything.
@@ -174,13 +191,17 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         return;
       }
 
-      bundle
-        .actions
-        .push(Action::TargetSpeed(target_knots.min(180.0)));
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::TargetSpeed(target_knots.min(180.0)),
+      ));
 
       // If we are too high, descend.
       if aircraft.altitude > target_altitude {
-        bundle.actions.push(Action::TargetAltitude(target_altitude));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::TargetAltitude(target_altitude),
+        ));
       }
     }
   }

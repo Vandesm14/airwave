@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::engine::Bundle;
 
-use super::{Action, Aircraft, AircraftState};
+use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -25,13 +25,21 @@ impl AircraftEventHandler for HandleAircraftEvent {
   fn run(aircraft: &Aircraft, event: &Event, bundle: &mut Bundle) {
     match event {
       Event::TargetSpeed(speed) => {
-        bundle.actions.push(Action::TargetSpeed(*speed));
+        bundle
+          .actions
+          .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
       }
       Event::TargetHeading(heading) => {
-        bundle.actions.push(Action::TargetHeading(*heading));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::TargetHeading(*heading),
+        ));
       }
       Event::TargetAltitude(altitude) => {
-        bundle.actions.push(Action::TargetAltitude(*altitude));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::TargetAltitude(*altitude),
+        ));
       }
       Event::Land(runway) => handle_land_event(aircraft, bundle, *runway),
     }
@@ -54,7 +62,9 @@ pub fn handle_land_event(
         .find(|r| r.id == runway_id)
       {
         println!("Landing on runway {}", runway.id);
-        bundle.actions.push(Action::Land(runway.clone()));
+        bundle
+          .actions
+          .push(Action::new(aircraft.id, ActionKind::Land(runway.clone())));
       } else {
         eprintln!("No runway: {}", runway_id)
       }

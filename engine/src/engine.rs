@@ -58,8 +58,10 @@ impl Engine {
       AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
 
       // Run through all actions
-      for action in bundle.actions.drain(..) {
-        AircraftAllActionHandler::run(aircraft, &action);
+      for action in bundle.actions.iter() {
+        if action.id == aircraft.id {
+          AircraftAllActionHandler::run(aircraft, &action.kind);
+        }
       }
     }
 
