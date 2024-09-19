@@ -62,25 +62,27 @@ fn main() {
     .events
     .push(Event::new(aircraft_id, EventKind::TargetHeading(45.0)));
 
+  let dt = 0.5;
+
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
-  engine.tick(&world, &mut aircrafts);
+  engine.tick(&world, &mut aircrafts, dt);
   println!("{aircrafts:?}");
 }

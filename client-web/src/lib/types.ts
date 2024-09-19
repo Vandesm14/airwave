@@ -38,13 +38,16 @@ export type AircraftStateTaxiing = {
   };
 };
 
-export type AircraftState = AircraftStateFlying | AircraftStateLanding | AircraftStateTaxiing;
+export type AircraftState =
+  | AircraftStateFlying
+  | AircraftStateLanding
+  | AircraftStateTaxiing;
 
 export type Aircraft = {
-  x: number;
-  y: number;
-
+  id: string;
   frequency: number;
+
+  pos: Vec2;
 
   target: {
     /** Name of cleared runway to land on */
@@ -63,7 +66,6 @@ export type Aircraft = {
   speed: number;
   /** In Feet */
   altitude: number;
-  callsign: string;
 
   state: AircraftState;
   flight_plan: {
@@ -72,19 +74,24 @@ export type Aircraft = {
   };
 
   created: number;
-
   airspace: string | null;
 };
 
-export function isAircraftFlying(state: AircraftState): state is AircraftStateFlying {
+export function isAircraftFlying(
+  state: AircraftState
+): state is AircraftStateFlying {
   return state.type === 'flying';
 }
 
-export function isAircraftLanding(state: AircraftState): state is AircraftStateLanding {
+export function isAircraftLanding(
+  state: AircraftState
+): state is AircraftStateLanding {
   return state.type === 'landing';
 }
 
-export function isAircraftTaxiing(state: AircraftState): state is AircraftStateTaxiing {
+export function isAircraftTaxiing(
+  state: AircraftState
+): state is AircraftStateTaxiing {
   return state.type === 'taxiing';
 }
 

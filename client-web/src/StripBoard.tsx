@@ -106,7 +106,7 @@ function assignAircraftToStrips(
       return 'Center';
     }
   } else {
-    if (aircraft.callsign === selectedAircraft) {
+    if (aircraft.id === selectedAircraft) {
       return 'Selected';
     } else {
       return 'None';
@@ -143,7 +143,7 @@ function Strip({ strip }: StripProps) {
 
   if (isAircraftFlying(strip.state)) {
     if (strip.state.value.waypoints.length > 0) {
-      let current = { x: strip.x, y: strip.y };
+      let current = strip.pos;
       let distance = 0;
       let waypoints = strip.state.value.waypoints.slice();
       waypoints.reverse();
@@ -161,7 +161,7 @@ function Strip({ strip }: StripProps) {
     }
   } else if (strip.state.type === 'landing') {
     let distance = calculateDistance(
-      { x: strip.x, y: strip.y },
+      strip.pos,
       runwayInfo(strip.state.value).start
     );
 
@@ -205,7 +205,7 @@ function Strip({ strip }: StripProps) {
   let distance = distanceToAirspace(strip, world(), airspace());
 
   function handleMouseDown() {
-    setSelectedAircraft(strip.callsign);
+    setSelectedAircraft(strip.id);
   }
 
   return (
@@ -213,13 +213,13 @@ function Strip({ strip }: StripProps) {
       classList={{
         strip: true,
         theirs,
-        selected: selectedAircraft() === strip.callsign,
+        selected: selectedAircraft() === strip.id,
         departure: airspace() === strip.flight_plan.departing,
       }}
       onmousedown={handleMouseDown}
     >
       <div class="vertical">
-        <span class="callsign">{strip.callsign}</span>
+        <span class="callsign">{strip.id}</span>
         <span>
           {(distance / nauticalMilesToFeet).toFixed(1).slice(0, 4)} NM
         </span>
@@ -277,7 +277,7 @@ export default function StripBoard({
 
       const timeSorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
       const nameSorter = (a: Aircraft, b: Aircraft) =>
-        ('' + a.callsign).localeCompare(b.callsign);
+        ('' + a.id).localeCompare(b.id);
       const distanteToAirportSorter = (a: Aircraft, b: Aircraft) => {
         return (
           distanceToAirspace(b, world(), airspace()) -

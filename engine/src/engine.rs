@@ -35,9 +35,9 @@ pub struct Engine {
 }
 
 impl Engine {
-  pub fn tick(&mut self, world: &World, aircraft: &mut [Aircraft]) {
+  pub fn tick(&mut self, world: &World, aircraft: &mut [Aircraft], dt: f32) {
     let mut bundle = Bundle {
-      dt: 0.5,
+      dt,
       airspaces: &world.airspaces,
       ..Default::default()
     };

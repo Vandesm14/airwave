@@ -277,7 +277,7 @@ export default function Canvas({
 
     let selected = selectedAircraft();
     if (selected) {
-      let aircraft = aircrafts().find((a) => a.callsign === selected);
+      let aircraft = aircrafts().find((a) => a.id === selected);
       if (aircraft) {
         if (
           airspace.id !== aircraft.airspace &&
@@ -374,11 +374,8 @@ export default function Canvas({
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
-    let pos = scalePoint(aircraft);
-    if (
-      aircraft.state.type === 'flying' &&
-      selectedAircraft() == aircraft.callsign
-    ) {
+    let pos = scalePoint(aircraft.pos);
+    if (aircraft.state.type === 'flying' && selectedAircraft() == aircraft.id) {
       ctx.strokeStyle = '#ffff0033';
       ctx.lineWidth = 3;
 
@@ -402,7 +399,7 @@ export default function Canvas({
 
     resetTransform(ctx);
 
-    if (selectedAircraft() == aircraft.callsign) {
+    if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = '#aaaa00';
       ctx.strokeStyle = '#aaaa00';
     } else {
@@ -428,10 +425,15 @@ export default function Canvas({
 
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
-    const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
+    const end = movePoint(
+      aircraft.pos.x,
+      aircraft.pos.y,
+      length,
+      aircraft.heading
+    );
     let endPos = scalePoint(end);
 
-    if (selectedAircraft() == aircraft.callsign) {
+    if (selectedAircraft() == aircraft.id) {
       ctx.strokeStyle = '#aaaa00';
     } else {
       ctx.strokeStyle = '#00aa00';
@@ -445,14 +447,14 @@ export default function Canvas({
     let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
     ctx.textAlign = 'left';
     ctx.fillStyle = '#44ff44';
-    if (selectedAircraft() == aircraft.callsign) {
+    if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = '#FFE045';
     } else if (aircraft.flight_plan.departing === ourAirspace()) {
       ctx.fillStyle = '#3087f2';
     }
 
     // Draw callsign
-    ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
+    ctx.fillText(aircraft.id, pos.x + spacing, pos.y - spacing);
 
     // Draw altitude
     let altitudeIcon = ' ';
@@ -615,14 +617,13 @@ export default function Canvas({
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     resetTransform(ctx);
-    let pos = scalePoint(aircraft);
+    let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
-    let taxi_color =
-      selectedAircraft() == aircraft.callsign ? '#ffe045' : '#ffffff';
+    let taxi_color = selectedAircraft() == aircraft.id ? '#ffe045' : '#ffffff';
 
     if (
       aircraft.state.type === 'taxiing' &&
-      selectedAircraft() == aircraft.callsign
+      selectedAircraft() == aircraft.id
     ) {
       ctx.strokeStyle = '#ffff0088';
       ctx.lineWidth = scaleFeetToPixels(50);
@@ -658,7 +659,12 @@ export default function Canvas({
     ctx.strokeStyle = taxi_color;
     ctx.lineWidth = 2;
     const length = 400;
-    const end = movePoint(aircraft.x, aircraft.y, length, aircraft.heading);
+    const end = movePoint(
+      aircraft.pos.x,
+      aircraft.pos.y,
+      length,
+      aircraft.heading
+    );
     let endPos = scalePoint(end);
 
     ctx.beginPath();
@@ -676,7 +682,7 @@ export default function Canvas({
     ctx.fillStyle = taxi_color;
 
     // Draw callsign
-    ctx.fillText(aircraft.callsign, pos.x + spacing, pos.y - spacing);
+    ctx.fillText(aircraft.id, pos.x + spacing, pos.y - spacing);
 
     // Draw speed
     ctx.fillText(

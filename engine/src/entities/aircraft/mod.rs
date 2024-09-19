@@ -7,7 +7,11 @@ use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 
-use crate::pathfinder::{Node, WaypointNodeData};
+use crate::{
+  deserialize_vec2,
+  pathfinder::{Node, WaypointNodeData},
+  serialize_vec2,
+};
 
 use super::airport::Runway;
 
@@ -63,6 +67,8 @@ impl FlightPlan {
 pub struct Aircraft {
   pub id: Intern<String>,
 
+  #[serde(serialize_with = "serialize_vec2")]
+  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub speed: f32,
   pub heading: f32,

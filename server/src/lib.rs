@@ -137,7 +137,8 @@ impl CompatAdapter {
           self.execute_command(command);
         }
 
-        self.engine.tick(&self.world, &mut self.aircraft);
+        let dt = 1.0 / self.rate as f32;
+        self.engine.tick(&self.world, &mut self.aircraft, dt);
 
         // TODO: self.cleanup();
         self.broadcast_aircraft();
