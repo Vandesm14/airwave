@@ -20,6 +20,7 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     // In knots per second
     let speed_speed = aircraft.dt_speed_speed(bundle.dt);
 
+    // Snap values if they're close enough
     if (aircraft.altitude - aircraft.target.altitude).abs() < climb_speed {
       bundle.actions.push(Action::new(
         aircraft.id,
@@ -39,7 +40,7 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
       ));
     }
 
-    // Change based on speed if not equal
+    // Change if not equal
     if aircraft.altitude != aircraft.target.altitude {
       if aircraft.altitude < aircraft.target.altitude {
         bundle.actions.push(Action::new(
@@ -56,7 +57,10 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     if aircraft.heading != aircraft.target.heading {
       let delta_angle = delta_angle(aircraft.heading, aircraft.target.heading);
       if delta_angle < 0.0 {
-        // aircraft.heading -= turn_speed;
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Heading(normalize_angle(aircraft.heading - turn_speed)),
+        ));
       } else {
         bundle.actions.push(Action::new(
           aircraft.id,
@@ -86,7 +90,7 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
     let pos = move_point(
       aircraft.pos,
       aircraft.heading,
-      KNOT_TO_FEET_PER_SECOND * bundle.dt,
+      aircraft.speed * KNOT_TO_FEET_PER_SECOND * bundle.dt,
     );
     bundle
       .actions
