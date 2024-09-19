@@ -8,9 +8,7 @@ use std::{path::PathBuf, sync::Arc};
 use clap::Parser;
 use engine::{
   circle_circle_intersection,
-  engine::Engine,
   entities::{
-    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
@@ -22,7 +20,7 @@ use glam::Vec2;
 use internment::Intern;
 use server::{
   airport::{self, AirportSetupFn},
-  IncomingUpdate, OutgoingReply,
+  CompatAdapter, IncomingUpdate, OutgoingReply,
 };
 use tokio::net::TcpListener;
 use turborand::{rng::Rng, SeededCore, TurboRand};
@@ -52,7 +50,7 @@ async fn main() {
   update_tx.set_overflow(true);
 
   let rng = Rng::with_seed(0);
-  let mut engine = Engine::new(
+  let mut engine = CompatAdapter::new(
     command_rx,
     update_tx.clone(),
     command_tx.clone(),
@@ -86,8 +84,6 @@ async fn main() {
   // );
   // airport_egll.calculate_waypoints();
   // airspace_egll.airports.push(airport_egll);
-
-  engine.spawn_random_aircraft();
 
   const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
   const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
@@ -182,33 +178,34 @@ async fn main() {
     });
   }
 
-  // Fill all gates with random aircraft.
-  for airspace in engine.world.airspaces.iter() {
-    if !airspace.auto {
-      for airport in airspace.airports.iter() {
-        let mut now = true;
-        for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          if engine.rng.chance(0.4) {
-            let mut aircraft =
-              Aircraft::random_parked(gate.clone(), &mut engine.rng);
-            aircraft.airspace = Some(airspace.id.clone());
-            aircraft.flight_plan.arriving = airspace.id.clone();
-            aircraft
-              .departure_from_arrival(&engine.world.airspaces, &mut engine.rng);
+  // TODO: Fill all gates with random aircraft.
+  // for airspace in engine.world.airspaces.iter() {
+  //   if !airspace.auto {
+  //     for airport in airspace.airports.iter() {
+  //       let mut now = true;
+  //       for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
+  //         if engine.rng.chance(0.4) {
+  //           let mut aircraft =
+  //             Aircraft::random_parked(gate.clone(), &mut engine.rng);
+  //           aircraft.airspace = Some(airspace.id.clone());
+  //           aircraft.flight_plan.arriving = airspace.id.clone();
+  //           aircraft
+  //             .departure_from_arrival(&engine.world.airspaces, &mut engine.rng);
 
-            if now {
-              aircraft.created_now();
-              now = false;
-            }
+  //           if now {
+  //             aircraft.created_now();
+  //             now = false;
+  //           }
 
-            engine.world.aircraft.push(aircraft);
-          }
-        }
-      }
-    }
-  }
+  //           engine.world.aircraft.push(aircraft);
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
-  engine.spawn_random_aircraft();
+  // TODO: Spawn random
+  // engine.spawn_random_aircraft();
 
   // Generating waypoints between sufficiently close airspaces.
   let mut i = 0;

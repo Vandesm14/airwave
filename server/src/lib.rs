@@ -1,5 +1,10 @@
-use std::sync::Arc;
+use std::{
+  path::PathBuf,
+  sync::Arc,
+  time::{Duration, Instant},
+};
 
+use async_channel::TryRecvError;
 use async_openai::{
   error::OpenAIError,
   types::{
@@ -10,6 +15,7 @@ use async_openai::{
 };
 use engine::{
   command::CommandWithFreq,
+  engine::Engine,
   entities::{aircraft::Aircraft, world::World},
 };
 use futures_util::{
@@ -24,6 +30,7 @@ use tokio_tungstenite::{
   tungstenite::{self, Message},
   WebSocketStream,
 };
+use turborand::rng::Rng;
 
 pub mod airport;
 pub mod prompter;
@@ -46,6 +53,112 @@ pub enum OutgoingReply {
 pub enum IncomingUpdate {
   Command(CommandWithFreq),
   Connect,
+}
+
+#[derive(Debug, Clone)]
+pub struct CompatAdapter {
+  pub world: World,
+  pub aircraft: Vec<Aircraft>,
+  pub engine: Engine,
+
+  pub receiver: async_channel::Receiver<IncomingUpdate>,
+  pub outgoing_sender: async_broadcast::Sender<OutgoingReply>,
+  pub incoming_sender: async_channel::Sender<IncomingUpdate>,
+
+  pub save_to: Option<PathBuf>,
+  pub rng: Rng,
+
+  last_tick: Instant,
+  last_spawn: Instant,
+  rate: usize,
+}
+
+impl CompatAdapter {
+  pub fn new(
+    receiver: async_channel::Receiver<IncomingUpdate>,
+    outgoing_sender: async_broadcast::Sender<OutgoingReply>,
+    incoming_sender: async_channel::Sender<IncomingUpdate>,
+    save_to: Option<PathBuf>,
+    rng: Rng,
+  ) -> Self {
+    Self {
+      world: World::default(),
+      aircraft: Vec::default(),
+      engine: Engine::default(),
+
+      receiver,
+      outgoing_sender,
+      incoming_sender,
+
+      save_to,
+      rng,
+
+      last_tick: Instant::now(),
+      last_spawn: Instant::now(),
+      rate: 10,
+    }
+  }
+
+  pub fn begin_loop(&mut self) {
+    'main_loop: loop {
+      if Instant::now() - self.last_tick
+        >= Duration::from_secs_f32(1.0 / self.rate as f32)
+      {
+        self.last_tick = Instant::now();
+
+        if self.aircraft.len() < 30
+          && self.last_spawn.elapsed() >= Duration::from_secs(150)
+        {
+          self.last_spawn = Instant::now();
+          // self.spawn_random_aircraft();
+          tracing::warn!("TODO: Spawn random aircraft");
+        }
+
+        let mut commands: Vec<CommandWithFreq> = Vec::new();
+
+        loop {
+          let incoming = match self.receiver.try_recv() {
+            Ok(incoming) => incoming,
+            Err(TryRecvError::Closed) => break 'main_loop,
+            Err(TryRecvError::Empty) => break,
+          };
+
+          match incoming {
+            IncomingUpdate::Command(command) => commands.push(command),
+            IncomingUpdate::Connect => self.broadcast_for_new_client(),
+          }
+        }
+
+        for command in commands {
+          // TODO: self.execute_command(command);
+        }
+
+        self.engine.tick(&self.world, &mut self.aircraft);
+
+        // TODO: self.cleanup();
+        self.broadcast_aircraft();
+        // TODO: self.save_world();
+      }
+    }
+  }
+
+  fn broadcast_aircraft(&self) {
+    let _ = self
+      .outgoing_sender
+      .try_broadcast(OutgoingReply::Aircraft(self.aircraft.clone()))
+      .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
+  }
+
+  fn broadcast_world(&self) {
+    let _ = self
+      .outgoing_sender
+      .try_broadcast(OutgoingReply::World(self.world.clone()))
+      .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
+  }
+
+  fn broadcast_for_new_client(&self) {
+    self.broadcast_world();
+  }
 }
 
 pub async fn broadcast_updates_to(
