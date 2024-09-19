@@ -1,5 +1,5 @@
 use glam::Vec2;
-use lasso::Spur;
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airport {
-  pub id: Spur,
+  pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub center: Vec2,
@@ -23,7 +23,7 @@ pub struct Airport {
 }
 
 impl Airport {
-  pub fn new(id: Spur, center: Vec2) -> Self {
+  pub fn new(id: Intern<String>, center: Vec2) -> Self {
     Self {
       id,
       center,

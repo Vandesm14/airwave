@@ -15,7 +15,7 @@ async-broadcast.workspace = true
 
 serde.workspace = true
 serde_json.workspace = true
-lasso.workspace = true
+internment.workspace = true
 
 tracing.workspace = true
 tracing-subscriber.workspace = true

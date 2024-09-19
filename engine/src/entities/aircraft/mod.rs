@@ -3,7 +3,7 @@ pub mod effects;
 pub mod events;
 
 use glam::Vec2;
-use lasso::Spur;
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use crate::pathfinder::{Node, WaypointNodeData};
@@ -34,7 +34,7 @@ pub enum Action {
   TargetHeading(f32),
   TargetAltitude(f32),
 
-  Airspace(Spur),
+  Airspace(Intern<String>),
 }
 
 #[derive(Debug, Default)]
@@ -78,7 +78,7 @@ impl Default for AircraftState {
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
-  pub id: Spur,
+  pub id: Intern<String>,
 
   pub pos: Vec2,
   pub speed: f32,
@@ -88,7 +88,7 @@ pub struct Aircraft {
   pub target: AircraftTargets,
   pub state: AircraftState,
 
-  pub airspace: Spur,
+  pub airspace: Intern<String>,
 }
 
 impl Aircraft {

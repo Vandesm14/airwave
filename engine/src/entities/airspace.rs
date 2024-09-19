@@ -1,5 +1,5 @@
 use glam::Vec2;
-use lasso::Spur;
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
@@ -47,7 +47,7 @@ impl Frequencies {
 // TODO: Support non-circular (regional) airspaces
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airspace {
-  pub id: Spur,
+  pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,

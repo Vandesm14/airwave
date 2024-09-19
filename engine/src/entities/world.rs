@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
 use glam::Vec2;
-use lasso::ThreadedRodeo;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::pathfinder::{Node, WaypointNodeData};
 
-use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
+use super::{airport::Airport, airspace::Airspace};
 
 pub fn find_random_airspace_with<'a>(
   airspaces: &'a [Airspace],
@@ -65,10 +64,6 @@ pub struct World {
   pub airspaces: Vec<Airspace>,
   pub waypoints: Vec<Node<WaypointNodeData>>,
   pub waypoint_sets: WaypointSet,
-
-  pub aircraft_interner: ThreadedRodeo,
-  pub airspace_interner: ThreadedRodeo,
-  pub airport_interner: ThreadedRodeo,
 }
 
 impl World {

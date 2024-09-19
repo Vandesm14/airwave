@@ -8,6 +8,7 @@ use engine::{
   },
   NAUTICALMILES_TO_FEET,
 };
+use internment::Intern;
 
 const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
 
@@ -18,13 +19,13 @@ fn main() {
 
   // Create a controlled KSFO airspace
   let airspace_ksfo = Airspace {
-    id: world.airspace_interner.get_or_intern("KSFO"),
+    id: Intern::new("KSFO".into()),
     size: MANUAL_TOWER_AIRSPACE_RADIUS,
     ..Default::default()
   };
 
   let mut airport_ksfo = Airport {
-    id: world.airport_interner.get_or_intern("KSFO"),
+    id: Intern::new("KSFO".into()),
     ..Default::default()
   };
 
