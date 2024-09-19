@@ -57,7 +57,12 @@ pub struct Engine {
 }
 
 impl Engine {
-  pub fn tick(&mut self, world: &World, aircraft: &mut [Aircraft], dt: f32) {
+  pub fn tick(
+    &mut self,
+    world: &World,
+    aircraft: &mut [Aircraft],
+    dt: f32,
+  ) -> Vec<Event> {
     let mut bundle = Bundle::from(world);
     bundle.dt = dt;
 
@@ -98,5 +103,7 @@ impl Engine {
     // Capture the left over events and actions for next time
     self.events = core::mem::take(&mut bundle.events);
     self.actions = core::mem::take(&mut bundle.actions);
+
+    self.events.clone()
   }
 }
