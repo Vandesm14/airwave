@@ -343,22 +343,17 @@ struct Cli {
 enum AirportChoice {
   Random,
   NewVPattern,
-  VPattern,
   Parallel,
 }
 
 impl AirportChoice {
   fn setup(&self, rng: &mut Rng) -> AirportSetupFn {
-    static AIRPORT_SETUPS: &[AirportSetupFn] = &[
-      airport::new_v_pattern::setup,
-      airport::v_pattern::setup,
-      airport::parallel::setup,
-    ];
+    static AIRPORT_SETUPS: &[AirportSetupFn] =
+      &[airport::new_v_pattern::setup, airport::parallel::setup];
 
     match self {
       Self::Random => *rng.sample(AIRPORT_SETUPS).unwrap(),
       Self::NewVPattern => airport::new_v_pattern::setup,
-      Self::VPattern => airport::v_pattern::setup,
       Self::Parallel => airport::parallel::setup,
     }
   }
@@ -367,7 +362,6 @@ impl AirportChoice {
     match self {
       Self::Random => "random",
       Self::NewVPattern => "new_v_pattern",
-      Self::VPattern => "v_pattern",
       Self::Parallel => "parallel",
     }
   }
@@ -380,7 +374,6 @@ impl FromStr for AirportChoice {
     match s {
       "random" => Ok(Self::Random),
       "new_v_pattern" => Ok(Self::NewVPattern),
-      "v_pattern" => Ok(Self::VPattern),
       "parallel" => Ok(Self::Parallel),
       _ => Err(format!("'{s}' is an invalid airport type")),
     }

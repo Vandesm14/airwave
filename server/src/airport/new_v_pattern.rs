@@ -3,7 +3,7 @@ use glam::Vec2;
 use engine::{
   add_degrees,
   entities::{
-    aircraft::Event,
+    aircraft::events::Event,
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
@@ -11,6 +11,7 @@ use engine::{
   pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
   Line, CLOCKWISE, COUNTERCLOCKWISE, NAUTICALMILES_TO_FEET,
 };
+use internment::Intern;
 
 // TODO: Add tasks to the correct waypoints to clear landings, et cetera.
 
@@ -22,21 +23,21 @@ pub fn setup(
   const TAXIWAY_DISTANCE: f32 = 400.0;
 
   let runway_13 = Runway {
-    id: "13".into(),
+    id: Intern::from_ref("13"),
     pos: airport.center + Vec2::new(1000.0, 0.0),
     heading: 135.0,
     length: 7000.0,
   };
 
   let runway_22 = Runway {
-    id: "22".into(),
+    id: Intern::from_ref("22"),
     pos: airport.center + Vec2::new(-1000.0, 0.0),
     heading: 225.0,
     length: 7000.0,
   };
 
   let taxiway_a = Taxiway {
-    id: "A".into(),
+    id: Intern::from_ref("A"),
     a: move_point(
       runway_22.start(),
       add_degrees(runway_22.heading, CLOCKWISE),
@@ -50,7 +51,7 @@ pub fn setup(
   };
 
   let taxiway_b = Taxiway {
-    id: "B".into(),
+    id: Intern::from_ref("B"),
     a: move_point(
       runway_22.start(),
       add_degrees(runway_22.heading, COUNTERCLOCKWISE),
@@ -64,7 +65,7 @@ pub fn setup(
   };
 
   let taxiway_c = Taxiway {
-    id: "C".into(),
+    id: Intern::from_ref("C"),
     a: move_point(
       runway_13.start(),
       add_degrees(runway_13.heading, CLOCKWISE),
@@ -78,7 +79,7 @@ pub fn setup(
   };
 
   let taxiway_d = Taxiway {
-    id: "D".into(),
+    id: Intern::from_ref("D"),
     a: move_point(
       runway_13.start(),
       add_degrees(runway_13.heading, COUNTERCLOCKWISE),
@@ -92,49 +93,49 @@ pub fn setup(
   };
 
   let taxiway_e1 = Taxiway {
-    id: "E1".into(),
+    id: Intern::from_ref("E1"),
     a: taxiway_a.b.lerp(taxiway_a.a, 1.0),
     b: taxiway_b.b.lerp(taxiway_b.a, 1.0),
   };
 
   let taxiway_e2 = Taxiway {
-    id: "E2".into(),
+    id: Intern::from_ref("E2"),
     a: taxiway_a.b.lerp(taxiway_a.a, 0.5),
     b: taxiway_b.b.lerp(taxiway_b.a, 0.5),
   };
 
   let taxiway_e3 = Taxiway {
-    id: "E3".into(),
+    id: Intern::from_ref("E3"),
     a: taxiway_a.b.lerp(taxiway_a.a, 0.25),
     b: taxiway_b.b.lerp(taxiway_b.a, 0.25),
   };
 
   let taxiway_e4 = Taxiway {
-    id: "E4".into(),
+    id: Intern::from_ref("E4"),
     a: taxiway_a.b.lerp(taxiway_a.a, 0.0),
     b: taxiway_b.b.lerp(taxiway_b.a, 0.0),
   };
 
   let taxiway_f1 = Taxiway {
-    id: "F1".into(),
+    id: Intern::from_ref("F1"),
     a: taxiway_c.b.lerp(taxiway_c.a, 1.0),
     b: taxiway_d.b.lerp(taxiway_d.a, 1.0),
   };
 
   let taxiway_f2 = Taxiway {
-    id: "F2".into(),
+    id: Intern::from_ref("F2"),
     a: taxiway_c.b.lerp(taxiway_c.a, 0.5),
     b: taxiway_d.b.lerp(taxiway_d.a, 0.5),
   };
 
   let taxiway_f3 = Taxiway {
-    id: "F3".into(),
+    id: Intern::from_ref("F3"),
     a: taxiway_c.b.lerp(taxiway_c.a, 0.25),
     b: taxiway_d.b.lerp(taxiway_d.a, 0.25),
   };
 
   let taxiway_f4 = Taxiway {
-    id: "F4".into(),
+    id: Intern::from_ref("F4"),
     a: taxiway_c.b.lerp(taxiway_c.a, 0.0),
     b: taxiway_d.b.lerp(taxiway_d.a, 0.0),
   };
@@ -153,7 +154,7 @@ pub fn setup(
   .unwrap();
 
   let mut terminal_a = Terminal {
-    id: 'A',
+    id: Intern::from_ref("A"),
     a: terminal_a_a,
     b: terminal_a_b,
     c: terminal_a_c,
@@ -169,7 +170,7 @@ pub fn setup(
   let total_gates = 6;
   for i in 1..=total_gates {
     let gate = Gate {
-      id: format!("A{}", i),
+      id: Intern::from(format!("A{}", i)),
       pos: move_point(
         terminal_a
           .apron
@@ -184,7 +185,7 @@ pub fn setup(
   }
   for i in 1..=total_gates {
     let gate = Gate {
-      id: format!("A{}", i + total_gates),
+      id: Intern::from(format!("A{}", i + total_gates)),
       pos: move_point(
         terminal_a
           .apron
@@ -212,7 +213,7 @@ pub fn setup(
   .unwrap();
 
   let mut terminal_b = Terminal {
-    id: 'B',
+    id: Intern::from_ref("B"),
     a: terminal_b_a,
     b: terminal_b_b,
     c: terminal_b_c,
@@ -228,7 +229,7 @@ pub fn setup(
   let total_gates = 6;
   for i in 1..=total_gates {
     let gate = Gate {
-      id: format!("B{}", i),
+      id: Intern::from(format!("B{}", i)),
       pos: move_point(
         terminal_b
           .apron
@@ -243,7 +244,7 @@ pub fn setup(
   }
   for i in 1..=total_gates {
     let gate = Gate {
-      id: format!("B{}", i + total_gates),
+      id: Intern::from(format!("B{}", i + total_gates)),
       pos: move_point(
         terminal_b
           .apron
@@ -258,7 +259,7 @@ pub fn setup(
   }
 
   let waypoint_vista = Node {
-    name: "VISTA".to_owned(),
+    name: Intern::from_ref("VISTA"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -272,7 +273,7 @@ pub fn setup(
   };
 
   let waypoint_orbit = Node {
-    name: "ORBIT".to_owned(),
+    name: Intern::from_ref("ORBIT"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -286,7 +287,7 @@ pub fn setup(
   };
 
   let waypoint_crest = Node {
-    name: "CREST".to_owned(),
+    name: Intern::from_ref("CREST"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -300,7 +301,7 @@ pub fn setup(
   };
 
   let waypoint_blaze = Node {
-    name: "BLAZE".to_owned(),
+    name: Intern::from_ref("BLAZE"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -314,7 +315,7 @@ pub fn setup(
   };
 
   let waypoint_swift = Node {
-    name: "SWIFT".to_owned(),
+    name: Intern::from_ref("SWIFT"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -330,7 +331,7 @@ pub fn setup(
   //
 
   let waypoint_sonic = Node {
-    name: "SONIC".to_owned(),
+    name: Intern::from_ref("SONIC"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -344,7 +345,7 @@ pub fn setup(
   };
 
   let waypoint_ready = Node {
-    name: "READY".to_owned(),
+    name: Intern::from_ref("READY"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -358,7 +359,7 @@ pub fn setup(
   };
 
   let waypoint_short = Node {
-    name: "SHORT".to_owned(),
+    name: Intern::from_ref("SHORT"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -372,7 +373,7 @@ pub fn setup(
   };
 
   let waypoint_quick = Node {
-    name: "QUICK".to_owned(),
+    name: Intern::from_ref("QUICK"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -386,7 +387,7 @@ pub fn setup(
   };
 
   let waypoint_arrow = Node {
-    name: "ARROW".to_owned(),
+    name: Intern::from_ref("ARROW"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -402,7 +403,7 @@ pub fn setup(
   //
 
   let waypoint_paper = Node {
-    name: "PAPER".to_owned(),
+    name: Intern::from_ref("PAPER"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -416,7 +417,7 @@ pub fn setup(
   };
 
   let waypoint_ghost = Node {
-    name: "GHOST".to_owned(),
+    name: Intern::from_ref("GHOST"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -430,7 +431,7 @@ pub fn setup(
   };
 
   let waypoint_ocean = Node {
-    name: "OCEAN".to_owned(),
+    name: Intern::from_ref("OCEAN"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -444,7 +445,7 @@ pub fn setup(
   };
 
   let waypoint_goose = Node {
-    name: "GOOSE".to_owned(),
+    name: Intern::from_ref("GOOSE"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -460,7 +461,7 @@ pub fn setup(
   //
 
   let waypoint_quack = Node {
-    name: "QUACK".to_owned(),
+    name: Intern::from_ref("QUACK"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -474,7 +475,7 @@ pub fn setup(
   };
 
   let waypoint_state = Node {
-    name: "STATE".to_owned(),
+    name: Intern::from_ref("STATE"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -488,7 +489,7 @@ pub fn setup(
   };
 
   let waypoint_unite = Node {
-    name: "UNITE".to_owned(),
+    name: Intern::from_ref("UNITE"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -502,7 +503,7 @@ pub fn setup(
   };
 
   let waypoint_royal = Node {
-    name: "ROYAL".to_owned(),
+    name: Intern::from_ref("ROYAL"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
