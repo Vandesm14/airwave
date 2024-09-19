@@ -522,9 +522,9 @@ pub fn setup(
     Intern::from_ref("A6"),
     vec![
       Intern::from_ref("A6"),
-      waypoint_blaze.name.clone(),
-      waypoint_orbit.name.clone(),
-      waypoint_vista.name.clone(),
+      waypoint_blaze.name,
+      waypoint_orbit.name,
+      waypoint_vista.name,
     ],
   );
 
@@ -532,9 +532,9 @@ pub fn setup(
     Intern::from_ref("E4"),
     vec![
       Intern::from_ref("E4"),
-      waypoint_crest.name.clone(),
-      waypoint_orbit.name.clone(),
-      waypoint_vista.name.clone(),
+      waypoint_crest.name,
+      waypoint_orbit.name,
+      waypoint_vista.name,
     ],
   );
 
@@ -542,9 +542,9 @@ pub fn setup(
     Intern::from_ref("A5"),
     vec![
       Intern::from_ref("A5"),
-      waypoint_swift.name.clone(),
-      waypoint_orbit.name.clone(),
-      waypoint_vista.name.clone(),
+      waypoint_swift.name,
+      waypoint_orbit.name,
+      waypoint_vista.name,
     ],
   );
 
@@ -552,9 +552,9 @@ pub fn setup(
     Intern::from_ref("A9"),
     vec![
       Intern::from_ref("A9"),
-      waypoint_short.name.clone(),
-      waypoint_ready.name.clone(),
-      waypoint_sonic.name.clone(),
+      waypoint_short.name,
+      waypoint_ready.name,
+      waypoint_sonic.name,
     ],
   );
 
@@ -562,157 +562,157 @@ pub fn setup(
     Intern::from_ref("B1"),
     vec![
       Intern::from_ref("B1"),
-      waypoint_arrow.name.clone(),
-      waypoint_ready.name.clone(),
-      waypoint_sonic.name.clone(),
+      waypoint_arrow.name,
+      waypoint_ready.name,
+      waypoint_sonic.name,
     ],
   );
 
   //
 
   waypoint_sets.approach.insert(
-    waypoint_blaze.name.clone(),
+    waypoint_blaze.name,
     vec![
-      waypoint_blaze.name.clone(),
-      waypoint_orbit.name.clone(),
-      waypoint_vista.name.clone(),
+      waypoint_blaze.name,
+      waypoint_orbit.name,
+      waypoint_vista.name,
     ],
   );
 
   waypoint_sets.approach.insert(
-    waypoint_crest.name.clone(),
+    waypoint_crest.name,
     vec![
-      waypoint_crest.name.clone(),
-      waypoint_orbit.name.clone(),
-      waypoint_vista.name.clone(),
+      waypoint_crest.name,
+      waypoint_orbit.name,
+      waypoint_vista.name,
     ],
   );
 
   waypoint_sets.approach.insert(
-    waypoint_swift.name.clone(),
+    waypoint_swift.name,
     vec![
-      waypoint_swift.name.clone(),
-      waypoint_orbit.name.clone(),
-      waypoint_vista.name.clone(),
+      waypoint_swift.name,
+      waypoint_orbit.name,
+      waypoint_vista.name,
     ],
   );
 
   waypoint_sets.approach.insert(
-    waypoint_royal.name.clone(),
+    waypoint_royal.name,
     vec![
-      waypoint_royal.name.clone(),
-      waypoint_blaze.name.clone(),
-      waypoint_orbit.name.clone(),
-      waypoint_vista.name.clone(),
+      waypoint_royal.name,
+      waypoint_blaze.name,
+      waypoint_orbit.name,
+      waypoint_vista.name,
     ],
   );
 
   //
 
   waypoint_sets.approach.insert(
-    waypoint_quick.name.clone(),
+    waypoint_quick.name,
     vec![
-      waypoint_quick.name.clone(),
-      waypoint_ready.name.clone(),
-      waypoint_sonic.name.clone(),
+      waypoint_quick.name,
+      waypoint_ready.name,
+      waypoint_sonic.name,
     ],
   );
 
   waypoint_sets.approach.insert(
-    waypoint_short.name.clone(),
+    waypoint_short.name,
     vec![
-      waypoint_short.name.clone(),
-      waypoint_ready.name.clone(),
-      waypoint_sonic.name.clone(),
+      waypoint_short.name,
+      waypoint_ready.name,
+      waypoint_sonic.name,
     ],
   );
 
   waypoint_sets.approach.insert(
-    waypoint_arrow.name.clone(),
+    waypoint_arrow.name,
     vec![
-      waypoint_arrow.name.clone(),
-      waypoint_ready.name.clone(),
-      waypoint_sonic.name.clone(),
+      waypoint_arrow.name,
+      waypoint_ready.name,
+      waypoint_sonic.name,
     ],
   );
 
   waypoint_sets.approach.insert(
-    waypoint_ocean.name.clone(),
+    waypoint_ocean.name,
     vec![
-      waypoint_ocean.name.clone(),
-      waypoint_arrow.name.clone(),
-      waypoint_ready.name.clone(),
-      waypoint_sonic.name.clone(),
+      waypoint_ocean.name,
+      waypoint_arrow.name,
+      waypoint_ready.name,
+      waypoint_sonic.name,
     ],
   );
 
   //
 
   waypoint_sets.departure.insert(
-    waypoint_royal.name.clone(),
+    waypoint_royal.name,
     vec![
-      waypoint_quack.name.clone(),
-      waypoint_state.name.clone(),
-      waypoint_royal.name.clone(),
+      waypoint_quack.name,
+      waypoint_state.name,
+      waypoint_royal.name,
     ],
   );
 
   waypoint_sets.departure.insert(
-    waypoint_state.name.clone(),
-    vec![waypoint_quack.name.clone(), waypoint_state.name.clone()],
+    waypoint_state.name,
+    vec![waypoint_quack.name, waypoint_state.name],
   );
 
   waypoint_sets.departure.insert(
-    waypoint_unite.name.clone(),
+    waypoint_unite.name,
     vec![
-      waypoint_quack.name.clone(),
-      waypoint_state.name.clone(),
-      waypoint_unite.name.clone(),
+      waypoint_quack.name,
+      waypoint_state.name,
+      waypoint_unite.name,
     ],
   );
 
   waypoint_sets.departure.insert(
-    waypoint_blaze.name.clone(),
+    waypoint_blaze.name,
     vec![
-      waypoint_quack.name.clone(),
-      waypoint_state.name.clone(),
-      waypoint_royal.name.clone(),
-      waypoint_blaze.name.clone(),
+      waypoint_quack.name,
+      waypoint_state.name,
+      waypoint_royal.name,
+      waypoint_blaze.name,
     ],
   );
 
   //
 
   waypoint_sets.departure.insert(
-    waypoint_goose.name.clone(),
+    waypoint_goose.name,
     vec![
-      waypoint_paper.name.clone(),
-      waypoint_ghost.name.clone(),
-      waypoint_goose.name.clone(),
+      waypoint_paper.name,
+      waypoint_ghost.name,
+      waypoint_goose.name,
     ],
   );
 
   waypoint_sets.departure.insert(
-    waypoint_ghost.name.clone(),
-    vec![waypoint_paper.name.clone(), waypoint_ghost.name.clone()],
+    waypoint_ghost.name,
+    vec![waypoint_paper.name, waypoint_ghost.name],
   );
 
   waypoint_sets.departure.insert(
-    waypoint_ocean.name.clone(),
+    waypoint_ocean.name,
     vec![
-      waypoint_paper.name.clone(),
-      waypoint_ghost.name.clone(),
-      waypoint_ocean.name.clone(),
+      waypoint_paper.name,
+      waypoint_ghost.name,
+      waypoint_ocean.name,
     ],
   );
 
   waypoint_sets.departure.insert(
-    waypoint_arrow.name.clone(),
+    waypoint_arrow.name,
     vec![
-      waypoint_paper.name.clone(),
-      waypoint_ghost.name.clone(),
-      waypoint_ocean.name.clone(),
-      waypoint_arrow.name.clone(),
+      waypoint_paper.name,
+      waypoint_ghost.name,
+      waypoint_ocean.name,
+      waypoint_arrow.name,
     ],
   );
 

@@ -215,7 +215,7 @@ pub fn setup(
         inverse_degrees(runway_27r.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![Event::Land(runway_27r.id.clone())],
+      then: vec![Event::Land(runway_27r.id)],
     },
   };
 
@@ -250,9 +250,9 @@ pub fn setup(
   waypoint_sets.approach.insert(
     Intern::from_ref("FOAM"),
     vec![
-      waypoint_foam.name.clone(),
-      waypoint_cork.name.clone(),
-      waypoint_tack.name.clone(),
+      waypoint_foam.name,
+      waypoint_cork.name,
+      waypoint_tack.name,
     ],
   );
 
@@ -272,7 +272,7 @@ pub fn setup(
         inverse_degrees(runway_27l.heading),
         NAUTICALMILES_TO_FEET * 14.0,
       ),
-      then: vec![Event::Land(runway_27l.id.clone())],
+      then: vec![Event::Land(runway_27l.id)],
     },
   };
 
@@ -307,9 +307,9 @@ pub fn setup(
   waypoint_sets.approach.insert(
     Intern::from_ref("BALL"),
     vec![
-      waypoint_ball.name.clone(),
-      waypoint_jest.name.clone(),
-      waypoint_lord.name.clone(),
+      waypoint_ball.name,
+      waypoint_jest.name,
+      waypoint_lord.name,
     ],
   );
 
@@ -359,12 +359,12 @@ pub fn setup(
 
   waypoint_sets.departure.insert(
     Intern::from_ref("IDEA"),
-    vec![waypoint_note.name.clone(), waypoint_idea.name.clone()],
+    vec![waypoint_note.name, waypoint_idea.name],
   );
 
   waypoint_sets.departure.insert(
     Intern::from_ref("BULB"),
-    vec![waypoint_note.name.clone(), waypoint_bulb.name.clone()],
+    vec![waypoint_note.name, waypoint_bulb.name],
   );
 
   waypoints.push(waypoint_note);
@@ -413,12 +413,12 @@ pub fn setup(
 
   waypoint_sets.departure.insert(
     Intern::from_ref("TOWN"),
-    vec![waypoint_king.name.clone(), waypoint_town.name.clone()],
+    vec![waypoint_king.name, waypoint_town.name],
   );
 
   waypoint_sets.departure.insert(
     Intern::from_ref("GOLD"),
-    vec![waypoint_king.name.clone(), waypoint_gold.name.clone()],
+    vec![waypoint_king.name, waypoint_gold.name],
   );
 
   waypoints.push(waypoint_king);
