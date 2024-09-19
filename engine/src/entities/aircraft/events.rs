@@ -4,7 +4,7 @@ use crate::{
   command::Task,
   engine::Bundle,
   entities::airport::Runway,
-  pathfinder::{Node, NodeBehavior, NodeKind},
+  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
 };
 
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
@@ -16,6 +16,9 @@ pub enum EventKind {
   Altitude(f32),
 
   DirectTo(Vec<Intern<String>>),
+  FollowApproach(Intern<String>),
+  FollowArrival(Intern<String>),
+  FollowDeparture(Intern<String>),
 
   Land(Intern<String>),
   Touchdown,
@@ -26,10 +29,10 @@ impl From<Task> for EventKind {
   fn from(value: Task) -> Self {
     match value {
       Task::Altitude(x) => EventKind::Altitude(x),
-      Task::Approach(_) => todo!(),
-      Task::Arrival(_) => todo!(),
+      Task::Approach(x) => EventKind::FollowApproach(Intern::from(x)),
+      Task::Arrival(x) => EventKind::FollowArrival(Intern::from(x)),
       Task::Clearance { .. } => todo!(),
-      Task::Depart(_) => todo!(),
+      Task::Depart(x) => EventKind::FollowDeparture(Intern::from(x)),
       Task::Direct(x) => {
         EventKind::DirectTo(x.iter().cloned().map(Intern::from).collect())
       }
@@ -91,6 +94,21 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::DirectTo(waypoints) => {
         if let AircraftState::Flying { .. } = aircraft.state {
           handle_direct_to_event(aircraft, bundle, waypoints);
+        }
+      }
+      EventKind::FollowArrival(waypoint) => {
+        if let AircraftState::Flying { .. } = aircraft.state {
+          handle_arrival_event(aircraft, bundle, *waypoint);
+        }
+      }
+      EventKind::FollowApproach(waypoint) => {
+        if let AircraftState::Flying { .. } = aircraft.state {
+          handle_approach_event(aircraft, bundle, *waypoint);
+        }
+      }
+      EventKind::FollowDeparture(waypoint) => {
+        if let AircraftState::Flying { .. } = aircraft.state {
+          handle_departure_event(aircraft, bundle, *waypoint);
         }
       }
 
@@ -172,12 +190,11 @@ pub fn handle_touchdown_event(
   ));
 }
 
-pub fn handle_direct_to_event(
-  aircraft: &Aircraft,
-  bundle: &mut Bundle,
+pub fn parse_waypoint_strings(
+  bundle: &Bundle,
   waypoint_strings: &[Intern<String>],
-) {
-  if let Some(waypoints) = waypoint_strings
+) -> Option<Vec<Node<NodeVORData>>> {
+  waypoint_strings
     .iter()
     .map(|w| bundle.waypoints.iter().find(|n| &n.name == w).cloned())
     .rev()
@@ -186,12 +203,68 @@ pub fn handle_direct_to_event(
 
       Some(vec)
     })
-  {
+}
+
+pub fn handle_direct_to_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  waypoint_strings: &[Intern<String>],
+) {
+  if let Some(waypoints) = parse_waypoint_strings(bundle, waypoint_strings) {
     bundle.actions.push(Action {
       id: aircraft.id,
       kind: ActionKind::Flying(waypoints),
     });
-  } else {
-    tracing::error!("no waypoints: {waypoint_strings:?}")
+  }
+}
+
+pub fn handle_arrival_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  arrival_string: Intern<String>,
+) {
+  if let Some(waypoint_strings) =
+    bundle.waypoint_sets.arrival.get(&arrival_string)
+  {
+    if let Some(waypoints) = parse_waypoint_strings(bundle, waypoint_strings) {
+      bundle.actions.push(Action {
+        id: aircraft.id,
+        kind: ActionKind::Flying(waypoints),
+      });
+    }
+  }
+}
+
+pub fn handle_approach_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  approach_string: Intern<String>,
+) {
+  if let Some(waypoint_strings) =
+    bundle.waypoint_sets.approach.get(&approach_string)
+  {
+    if let Some(waypoints) = parse_waypoint_strings(bundle, waypoint_strings) {
+      bundle.actions.push(Action {
+        id: aircraft.id,
+        kind: ActionKind::Flying(waypoints),
+      });
+    }
+  }
+}
+
+pub fn handle_departure_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  depart_string: Intern<String>,
+) {
+  if let Some(waypoint_strings) =
+    bundle.waypoint_sets.departure.get(&depart_string)
+  {
+    if let Some(waypoints) = parse_waypoint_strings(bundle, waypoint_strings) {
+      bundle.actions.push(Action {
+        id: aircraft.id,
+        kind: ActionKind::Flying(waypoints),
+      });
+    }
   }
 }
