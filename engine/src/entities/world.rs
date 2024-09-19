@@ -56,6 +56,48 @@ pub fn find_random_arrival<'a>(
   find_random_airspace_with(airspaces, false, true, rng)
 }
 
+pub fn closest_airport(
+  airspaces: &[Airspace],
+  point: Vec2,
+) -> Option<&Airport> {
+  let mut closest: Option<&Airport> = None;
+  let mut distance = f32::MAX;
+  for airspace in airspaces.iter().filter(|a| a.contains_point(point)) {
+    for airport in airspace.airports.iter() {
+      if airport.center.distance_squared(point) < distance {
+        distance = airport.center.distance_squared(point);
+        closest = Some(airport);
+      }
+    }
+  }
+
+  closest
+}
+
+pub fn closest_airspace(
+  airspaces: &[Airspace],
+  point: Vec2,
+) -> Option<&Airspace> {
+  let mut closest: Option<&Airspace> = None;
+  let mut distance = f32::MAX;
+  for airspace in airspaces.iter() {
+    if airspace.pos.distance_squared(point) < distance {
+      distance = airspace.pos.distance_squared(point);
+      closest = Some(airspace);
+    }
+  }
+
+  closest
+}
+
+pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
+  for airspace in airspaces.iter_mut() {
+    for airport in airspace.airports.iter_mut() {
+      airport.calculate_waypoints();
+    }
+  }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WaypointSet {
   #[serde(serialize_with = "serialize_hashmap_of_intern_string")]
@@ -73,40 +115,4 @@ pub struct World {
   pub waypoint_sets: WaypointSet,
 }
 
-impl World {
-  pub fn closest_airport(&self, point: Vec2) -> Option<&Airport> {
-    let mut closest: Option<&Airport> = None;
-    let mut distance = f32::MAX;
-    for airspace in self.airspaces.iter().filter(|a| a.contains_point(point)) {
-      for airport in airspace.airports.iter() {
-        if airport.center.distance_squared(point) < distance {
-          distance = airport.center.distance_squared(point);
-          closest = Some(airport);
-        }
-      }
-    }
-
-    closest
-  }
-
-  pub fn closest_airspace(&self, point: Vec2) -> Option<&Airspace> {
-    let mut closest: Option<&Airspace> = None;
-    let mut distance = f32::MAX;
-    for airspace in self.airspaces.iter() {
-      if airspace.pos.distance_squared(point) < distance {
-        distance = airspace.pos.distance_squared(point);
-        closest = Some(airspace);
-      }
-    }
-
-    closest
-  }
-
-  pub fn calculate_airport_waypoints(&mut self) {
-    for airspace in self.airspaces.iter_mut() {
-      for airport in airspace.airports.iter_mut() {
-        airport.calculate_waypoints();
-      }
-    }
-  }
-}
+impl World {}

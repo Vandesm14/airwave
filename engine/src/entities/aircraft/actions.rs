@@ -26,6 +26,7 @@ pub enum ActionKind {
 
   // Substate
   PopWaypoint,
+  TaxiWaypoints(Vec<Node<Vec2>>),
 
   // State
   Landing(Runway),
@@ -82,6 +83,11 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           if let Some(last) = waypoints.pop() {
             *current = last;
           }
+        }
+      }
+      ActionKind::TaxiWaypoints(w) => {
+        if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
+          *waypoints = w.clone();
         }
       }
 
