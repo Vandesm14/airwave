@@ -34,7 +34,6 @@ Build the client (frontend)
 ```bash
 pnpm i
 pnpm client-web:build
-cargo build --release --bin serve
 ```
 
 **Step 3:**
@@ -70,7 +69,7 @@ cargo run --release --bin server
 Launch the client
 
 ```bash
-cargo run --release --bin serve client-web/dist
+pnpm client-web:preview
 ```
 
 **Step 3:**
