@@ -7,7 +7,8 @@ use super::{
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
   delta_angle, engine::Bundle, inverse_degrees, move_point, normalize_angle,
-  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  pathfinder::NodeBehavior, Line, KNOT_TO_FEET_PER_SECOND,
+  NAUTICALMILES_TO_FEET,
 };
 
 pub trait AircraftEffect {
@@ -225,6 +226,63 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
           bundle.actions.push(Action {
             id: aircraft.id,
             kind: ActionKind::PopWaypoint,
+          });
+        }
+      }
+    }
+  }
+}
+
+pub struct AircraftUpdateTaxiingEffect;
+impl AircraftEffect for AircraftUpdateTaxiingEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND;
+    if let AircraftState::Taxiing { waypoints, .. } = &aircraft.state {
+      let waypoint = waypoints.last().cloned();
+      if let Some(waypoint) = waypoint {
+        let heading = angle_between_points(aircraft.pos, waypoint.value);
+
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::Heading(heading),
+        });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetHeading(heading),
+        });
+
+        let distance = aircraft.pos.distance_squared(waypoint.value);
+        let movement_speed = speed_in_feet.powf(2.0);
+
+        if movement_speed >= distance {
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::PopWaypoint,
+          });
+        }
+      } else {
+        bundle.events.push(Event {
+          id: aircraft.id,
+          kind: EventKind::TaxiHold,
+        });
+      }
+    }
+
+    if let AircraftState::Taxiing { waypoints, .. } = &aircraft.state {
+      let waypoint = waypoints.last();
+      if let Some(waypoint) = waypoint {
+        let distance = aircraft.pos.distance_squared(waypoint.value);
+
+        if NodeBehavior::HoldShort == waypoint.behavior
+          && distance <= 250.0_f32.powf(2.0)
+        {
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::TaxiLastAsGoto,
+          });
+          bundle.events.push(Event {
+            id: aircraft.id,
+            kind: EventKind::TaxiHold,
           });
         }
       }

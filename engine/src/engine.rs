@@ -1,7 +1,7 @@
 use actions::{Action, AircraftActionHandler};
 use effects::{
   AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
-  AircraftUpdateLandingEffect,
+  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
 
@@ -87,6 +87,7 @@ impl Engine {
       // Run through all effects
       AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
+      AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
 
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);

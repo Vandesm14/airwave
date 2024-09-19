@@ -3,7 +3,7 @@ use internment::Intern;
 
 use crate::{
   entities::airport::Runway,
-  pathfinder::{Node, NodeVORData},
+  pathfinder::{Node, NodeBehavior, NodeVORData},
 };
 
 use super::{Aircraft, AircraftState};
@@ -27,6 +27,8 @@ pub enum ActionKind {
   // Substate
   PopWaypoint,
   TaxiWaypoints(Vec<Node<Vec2>>),
+  TaxiCurrent(Node<Vec2>),
+  TaxiLastAsGoto,
 
   // State
   Landing(Runway),
@@ -81,6 +83,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           &mut aircraft.state
         {
           if let Some(last) = waypoints.pop() {
+            aircraft.pos = last.value;
             *current = last;
           }
         }
@@ -88,6 +91,18 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::TaxiWaypoints(w) => {
         if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
           *waypoints = w.clone();
+        }
+      }
+      ActionKind::TaxiCurrent(w) => {
+        if let AircraftState::Taxiing { current, .. } = &mut aircraft.state {
+          *current = w.clone();
+        }
+      }
+      ActionKind::TaxiLastAsGoto => {
+        if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
+          if let Some(last) = waypoints.last_mut() {
+            last.behavior = NodeBehavior::GoTo;
+          }
         }
       }
 
