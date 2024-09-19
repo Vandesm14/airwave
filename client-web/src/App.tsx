@@ -1,5 +1,5 @@
 import { useAtom } from 'solid-jotai';
-import { WhisperSTT } from '../vendor/whisper-speech-to-text/src/index';
+import { WhisperSTT } from './whisper/WhisperSTT';
 import {
   frequencyAtom,
   isRecordingAtom,

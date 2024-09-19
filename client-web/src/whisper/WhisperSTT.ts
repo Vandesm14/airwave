@@ -1,9 +1,9 @@
-import { RecordRTCPromisesHandler } from "recordrtc";
-import axios from "axios";
+import { RecordRTCPromisesHandler } from 'recordrtc';
+import axios from 'axios';
 
-const AUDIO_TYPE = "audio";
-const MODEL = "whisper-1";
-const TRANSCRIPTIONS_API_URL = "http://localhost:8000/transcribe";
+const AUDIO_TYPE = 'audio';
+const MODEL = 'whisper-1';
+const TRANSCRIPTIONS_API_URL = 'http://localhost:8000/transcribe';
 
 export class WhisperSTT {
   private recorder: RecordRTCPromisesHandler | null;
@@ -22,7 +22,7 @@ export class WhisperSTT {
 
   public pauseRecording = async (): Promise<void> => {
     if (!this.recorder) {
-      throw new Error("Cannot pause recording: no recorder");
+      throw new Error('Cannot pause recording: no recorder');
     }
     await this.recorder.pauseRecording();
     this.isPaused = true;
@@ -31,7 +31,7 @@ export class WhisperSTT {
 
   public resumeRecording = async (): Promise<void> => {
     if (!this.recorder) {
-      throw new Error("Cannot resume recording: no recorder");
+      throw new Error('Cannot resume recording: no recorder');
     }
     await this.recorder.resumeRecording();
     this.isPaused = false;
@@ -55,10 +55,10 @@ export class WhisperSTT {
   };
 
   public stopRecording = async (
-    onFinish: (blob: Blob) => void,
+    onFinish: (blob: Blob) => void
   ): Promise<void> => {
     if (!this.isRecording || !this.recorder) {
-      throw new Error("Cannot stop recording: no recorder");
+      throw new Error('Cannot stop recording: no recorder');
     }
     try {
       await this.recorder.stopRecording();
@@ -81,7 +81,7 @@ export class WhisperSTT {
 
   public abortRecording = async () => {
     if (!this.isRecording || !this.recorder) {
-      throw new Error("Cannot stop recording: no recorder");
+      throw new Error('Cannot stop recording: no recorder');
     }
     await this.recorder.stopRecording();
     this.recorder = null;
