@@ -201,6 +201,37 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
   }
 }
 
+pub struct AircraftUpdateFlyingEffect;
+impl AircraftEffect for AircraftUpdateFlyingEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND;
+    if let AircraftState::Flying { waypoints, .. } = &aircraft.state {
+      if let Some(current) = waypoints.last() {
+        let heading = angle_between_points(aircraft.pos, current.value.to);
+
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetHeading(heading),
+        });
+
+        let distance = aircraft.pos.distance_squared(current.value.to);
+        let movement_speed = speed_in_feet.powf(2.0);
+
+        if movement_speed >= distance {
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::Pos(current.value.to),
+          });
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::PopWaypoint,
+          });
+        }
+      }
+    }
+  }
+}
+
 // Example of an effect that triggers a one-time event based on previous and current state
 //
 // pub struct AircraftIsPast205Effect;

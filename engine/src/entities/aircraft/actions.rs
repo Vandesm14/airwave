@@ -24,6 +24,9 @@ pub enum ActionKind {
 
   Airspace(Intern<String>),
 
+  // Substate
+  PopWaypoint,
+
   // State
   Landing(Runway),
   Taxi {
@@ -70,6 +73,18 @@ impl AircraftActionHandler for AircraftAllActionHandler {
 
       ActionKind::Airspace(spur) => aircraft.airspace = *spur,
 
+      ActionKind::PopWaypoint => {
+        if let AircraftState::Flying { waypoints } = &mut aircraft.state {
+          waypoints.pop();
+        } else if let AircraftState::Taxiing { current, waypoints } =
+          &mut aircraft.state
+        {
+          if let Some(last) = waypoints.pop() {
+            *current = last;
+          }
+        }
+      }
+
       ActionKind::Landing(runway) => {
         aircraft.state = AircraftState::Landing(runway.clone())
       }
@@ -78,7 +93,6 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           waypoints: waypoints.clone(),
         }
       }
-
       ActionKind::Taxi { current, waypoints } => {
         aircraft.state = AircraftState::Taxiing {
           current: current.clone(),
