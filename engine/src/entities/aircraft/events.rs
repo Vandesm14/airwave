@@ -1,6 +1,11 @@
 use internment::Intern;
 
-use crate::{command::Task, engine::Bundle};
+use crate::{
+  command::Task,
+  engine::Bundle,
+  entities::airport::Runway,
+  pathfinder::{Node, NodeBehavior, NodeKind},
+};
 
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
@@ -11,6 +16,7 @@ pub enum EventKind {
   TargetAltitude(f32),
 
   Land(Intern<String>),
+  Touchdown,
   GoAround,
 }
 
@@ -79,6 +85,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
       }
 
       EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
+      EventKind::Touchdown => {
+        if let AircraftState::Landing(runway) = &aircraft.state {
+          handle_touchdown_event(aircraft, bundle, runway);
+        }
+      }
       EventKind::GoAround => {
         if let AircraftState::Landing(..) = aircraft.state {
           bundle
@@ -121,4 +132,37 @@ pub fn handle_land_event(
   } else {
     eprintln!("Not flying")
   }
+}
+
+pub fn handle_touchdown_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  runway: &Runway,
+) {
+  bundle
+    .actions
+    .push(Action::new(aircraft.id, ActionKind::Altitude(0.0)));
+  bundle.actions.push(Action::new(
+    aircraft.id,
+    ActionKind::Heading(runway.heading),
+  ));
+  bundle
+    .actions
+    .push(Action::new(aircraft.id, ActionKind::SyncTargets));
+  bundle
+    .actions
+    .push(Action::new(aircraft.id, ActionKind::Speed(0.0)));
+
+  bundle.actions.push(Action::new(
+    aircraft.id,
+    ActionKind::Taxi {
+      current: Node {
+        name: runway.id,
+        kind: NodeKind::Runway,
+        behavior: NodeBehavior::GoTo,
+        value: aircraft.pos,
+      },
+      waypoints: Vec::new(),
+    },
+  ));
 }

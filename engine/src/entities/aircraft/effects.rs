@@ -158,27 +158,11 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
       // If we have passed the start of the runway (landed),
       // set our state to taxiing.
       if distance_to_end <= runway.length.powf(2.0) {
-        // TODO: Initiate taxi
-
-        // self.altitude = 0.0;
-        // self.target.altitude = 0.0;
-
-        // self.heading = runway.heading;
-        // self.target.heading = runway.heading;
-
-        // self.target.speed = 0.0;
-
-        // self.state = AircraftState::Taxiing {
-        //   current: Node {
-        //     name: runway.id.clone(),
-        //     kind: NodeKind::Runway,
-        //     behavior: NodeBehavior::GoTo,
-        //     value: self.pos,
-        //   },
-        //   waypoints: Vec::new(),
-        // };
-
-        // return;
+        bundle.events.push(Event {
+          id: aircraft.id,
+          kind: EventKind::Touchdown,
+        });
+        return;
       }
 
       let closest_point =

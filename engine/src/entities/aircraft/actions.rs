@@ -1,7 +1,7 @@
 use glam::Vec2;
 use internment::Intern;
 
-use crate::entities::airport::Runway;
+use crate::{entities::airport::Runway, pathfinder::Node};
 
 use super::{Aircraft, AircraftState};
 
@@ -24,6 +24,12 @@ pub enum ActionKind {
   // Substate
   Land(Runway),
   Flying,
+
+  // State
+  Taxi {
+    current: Node<Vec2>,
+    waypoints: Vec<Node<Vec2>>,
+  },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,6 +75,13 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::Flying => {
         aircraft.state = AircraftState::Flying {
           waypoints: Vec::new(),
+        }
+      }
+
+      ActionKind::Taxi { current, waypoints } => {
+        aircraft.state = AircraftState::Taxiing {
+          current: current.clone(),
+          waypoints: waypoints.clone(),
         }
       }
     }
