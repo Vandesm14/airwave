@@ -149,9 +149,10 @@ pub fn handle_touchdown_event(
   bundle
     .actions
     .push(Action::new(aircraft.id, ActionKind::SyncTargets));
+
   bundle
     .actions
-    .push(Action::new(aircraft.id, ActionKind::Speed(0.0)));
+    .push(Action::new(aircraft.id, ActionKind::TargetSpeed(0.0)));
 
   bundle.actions.push(Action::new(
     aircraft.id,
