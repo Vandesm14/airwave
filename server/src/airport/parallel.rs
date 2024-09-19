@@ -207,7 +207,7 @@ pub fn setup(
 
   let waypoint_tack = Node {
     name: Intern::from_ref("TACK"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -221,7 +221,7 @@ pub fn setup(
 
   let waypoint_cork = Node {
     name: Intern::from_ref("CORK"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -235,7 +235,7 @@ pub fn setup(
 
   let waypoint_foam = Node {
     name: Intern::from_ref("FOAM"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -260,7 +260,7 @@ pub fn setup(
 
   let waypoint_lord = Node {
     name: Intern::from_ref("LORD"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -274,7 +274,7 @@ pub fn setup(
 
   let waypoint_jest = Node {
     name: Intern::from_ref("JEST"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -288,7 +288,7 @@ pub fn setup(
 
   let waypoint_ball = Node {
     name: Intern::from_ref("BALL"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -313,7 +313,7 @@ pub fn setup(
 
   let waypoint_note = Node {
     name: Intern::from_ref("NOTE"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -327,7 +327,7 @@ pub fn setup(
 
   let waypoint_idea = Node {
     name: Intern::from_ref("IDEA"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(waypoint_note.value.to, LEFT, NAUTICALMILES_TO_FEET * 8.0),
@@ -337,7 +337,7 @@ pub fn setup(
 
   let waypoint_bulb = Node {
     name: Intern::from_ref("BULB"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -367,7 +367,7 @@ pub fn setup(
 
   let waypoint_king = Node {
     name: Intern::from_ref("KING"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(
@@ -381,7 +381,7 @@ pub fn setup(
 
   let waypoint_town = Node {
     name: Intern::from_ref("TOWN"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(waypoint_king.value.to, LEFT, NAUTICALMILES_TO_FEET * 8.0),
@@ -391,7 +391,7 @@ pub fn setup(
 
   let waypoint_gold = Node {
     name: Intern::from_ref("GOLD"),
-    kind: NodeKind::Runway,
+    kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
       to: move_point(

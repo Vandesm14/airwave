@@ -12,7 +12,7 @@ import {
   arrToVec2,
   Gate,
   NodeVec2,
-  NodeWaypoint,
+  NodeVOR,
   Runway,
   Taxiway,
   Terminal,
@@ -354,7 +354,7 @@ export default function Canvas({
     }
   }
 
-  function drawWaypoint(ctx: Ctx, wp: NodeWaypoint) {
+  function drawWaypoint(ctx: Ctx, wp: NodeVOR) {
     let pos = scalePoint(arrToVec2(wp.value.to));
     ctx.fillStyle = '#444';
     ctx.strokeStyle = '#444';

@@ -4,14 +4,14 @@ export type TaxiWaypointBehavior = {
 
 export type NodeVec2 = {
   name: string;
-  kind: 'taxiway' | 'gate' | 'apron';
+  kind: 'taxiway' | 'gate' | 'apron' | 'runway';
   behavior: 'goto' | 'holdshort';
   value: [number, number];
 };
 
-export type NodeWaypoint = {
+export type NodeVOR = {
   name: string;
-  kind: 'runway';
+  kind: 'vor';
   behavior: 'goto' | 'holdshort';
   value: { to: [number, number] };
 };
@@ -22,7 +22,7 @@ export function arrToVec2(arr: [number, number]): Vec2 {
 
 export type AircraftStateFlying = {
   type: 'flying';
-  value: { waypoints: Array<NodeWaypoint> };
+  value: { waypoints: Array<NodeVOR> };
 };
 
 export type AircraftStateLanding = {
@@ -160,7 +160,7 @@ export type Airspace = {
 
 export type World = {
   airspaces: Array<Airspace>;
-  waypoints: Array<NodeWaypoint>;
+  waypoints: Array<NodeVOR>;
 };
 
 export type RadioMessage = {

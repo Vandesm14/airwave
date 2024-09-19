@@ -59,9 +59,9 @@ function assignAircraftToStrips(
   const isTaxiingToRunway = (() => {
     if (isAircraftTaxiing(aircraft.state)) {
       return (
-        aircraft.state.value.waypoints.length === 1 /* ( &&
+        (aircraft.state.value.waypoints.length === 1 &&
           aircraft.state.value.waypoints[0].kind === 'runway') ||
-        aircraft.state.value.current.kind === 'runway' */
+        aircraft.state.value.current.kind === 'runway'
       );
     } else {
       return false;
@@ -186,9 +186,9 @@ function Strip({ strip }: StripProps) {
     let current = strip.state.value.current;
     if (current.kind === 'gate') {
       topStatus = 'GATE';
-    } /* else if (current.kind === 'runway') {
+    } else if (current.kind === 'runway') {
       topStatus = 'RNWY';
-      } */ else if (current.kind === 'taxiway') {
+    } else if (current.kind === 'taxiway') {
       topStatus = 'TXWY';
     } else if (current.kind === 'apron') {
       topStatus = 'APRN';

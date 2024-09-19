@@ -23,6 +23,8 @@ pub enum NodeKind {
   Runway,
   Gate,
   Apron,
+
+  VOR,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
