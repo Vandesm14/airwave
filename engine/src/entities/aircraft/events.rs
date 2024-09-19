@@ -1,14 +1,14 @@
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 
-use crate::engine::Bundle;
+use crate::{command::Task, engine::Bundle};
 
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(tag = "type", content = "value")]
-pub enum Event {
+pub enum EventKind {
   TargetSpeed(f32),
   TargetHeading(f32),
   TargetAltitude(f32),
@@ -16,32 +16,74 @@ pub enum Event {
   Land(Intern<String>),
 }
 
+impl From<Task> for EventKind {
+  fn from(value: Task) -> Self {
+    match value {
+      Task::Altitude(x) => EventKind::TargetAltitude(x),
+      Task::Approach(_) => todo!(),
+      Task::Arrival(_) => todo!(),
+      Task::Clearance {
+        departure,
+        altitude,
+        speed,
+      } => todo!(),
+      Task::Depart(_) => todo!(),
+      Task::Direct(vec) => todo!(),
+      Task::DirectionOfTravel => todo!(),
+      Task::Frequency(_) => todo!(),
+      Task::GoAround => todo!(),
+      Task::Heading(x) => EventKind::TargetHeading(x),
+      Task::Ident => todo!(),
+      Task::Land(x) => EventKind::Land(Intern::from(x)),
+      Task::NamedFrequency(_) => todo!(),
+      Task::ResumeOwnNavigation => todo!(),
+      Task::Speed(x) => EventKind::TargetSpeed(x),
+      Task::Takeoff(_) => todo!(),
+      Task::Taxi(vec) => todo!(),
+      Task::TaxiContinue => todo!(),
+      Task::TaxiHold => todo!(),
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Event {
+  pub id: Intern<String>,
+  pub kind: EventKind,
+}
+
+impl Event {
+  pub fn new(id: Intern<String>, kind: EventKind) -> Self {
+    Self { id, kind }
+  }
+}
+
 pub trait AircraftEventHandler {
-  fn run(aircraft: &Aircraft, event: &Event, bundle: &mut Bundle);
+  fn run(aircraft: &Aircraft, event: &EventKind, bundle: &mut Bundle);
 }
 
 pub struct HandleAircraftEvent;
 impl AircraftEventHandler for HandleAircraftEvent {
-  fn run(aircraft: &Aircraft, event: &Event, bundle: &mut Bundle) {
+  fn run(aircraft: &Aircraft, event: &EventKind, bundle: &mut Bundle) {
     match event {
-      Event::TargetSpeed(speed) => {
+      EventKind::TargetSpeed(speed) => {
         bundle
           .actions
           .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
       }
-      Event::TargetHeading(heading) => {
+      EventKind::TargetHeading(heading) => {
         bundle.actions.push(Action::new(
           aircraft.id,
           ActionKind::TargetHeading(*heading),
         ));
       }
-      Event::TargetAltitude(altitude) => {
+      EventKind::TargetAltitude(altitude) => {
         bundle.actions.push(Action::new(
           aircraft.id,
           ActionKind::TargetAltitude(*altitude),
         ));
       }
-      Event::Land(runway) => handle_land_event(aircraft, bundle, *runway),
+      EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
     }
   }
 }

@@ -16,12 +16,16 @@ use async_openai::{
 use engine::{
   command::CommandWithFreq,
   engine::Engine,
-  entities::{aircraft::Aircraft, world::World},
+  entities::{
+    aircraft::{events::Event, Aircraft},
+    world::World,
+  },
 };
 use futures_util::{
   stream::{SplitSink, SplitStream},
   SinkExt as _, StreamExt as _,
 };
+use internment::Intern;
 use prompter::Prompter;
 use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
@@ -130,7 +134,7 @@ impl CompatAdapter {
         }
 
         for command in commands {
-          // TODO: self.execute_command(command);
+          self.execute_command(command);
         }
 
         self.engine.tick(&self.world, &mut self.aircraft);
@@ -139,6 +143,19 @@ impl CompatAdapter {
         self.broadcast_aircraft();
         // TODO: self.save_world();
       }
+    }
+  }
+
+  fn execute_command(&mut self, command: CommandWithFreq) {
+    let id = Intern::new(command.id);
+    // TODO: check for frequency
+    if self.aircraft.iter().any(|a| a.id == id) {
+      self.engine.events.extend(
+        command
+          .tasks
+          .into_iter()
+          .map(|t| Event { id, kind: t.into() }),
+      );
     }
   }
 

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
   entities::{
-    aircraft::events::Event,
+    aircraft::events::EventKind,
     airport::{Gate, Runway, Taxiway, Terminal},
   },
   find_line_intersection, Line,
@@ -36,7 +36,7 @@ pub enum NodeBehavior {
 pub struct WaypointNodeData {
   pub to: Vec2,
   #[serde(skip)]
-  pub then: Vec<Event>,
+  pub then: Vec<EventKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

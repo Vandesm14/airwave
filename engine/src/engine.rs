@@ -48,7 +48,9 @@ impl Engine {
 
       // Run through all events
       for event in self.events.iter() {
-        HandleAircraftEvent::run(aircraft, event, &mut bundle);
+        if event.id == aircraft.id {
+          HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
+        }
       }
 
       // Run through all effects

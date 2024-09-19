@@ -1,6 +1,6 @@
 use engine::{
   entities::{
-    aircraft::events::Event,
+    aircraft::events::EventKind,
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
@@ -215,7 +215,7 @@ pub fn setup(
         inverse_degrees(runway_27r.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![Event::Land(runway_27r.id)],
+      then: vec![EventKind::Land(runway_27r.id)],
     },
   };
 
@@ -249,11 +249,7 @@ pub fn setup(
 
   waypoint_sets.approach.insert(
     Intern::from_ref("FOAM"),
-    vec![
-      waypoint_foam.name,
-      waypoint_cork.name,
-      waypoint_tack.name,
-    ],
+    vec![waypoint_foam.name, waypoint_cork.name, waypoint_tack.name],
   );
 
   waypoints.push(waypoint_tack);
@@ -272,7 +268,7 @@ pub fn setup(
         inverse_degrees(runway_27l.heading),
         NAUTICALMILES_TO_FEET * 14.0,
       ),
-      then: vec![Event::Land(runway_27l.id)],
+      then: vec![EventKind::Land(runway_27l.id)],
     },
   };
 
@@ -306,11 +302,7 @@ pub fn setup(
 
   waypoint_sets.approach.insert(
     Intern::from_ref("BALL"),
-    vec![
-      waypoint_ball.name,
-      waypoint_jest.name,
-      waypoint_lord.name,
-    ],
+    vec![waypoint_ball.name, waypoint_jest.name, waypoint_lord.name],
   );
 
   waypoints.push(waypoint_lord);

@@ -1,8 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use async_openai::error::OpenAIError;
-use engine::command::{Command, CommandReply, CommandReplyKind};
-use engine::entities::aircraft::events::Event;
+use engine::command::{Command, CommandReply, CommandReplyKind, Tasks};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -102,7 +101,7 @@ pub struct TypeValue {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Prompter {
   pub message: String,
-  pub tasks: Vec<Event>,
+  pub tasks: Tasks,
 }
 
 #[derive(Error, Debug)]
@@ -163,12 +162,12 @@ impl Prompter {
     }
   }
 
-  async fn parse_tasks(string: String) -> Result<Vec<Event>, Error> {
+  async fn parse_tasks(string: String) -> Result<Tasks, Error> {
     let prompt =
       Self::load_prompt_as_string("server/prompts/main.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), string).await?;
     if let Some(result) = result {
-      let json: Vec<Event> =
+      let json: Tasks =
         serde_json::from_str(&result).map_err(LoadPromptError::Deserialize)?;
 
       Ok(json)
