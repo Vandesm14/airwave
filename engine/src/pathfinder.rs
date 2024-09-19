@@ -13,7 +13,7 @@ use crate::{
     aircraft::events::EventKind,
     airport::{Gate, Runway, Taxiway, Terminal},
   },
-  find_line_intersection, Line,
+  find_line_intersection, serialize_intern_string, Line,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -41,6 +41,7 @@ pub struct WaypointNodeData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
+  #[serde(serialize_with = "serialize_intern_string")]
   pub name: Intern<String>,
   pub kind: NodeKind,
   pub behavior: NodeBehavior,

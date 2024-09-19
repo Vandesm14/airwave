@@ -5,9 +5,7 @@ use crate::{command::Task, engine::Bundle};
 
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-#[serde(tag = "type", content = "value")]
+#[derive(Debug, Clone, PartialEq)]
 pub enum EventKind {
   TargetSpeed(f32),
   TargetHeading(f32),
@@ -46,7 +44,7 @@ impl From<Task> for EventKind {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Event {
   pub id: Intern<String>,
   pub kind: EventKind,

@@ -5,7 +5,10 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::pathfinder::{Node, WaypointNodeData};
+use crate::{
+  pathfinder::{Node, WaypointNodeData},
+  serialize_hashmap_of_intern_string,
+};
 
 use super::{airport::Airport, airspace::Airspace};
 
@@ -55,8 +58,11 @@ pub fn find_random_arrival<'a>(
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WaypointSet {
+  #[serde(serialize_with = "serialize_hashmap_of_intern_string")]
   pub arrival: HashMap<Intern<String>, Vec<Intern<String>>>,
+  #[serde(serialize_with = "serialize_hashmap_of_intern_string")]
   pub approach: HashMap<Intern<String>, Vec<Intern<String>>>,
+  #[serde(serialize_with = "serialize_hashmap_of_intern_string")]
   pub departure: HashMap<Intern<String>, Vec<Intern<String>>>,
 }
 

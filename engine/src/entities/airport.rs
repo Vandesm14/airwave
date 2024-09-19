@@ -5,11 +5,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
   deserialize_vec2, inverse_degrees, move_point,
   pathfinder::{Object, Pathfinder},
-  serialize_vec2, Line,
+  serialize_intern_string, serialize_vec2, Line,
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airport {
+  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
@@ -57,6 +58,7 @@ impl Airport {
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Runway {
+  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   #[serde(flatten)]
   #[serde(serialize_with = "serialize_vec2")]
@@ -78,6 +80,7 @@ impl Runway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Taxiway {
+  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
@@ -102,6 +105,7 @@ impl Taxiway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Terminal {
+  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
@@ -122,6 +126,7 @@ pub struct Terminal {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gate {
+  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]

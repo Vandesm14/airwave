@@ -9,6 +9,7 @@ use clap::Parser;
 use engine::{
   circle_circle_intersection,
   entities::{
+    aircraft::{Aircraft, AircraftTargets, FlightPlan},
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
@@ -205,7 +206,18 @@ async fn main() {
   // }
 
   // TODO: Spawn random
-  // engine.spawn_random_aircraft();
+  let mut aircraft = Aircraft {
+    id: Intern::from_ref("AAL3556"),
+    pos: Vec2::ZERO,
+    speed: 250.0,
+    altitude: 4000.0,
+    target: AircraftTargets::default(),
+    flight_plan: FlightPlan::new("KSFO".into(), "EGLL".into()),
+    ..Default::default()
+  };
+  aircraft.sync_targets_to_vals();
+
+  engine.aircraft.push(aircraft);
 
   // Generating waypoints between sufficiently close airspaces.
   let mut i = 0;

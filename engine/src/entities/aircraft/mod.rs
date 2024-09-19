@@ -38,6 +38,27 @@ impl Default for AircraftState {
   }
 }
 
+// TODO: use internment
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct FlightPlan {
+  pub departing: String,
+  pub arriving: String,
+  pub altitude: f32,
+  pub speed: f32,
+  pub waypoints: Vec<Node<WaypointNodeData>>,
+}
+
+impl FlightPlan {
+  // TODO: use internment
+  pub fn new(departing: String, arriving: String) -> Self {
+    Self {
+      departing,
+      arriving,
+      ..Default::default()
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub id: Intern<String>,
@@ -49,10 +70,21 @@ pub struct Aircraft {
 
   pub target: AircraftTargets,
   pub state: AircraftState,
+  pub flight_plan: FlightPlan,
 
   pub airspace: Intern<String>,
 }
 
+// Helper methods
+impl Aircraft {
+  pub fn sync_targets_to_vals(&mut self) {
+    self.target.heading = self.heading;
+    self.target.speed = self.speed;
+    self.target.altitude = self.altitude;
+  }
+}
+
+// Performance stats
 impl Aircraft {
   pub fn dt_climb_speed(&self, dt: f32) -> f32 {
     (2000.0_f32 / 60.0_f32).round() * dt

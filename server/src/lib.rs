@@ -160,6 +160,8 @@ impl CompatAdapter {
   }
 
   fn broadcast_aircraft(&self) {
+    println!("broadcast: {:?}", &self.aircraft);
+
     let _ = self
       .outgoing_sender
       .try_broadcast(OutgoingReply::Aircraft(self.aircraft.clone()))

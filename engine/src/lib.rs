@@ -1,7 +1,8 @@
-use std::f32::consts::PI;
+use std::{collections::HashMap, f32::consts::PI};
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
+use internment::Intern;
 // use objects::airport::{Runway, Taxiway, Terminal};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use turborand::{rng::Rng, TurboRand};
@@ -33,6 +34,31 @@ pub fn normalize_angle(angle: f32) -> f32 {
 pub struct XY {
   pub x: f32,
   pub y: f32,
+}
+
+pub fn serialize_intern_string<S>(
+  intern: &Intern<String>,
+  serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+  S: Serializer,
+{
+  intern.to_string().serialize(serializer)
+}
+
+pub fn serialize_hashmap_of_intern_string<S>(
+  map: &HashMap<Intern<String>, Vec<Intern<String>>>,
+  serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+  S: Serializer,
+{
+  let new_map: HashMap<String, Vec<String>> =
+    HashMap::from_iter(map.iter().map(|(k, v)| {
+      (k.to_string(), v.iter().map(|x| x.to_string()).collect())
+    }));
+
+  new_map.serialize(serializer)
 }
 
 pub fn serialize_vec2<S>(pos: &Vec2, serializer: S) -> Result<S::Ok, S::Error>
