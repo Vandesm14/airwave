@@ -83,7 +83,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let AircraftState::Landing(..) = aircraft.state {
           bundle
             .actions
-            .push(Action::new(aircraft.id, ActionKind::Flying))
+            .push(Action::new(aircraft.id, ActionKind::Flying));
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::SyncTargets));
         }
       }
     }

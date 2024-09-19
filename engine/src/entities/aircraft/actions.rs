@@ -17,6 +17,7 @@ pub enum ActionKind {
   TargetSpeed(f32),
   TargetHeading(f32),
   TargetAltitude(f32),
+  SyncTargets,
 
   Airspace(Intern<String>),
 
@@ -47,15 +48,18 @@ impl AircraftActionHandler for AircraftAllActionHandler {
     match action {
       ActionKind::Pos(pos) => aircraft.pos = *pos,
 
+      ActionKind::Speed(speed) => aircraft.speed = *speed,
+      ActionKind::Heading(heading) => aircraft.heading = *heading,
+      ActionKind::Altitude(altitude) => aircraft.altitude = *altitude,
+
       ActionKind::TargetSpeed(speed) => aircraft.target.speed = *speed,
       ActionKind::TargetHeading(heading) => aircraft.target.heading = *heading,
       ActionKind::TargetAltitude(altitude) => {
         aircraft.target.altitude = *altitude
       }
-
-      ActionKind::Speed(speed) => aircraft.speed = *speed,
-      ActionKind::Heading(heading) => aircraft.heading = *heading,
-      ActionKind::Altitude(altitude) => aircraft.altitude = *altitude,
+      ActionKind::SyncTargets => {
+        aircraft.sync_targets_to_vals();
+      }
 
       ActionKind::Airspace(spur) => aircraft.airspace = *spur,
 
