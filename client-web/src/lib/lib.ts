@@ -35,11 +35,10 @@ export function distanceToAirspace(
   world: World,
   airspace: string
 ): number {
-  let current = { x: aircraft.x, y: aircraft.y };
   let distance = 0;
   let destination = world.airspaces.find((a) => a.id === airspace);
   if (destination) {
-    distance = calculateDistance(current, destination.pos);
+    distance = calculateDistance(aircraft.pos, destination.pos);
   }
 
   return distance;
