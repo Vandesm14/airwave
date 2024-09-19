@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use internment::Intern;
 
 use super::{Action, Aircraft, AircraftState, Bundle, Event};

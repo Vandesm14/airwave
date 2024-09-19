@@ -37,7 +37,6 @@ fn main() {
   });
 
   airspace_ksfo.airports.push(airport_ksfo);
-
   world.airspaces.push(airspace_ksfo);
 
   let aircraft = Aircraft {

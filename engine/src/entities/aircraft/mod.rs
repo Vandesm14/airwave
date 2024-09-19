@@ -95,7 +95,7 @@ pub struct Aircraft {
 }
 
 impl Aircraft {
-  pub fn dt_climb_sp(&self, dt: f32) -> f32 {
+  pub fn dt_climb_speed(&self, dt: f32) -> f32 {
     (2000.0_f32 / 60.0_f32).round() * dt
   }
 
