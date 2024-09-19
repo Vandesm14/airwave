@@ -23,6 +23,8 @@ pub struct AircraftTargets {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
 pub enum AircraftState {
   Flying {
     waypoints: Vec<Node<WaypointNodeData>>,
