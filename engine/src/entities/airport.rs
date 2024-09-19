@@ -57,7 +57,7 @@ impl Airport {
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Runway {
-  pub id: String,
+  pub id: Intern<String>,
   #[serde(flatten)]
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]

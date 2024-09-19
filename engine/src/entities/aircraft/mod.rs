@@ -18,7 +18,7 @@ pub enum Event {
   TargetHeading(f32),
   TargetAltitude(f32),
 
-  Land(String),
+  Land(Intern<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -35,6 +35,9 @@ pub enum Action {
   TargetAltitude(f32),
 
   Airspace(Intern<String>),
+
+  // Substate
+  Land(Runway),
 }
 
 #[derive(Debug, Default)]

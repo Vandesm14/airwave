@@ -1,3 +1,5 @@
+use internment::Intern;
+
 use super::{Action, Aircraft, Bundle};
 
 use crate::{
@@ -97,7 +99,7 @@ impl AircraftEffect for AircraftIsPast205Effect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     if bundle.prev.speed <= 205.0 && aircraft.speed >= 205.0 {
       println!("Past 205");
-      bundle.events.push(Event::Land("27".into()));
+      bundle.events.push(Event::Land(Intern::from_ref("27")));
     }
   }
 }

@@ -19,13 +19,13 @@ fn main() {
 
   // Create a controlled KSFO airspace
   let airspace_ksfo = Airspace {
-    id: Intern::new("KSFO".into()),
+    id: Intern::from_ref("KSFO"),
     size: MANUAL_TOWER_AIRSPACE_RADIUS,
     ..Default::default()
   };
 
   let mut airport_ksfo = Airport {
-    id: Intern::new("KSFO".into()),
+    id: Intern::from_ref("KSFO"),
     ..Default::default()
   };
 

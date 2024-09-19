@@ -1,4 +1,4 @@
-use super::{Action, Aircraft};
+use super::{Action, Aircraft, AircraftState};
 
 pub trait AircraftActionHandler {
   fn run(aircraft: &mut Aircraft, action: &Action);
@@ -19,6 +19,9 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       Action::Pos(pos) => aircraft.pos = *pos,
 
       Action::Airspace(spur) => aircraft.airspace = *spur,
+      Action::Land(runway) => {
+        aircraft.state = AircraftState::Landing(runway.clone())
+      }
     }
   }
 }

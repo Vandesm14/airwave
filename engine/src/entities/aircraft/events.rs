@@ -1,4 +1,6 @@
-use super::{Action, Aircraft, Bundle, Event};
+use internment::Intern;
+
+use super::{Action, Aircraft, AircraftState, Bundle, Event};
 
 pub trait AircraftEventHandler {
   fn run(aircraft: &Aircraft, event: &Event, bundle: &mut Bundle);
@@ -17,16 +19,28 @@ impl AircraftEventHandler for HandleAircraftEvent {
       Event::TargetAltitude(altitude) => {
         bundle.actions.push(Action::TargetAltitude(*altitude));
       }
-      Event::Land(runway) => handle_land_event(aircraft, bundle, runway),
+      Event::Land(runway) => handle_land_event(aircraft, bundle, *runway),
     }
   }
 }
 
-pub fn handle_land_event<R: AsRef<str>>(
+pub fn handle_land_event(
   aircraft: &Aircraft,
   bundle: &mut Bundle,
-  runway_name: R,
+  runway_id: Intern<String>,
 ) {
-  let name = runway_name.as_ref();
-  println!("Cleared to land on runway: {name}");
+  if let AircraftState::Flying { .. } = aircraft.state {
+    if let Some(airspace) =
+      bundle.airspaces.iter().find(|a| a.id == aircraft.airspace)
+    {
+      if let Some(runway) = airspace
+        .airports
+        .iter()
+        .flat_map(|a| a.runways.iter())
+        .find(|r| r.id == runway_id)
+      {
+        bundle.actions.push(Action::Land(runway.clone()));
+      }
+    }
+  }
 }
