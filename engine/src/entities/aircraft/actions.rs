@@ -17,6 +17,8 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       Action::Altitude(altitude) => aircraft.altitude = *altitude,
 
       Action::Pos(pos) => aircraft.pos = *pos,
+
+      Action::Airspace(spur) => aircraft.airspace = *spur,
     }
   }
 }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use glam::Vec2;
+use lasso::ThreadedRodeo;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
@@ -59,11 +60,15 @@ pub struct WaypointSet {
   pub departure: HashMap<String, Vec<String>>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
   pub waypoints: Vec<Node<WaypointNodeData>>,
   pub waypoint_sets: WaypointSet,
+
+  pub aircraft_interner: ThreadedRodeo,
+  pub airspace_interner: ThreadedRodeo,
+  pub airport_interner: ThreadedRodeo,
 }
 
 impl World {

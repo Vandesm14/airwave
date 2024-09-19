@@ -2,15 +2,11 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
-use std::default;
-
 use glam::Vec2;
+use lasso::Spur;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-  pathfinder::{Node, WaypointNodeData},
-  KNOT_TO_FEET_PER_SECOND,
-};
+use crate::pathfinder::{Node, WaypointNodeData};
 
 use super::{airport::Runway, airspace::Airspace};
 
@@ -37,6 +33,8 @@ pub enum Action {
   TargetSpeed(f32),
   TargetHeading(f32),
   TargetAltitude(f32),
+
+  Airspace(Spur),
 }
 
 #[derive(Debug, Default)]
@@ -80,6 +78,8 @@ impl Default for AircraftState {
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
+  pub id: Spur,
+
   pub pos: Vec2,
   pub speed: f32,
   pub heading: f32,
@@ -87,6 +87,8 @@ pub struct Aircraft {
 
   pub target: AircraftTargets,
   pub state: AircraftState,
+
+  pub airspace: Spur,
 }
 
 impl Aircraft {

@@ -81,6 +81,17 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
   }
 }
 
+pub struct AircraftUpdateAirspaceEffect;
+impl AircraftEffect for AircraftUpdateAirspaceEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    for airspace in bundle.airspaces.iter() {
+      if airspace.contains_point(aircraft.pos) {
+        bundle.actions.push(Action::Airspace(airspace.id));
+      }
+    }
+  }
+}
+
 pub struct AircraftIsPast205Effect;
 impl AircraftEffect for AircraftIsPast205Effect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
