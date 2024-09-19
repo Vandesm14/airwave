@@ -19,26 +19,6 @@ use crate::{
   pathfinder::{Node, NodeBehavior, NodeKind},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[serde(tag = "type", content = "value")]
-pub enum OutgoingReply {
-  // Partial/Small Updates
-  ATCReply(CommandWithFreq),
-  Reply(CommandWithFreq),
-
-  // Full State Updates
-  Aircraft(Vec<Aircraft>),
-  World(World),
-  Size(f32),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum IncomingUpdate {
-  Command(CommandWithFreq),
-  Connect,
-}
-
 #[derive(Debug)]
 pub struct Engine {
   pub world: World,

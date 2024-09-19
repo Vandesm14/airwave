@@ -268,7 +268,7 @@ pub fn setup(
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![Event::Land(runway_13.id.clone())],
+      then: vec![Event::Land(runway_13.id)],
     },
   };
 
@@ -340,7 +340,7 @@ pub fn setup(
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![Event::Land(runway_22.id.clone())],
+      then: vec![Event::Land(runway_22.id)],
     },
   };
 
@@ -519,9 +519,9 @@ pub fn setup(
   //
 
   waypoint_sets.arrival.insert(
-    "A6".into(),
+    Intern::from_ref("A6"),
     vec![
-      "A6".into(),
+      Intern::from_ref("A6"),
       waypoint_blaze.name.clone(),
       waypoint_orbit.name.clone(),
       waypoint_vista.name.clone(),
@@ -529,9 +529,9 @@ pub fn setup(
   );
 
   waypoint_sets.arrival.insert(
-    "E4".into(),
+    Intern::from_ref("E4"),
     vec![
-      "E4".into(),
+      Intern::from_ref("E4"),
       waypoint_crest.name.clone(),
       waypoint_orbit.name.clone(),
       waypoint_vista.name.clone(),
@@ -539,9 +539,9 @@ pub fn setup(
   );
 
   waypoint_sets.arrival.insert(
-    "A5".into(),
+    Intern::from_ref("A5"),
     vec![
-      "A5".into(),
+      Intern::from_ref("A5"),
       waypoint_swift.name.clone(),
       waypoint_orbit.name.clone(),
       waypoint_vista.name.clone(),
@@ -549,9 +549,9 @@ pub fn setup(
   );
 
   waypoint_sets.arrival.insert(
-    "A9".into(),
+    Intern::from_ref("A9"),
     vec![
-      "A9".into(),
+      Intern::from_ref("A9"),
       waypoint_short.name.clone(),
       waypoint_ready.name.clone(),
       waypoint_sonic.name.clone(),
@@ -559,9 +559,9 @@ pub fn setup(
   );
 
   waypoint_sets.arrival.insert(
-    "B1".into(),
+    Intern::from_ref("B1"),
     vec![
-      "B1".into(),
+      Intern::from_ref("B1"),
       waypoint_arrow.name.clone(),
       waypoint_ready.name.clone(),
       waypoint_sonic.name.clone(),

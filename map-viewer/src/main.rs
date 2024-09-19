@@ -10,6 +10,7 @@ use engine::{
   pathfinder::{Node, NodeBehavior, NodeKind},
 };
 use glam::Vec2;
+use internment::Intern;
 use map_viewer::Draw;
 use nannou::{
   color::*,
@@ -235,7 +236,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
       for edge in airport.pathfinder.graph.edge_references() {
         let node = Node {
-          name: "".to_owned(),
+          name: Intern::from_ref(""),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
           value: *edge.weight(),

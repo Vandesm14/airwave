@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use async_openai::error::OpenAIError;
 use engine::command::{Command, CommandReply, CommandReplyKind};
-use engine::entities::aircraft::Event;
+use engine::entities::aircraft::events::Event;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;

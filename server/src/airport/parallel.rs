@@ -1,6 +1,6 @@
 use engine::{
   entities::{
-    aircraft::Event,
+    aircraft::events::Event,
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
@@ -9,6 +9,7 @@ use engine::{
   Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
+use internment::Intern;
 
 // TODO: Add tasks to the correct waypoints to clear landings, et cetera.
 
@@ -32,26 +33,26 @@ pub fn setup(
   // MARK: Right.
 
   let runway_27r = Runway {
-    id: "27R".into(),
+    id: Intern::from_ref("27R"),
     pos: airport.center + Vec2::Y * RUNWAY_SPACING / 2.0,
     heading: 270.0,
     length: 7000.0,
   };
 
   let taxiway_b = Taxiway {
-    id: "B".into(),
+    id: Intern::from_ref("B"),
     a: move_point(runway_27r.start(), DOWN, ENTRYWAY_TAXIWAY_DISTANCE),
     b: move_point(runway_27r.end(), DOWN, ENTRYWAY_TAXIWAY_DISTANCE),
   };
 
   let taxiway_a1 = Taxiway {
-    id: "A1".into(),
+    id: Intern::from_ref("A1"),
     a: runway_27r.end(),
     b: move_point(runway_27r.end(), DOWN, ENTRYWAY_TAXIWAY_DISTANCE),
   };
 
   let taxiway_a2 = Taxiway {
-    id: "A2".into(),
+    id: Intern::from_ref("A2"),
     a: runway_27r.start().lerp(runway_27r.end(), 0.75),
     b: move_point(
       runway_27r.start().lerp(runway_27r.end(), 0.75),
@@ -61,7 +62,7 @@ pub fn setup(
   };
 
   let taxiway_a3 = Taxiway {
-    id: "A3".into(),
+    id: Intern::from_ref("A3"),
     a: runway_27r.start().lerp(runway_27r.end(), 0.5),
     b: move_point(
       runway_27r.start().lerp(runway_27r.end(), 0.5),
@@ -71,7 +72,7 @@ pub fn setup(
   };
 
   let taxiway_a4 = Taxiway {
-    id: "A4".into(),
+    id: Intern::from_ref("A4"),
     a: runway_27r.start().lerp(runway_27r.end(), 0.25),
     b: move_point(
       runway_27r.start().lerp(runway_27r.end(), 0.25),
@@ -81,7 +82,7 @@ pub fn setup(
   };
 
   let taxiway_a5 = Taxiway {
-    id: "A5".into(),
+    id: Intern::from_ref("A5"),
     a: runway_27r.start().lerp(runway_27r.end(), 0.0),
     b: move_point(
       runway_27r.start().lerp(runway_27r.end(), 0.0),
@@ -93,26 +94,26 @@ pub fn setup(
   // MARK: Left.
 
   let runway_27l = Runway {
-    id: "27L".into(),
+    id: Intern::from_ref("27L"),
     pos: airport.center + Vec2::Y * -(RUNWAY_SPACING / 2.0),
     heading: 270.0,
     length: 7000.0,
   };
 
   let taxiway_c = Taxiway {
-    id: "C".into(),
+    id: Intern::from_ref("C"),
     a: move_point(runway_27l.start(), UP, ENTRYWAY_TAXIWAY_DISTANCE),
     b: move_point(runway_27l.end(), UP, ENTRYWAY_TAXIWAY_DISTANCE),
   };
 
   let taxiway_d1 = Taxiway {
-    id: "D1".into(),
+    id: Intern::from_ref("D1"),
     a: runway_27l.end(),
     b: move_point(runway_27l.end(), UP, ENTRYWAY_TAXIWAY_DISTANCE),
   };
 
   let taxiway_d2 = Taxiway {
-    id: "D2".into(),
+    id: Intern::from_ref("D2"),
     a: runway_27l.start().lerp(runway_27l.end(), 0.75),
     b: move_point(
       runway_27l.start().lerp(runway_27l.end(), 0.75),
@@ -122,7 +123,7 @@ pub fn setup(
   };
 
   let taxiway_d3 = Taxiway {
-    id: "D3".into(),
+    id: Intern::from_ref("D3"),
     a: runway_27l.start().lerp(runway_27l.end(), 0.5),
     b: move_point(
       runway_27l.start().lerp(runway_27l.end(), 0.5),
@@ -132,7 +133,7 @@ pub fn setup(
   };
 
   let taxiway_d4 = Taxiway {
-    id: "D4".into(),
+    id: Intern::from_ref("D4"),
     a: runway_27l.start().lerp(runway_27l.end(), 0.25),
     b: move_point(
       runway_27l.start().lerp(runway_27l.end(), 0.25),
@@ -142,7 +143,7 @@ pub fn setup(
   };
 
   let taxiway_d5 = Taxiway {
-    id: "D5".into(),
+    id: Intern::from_ref("D5"),
     a: runway_27l.start().lerp(runway_27l.end(), 0.0),
     b: move_point(
       runway_27l.start().lerp(runway_27l.end(), 0.0),
@@ -154,7 +155,7 @@ pub fn setup(
   // MARK: Terminals.
 
   let mut terminal_a = Terminal {
-    id: 'A',
+    id: Intern::from_ref("A"),
     a: taxiway_a2.b,
     b: taxiway_a3.b,
     c: move_point(taxiway_a3.b, DOWN, 750.0),
@@ -164,7 +165,7 @@ pub fn setup(
   };
 
   let mut terminal_b = Terminal {
-    id: 'B',
+    id: Intern::from_ref("B"),
     a: taxiway_d2.b,
     b: taxiway_d3.b,
     c: move_point(taxiway_d3.b, UP, 750.0),
@@ -178,7 +179,7 @@ pub fn setup(
   // TODO: Shift the gates back over to where they're supposed to be
   for i in 1..=GATES_PER_TERMINAL {
     terminal_a.gates.push(Gate {
-      id: format!("{}{i}", terminal_a.id),
+      id: Intern::from(format!("{}{i}", terminal_a.id)),
       heading: DOWN,
       pos: move_point(
         terminal_a
@@ -190,7 +191,7 @@ pub fn setup(
     });
 
     terminal_b.gates.push(Gate {
-      id: format!("{}{i}", terminal_b.id),
+      id: Intern::from(format!("{}{i}", terminal_b.id)),
       heading: UP,
       pos: move_point(
         terminal_b
@@ -205,7 +206,7 @@ pub fn setup(
   // MARK: Right Arrival Waypoints.
 
   let waypoint_tack = Node {
-    name: "TACK".to_owned(),
+    name: Intern::from_ref("TACK"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -219,7 +220,7 @@ pub fn setup(
   };
 
   let waypoint_cork = Node {
-    name: "CORK".to_owned(),
+    name: Intern::from_ref("CORK"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -233,7 +234,7 @@ pub fn setup(
   };
 
   let waypoint_foam = Node {
-    name: "FOAM".to_owned(),
+    name: Intern::from_ref("FOAM"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -247,7 +248,7 @@ pub fn setup(
   };
 
   waypoint_sets.approach.insert(
-    "FOAM".to_owned(),
+    Intern::from_ref("FOAM"),
     vec![
       waypoint_foam.name.clone(),
       waypoint_cork.name.clone(),
@@ -262,7 +263,7 @@ pub fn setup(
   // MARK: Left Arrival Waypoints.
 
   let waypoint_lord = Node {
-    name: "LORD".to_owned(),
+    name: Intern::from_ref("LORD"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -276,7 +277,7 @@ pub fn setup(
   };
 
   let waypoint_jest = Node {
-    name: "JEST".to_owned(),
+    name: Intern::from_ref("JEST"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -290,7 +291,7 @@ pub fn setup(
   };
 
   let waypoint_ball = Node {
-    name: "BALL".to_owned(),
+    name: Intern::from_ref("BALL"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -304,7 +305,7 @@ pub fn setup(
   };
 
   waypoint_sets.approach.insert(
-    "BALL".to_owned(),
+    Intern::from_ref("BALL"),
     vec![
       waypoint_ball.name.clone(),
       waypoint_jest.name.clone(),
@@ -319,7 +320,7 @@ pub fn setup(
   // MARK: Right Departure Waypoints.
 
   let waypoint_note = Node {
-    name: "NOTE".to_owned(),
+    name: Intern::from_ref("NOTE"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -333,7 +334,7 @@ pub fn setup(
   };
 
   let waypoint_idea = Node {
-    name: "IDEA".to_owned(),
+    name: Intern::from_ref("IDEA"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -343,7 +344,7 @@ pub fn setup(
   };
 
   let waypoint_bulb = Node {
-    name: "BULB".to_owned(),
+    name: Intern::from_ref("BULB"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -357,12 +358,12 @@ pub fn setup(
   };
 
   waypoint_sets.departure.insert(
-    "IDEA".to_owned(),
+    Intern::from_ref("IDEA"),
     vec![waypoint_note.name.clone(), waypoint_idea.name.clone()],
   );
 
   waypoint_sets.departure.insert(
-    "BULB".to_owned(),
+    Intern::from_ref("BULB"),
     vec![waypoint_note.name.clone(), waypoint_bulb.name.clone()],
   );
 
@@ -373,7 +374,7 @@ pub fn setup(
   // MARK: Left Departure Waypoints.
 
   let waypoint_king = Node {
-    name: "KING".to_owned(),
+    name: Intern::from_ref("KING"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -387,7 +388,7 @@ pub fn setup(
   };
 
   let waypoint_town = Node {
-    name: "TOWN".to_owned(),
+    name: Intern::from_ref("TOWN"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -397,7 +398,7 @@ pub fn setup(
   };
 
   let waypoint_gold = Node {
-    name: "GOLD".to_owned(),
+    name: Intern::from_ref("GOLD"),
     kind: NodeKind::Runway,
     behavior: NodeBehavior::GoTo,
     value: WaypointNodeData {
@@ -411,12 +412,12 @@ pub fn setup(
   };
 
   waypoint_sets.departure.insert(
-    "TOWN".to_owned(),
+    Intern::from_ref("TOWN"),
     vec![waypoint_king.name.clone(), waypoint_town.name.clone()],
   );
 
   waypoint_sets.departure.insert(
-    "GOLD".to_owned(),
+    Intern::from_ref("GOLD"),
     vec![waypoint_king.name.clone(), waypoint_gold.name.clone()],
   );
 

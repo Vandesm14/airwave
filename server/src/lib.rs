@@ -9,8 +9,8 @@ use async_openai::{
   },
 };
 use engine::{
-  engine::{IncomingUpdate, OutgoingReply},
-  objects::command::CommandWithFreq,
+  command::CommandWithFreq,
+  entities::{aircraft::Aircraft, world::World},
 };
 use futures_util::{
   stream::{SplitSink, SplitStream},
@@ -27,6 +27,26 @@ use tokio_tungstenite::{
 
 pub mod airport;
 pub mod prompter;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
+pub enum OutgoingReply {
+  // Partial/Small Updates
+  ATCReply(CommandWithFreq),
+  Reply(CommandWithFreq),
+
+  // Full State Updates
+  Aircraft(Vec<Aircraft>),
+  World(World),
+  Size(f32),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum IncomingUpdate {
+  Command(CommandWithFreq),
+  Connect,
+}
 
 pub async fn broadcast_updates_to(
   mut writer: SplitSink<WebSocketStream<TcpStream>, Message>,

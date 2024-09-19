@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use glam::Vec2;
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
@@ -54,12 +55,12 @@ pub fn find_random_arrival<'a>(
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WaypointSet {
-  pub arrival: HashMap<String, Vec<String>>,
-  pub approach: HashMap<String, Vec<String>>,
-  pub departure: HashMap<String, Vec<String>>,
+  pub arrival: HashMap<Intern<String>, Vec<Intern<String>>>,
+  pub approach: HashMap<Intern<String>, Vec<Intern<String>>>,
+  pub departure: HashMap<Intern<String>, Vec<Intern<String>>>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
   pub waypoints: Vec<Node<WaypointNodeData>>,

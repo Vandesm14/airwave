@@ -8,8 +8,8 @@ use std::{path::PathBuf, sync::Arc};
 use clap::Parser;
 use engine::{
   circle_circle_intersection,
-  engine::{Engine, IncomingUpdate, OutgoingReply},
-  objects::{
+  engine::Engine,
+  entities::{
     aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
@@ -19,7 +19,11 @@ use engine::{
 };
 use futures_util::StreamExt as _;
 use glam::Vec2;
-use server::airport::{self, AirportSetupFn};
+use internment::Intern;
+use server::{
+  airport::{self, AirportSetupFn},
+  IncomingUpdate, OutgoingReply,
+};
 use tokio::net::TcpListener;
 use turborand::{rng::Rng, SeededCore, TurboRand};
 
@@ -97,7 +101,7 @@ async fn main() {
 
   // Create a controlled KSFO airspace
   let mut airspace_ksfo = Airspace {
-    id: "KSFO".into(),
+    id: Intern::from_ref("KSFO"),
     pos: Vec2::ZERO,
     size: MANUAL_TOWER_AIRSPACE_RADIUS,
     airports: vec![],
@@ -106,7 +110,7 @@ async fn main() {
   };
 
   let mut airport_ksfo = Airport {
-    id: "KSFO".into(),
+    id: Intern::from_ref("KSFO"),
     center: airspace_ksfo.pos,
     ..Default::default()
   };
@@ -159,7 +163,7 @@ async fn main() {
     };
 
     engine.world.airspaces.push(Airspace {
-      id: airspace_name.into(),
+      id: Intern::from_ref(airspace_name),
       pos: airspace_position,
       size: AUTO_TOWER_AIRSPACE_RADIUS,
       airports: vec![],
@@ -168,7 +172,7 @@ async fn main() {
     });
 
     engine.world.waypoints.push(Node {
-      name: airspace_name.into(),
+      name: Intern::from_ref(airspace_name),
       kind: NodeKind::Runway,
       behavior: NodeBehavior::GoTo,
       value: WaypointNodeData {
@@ -272,7 +276,7 @@ async fn main() {
       let waypoint_id = iota();
 
       engine.world.waypoints.push(Node {
-        name: n_to_an(waypoint_id),
+        name: Intern::from(n_to_an(waypoint_id)),
         kind: NodeKind::Runway,
         behavior: NodeBehavior::GoTo,
         value: WaypointNodeData {

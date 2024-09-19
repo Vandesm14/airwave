@@ -3,14 +3,13 @@ pub mod effects;
 pub mod events;
 
 use actions::Action;
-use events::Event;
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use crate::pathfinder::{Node, WaypointNodeData};
 
-use super::{airport::Runway, airspace::Airspace};
+use super::airport::Runway;
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
