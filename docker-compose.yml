@@ -1,0 +1,14 @@
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile.backend
+    ports:
+      - '9001:9001'
+    env_file: '.env'
+
+  # frontend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.frontend
+  #   ports:
+  #     - '8080:8080'

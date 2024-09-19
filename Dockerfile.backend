@@ -1,0 +1,12 @@
+FROM rust:1.81
+
+WORKDIR /usr/src/myapp
+
+COPY engine engine
+COPY server server
+COPY map-viewer map-viewer
+COPY Cargo.toml .
+
+RUN cargo build --release --bin server
+
+CMD ["cargo","run","--release","--bin","server","--","--address","0.0.0.0:9001","--world-radius","500","--airport","new_v_pattern"]
