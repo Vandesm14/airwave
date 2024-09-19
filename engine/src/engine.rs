@@ -50,6 +50,13 @@ impl Engine {
       for event in self.events.iter() {
         if event.id == aircraft.id {
           HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
+
+          // Apply all actions
+          for action in bundle.actions.iter() {
+            if action.id == aircraft.id {
+              AircraftAllActionHandler::run(aircraft, &action.kind);
+            }
+          }
         }
       }
 
@@ -59,7 +66,7 @@ impl Engine {
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
       AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
 
-      // Run through all actions
+      // Apply all actions
       for action in bundle.actions.iter() {
         if action.id == aircraft.id {
           AircraftAllActionHandler::run(aircraft, &action.kind);

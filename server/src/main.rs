@@ -208,8 +208,9 @@ async fn main() {
   // TODO: Spawn random
   let mut aircraft = Aircraft {
     id: Intern::from_ref("AAL3556"),
-    pos: Vec2::ZERO,
+    pos: Vec2::new(NAUTICALMILES_TO_FEET * 10.0, NAUTICALMILES_TO_FEET * 10.0),
     speed: 250.0,
+    heading: 180.0,
     altitude: 4000.0,
     target: AircraftTargets::default(),
     flight_plan: FlightPlan::new("KSFO".into(), "EGLL".into()),

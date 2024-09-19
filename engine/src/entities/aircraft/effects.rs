@@ -1,4 +1,8 @@
-use super::{actions::ActionKind, Action, Aircraft, AircraftState};
+use super::{
+  actions::ActionKind,
+  events::{Event, EventKind},
+  Action, Aircraft, AircraftState,
+};
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
@@ -144,8 +148,10 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 
       // If we are too high, go around.
       if aircraft.altitude - target_altitude > 100.0 {
-        // TODO: Go around
-        // aircraft.do_go_around(sender, GoAroundReason::TooHigh);
+        bundle.events.push(Event {
+          id: aircraft.id,
+          kind: EventKind::GoAround,
+        });
         return;
       }
 

@@ -22,6 +22,7 @@ pub enum ActionKind {
 
   // Substate
   Land(Runway),
+  Flying,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -44,6 +45,8 @@ pub struct AircraftAllActionHandler;
 impl AircraftActionHandler for AircraftAllActionHandler {
   fn run(aircraft: &mut Aircraft, action: &ActionKind) {
     match action {
+      ActionKind::Pos(pos) => aircraft.pos = *pos,
+
       ActionKind::TargetSpeed(speed) => aircraft.target.speed = *speed,
       ActionKind::TargetHeading(heading) => aircraft.target.heading = *heading,
       ActionKind::TargetAltitude(altitude) => {
@@ -54,11 +57,15 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::Heading(heading) => aircraft.heading = *heading,
       ActionKind::Altitude(altitude) => aircraft.altitude = *altitude,
 
-      ActionKind::Pos(pos) => aircraft.pos = *pos,
-
       ActionKind::Airspace(spur) => aircraft.airspace = *spur,
+
       ActionKind::Land(runway) => {
         aircraft.state = AircraftState::Landing(runway.clone())
+      }
+      ActionKind::Flying => {
+        aircraft.state = AircraftState::Flying {
+          waypoints: Vec::new(),
+        }
       }
     }
   }

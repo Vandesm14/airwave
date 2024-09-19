@@ -1,5 +1,4 @@
 use internment::Intern;
-use serde::{Deserialize, Serialize};
 
 use crate::{command::Task, engine::Bundle};
 
@@ -12,6 +11,7 @@ pub enum EventKind {
   TargetAltitude(f32),
 
   Land(Intern<String>),
+  GoAround,
 }
 
 impl From<Task> for EventKind {
@@ -20,16 +20,12 @@ impl From<Task> for EventKind {
       Task::Altitude(x) => EventKind::TargetAltitude(x),
       Task::Approach(_) => todo!(),
       Task::Arrival(_) => todo!(),
-      Task::Clearance {
-        departure,
-        altitude,
-        speed,
-      } => todo!(),
+      Task::Clearance { .. } => todo!(),
       Task::Depart(_) => todo!(),
-      Task::Direct(vec) => todo!(),
+      Task::Direct(_) => todo!(),
       Task::DirectionOfTravel => todo!(),
       Task::Frequency(_) => todo!(),
-      Task::GoAround => todo!(),
+      Task::GoAround => EventKind::GoAround,
       Task::Heading(x) => EventKind::TargetHeading(x),
       Task::Ident => todo!(),
       Task::Land(x) => EventKind::Land(Intern::from(x)),
@@ -37,7 +33,7 @@ impl From<Task> for EventKind {
       Task::ResumeOwnNavigation => todo!(),
       Task::Speed(x) => EventKind::TargetSpeed(x),
       Task::Takeoff(_) => todo!(),
-      Task::Taxi(vec) => todo!(),
+      Task::Taxi(_) => todo!(),
       Task::TaxiContinue => todo!(),
       Task::TaxiHold => todo!(),
     }
@@ -81,7 +77,15 @@ impl AircraftEventHandler for HandleAircraftEvent {
           ActionKind::TargetAltitude(*altitude),
         ));
       }
+
       EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
+      EventKind::GoAround => {
+        if let AircraftState::Landing(..) = aircraft.state {
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::Flying))
+        }
+      }
     }
   }
 }
