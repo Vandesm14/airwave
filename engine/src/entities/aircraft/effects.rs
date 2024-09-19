@@ -1,6 +1,8 @@
 use super::{Action, Aircraft, Bundle};
 
-use crate::{delta_angle, move_point, normalize_angle};
+use crate::{
+  delta_angle, entities::aircraft::Event, move_point, normalize_angle,
+};
 
 pub trait AircraftEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle);
@@ -83,6 +85,7 @@ impl AircraftEffect for AircraftIsPast205Effect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     if bundle.prev.speed <= 205.0 && aircraft.speed >= 205.0 {
       println!("Past 205");
+      bundle.events.push(Event::Land("27".into()));
     }
   }
 }

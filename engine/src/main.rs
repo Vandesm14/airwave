@@ -2,6 +2,7 @@ use engine::{
   engine::Engine,
   entities::{
     aircraft::{Aircraft, Event},
+    airport::{Airport, Runway},
     airspace::Airspace,
     world::World,
   },
@@ -21,6 +22,18 @@ fn main() {
     size: MANUAL_TOWER_AIRSPACE_RADIUS,
     ..Default::default()
   };
+
+  let mut airport_ksfo = Airport {
+    id: "KSFP".into(),
+    ..Default::default()
+  };
+
+  airport_ksfo.add_runway(Runway {
+    id: "27".into(),
+    heading: 270.0,
+    length: 7000.0,
+    ..Default::default()
+  });
 
   world.airspaces.push(airspace_ksfo);
 
