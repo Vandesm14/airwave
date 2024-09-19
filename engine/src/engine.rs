@@ -2,21 +2,24 @@ use actions::{Action, AircraftActionHandler};
 use effects::{AircraftUpdateAirspaceEffect, AircraftUpdateLandingEffect};
 use events::Event;
 
-use crate::entities::{
-  aircraft::{
-    actions::AircraftAllActionHandler,
-    effects::{
-      AircraftEffect, AircraftUpdateFromTargetsEffect,
-      AircraftUpdatePositionEffect,
+use crate::{
+  entities::{
+    aircraft::{
+      actions::AircraftAllActionHandler,
+      effects::{
+        AircraftEffect, AircraftUpdateFromTargetsEffect,
+        AircraftUpdatePositionEffect,
+      },
+      events::{AircraftEventHandler, HandleAircraftEvent},
+      *,
     },
-    events::{AircraftEventHandler, HandleAircraftEvent},
-    *,
+    airspace::Airspace,
+    world::{WaypointSet, World},
   },
-  airspace::Airspace,
-  world::World,
+  pathfinder::{Node, NodeVORData},
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Bundle<'a> {
   pub prev: Aircraft,
 
@@ -24,8 +27,24 @@ pub struct Bundle<'a> {
   pub actions: Vec<Action>,
 
   pub airspaces: &'a [Airspace],
+  pub waypoints: &'a [Node<NodeVORData>],
+  pub waypoint_sets: &'a WaypointSet,
 
   pub dt: f32,
+}
+
+impl<'a> From<&'a World> for Bundle<'a> {
+  fn from(value: &'a World) -> Self {
+    Self {
+      prev: Aircraft::default(),
+      events: Vec::new(),
+      actions: Vec::new(),
+      airspaces: &value.airspaces,
+      waypoints: &value.waypoints,
+      waypoint_sets: &value.waypoint_sets,
+      dt: 0.0,
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -36,11 +55,8 @@ pub struct Engine {
 
 impl Engine {
   pub fn tick(&mut self, world: &World, aircraft: &mut [Aircraft], dt: f32) {
-    let mut bundle = Bundle {
-      dt,
-      airspaces: &world.airspaces,
-      ..Default::default()
-    };
+    let mut bundle = Bundle::from(world);
+    bundle.dt = dt;
 
     for aircraft in aircraft.iter_mut() {
       // Capture the previous state

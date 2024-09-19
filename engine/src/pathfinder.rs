@@ -35,7 +35,7 @@ pub enum NodeBehavior {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct WaypointNodeData {
+pub struct NodeVORData {
   pub to: Vec2,
   #[serde(skip)]
   pub then: Vec<EventKind>,

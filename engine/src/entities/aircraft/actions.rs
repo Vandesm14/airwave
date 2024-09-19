@@ -1,7 +1,10 @@
 use glam::Vec2;
 use internment::Intern;
 
-use crate::{entities::airport::Runway, pathfinder::Node};
+use crate::{
+  entities::airport::Runway,
+  pathfinder::{Node, NodeVORData},
+};
 
 use super::{Aircraft, AircraftState};
 
@@ -21,15 +24,13 @@ pub enum ActionKind {
 
   Airspace(Intern<String>),
 
-  // Substate
-  Land(Runway),
-  Flying,
-
   // State
+  Landing(Runway),
   Taxi {
     current: Node<Vec2>,
     waypoints: Vec<Node<Vec2>>,
   },
+  Flying(Vec<Node<NodeVORData>>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,12 +70,12 @@ impl AircraftActionHandler for AircraftAllActionHandler {
 
       ActionKind::Airspace(spur) => aircraft.airspace = *spur,
 
-      ActionKind::Land(runway) => {
+      ActionKind::Landing(runway) => {
         aircraft.state = AircraftState::Landing(runway.clone())
       }
-      ActionKind::Flying => {
+      ActionKind::Flying(waypoints) => {
         aircraft.state = AircraftState::Flying {
-          waypoints: Vec::new(),
+          waypoints: waypoints.clone(),
         }
       }
 

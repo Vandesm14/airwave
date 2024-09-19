@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   deserialize_vec2,
-  pathfinder::{Node, WaypointNodeData},
+  pathfinder::{Node, NodeVORData},
   serialize_vec2,
 };
 
@@ -27,7 +27,7 @@ pub struct AircraftTargets {
 #[serde(tag = "type", content = "value")]
 pub enum AircraftState {
   Flying {
-    waypoints: Vec<Node<WaypointNodeData>>,
+    waypoints: Vec<Node<NodeVORData>>,
   },
   Landing(Runway),
   Taxiing {
@@ -51,7 +51,7 @@ pub struct FlightPlan {
   pub arriving: String,
   pub altitude: f32,
   pub speed: f32,
-  pub waypoints: Vec<Node<WaypointNodeData>>,
+  pub waypoints: Vec<Node<NodeVORData>>,
 }
 
 impl FlightPlan {

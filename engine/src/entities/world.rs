@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
-  pathfinder::{Node, WaypointNodeData},
+  pathfinder::{Node, NodeVORData},
   serialize_hashmap_of_intern_string,
 };
 
@@ -69,7 +69,7 @@ pub struct WaypointSet {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
-  pub waypoints: Vec<Node<WaypointNodeData>>,
+  pub waypoints: Vec<Node<NodeVORData>>,
   pub waypoint_sets: WaypointSet,
 }
 

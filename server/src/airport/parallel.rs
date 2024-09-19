@@ -5,7 +5,7 @@ use engine::{
     world::WaypointSet,
   },
   inverse_degrees, move_point,
-  pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
+  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
   Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
 use glam::Vec2;
@@ -15,7 +15,7 @@ use internment::Intern;
 
 pub fn setup(
   airport: &mut Airport,
-  waypoints: &mut Vec<Node<WaypointNodeData>>,
+  waypoints: &mut Vec<Node<NodeVORData>>,
   waypoint_sets: &mut WaypointSet,
 ) {
   /// In feet (ft).
@@ -209,7 +209,7 @@ pub fn setup(
     name: Intern::from_ref("TACK"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_27r.start(),
         inverse_degrees(runway_27r.heading),
@@ -223,7 +223,7 @@ pub fn setup(
     name: Intern::from_ref("CORK"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_tack.value.to,
         RIGHT,
@@ -237,7 +237,7 @@ pub fn setup(
     name: Intern::from_ref("FOAM"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_cork.value.to,
         RIGHT - 45.0,
@@ -262,7 +262,7 @@ pub fn setup(
     name: Intern::from_ref("LORD"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_27l.start(),
         inverse_degrees(runway_27l.heading),
@@ -276,7 +276,7 @@ pub fn setup(
     name: Intern::from_ref("JEST"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_lord.value.to,
         RIGHT,
@@ -290,7 +290,7 @@ pub fn setup(
     name: Intern::from_ref("BALL"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_jest.value.to,
         RIGHT + 45.0,
@@ -315,7 +315,7 @@ pub fn setup(
     name: Intern::from_ref("NOTE"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_27r.end(),
         runway_27r.heading,
@@ -329,7 +329,7 @@ pub fn setup(
     name: Intern::from_ref("IDEA"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(waypoint_note.value.to, LEFT, NAUTICALMILES_TO_FEET * 8.0),
       then: vec![],
     },
@@ -339,7 +339,7 @@ pub fn setup(
     name: Intern::from_ref("BULB"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_note.value.to,
         LEFT + 45.0,
@@ -369,7 +369,7 @@ pub fn setup(
     name: Intern::from_ref("KING"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_27l.end(),
         runway_27l.heading,
@@ -383,7 +383,7 @@ pub fn setup(
     name: Intern::from_ref("TOWN"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(waypoint_king.value.to, LEFT, NAUTICALMILES_TO_FEET * 8.0),
       then: vec![],
     },
@@ -393,7 +393,7 @@ pub fn setup(
     name: Intern::from_ref("GOLD"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_king.value.to,
         LEFT - 45.0,

@@ -54,13 +54,13 @@ fn main() {
 
   engine
     .events
-    .push(Event::new(aircraft_id, EventKind::TargetSpeed(250.0)));
+    .push(Event::new(aircraft_id, EventKind::Speed(250.0)));
   engine
     .events
-    .push(Event::new(aircraft_id, EventKind::TargetAltitude(4000.0)));
+    .push(Event::new(aircraft_id, EventKind::Altitude(4000.0)));
   engine
     .events
-    .push(Event::new(aircraft_id, EventKind::TargetHeading(45.0)));
+    .push(Event::new(aircraft_id, EventKind::Heading(45.0)));
 
   let dt = 0.5;
 

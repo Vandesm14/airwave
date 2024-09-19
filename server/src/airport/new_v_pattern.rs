@@ -8,7 +8,7 @@ use engine::{
     world::WaypointSet,
   },
   find_projected_intersection, inverse_degrees, move_point,
-  pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
+  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
   Line, CLOCKWISE, COUNTERCLOCKWISE, NAUTICALMILES_TO_FEET,
 };
 use internment::Intern;
@@ -17,7 +17,7 @@ use internment::Intern;
 
 pub fn setup(
   airport: &mut Airport,
-  waypoints: &mut Vec<Node<WaypointNodeData>>,
+  waypoints: &mut Vec<Node<NodeVORData>>,
   waypoint_sets: &mut WaypointSet,
 ) {
   const TAXIWAY_DISTANCE: f32 = 400.0;
@@ -262,7 +262,7 @@ pub fn setup(
     name: Intern::from_ref("VISTA"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_13.start(),
         inverse_degrees(runway_13.heading),
@@ -276,16 +276,13 @@ pub fn setup(
     name: Intern::from_ref("ORBIT"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_vista.value.to,
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 4.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -293,16 +290,13 @@ pub fn setup(
     name: Intern::from_ref("CREST"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_orbit.value.to,
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -310,16 +304,13 @@ pub fn setup(
     name: Intern::from_ref("BLAZE"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_orbit.value.to,
         add_degrees(inverse_degrees(runway_13.heading), -45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -327,16 +318,13 @@ pub fn setup(
     name: Intern::from_ref("SWIFT"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_orbit.value.to,
         add_degrees(inverse_degrees(runway_13.heading), 45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -346,7 +334,7 @@ pub fn setup(
     name: Intern::from_ref("SONIC"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_22.start(),
         inverse_degrees(runway_22.heading),
@@ -360,16 +348,13 @@ pub fn setup(
     name: Intern::from_ref("READY"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_sonic.value.to,
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 4.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -377,16 +362,13 @@ pub fn setup(
     name: Intern::from_ref("SHORT"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_ready.value.to,
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -394,16 +376,13 @@ pub fn setup(
     name: Intern::from_ref("QUICK"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_ready.value.to,
         add_degrees(inverse_degrees(runway_22.heading), -45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -411,16 +390,13 @@ pub fn setup(
     name: Intern::from_ref("ARROW"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_ready.value.to,
         add_degrees(inverse_degrees(runway_22.heading), 45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![
-        EventKind::TargetAltitude(4000.0),
-        EventKind::TargetSpeed(250.0),
-      ],
+      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
     },
   };
 
@@ -430,7 +406,7 @@ pub fn setup(
     name: Intern::from_ref("PAPER"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_13.end(),
         runway_13.heading,
@@ -444,7 +420,7 @@ pub fn setup(
     name: Intern::from_ref("GHOST"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_paper.value.to,
         runway_13.heading,
@@ -458,7 +434,7 @@ pub fn setup(
     name: Intern::from_ref("OCEAN"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_ghost.value.to,
         add_degrees(runway_13.heading, -45.0),
@@ -472,7 +448,7 @@ pub fn setup(
     name: Intern::from_ref("GOOSE"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_ghost.value.to,
         add_degrees(runway_13.heading, 45.0),
@@ -488,7 +464,7 @@ pub fn setup(
     name: Intern::from_ref("QUACK"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         runway_22.end(),
         runway_22.heading,
@@ -502,7 +478,7 @@ pub fn setup(
     name: Intern::from_ref("STATE"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_quack.value.to,
         runway_22.heading,
@@ -516,7 +492,7 @@ pub fn setup(
     name: Intern::from_ref("UNITE"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_state.value.to,
         add_degrees(runway_22.heading, -45.0),
@@ -530,7 +506,7 @@ pub fn setup(
     name: Intern::from_ref("ROYAL"),
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: WaypointNodeData {
+    value: NodeVORData {
       to: move_point(
         waypoint_state.value.to,
         add_degrees(runway_22.heading, 45.0),

@@ -11,9 +11,11 @@ use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EventKind {
-  TargetSpeed(f32),
-  TargetHeading(f32),
-  TargetAltitude(f32),
+  Speed(f32),
+  Heading(f32),
+  Altitude(f32),
+
+  DirectTo(Vec<Intern<String>>),
 
   Land(Intern<String>),
   Touchdown,
@@ -23,21 +25,23 @@ pub enum EventKind {
 impl From<Task> for EventKind {
   fn from(value: Task) -> Self {
     match value {
-      Task::Altitude(x) => EventKind::TargetAltitude(x),
+      Task::Altitude(x) => EventKind::Altitude(x),
       Task::Approach(_) => todo!(),
       Task::Arrival(_) => todo!(),
       Task::Clearance { .. } => todo!(),
       Task::Depart(_) => todo!(),
-      Task::Direct(_) => todo!(),
+      Task::Direct(x) => {
+        EventKind::DirectTo(x.iter().cloned().map(Intern::from).collect())
+      }
       Task::DirectionOfTravel => todo!(),
       Task::Frequency(_) => todo!(),
       Task::GoAround => EventKind::GoAround,
-      Task::Heading(x) => EventKind::TargetHeading(x),
+      Task::Heading(x) => EventKind::Heading(x),
       Task::Ident => todo!(),
       Task::Land(x) => EventKind::Land(Intern::from(x)),
       Task::NamedFrequency(_) => todo!(),
       Task::ResumeOwnNavigation => todo!(),
-      Task::Speed(x) => EventKind::TargetSpeed(x),
+      Task::Speed(x) => EventKind::Speed(x),
       Task::Takeoff(_) => todo!(),
       Task::Taxi(_) => todo!(),
       Task::TaxiContinue => todo!(),
@@ -66,22 +70,28 @@ pub struct HandleAircraftEvent;
 impl AircraftEventHandler for HandleAircraftEvent {
   fn run(aircraft: &Aircraft, event: &EventKind, bundle: &mut Bundle) {
     match event {
-      EventKind::TargetSpeed(speed) => {
+      EventKind::Speed(speed) => {
         bundle
           .actions
           .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
       }
-      EventKind::TargetHeading(heading) => {
+      EventKind::Heading(heading) => {
         bundle.actions.push(Action::new(
           aircraft.id,
           ActionKind::TargetHeading(*heading),
         ));
       }
-      EventKind::TargetAltitude(altitude) => {
+      EventKind::Altitude(altitude) => {
         bundle.actions.push(Action::new(
           aircraft.id,
           ActionKind::TargetAltitude(*altitude),
         ));
+      }
+
+      EventKind::DirectTo(waypoints) => {
+        if let AircraftState::Flying { .. } = aircraft.state {
+          handle_direct_to_event(aircraft, bundle, waypoints);
+        }
       }
 
       EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
@@ -94,7 +104,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let AircraftState::Landing(..) = aircraft.state {
           bundle
             .actions
-            .push(Action::new(aircraft.id, ActionKind::Flying));
+            .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
           bundle
             .actions
             .push(Action::new(aircraft.id, ActionKind::SyncTargets));
@@ -119,18 +129,12 @@ pub fn handle_land_event(
         .flat_map(|a| a.runways.iter())
         .find(|r| r.id == runway_id)
       {
-        println!("Landing on runway {}", runway.id);
-        bundle
-          .actions
-          .push(Action::new(aircraft.id, ActionKind::Land(runway.clone())));
-      } else {
-        eprintln!("No runway: {}", runway_id)
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Landing(runway.clone()),
+        ));
       }
-    } else {
-      eprintln!("No airspace: {}", aircraft.airspace)
     }
-  } else {
-    eprintln!("Not flying")
   }
 }
 
@@ -166,4 +170,28 @@ pub fn handle_touchdown_event(
       waypoints: Vec::new(),
     },
   ));
+}
+
+pub fn handle_direct_to_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  waypoint_strings: &[Intern<String>],
+) {
+  if let Some(waypoints) = waypoint_strings
+    .iter()
+    .map(|w| bundle.waypoints.iter().find(|n| &n.name == w).cloned())
+    .rev()
+    .try_fold(Vec::new(), |mut vec, item| {
+      vec.push(item?);
+
+      Some(vec)
+    })
+  {
+    bundle.actions.push(Action {
+      id: aircraft.id,
+      kind: ActionKind::Flying(waypoints),
+    });
+  } else {
+    tracing::error!("no waypoints: {waypoint_strings:?}")
+  }
 }

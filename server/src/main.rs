@@ -13,7 +13,7 @@ use engine::{
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
-  pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
+  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
@@ -172,7 +172,7 @@ async fn main() {
       name: Intern::from_ref(airspace_name),
       kind: NodeKind::Runway,
       behavior: NodeBehavior::GoTo,
-      value: WaypointNodeData {
+      value: NodeVORData {
         to: airspace_position,
         then: vec![],
       },
@@ -289,7 +289,7 @@ async fn main() {
         name: Intern::from(n_to_an(waypoint_id)),
         kind: NodeKind::Runway,
         behavior: NodeBehavior::GoTo,
-        value: WaypointNodeData {
+        value: NodeVORData {
           to: waypoint,
           then: vec![],
         },
