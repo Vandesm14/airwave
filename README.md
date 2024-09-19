@@ -83,7 +83,7 @@ Open your browser of choice and go to http://localhost:8080 to connect to the cl
 Launch the client
 
 ```bash
-cargo run --release --bin serve client-web/dist
+pnpm client-web:preview
 ```
 
 **Step 2:**
