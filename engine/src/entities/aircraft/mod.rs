@@ -2,12 +2,17 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
+use std::default;
+
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
-use crate::KNOT_TO_FEET_PER_SECOND;
+use crate::{
+  pathfinder::{Node, WaypointNodeData},
+  KNOT_TO_FEET_PER_SECOND,
+};
 
-use super::airspace::Airspace;
+use super::{airport::Runway, airspace::Airspace};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -53,6 +58,26 @@ pub struct AircraftTargets {
   pub altitude: f32,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AircraftState {
+  Flying {
+    waypoints: Vec<Node<WaypointNodeData>>,
+  },
+  Landing(Runway),
+  Taxiing {
+    current: Node<Vec2>,
+    waypoints: Vec<Node<Vec2>>,
+  },
+}
+
+impl Default for AircraftState {
+  fn default() -> Self {
+    Self::Flying {
+      waypoints: Vec::new(),
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub pos: Vec2,
@@ -61,14 +86,10 @@ pub struct Aircraft {
   pub altitude: f32,
 
   pub target: AircraftTargets,
+  pub state: AircraftState,
 }
 
-// Consts
 impl Aircraft {
-  pub fn speed_in_feet(&self) -> f32 {
-    self.speed * KNOT_TO_FEET_PER_SECOND
-  }
-
   pub fn dt_climb_sp(&self, dt: f32) -> f32 {
     (2000.0_f32 / 60.0_f32).round() * dt
   }

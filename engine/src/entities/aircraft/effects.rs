@@ -2,6 +2,7 @@ use super::{Action, Aircraft, Bundle};
 
 use crate::{
   delta_angle, entities::aircraft::Event, move_point, normalize_angle,
+  KNOT_TO_FEET_PER_SECOND,
 };
 
 pub trait AircraftEffect {
@@ -74,7 +75,7 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
     let pos = move_point(
       aircraft.pos,
       aircraft.heading,
-      aircraft.speed_in_feet() * bundle.dt,
+      KNOT_TO_FEET_PER_SECOND * bundle.dt,
     );
     bundle.actions.push(Action::Pos(pos));
   }
