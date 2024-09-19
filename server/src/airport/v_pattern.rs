@@ -1,9 +1,10 @@
 use engine::{
-  add_degrees, inverse_degrees, move_point,
-  objects::{
+  add_degrees,
+  entities::{
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::WaypointSet,
   },
+  inverse_degrees, move_point,
   pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
   subtract_degrees, Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };

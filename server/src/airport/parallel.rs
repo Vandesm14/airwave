@@ -1,10 +1,10 @@
 use engine::{
-  inverse_degrees, move_point,
-  objects::{
+  entities::{
+    aircraft::Event,
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
-    command::Task,
     world::WaypointSet,
   },
+  inverse_degrees, move_point,
   pathfinder::{Node, NodeBehavior, NodeKind, WaypointNodeData},
   Line, DOWN, LEFT, NAUTICALMILES_TO_FEET, RIGHT, UP,
 };
@@ -214,7 +214,7 @@ pub fn setup(
         inverse_degrees(runway_27r.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![Task::Land(runway_27r.id.clone())],
+      then: vec![Event::Land(runway_27r.id.clone())],
     },
   };
 
@@ -271,7 +271,7 @@ pub fn setup(
         inverse_degrees(runway_27l.heading),
         NAUTICALMILES_TO_FEET * 14.0,
       ),
-      then: vec![Task::Land(runway_27l.id.clone())],
+      then: vec![Event::Land(runway_27l.id.clone())],
     },
   };
 

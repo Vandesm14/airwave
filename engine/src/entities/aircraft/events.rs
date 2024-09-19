@@ -17,6 +17,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       Event::TargetAltitude(altitude) => {
         bundle.actions.push(Action::TargetAltitude(*altitude));
       }
+      Event::Land(runway) => todo!("land event"),
     }
   }
 }

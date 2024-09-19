@@ -5,7 +5,7 @@ use nannou::{
 };
 
 use engine::{
-  objects::airport::{Gate, Runway, Taxiway, Terminal},
+  entities::airport::{Gate, Runway, Taxiway, Terminal},
   pathfinder::Node,
 };
 

@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use engine::{
-  objects::{airport::Runway, world::World},
+  entities::{airport::Runway, world::World},
   pathfinder::{Node, NodeBehavior, NodeKind},
 };
 use glam::Vec2;

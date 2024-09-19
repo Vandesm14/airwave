@@ -3,6 +3,7 @@ pub mod effects;
 pub mod events;
 
 use glam::Vec2;
+use serde::{Deserialize, Serialize};
 
 use crate::KNOT_TO_FEET_PER_SECOND;
 
@@ -12,6 +13,8 @@ pub enum Event {
   TargetSpeed(f32),
   TargetHeading(f32),
   TargetAltitude(f32),
+
+  Land(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -36,14 +39,14 @@ pub struct Bundle {
   pub dt: f32,
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
   pub heading: f32,
   pub speed: f32,
   pub altitude: f32,
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub pos: Vec2,
   pub speed: f32,

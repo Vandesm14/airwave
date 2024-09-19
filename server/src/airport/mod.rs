@@ -1,5 +1,5 @@
 use engine::{
-  objects::{airport::Airport, world::WaypointSet},
+  entities::{airport::Airport, world::WaypointSet},
   pathfinder::{Node, WaypointNodeData},
 };
 
