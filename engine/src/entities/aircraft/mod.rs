@@ -7,8 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::KNOT_TO_FEET_PER_SECOND;
 
-#[derive(Debug, Clone, PartialEq)]
-
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(tag = "type", content = "value")]
 pub enum Event {
   TargetSpeed(f32),
   TargetHeading(f32),

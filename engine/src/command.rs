@@ -2,48 +2,13 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::pathfinder::Node;
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-#[serde(tag = "type", content = "value")]
-pub enum Task {
-  Altitude(f32),
-  Approach(String),
-  Arrival(String),
-
-  Clearance {
-    departure: Option<String>,
-    altitude: Option<f32>,
-    speed: Option<f32>,
-  },
-
-  Depart(String),
-  Direct(Vec<String>),
-  DirectionOfTravel,
-  Frequency(f32),
-  GoAround,
-  Heading(f32),
-  Ident,
-  Land(String),
-  NamedFrequency(String),
-  #[serde(rename = "resume")]
-  ResumeOwnNavigation,
-  Speed(f32),
-  Takeoff(String),
-
-  Taxi(Vec<Node<()>>),
-  TaxiContinue,
-  TaxiHold,
-}
-
-pub type Tasks = Vec<Task>;
+use crate::entities::aircraft::Event;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Command {
   pub id: String,
   pub reply: String,
-  pub tasks: Vec<Task>,
+  pub tasks: Vec<Event>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -53,7 +18,7 @@ pub struct CommandWithFreq {
   // TODO: Should this be converted to CommandReply so that the front-end can
   //       handle formatting?
   pub reply: String,
-  pub tasks: Vec<Task>,
+  pub tasks: Vec<Event>,
 }
 
 pub fn decode_callsign(callsign: &str) -> String {

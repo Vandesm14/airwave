@@ -9,6 +9,7 @@ use turborand::{rng::Rng, TurboRand};
 pub mod engine;
 pub mod pathfinder;
 
+pub mod command;
 pub mod entities;
 
 pub const TIME_SCALE: f32 = 1.0;
