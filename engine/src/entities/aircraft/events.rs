@@ -6,7 +6,7 @@ pub trait AircraftEventHandler {
 
 pub struct HandleAircraftEvent;
 impl AircraftEventHandler for HandleAircraftEvent {
-  fn run(a: &Aircraft, event: &Event, bundle: &mut Bundle) {
+  fn run(aircraft: &Aircraft, event: &Event, bundle: &mut Bundle) {
     match event {
       Event::TargetSpeed(speed) => {
         bundle.actions.push(Action::TargetSpeed(*speed));
@@ -17,7 +17,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       Event::TargetAltitude(altitude) => {
         bundle.actions.push(Action::TargetAltitude(*altitude));
       }
-      Event::Land(runway) => handle_land_event(a, bundle, runway),
+      Event::Land(runway) => handle_land_event(aircraft, bundle, runway),
     }
   }
 }
