@@ -6,9 +6,8 @@ services:
       - '9001:9001'
     env_file: '.env'
 
-  # frontend:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.frontend
-  #   ports:
-  #     - '8080:8080'
+  frontend:
+    build:
+      dockerfile: Dockerfile.frontend
+    ports:
+      - '8080:8080'
