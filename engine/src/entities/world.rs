@@ -62,7 +62,6 @@ pub struct WaypointSet {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
-  pub aircraft: Vec<Aircraft>,
   pub waypoints: Vec<Node<WaypointNodeData>>,
   pub waypoint_sets: WaypointSet,
 }

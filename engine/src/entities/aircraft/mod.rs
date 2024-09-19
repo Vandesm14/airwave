@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::KNOT_TO_FEET_PER_SECOND;
 
+use super::airspace::Airspace;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(tag = "type", content = "value")]
@@ -33,10 +35,14 @@ pub enum Action {
 }
 
 #[derive(Debug, Default)]
-pub struct Bundle {
+pub struct Bundle<'a> {
   pub prev: Aircraft,
+
   pub events: Vec<Event>,
   pub actions: Vec<Action>,
+
+  pub airspaces: &'a [Airspace],
+
   pub dt: f32,
 }
 

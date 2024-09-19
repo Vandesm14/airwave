@@ -1,31 +1,34 @@
 use actions::AircraftActionHandler;
 use effects::AircraftIsPast205Effect;
 
-use crate::entities::aircraft::{
-  actions::AircraftAllActionHandler,
-  effects::{
-    AircraftEffect, AircraftUpdateFromTargetsEffect,
-    AircraftUpdatePositionEffect,
+use crate::entities::{
+  aircraft::{
+    actions::AircraftAllActionHandler,
+    effects::{
+      AircraftEffect, AircraftUpdateFromTargetsEffect,
+      AircraftUpdatePositionEffect,
+    },
+    events::{AircraftEventHandler, HandleAircraftEvent},
+    *,
   },
-  events::{AircraftEventHandler, HandleAircraftEvent},
-  *,
+  world::World,
 };
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Engine {
-  pub aircraft: Vec<Aircraft>,
   pub events: Vec<Event>,
   pub actions: Vec<Action>,
 }
 
 impl Engine {
-  pub fn tick(&mut self) {
+  pub fn tick(&mut self, world: &World, aircraft: &mut [Aircraft]) {
     let mut bundle = Bundle {
       dt: 0.5,
+      airspaces: &world.airspaces,
       ..Default::default()
     };
 
-    for aircraft in self.aircraft.iter_mut() {
+    for aircraft in aircraft.iter_mut() {
       // Capture the previous state
       bundle.prev = aircraft.clone();
 
