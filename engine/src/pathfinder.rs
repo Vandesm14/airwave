@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
   entities::{
-    aircraft::Event,
+    aircraft::events::Event,
     airport::{Gate, Runway, Taxiway, Terminal},
   },
   find_line_intersection, Line,

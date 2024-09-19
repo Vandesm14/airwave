@@ -1,7 +1,7 @@
 use engine::{
   engine::Engine,
   entities::{
-    aircraft::{Aircraft, Event},
+    aircraft::{events::Event, Aircraft},
     airport::{Airport, Runway},
     airspace::Airspace,
     world::World,

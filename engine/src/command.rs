@@ -2,7 +2,7 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::entities::aircraft::Event;
+use crate::entities::aircraft::events::Event;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Command {

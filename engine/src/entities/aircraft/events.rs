@@ -1,6 +1,20 @@
 use internment::Intern;
+use serde::{Deserialize, Serialize};
 
-use super::{Action, Aircraft, AircraftState, Bundle, Event};
+use crate::engine::Bundle;
+
+use super::{Action, Aircraft, AircraftState};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(tag = "type", content = "value")]
+pub enum Event {
+  TargetSpeed(f32),
+  TargetHeading(f32),
+  TargetAltitude(f32),
+
+  Land(Intern<String>),
+}
 
 pub trait AircraftEventHandler {
   fn run(aircraft: &Aircraft, event: &Event, bundle: &mut Bundle);

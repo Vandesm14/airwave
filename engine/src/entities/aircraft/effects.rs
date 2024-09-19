@@ -1,9 +1,9 @@
-use super::{Action, Aircraft, AircraftState, Bundle};
+use super::{Action, Aircraft, AircraftState};
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
-  delta_angle, inverse_degrees, move_point, normalize_angle, Line,
-  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  delta_angle, engine::Bundle, inverse_degrees, move_point, normalize_angle,
+  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
 pub trait AircraftEffect {

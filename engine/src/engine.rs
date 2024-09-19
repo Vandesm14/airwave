@@ -1,5 +1,6 @@
-use actions::AircraftActionHandler;
+use actions::{Action, AircraftActionHandler};
 use effects::{AircraftUpdateAirspaceEffect, AircraftUpdateLandingEffect};
+use events::Event;
 
 use crate::entities::{
   aircraft::{
@@ -11,8 +12,21 @@ use crate::entities::{
     events::{AircraftEventHandler, HandleAircraftEvent},
     *,
   },
+  airspace::Airspace,
   world::World,
 };
+
+#[derive(Debug, Default)]
+pub struct Bundle<'a> {
+  pub prev: Aircraft,
+
+  pub events: Vec<Event>,
+  pub actions: Vec<Action>,
+
+  pub airspaces: &'a [Airspace],
+
+  pub dt: f32,
+}
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Engine {

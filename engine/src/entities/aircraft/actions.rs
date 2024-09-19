@@ -1,4 +1,28 @@
-use super::{Action, Aircraft, AircraftState};
+use glam::Vec2;
+use internment::Intern;
+
+use crate::entities::airport::Runway;
+
+use super::{Aircraft, AircraftState};
+
+#[derive(Debug, Clone, PartialEq)]
+
+pub enum Action {
+  Pos(Vec2),
+
+  Speed(f32),
+  Heading(f32),
+  Altitude(f32),
+
+  TargetSpeed(f32),
+  TargetHeading(f32),
+  TargetAltitude(f32),
+
+  Airspace(Intern<String>),
+
+  // Substate
+  Land(Runway),
+}
 
 pub trait AircraftActionHandler {
   fn run(aircraft: &mut Aircraft, action: &Action);

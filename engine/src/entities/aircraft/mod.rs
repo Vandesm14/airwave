@@ -2,6 +2,8 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
+use actions::Action;
+use events::Event;
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
@@ -9,48 +11,6 @@ use serde::{Deserialize, Serialize};
 use crate::pathfinder::{Node, WaypointNodeData};
 
 use super::{airport::Runway, airspace::Airspace};
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-#[serde(tag = "type", content = "value")]
-pub enum Event {
-  TargetSpeed(f32),
-  TargetHeading(f32),
-  TargetAltitude(f32),
-
-  Land(Intern<String>),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-
-pub enum Action {
-  Pos(Vec2),
-
-  Speed(f32),
-  Heading(f32),
-  Altitude(f32),
-
-  TargetSpeed(f32),
-  TargetHeading(f32),
-  TargetAltitude(f32),
-
-  Airspace(Intern<String>),
-
-  // Substate
-  Land(Runway),
-}
-
-#[derive(Debug, Default)]
-pub struct Bundle<'a> {
-  pub prev: Aircraft,
-
-  pub events: Vec<Event>,
-  pub actions: Vec<Action>,
-
-  pub airspaces: &'a [Airspace],
-
-  pub dt: f32,
-}
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
