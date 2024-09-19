@@ -18,7 +18,7 @@ fn main() {
   let mut aircrafts: Vec<Aircraft> = Vec::new();
 
   // Create a controlled KSFO airspace
-  let airspace_ksfo = Airspace {
+  let mut airspace_ksfo = Airspace {
     id: Intern::from_ref("KSFO"),
     size: MANUAL_TOWER_AIRSPACE_RADIUS,
     ..Default::default()
@@ -30,11 +30,13 @@ fn main() {
   };
 
   airport_ksfo.add_runway(Runway {
-    id: "27".into(),
+    id: Intern::from_ref("27"),
     heading: 270.0,
     length: 7000.0,
     ..Default::default()
   });
+
+  airspace_ksfo.airports.push(airport_ksfo);
 
   world.airspaces.push(airspace_ksfo);
 

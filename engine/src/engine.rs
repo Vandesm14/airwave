@@ -1,5 +1,5 @@
 use actions::AircraftActionHandler;
-use effects::AircraftIsPast205Effect;
+use effects::{AircraftIsPast205Effect, AircraftUpdateAirspaceEffect};
 
 use crate::entities::{
   aircraft::{
@@ -40,6 +40,7 @@ impl Engine {
       // Run through all effects
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
+      AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
       AircraftIsPast205Effect::run(aircraft, &mut bundle);
 
       // Run through all actions

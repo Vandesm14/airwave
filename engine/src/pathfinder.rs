@@ -1,4 +1,5 @@
 use glam::Vec2;
+use internment::Intern;
 use petgraph::{
   algo::simple_paths,
   visit::{IntoNodeReferences, NodeRef},
@@ -40,7 +41,7 @@ pub struct WaypointNodeData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
-  pub name: String,
+  pub name: Intern<String>,
   pub kind: NodeKind,
   pub behavior: NodeBehavior,
 
@@ -50,7 +51,7 @@ pub struct Node<T> {
 
 impl<T> Node<T> {
   pub fn new(
-    name: String,
+    name: Intern<String>,
     kind: NodeKind,
     behavior: NodeBehavior,
     value: T,
@@ -126,19 +127,19 @@ impl From<Object> for Node<Line> {
   fn from(value: Object) -> Self {
     match value {
       Object::Taxiway(value) => Node {
-        name: value.id.clone(),
+        name: value.id,
         kind: NodeKind::Taxiway,
         behavior: NodeBehavior::GoTo,
         value: value.into(),
       },
       Object::Runway(value) => Node {
-        name: value.id.clone(),
+        name: value.id,
         kind: NodeKind::Runway,
         behavior: NodeBehavior::GoTo,
         value: value.into(),
       },
       Object::Terminal(value) => Node {
-        name: value.id.to_string(),
+        name: value.id,
         kind: NodeKind::Apron,
         behavior: NodeBehavior::GoTo,
         value: value.into(),
@@ -227,7 +228,7 @@ impl Pathfinder {
       if let Object::Terminal(terminal) = current {
         for gate in terminal.gates.iter() {
           let gate_node = graph.add_node(Node {
-            name: gate.id.clone(),
+            name: gate.id,
             kind: NodeKind::Gate,
             behavior: NodeBehavior::GoTo,
             value: Line::new(gate.pos, gate.pos),
@@ -289,7 +290,7 @@ impl Pathfinder {
               .weight();
 
             waypoints.push(Node::new(
-              next.1.name.clone(),
+              next.1.name,
               next.1.kind,
               next.1.behavior,
               *edge,
@@ -308,12 +309,7 @@ impl Pathfinder {
             ..
           } = wp
           {
-            waypoints.push(Node::new(
-              to.name.clone(),
-              to.kind,
-              to.behavior,
-              value.0,
-            ));
+            waypoints.push(Node::new(to.name, to.kind, to.behavior, value.0));
           }
 
           waypoints
@@ -324,7 +320,7 @@ impl Pathfinder {
           let mut heading = heading;
 
           let mut first = &Node {
-            name: from.name.clone(),
+            name: from.name,
             kind: from.kind,
             behavior: NodeBehavior::GoTo,
             value: pos,
@@ -349,7 +345,7 @@ impl Pathfinder {
           let mut heading = heading;
 
           let mut first = &Node {
-            name: from.name.clone(),
+            name: from.name,
             kind: from.kind,
             behavior: NodeBehavior::GoTo,
             value: pos,
@@ -448,7 +444,7 @@ mod tests {
     assert_eq!(
       total_distance_squared(
         &[Node {
-          name: "B".into(),
+          name: Intern::from_ref("B"),
           kind: NodeKind::Apron,
           behavior: NodeBehavior::GoTo,
           value: b
@@ -476,19 +472,19 @@ mod tests {
       total_distance_squared(
         &[
           Node {
-            name: "B".into(),
+            name: Intern::from_ref("B"),
             kind: NodeKind::Apron,
             behavior: NodeBehavior::GoTo,
             value: b
           },
           Node {
-            name: "C".into(),
+            name: Intern::from_ref("C"),
             kind: NodeKind::Apron,
             behavior: NodeBehavior::GoTo,
             value: c
           },
           Node {
-            name: "D".into(),
+            name: Intern::from_ref("D"),
             kind: NodeKind::Apron,
             behavior: NodeBehavior::GoTo,
             value: d
@@ -508,11 +504,17 @@ mod tests {
       let mut pathfinder = Pathfinder::new();
 
       let mut segments = Vec::new();
-      let taxiway_a =
-        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+      let taxiway_a = Taxiway::new(
+        Intern::from_ref("A"),
+        Vec2::new(0.0, 0.0),
+        Vec2::new(10.0, 0.0),
+      );
 
-      let taxiway_b =
-        Taxiway::new("B".into(), Vec2::new(5.0, -5.0), Vec2::new(5.0, 5.0));
+      let taxiway_b = Taxiway::new(
+        Intern::from_ref("B"),
+        Vec2::new(5.0, -5.0),
+        Vec2::new(5.0, 5.0),
+      );
 
       segments.push(Object::Taxiway(taxiway_a));
       segments.push(Object::Taxiway(taxiway_b));
@@ -520,13 +522,13 @@ mod tests {
 
       let path = pathfinder.path_to(
         Node {
-          name: "A".into(),
+          name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
           value: (),
         },
         Node {
-          name: "B".into(),
+          name: Intern::from_ref("B"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
           value: (),
@@ -538,7 +540,7 @@ mod tests {
       assert!(path.is_some());
       if let Some(path) = path {
         assert_eq!(path.path.len(), 1);
-        assert_eq!(path.path[0].name, "B");
+        assert_eq!(path.path[0].name, Intern::from_ref("B"));
         assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
       }
     }
@@ -548,11 +550,17 @@ mod tests {
       let mut pathfinder = Pathfinder::new();
 
       let mut segments = Vec::new();
-      let taxiway_a =
-        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+      let taxiway_a = Taxiway::new(
+        Intern::from_ref("A"),
+        Vec2::new(0.0, 0.0),
+        Vec2::new(10.0, 0.0),
+      );
 
-      let taxiway_b =
-        Taxiway::new("B".into(), Vec2::new(5.0, -5.0), Vec2::new(5.0, 5.0));
+      let taxiway_b = Taxiway::new(
+        Intern::from_ref("B"),
+        Vec2::new(5.0, -5.0),
+        Vec2::new(5.0, 5.0),
+      );
 
       segments.push(Object::Taxiway(taxiway_a));
       segments.push(Object::Taxiway(taxiway_b));
@@ -560,13 +568,13 @@ mod tests {
 
       let path = pathfinder.path_to(
         Node {
-          name: "A".into(),
+          name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
           value: (),
         },
         Node {
-          name: "B".into(),
+          name: Intern::from_ref("B"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
           value: (),
@@ -578,7 +586,7 @@ mod tests {
       assert!(path.is_some());
       if let Some(path) = path {
         assert_eq!(path.path.len(), 1);
-        assert_eq!(path.path[0].name, "B");
+        assert_eq!(path.path[0].name, Intern::from_ref("B"));
         assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
       }
     }
@@ -588,11 +596,14 @@ mod tests {
       let mut pathfinder = Pathfinder::new();
 
       let mut segments = Vec::new();
-      let taxiway_a =
-        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+      let taxiway_a = Taxiway::new(
+        Intern::from_ref("A"),
+        Vec2::new(0.0, 0.0),
+        Vec2::new(10.0, 0.0),
+      );
 
       let runway_36 = Runway {
-        id: "36".into(),
+        id: Intern::from_ref("36"),
         pos: Vec2::new(5.0, 0.0),
         heading: 360.0,
         length: 500.0,
@@ -604,13 +615,13 @@ mod tests {
 
       let path = pathfinder.path_to(
         Node {
-          name: "A".into(),
+          name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
           value: (),
         },
         Node {
-          name: "36".into(),
+          name: Intern::from_ref("36"),
           kind: NodeKind::Runway,
           behavior: NodeBehavior::GoTo,
           value: (),
@@ -622,7 +633,7 @@ mod tests {
       assert!(path.is_some());
       if let Some(path) = path {
         assert_eq!(path.path.len(), 1);
-        assert_eq!(path.path[0].name, "36");
+        assert_eq!(path.path[0].name, Intern::from_ref("36"));
         assert_eq!(path.path[0].behavior, NodeBehavior::GoTo);
         // This is slightly off due to floating-point math, so we can't
         // assert the coordinates of the intersection.
@@ -637,11 +648,14 @@ mod tests {
       let mut pathfinder = Pathfinder::new();
 
       let mut segments = Vec::new();
-      let taxiway_a =
-        Taxiway::new("A".into(), Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0));
+      let taxiway_a = Taxiway::new(
+        Intern::from_ref("A"),
+        Vec2::new(0.0, 0.0),
+        Vec2::new(10.0, 0.0),
+      );
 
       let runway_36 = Runway {
-        id: "36".into(),
+        id: Intern::from_ref("36"),
         pos: Vec2::new(5.0, 0.0),
         heading: 360.0,
         length: 500.0,
@@ -653,13 +667,13 @@ mod tests {
 
       let path = pathfinder.path_to(
         Node {
-          name: "A".into(),
+          name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
           value: (),
         },
         Node {
-          name: "36".into(),
+          name: Intern::from_ref("36"),
           kind: NodeKind::Runway,
           behavior: NodeBehavior::HoldShort,
           value: (),
@@ -671,7 +685,7 @@ mod tests {
       assert!(path.is_some());
       if let Some(path) = path {
         assert_eq!(path.path.len(), 1);
-        assert_eq!(path.path[0].name, "36");
+        assert_eq!(path.path[0].name, Intern::from_ref("36"));
         assert_eq!(path.path[0].behavior, NodeBehavior::HoldShort);
         // This is slightly off due to floating-point math, so we can't
         // assert the coordinates of the intersection.

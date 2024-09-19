@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use internment::Intern;
 
 use super::{Action, Aircraft, AircraftState, Bundle, Event};
@@ -39,8 +41,15 @@ pub fn handle_land_event(
         .flat_map(|a| a.runways.iter())
         .find(|r| r.id == runway_id)
       {
+        println!("Landing on runway {}", runway.id);
         bundle.actions.push(Action::Land(runway.clone()));
+      } else {
+        eprintln!("No runway: {}", runway_id)
       }
+    } else {
+      eprintln!("No airspace: {}", aircraft.airspace)
     }
+  } else {
+    eprintln!("Not flying")
   }
 }

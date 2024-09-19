@@ -78,7 +78,7 @@ impl Runway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Taxiway {
-  pub id: String,
+  pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub a: Vec2,
@@ -88,7 +88,7 @@ pub struct Taxiway {
 }
 
 impl Taxiway {
-  pub fn new(id: String, a: Vec2, b: Vec2) -> Self {
+  pub fn new(id: Intern<String>, a: Vec2, b: Vec2) -> Self {
     Self { id, a, b }
   }
 
@@ -102,7 +102,7 @@ impl Taxiway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Terminal {
-  pub id: char,
+  pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub a: Vec2,
@@ -122,7 +122,7 @@ pub struct Terminal {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gate {
-  pub id: String,
+  pub id: Intern<String>,
   #[serde(serialize_with = "serialize_vec2")]
   #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,

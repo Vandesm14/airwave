@@ -89,6 +89,8 @@ impl AircraftEffect for AircraftUpdateAirspaceEffect {
     for airspace in bundle.airspaces.iter() {
       if airspace.contains_point(aircraft.pos) {
         bundle.actions.push(Action::Airspace(airspace.id));
+
+        break;
       }
     }
   }
