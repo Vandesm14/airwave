@@ -96,6 +96,7 @@ impl From<Task> for EventKind {
       Task::Taxi(x) => EventKind::Taxi(x),
       Task::TaxiContinue => EventKind::TaxiContinue,
       Task::TaxiHold => EventKind::TaxiHold,
+      Task::Delete => EventKind::Delete,
     }
   }
 }
@@ -346,6 +347,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Internal
       EventKind::Delete => {
         // This is handled outside of the engine
+        bundle
+          .events
+          .push(Event::new(aircraft.id, EventKind::Delete));
       }
     }
   }

@@ -1,0 +1,15 @@
+{
+  "prompt": [
+    "Delete commands are returned as a simple task with no additional value. "
+  ],
+  "examples": [
+    {
+      "user": "Delete.",
+      "assistant": [
+        {
+          "type": "delete"
+        }
+      ]
+    }
+  ]
+}

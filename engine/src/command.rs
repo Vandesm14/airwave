@@ -35,6 +35,8 @@ pub enum Task {
   Taxi(Vec<Node<()>>),
   TaxiContinue,
   TaxiHold,
+
+  Delete,
 }
 
 pub type Tasks = Vec<Task>;
