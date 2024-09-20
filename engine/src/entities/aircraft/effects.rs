@@ -25,66 +25,59 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     // In knots per second
     let speed_speed = aircraft.dt_speed_speed(bundle.dt);
 
+    let mut altitude = aircraft.altitude;
+    let mut heading = aircraft.heading;
+    let mut speed = aircraft.speed;
+
     // Snap values if they're close enough
-    if (aircraft.altitude - aircraft.target.altitude).abs() < climb_speed {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::Altitude(aircraft.target.altitude),
-      ));
+    if (altitude - aircraft.target.altitude).abs() < climb_speed {
+      altitude = aircraft.target.altitude;
     }
-    if (aircraft.heading - aircraft.target.heading).abs() < turn_speed {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::Heading(normalize_angle(aircraft.target.heading)),
-      ));
+    if (heading - aircraft.target.heading).abs() < turn_speed {
+      heading = normalize_angle(aircraft.target.heading);
     }
-    if (aircraft.speed - aircraft.target.speed).abs() < speed_speed {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::Speed(aircraft.target.speed),
-      ));
+    if (speed - aircraft.target.speed).abs() < speed_speed {
+      speed = aircraft.target.speed;
     }
 
     // Change if not equal
-    if aircraft.altitude != aircraft.target.altitude {
-      if aircraft.altitude < aircraft.target.altitude {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Altitude(aircraft.altitude + climb_speed),
-        ));
+    if altitude != aircraft.target.altitude {
+      if altitude < aircraft.target.altitude {
+        altitude += climb_speed;
       } else {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Altitude(aircraft.altitude - climb_speed),
-        ));
+        altitude -= climb_speed;
       }
     }
-    if aircraft.heading != aircraft.target.heading {
-      let delta_angle = delta_angle(aircraft.heading, aircraft.target.heading);
+    if heading != aircraft.target.heading {
+      let delta_angle = delta_angle(heading, aircraft.target.heading);
       if delta_angle < 0.0 {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Heading(normalize_angle(aircraft.heading - turn_speed)),
-        ));
+        heading = normalize_angle(heading - turn_speed);
       } else {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Heading(normalize_angle(aircraft.heading + turn_speed)),
-        ));
+        heading = normalize_angle(heading + turn_speed);
       }
     }
-    if aircraft.speed != aircraft.target.speed {
-      if aircraft.speed < aircraft.target.speed {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Speed(aircraft.speed + speed_speed),
-        ));
+    if speed != aircraft.target.speed {
+      if speed < aircraft.target.speed {
+        speed += speed_speed;
       } else {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Speed(aircraft.speed - speed_speed),
-        ));
+        speed -= speed_speed;
       }
+    }
+
+    if altitude != aircraft.altitude {
+      bundle
+        .actions
+        .push(Action::new(aircraft.id, ActionKind::Altitude(altitude)));
+    }
+    if heading != aircraft.heading {
+      bundle
+        .actions
+        .push(Action::new(aircraft.id, ActionKind::Heading(heading)));
+    }
+    if speed != aircraft.speed {
+      bundle
+        .actions
+        .push(Action::new(aircraft.id, ActionKind::Speed(speed)));
     }
   }
 }
