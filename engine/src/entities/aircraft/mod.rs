@@ -244,6 +244,7 @@ impl Aircraft {
       .duration_since(SystemTime::UNIX_EPOCH)
       .unwrap()
       .add(wait_time);
+    self.callouts = AircraftCallouts::default();
   }
 
   pub fn created_now(&mut self) {

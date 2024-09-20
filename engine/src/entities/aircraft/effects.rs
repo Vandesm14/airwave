@@ -339,11 +339,15 @@ impl AircraftEffect for AircraftContactCenterEffect {
 pub struct AircraftContactClearanceEffect;
 impl AircraftEffect for AircraftContactClearanceEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Taxiing { .. } = aircraft.state {
+    if let AircraftState::Taxiing { current, .. } = &aircraft.state {
       let now = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap();
-      if aircraft.created < now && !aircraft.callouts.clearance {
+      if aircraft.created < now
+        && !aircraft.callouts.clearance
+        && current.kind == NodeKind::Gate
+        && aircraft.airspace == Some(aircraft.flight_plan.departing)
+      {
         bundle.events.push(Event::new(
           aircraft.id,
           EventKind::Callout(CommandWithFreq::new_reply(
