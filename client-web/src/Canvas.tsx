@@ -684,11 +684,33 @@ export default function Canvas({
     // Draw callsign
     ctx.fillText(aircraft.id, pos.x + spacing, pos.y - spacing);
 
+    // Draw altitude
+    let drawAlt = aircraft.altitude > 0;
+    if (drawAlt) {
+      let altitudeIcon = ' ';
+      if (aircraft.altitude < aircraft.target.altitude) {
+        altitudeIcon = '⬈';
+      } else if (aircraft.altitude > aircraft.target.altitude) {
+        altitudeIcon = '⬊';
+      }
+      ctx.fillText(
+        Math.round(aircraft.altitude / 100)
+          .toString()
+          .padStart(3, '0') +
+          altitudeIcon +
+          Math.round(aircraft.target.altitude / 100)
+            .toString()
+            .padStart(3, '0'),
+        pos.x + spacing,
+        pos.y - spacing + fontSize()
+      );
+    }
+
     // Draw speed
     ctx.fillText(
       Math.round(aircraft.speed).toString(),
       pos.x + spacing,
-      pos.y - spacing + fontSize()
+      pos.y - spacing + fontSize() * (drawAlt ? 1 : 0)
     );
   }
 
