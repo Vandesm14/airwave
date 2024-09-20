@@ -106,15 +106,21 @@ impl CompatAdapter {
     }
   }
 
+  pub fn add_aircraft(&mut self, mut aircraft: Aircraft) {
+    while self.aircraft.iter().any(|a| a.id == aircraft.id) {
+      aircraft.id = Intern::from(Aircraft::random_callsign(&mut self.rng));
+    }
+
+    self.aircraft.push(aircraft);
+  }
+
   pub fn spawn_random_aircraft(&mut self) {
     let departure = find_random_departure(&self.world.airspaces, &mut self.rng);
     let arrival = find_random_arrival(&self.world.airspaces, &mut self.rng);
     if let Some((departure, arrival)) = departure.zip(arrival) {
-      self.aircraft.push(Aircraft::random_to_arrive(
-        departure,
-        arrival,
-        &mut self.rng,
-      ));
+      let aircraft =
+        Aircraft::random_to_arrive(departure, arrival, &mut self.rng);
+      self.add_aircraft(aircraft);
     }
   }
 

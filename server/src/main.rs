@@ -179,6 +179,7 @@ async fn main() {
     });
   }
 
+  let mut aircrafts: Vec<Aircraft> = Vec::new();
   for airspace in engine.world.airspaces.iter() {
     if !airspace.auto {
       for airport in airspace.airports.iter() {
@@ -196,11 +197,15 @@ async fn main() {
               now = false;
             }
 
-            engine.aircraft.push(aircraft);
+            aircrafts.push(aircraft);
           }
         }
       }
     }
+  }
+
+  for aircraft in aircrafts.drain(..) {
+    engine.add_aircraft(aircraft);
   }
 
   // Generating waypoints between sufficiently close airspaces.
