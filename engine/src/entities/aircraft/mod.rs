@@ -58,10 +58,13 @@ impl Default for AircraftState {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FlightPlan {
-  pub departing: Intern<String>,
+  // To and From
   pub arriving: Intern<String>,
-  pub altitude: f32,
+  pub departing: Intern<String>,
+
+  // IFR Clearance
   pub speed: f32,
+  pub altitude: f32,
   pub waypoints: Vec<Node<NodeVORData>>,
 }
 

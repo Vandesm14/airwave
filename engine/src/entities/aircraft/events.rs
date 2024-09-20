@@ -36,6 +36,11 @@ pub enum EventKind {
   Taxi(Vec<Node<()>>),
   TaxiContinue,
   TaxiHold,
+  Clearance {
+    speed: Option<f32>,
+    altitude: Option<f32>,
+    departure: Option<Intern<String>>,
+  },
 }
 
 impl From<Task> for EventKind {
@@ -44,7 +49,15 @@ impl From<Task> for EventKind {
       Task::Altitude(x) => EventKind::Altitude(x),
       Task::Approach(x) => EventKind::FollowApproach(Intern::from(x)),
       Task::Arrival(x) => EventKind::FollowArrival(Intern::from(x)),
-      Task::Clearance { .. } => todo!(),
+      Task::Clearance {
+        departure,
+        altitude,
+        speed,
+      } => EventKind::Clearance {
+        speed,
+        altitude,
+        departure: departure.map(|x| Intern::from(x)),
+      },
       Task::Depart(x) => EventKind::FollowDeparture(Intern::from(x)),
       Task::Direct(x) => {
         EventKind::DirectTo(x.iter().cloned().map(Intern::from).collect())
@@ -196,6 +209,17 @@ impl AircraftEventHandler for HandleAircraftEvent {
             id: aircraft.id,
             kind: ActionKind::TargetSpeed(0.0),
           });
+        }
+      }
+      EventKind::Clearance {
+        speed,
+        altitude,
+        departure,
+      } => {
+        if let AircraftState::Taxiing { .. } = aircraft.state {
+          handle_clearance_event(
+            aircraft, bundle, *speed, *altitude, *departure,
+          );
         }
       }
     }
@@ -446,6 +470,41 @@ pub fn handle_takeoff_event(
       }
     }
 
-    // TODO: handle if the waypoint is coming up, update the behavior to take off
+    // TODO: handle if the waypoint is coming up, update the behavior
+    // to take off (once we have waypoint behaviors for takeoff)
   }
+}
+
+pub fn handle_clearance_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  speed: Option<f32>,
+  altitude: Option<f32>,
+  departure: Option<Intern<String>>,
+) {
+  let waypoints = departure
+    .as_ref()
+    .and_then(|d| bundle.waypoint_sets.departure.get(d))
+    .map(|depart| {
+      depart
+        .iter()
+        .map(|w| bundle.waypoints.iter().find(|n| &n.name == w).cloned())
+        .rev()
+        .try_fold(Vec::new(), |mut vec, item| {
+          vec.push(item?);
+
+          Some(vec)
+        })
+        .unwrap_or_default()
+    })
+    .unwrap_or_default();
+
+  bundle.actions.push(Action {
+    id: aircraft.id,
+    kind: ActionKind::Clearance {
+      speed,
+      altitude,
+      waypoints,
+    },
+  });
 }

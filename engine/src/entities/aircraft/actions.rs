@@ -22,6 +22,12 @@ pub enum ActionKind {
   TargetAltitude(f32),
   SyncTargets,
 
+  Clearance {
+    speed: Option<f32>,
+    altitude: Option<f32>,
+    waypoints: Vec<Node<NodeVORData>>,
+  },
+
   Frequency(f32),
   Created(u128),
   Airspace(Option<Intern<String>>),
@@ -74,6 +80,20 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       }
       ActionKind::SyncTargets => {
         aircraft.sync_targets_to_vals();
+      }
+
+      ActionKind::Clearance {
+        speed,
+        altitude,
+        waypoints,
+      } => {
+        if let Some(speed) = speed {
+          aircraft.flight_plan.speed = *speed;
+        }
+        if let Some(altitude) = altitude {
+          aircraft.flight_plan.altitude = *altitude;
+        }
+        aircraft.flight_plan.waypoints = waypoints.clone();
       }
 
       ActionKind::Frequency(frequency) => aircraft.frequency = *frequency,
