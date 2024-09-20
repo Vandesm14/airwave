@@ -2,21 +2,15 @@ use glam::Vec2;
 use internment::Intern;
 
 use crate::{
-  command::Task,
+  angle_between_points,
+  command::{CommandReply, CommandReplyKind, CommandWithFreq, Task},
   engine::Bundle,
   entities::{airport::Runway, world::closest_airport},
+  heading_to_direction,
   pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData, Pathfinder},
 };
 
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Callout {
-  Clearance { destination: Intern<String> },
-  HoldShort { runway: Intern<String> },
-  InAirspace {},
-  OnGround,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EventKind {
@@ -51,8 +45,11 @@ pub enum EventKind {
     departure: Option<Intern<String>>,
   },
 
+  // Requests
+  DirectionOfTravel,
+
   // Callouts
-  Callout(Callout),
+  Callout(CommandWithFreq),
 }
 
 impl From<Task> for EventKind {
@@ -74,7 +71,7 @@ impl From<Task> for EventKind {
       Task::Direct(x) => {
         EventKind::DirectTo(x.iter().cloned().map(Intern::from).collect())
       }
-      Task::DirectionOfTravel => todo!(),
+      Task::DirectionOfTravel => EventKind::DirectionOfTravel,
       Task::Frequency(x) => EventKind::Frequency(x),
       Task::GoAround => EventKind::GoAround,
       Task::Heading(x) => EventKind::Heading(x),
@@ -263,6 +260,32 @@ impl AircraftEventHandler for HandleAircraftEvent {
           handle_clearance_event(
             aircraft, bundle, *speed, *altitude, *departure,
           );
+        }
+      }
+
+      // Requests
+      EventKind::DirectionOfTravel => {
+        if let Some(arrival) = bundle
+          .airspaces
+          .iter()
+          .find(|a| a.id == aircraft.flight_plan.arriving)
+        {
+          let heading = angle_between_points(aircraft.pos, arrival.pos);
+          let direction: String = heading_to_direction(heading).into();
+
+          bundle.events.push(Event::new(
+            aircraft.id,
+            EventKind::Callout(CommandWithFreq {
+              id: aircraft.id.to_string(),
+              frequency: aircraft.frequency,
+              reply: CommandReply {
+                callsign: aircraft.id.to_string(),
+                kind: CommandReplyKind::DirectionOfDeparture { direction },
+              }
+              .to_string(),
+              tasks: Vec::new(),
+            }),
+          ));
         }
       }
 

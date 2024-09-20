@@ -14,14 +14,15 @@ use async_openai::{
   },
 };
 use engine::{
-  angle_between_points,
-  command::{CommandReply, CommandReplyKind, CommandWithFreq, Task},
+  command::{CommandWithFreq, Task},
   engine::Engine,
   entities::{
-    aircraft::{events::Event, Aircraft},
+    aircraft::{
+      events::{Event, EventKind},
+      Aircraft,
+    },
     world::World,
   },
-  heading_to_direction,
 };
 use futures_util::{
   stream::{SplitSink, SplitStream},
@@ -140,7 +141,21 @@ impl CompatAdapter {
         }
 
         let dt = 1.0 / self.rate as f32;
-        self.engine.tick(&self.world, &mut self.aircraft, dt);
+        let events = self.engine.tick(&self.world, &mut self.aircraft, dt);
+
+        // Run through all callout events and broadcast them
+        for event in events.iter() {
+          if let Event {
+            kind: EventKind::Callout(command),
+            ..
+          } = event
+          {
+            self
+              .outgoing_sender
+              .try_broadcast(OutgoingReply::Reply(command.clone()))
+              .unwrap();
+          }
+        }
 
         // TODO: self.cleanup();
         self.broadcast_aircraft();
@@ -156,74 +171,29 @@ impl CompatAdapter {
       .iter()
       .any(|a| a.id == id && a.frequency == command.frequency)
     {
-      // TODO: Special-casing replies isn't a good idea. Have the engine handle
-      //       and return a "Reply" event or something
-      for task in command.tasks.iter() {
-        match task {
-          Task::DirectionOfTravel => {
-            if let Some(aircraft) = self
-              .aircraft
-              .iter()
-              .find(|a| a.id == id && a.frequency == command.frequency)
-            {
-              if let Some(arrival) = self
-                .world
-                .airspaces
-                .iter()
-                .find(|a| a.id == aircraft.flight_plan.arriving)
-              {
-                let heading = angle_between_points(aircraft.pos, arrival.pos);
-                let direction = heading_to_direction(heading);
-
-                self
-                  .outgoing_sender
-                  .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
-                    id: command.id.clone(),
-                    frequency: command.frequency,
-                    reply: CommandReply {
-                      callsign: aircraft.id.to_string(),
-                      kind: CommandReplyKind::DirectionOfDeparture {
-                        direction: direction.into(),
-                      },
-                    }
-                    .to_string(),
-                    tasks: command.tasks,
-                  }))
-                  .unwrap();
-
-                return;
-              }
-            }
-          }
-          Task::Ident => {
-            self
-              .outgoing_sender
-              .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
-                id: command.id.clone(),
-                frequency: command.frequency,
-                reply: "".to_owned(),
-                tasks: vec![],
-              }))
-              .unwrap();
-
-            return;
-          }
-
-          _ => {}
-        }
-      }
-
-      self
-        .outgoing_sender
-        .try_broadcast(OutgoingReply::Reply(command.clone()))
-        .unwrap();
-
       self.engine.events.extend(
         command
           .tasks
-          .into_iter()
+          .iter()
+          .cloned()
           .map(|t| Event { id, kind: t.into() }),
       );
+
+      for task in command.tasks.iter() {
+        match task {
+          Task::DirectionOfTravel | Task::Ident => {
+            // Don't generate a callout
+          }
+
+          _ => {
+            // Generate a callout from the command
+            self
+              .outgoing_sender
+              .try_broadcast(OutgoingReply::Reply(command.clone()))
+              .unwrap();
+          }
+        }
+      }
     }
   }
 
