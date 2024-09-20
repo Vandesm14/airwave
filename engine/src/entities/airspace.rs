@@ -3,7 +3,7 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::{deserialize_vec2, serialize_intern_string, serialize_vec2};
+use crate::serialize_intern_string;
 
 use super::airport::Airport;
 
@@ -50,8 +50,6 @@ impl Frequencies {
 pub struct Airspace {
   #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub size: f32,
   pub airports: Vec<Airport>,

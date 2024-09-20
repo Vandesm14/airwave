@@ -1,10 +1,5 @@
 import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
-import {
-  Aircraft,
-  arrToVec2,
-  isAircraftFlying,
-  isAircraftTaxiing,
-} from './lib/types';
+import { Aircraft, isAircraftFlying, isAircraftTaxiing } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import {
   controlAtom,
@@ -147,8 +142,8 @@ function Strip({ strip }: StripProps) {
       let waypoints = strip.state.value.waypoints.slice();
       waypoints.reverse();
       waypoints.forEach((waypoint) => {
-        distance += calculateDistance(current, arrToVec2(waypoint.value.to));
-        current = arrToVec2(waypoint.value.to);
+        distance += calculateDistance(current, waypoint.value.to);
+        current = waypoint.value.to;
       });
 
       let distanceInNm = distance / nauticalMilesToFeet;

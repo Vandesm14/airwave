@@ -3,17 +3,15 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  deserialize_vec2, inverse_degrees, move_point,
+  inverse_degrees, move_point,
   pathfinder::{Object, Pathfinder},
-  serialize_intern_string, serialize_vec2, Line,
+  serialize_intern_string, Line,
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airport {
   #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub center: Vec2,
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
@@ -60,9 +58,6 @@ impl Airport {
 pub struct Runway {
   #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
-  #[serde(flatten)]
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub heading: f32,
   pub length: f32,
@@ -82,11 +77,7 @@ impl Runway {
 pub struct Taxiway {
   #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub a: Vec2,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub b: Vec2,
 }
 
@@ -107,17 +98,9 @@ impl Taxiway {
 pub struct Terminal {
   #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub a: Vec2,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub b: Vec2,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub c: Vec2,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub d: Vec2,
 
   pub gates: Vec<Gate>,
@@ -128,8 +111,6 @@ pub struct Terminal {
 pub struct Gate {
   #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub heading: f32,
 }

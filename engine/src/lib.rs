@@ -61,22 +61,6 @@ where
   new_map.serialize(serializer)
 }
 
-pub fn serialize_vec2<S>(pos: &Vec2, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  XY { x: pos.x, y: pos.y }.serialize(serializer)
-}
-
-pub fn deserialize_vec2<'de, D>(deserializer: D) -> Result<Vec2, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  let xy = XY::deserialize(deserializer)?;
-
-  Ok(Vec2::new(xy.x, xy.y))
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct Line(pub Vec2, pub Vec2);
 

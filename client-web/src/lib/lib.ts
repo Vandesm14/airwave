@@ -17,17 +17,16 @@ export const toDegrees = (degrees: number) => (degrees * 180) / Math.PI;
 export const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
 export function movePoint(
-  x: number,
-  y: number,
+  point: Vec2,
   length: number,
   directionDegrees: number
-) {
+): Vec2 {
   // Convert direction from degrees to radians
   const directionRadians = toRadians(directionDegrees);
   // Calculate the new coordinates
-  const newX = x + length * Math.sin(directionRadians);
-  const newY = y + length * Math.cos(directionRadians);
-  return { x: newX, y: newY };
+  const newX = point[0] + length * Math.sin(directionRadians);
+  const newY = point[1] + length * Math.cos(directionRadians);
+  return [newX, newY];
 }
 
 export function distanceToAirspace(
@@ -52,23 +51,20 @@ export function distanceToDestination(
 }
 
 export function angleBetweenPoints(a: Vec2, b: Vec2): number {
-  let dx = b.x - a.x;
-  let dy = b.y - a.y;
+  let dx = b[0] - a[0];
+  let dy = b[1] - a[1];
 
   return (toDegrees(Math.atan2(dy, dx)) + 360) % 360;
 }
 
 export function midpointBetweenPoints(a: Vec2, b: Vec2): Vec2 {
-  return {
-    x: (a.x + b.x) / 2,
-    y: (a.y + b.y) / 2,
-  };
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 }
 
 export function projectPoint(origin: Vec2, point: Vec2, scale: number): Vec2 {
   let angle = angleBetweenPoints(origin, point);
   let distance = calculateDistance(origin, point);
-  return movePoint(point.x, point.y, distance * scale - distance, angle);
+  return movePoint(point, distance * scale - distance, angle);
 }
 
 export function inverseDegrees(degrees: number): number {
@@ -79,38 +75,29 @@ export function runwayInfo(
   runway: Runway
   // scale: number
 ): {
-  start: { x: number; y: number };
-  end: { x: number; y: number };
+  start: Vec2;
+  end: Vec2;
   ils: {
-    altitudePoints: { x: number; y: number }[];
-    end: { x: number; y: number };
-    maxAngle: { x: number; y: number };
-    minAngle: { x: number; y: number };
+    altitudePoints: Vec2[];
+    end: Vec2;
+    maxAngle: Vec2;
+    minAngle: Vec2;
   };
 } {
-  let pos: Vec2 = {
-    x: runway.x,
-    y: runway.y,
-  };
+  let pos: Vec2 = runway.pos;
   let length = runway.length;
 
-  let start = movePoint(
-    pos.x,
-    pos.y,
-    length * 0.5,
-    inverseDegrees(runway.heading)
-  );
-  let end = movePoint(pos.x, pos.y, length * 0.5, runway.heading);
+  let start = movePoint(pos, length * 0.5, inverseDegrees(runway.heading));
+  let end = movePoint(pos, length * 0.5, runway.heading);
 
   let maxIlsRangeMiles = 10;
-  let ilsPoints: { x: number; y: number }[] = [];
+  let ilsPoints: Vec2[] = [];
   let separate = 6.0 / 4;
   for (let i = 1; i < 4; i += 1) {
     let point = i * separate + separate;
     ilsPoints.push(
       movePoint(
-        start.x,
-        start.y,
+        start,
         length + nauticalMilesToFeet * point,
         inverseDegrees(runway.heading)
       )
@@ -118,21 +105,18 @@ export function runwayInfo(
   }
 
   let ilsStart = movePoint(
-    start.x,
-    start.y,
+    start,
     length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
     inverseDegrees(runway.heading)
   );
 
   let maxAngle = movePoint(
-    start.x,
-    start.y,
+    start,
     length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
     inverseDegrees(runway.heading + 5)
   );
   let minAngle = movePoint(
-    start.x,
-    start.y,
+    start,
     length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
     inverseDegrees((runway.heading + (360 - 5)) % 360)
   );
@@ -145,9 +129,9 @@ export function runwayInfo(
 }
 
 export function calculateSquaredDistance(a: Vec2, b: Vec2): number {
-  return Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2);
+  return Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2);
 }
 
 export function calculateDistance(a: Vec2, b: Vec2): number {
-  return Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+  return Math.sqrt(Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2));
 }

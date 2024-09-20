@@ -6,19 +6,15 @@ export type NodeVec2 = {
   name: string;
   kind: 'taxiway' | 'gate' | 'apron' | 'runway';
   behavior: 'goto' | 'holdshort';
-  value: [number, number];
+  value: Vec2;
 };
 
 export type NodeVOR = {
   name: string;
   kind: 'vor';
   behavior: 'goto' | 'holdshort';
-  value: { to: [number, number] };
+  value: { to: Vec2 };
 };
-
-export function arrToVec2(arr: [number, number]): Vec2 {
-  return { x: arr[0], y: arr[1] };
-}
 
 export type AircraftStateFlying = {
   type: 'flying';
@@ -95,12 +91,11 @@ export function isAircraftTaxiing(
   return state.type === 'taxiing';
 }
 
-export type Vec2 = { x: number; y: number };
+export type Vec2 = [number, number];
 
 export type Runway = {
   id: string;
-  x: number;
-  y: number;
+  pos: Vec2;
   /** In Degrees (0 is north; up) */
   heading: number;
   /** In Feet */
@@ -126,7 +121,7 @@ export type Terminal = {
   c: Vec2;
   d: Vec2;
 
-  apron: [[number, number], [number, number]];
+  apron: [Vec2, Vec2];
 
   gates: Array<Gate>;
 };
@@ -137,7 +132,6 @@ export type Airport = {
   runways: Array<Runway>;
   taxiways: Array<Taxiway>;
   terminals: Array<Terminal>;
-  altitudeRange: [number, number];
 };
 
 export type Frequencies = {

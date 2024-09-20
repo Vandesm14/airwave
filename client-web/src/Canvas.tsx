@@ -9,7 +9,6 @@ import {
 import {
   Aircraft,
   Airspace,
-  arrToVec2,
   Gate,
   NodeVec2,
   NodeVOR,
@@ -70,16 +69,13 @@ export default function Canvas({
   }
 
   function scalePoint(vec2: Vec2): Vec2 {
-    let x = vec2.x + radar().shiftPoint.x;
-    let y = vec2.y - radar().shiftPoint.y;
+    let x = vec2[0] + radar().shiftPoint.x;
+    let y = vec2[1] - radar().shiftPoint.y;
 
     x = scaleFeetToPixels(x);
     y = scaleFeetToPixels(y);
 
-    return {
-      x: x,
-      y: -y,
-    };
+    return [x, -y];
   }
 
   createEffect(() => {
@@ -289,7 +285,7 @@ export default function Canvas({
     }
 
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeetToPixels(airspace.size), 0, Math.PI * 2);
+    ctx.arc(pos[0], pos[1], scaleFeetToPixels(airspace.size), 0, Math.PI * 2);
     ctx.stroke();
 
     // Draw airspace name
@@ -298,8 +294,8 @@ export default function Canvas({
     ctx.textBaseline = 'middle';
     ctx.fillText(
       airspace.id,
-      pos.x,
-      pos.y - scaleFeetToPixels(airspace.size) - 20
+      pos[0],
+      pos[1] - scaleFeetToPixels(airspace.size) - 20
     );
   }
 
@@ -319,8 +315,8 @@ export default function Canvas({
     ctx.fillStyle = 'grey';
     ctx.lineWidth = scaleFeetToPixels(1000);
     ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(end[0], end[1]);
     ctx.stroke();
 
     // Draw the localizer beacon
@@ -328,20 +324,20 @@ export default function Canvas({
     ctx.strokeStyle = '#3087f2';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(ils.end.x, ils.end.y);
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(ils.end[0], ils.end[1]);
     ctx.stroke();
 
     // Draw the max and min localizer angle
     ctx.strokeStyle = '#444444';
     ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(ils.maxAngle.x, ils.maxAngle.y);
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(ils.maxAngle[0], ils.maxAngle[1]);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(ils.minAngle.x, ils.minAngle.y);
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(ils.minAngle[0], ils.minAngle[1]);
     ctx.stroke();
 
     // Draw the localizer altitude points
@@ -349,28 +345,28 @@ export default function Canvas({
     for (let p of info.ils.altitudePoints) {
       let point = scalePoint(p);
       ctx.beginPath();
-      ctx.arc(point.x, point.y, scaleFeetToPixels(1500), 0, Math.PI * 2);
+      ctx.arc(point[0], point[1], scaleFeetToPixels(1500), 0, Math.PI * 2);
       ctx.stroke();
     }
   }
 
   function drawWaypoint(ctx: Ctx, wp: NodeVOR) {
-    let pos = scalePoint(arrToVec2(wp.value.to));
+    let pos = scalePoint(wp.value.to);
     ctx.fillStyle = '#444';
     ctx.strokeStyle = '#444';
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeetToPixels(700), 0, Math.PI * 2);
+    ctx.arc(pos[0], pos[1], scaleFeetToPixels(700), 0, Math.PI * 2);
     ctx.fill();
 
     // Draw the separation circle
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeetToPixels(2000), 0, Math.PI * 2);
+    ctx.arc(pos[0], pos[1], scaleFeetToPixels(2000), 0, Math.PI * 2);
     ctx.stroke();
 
     let spacing = scaleFeetToPixels(2000 + nauticalMilesToFeet * 0.2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(wp.name, pos.x, pos.y - spacing);
+    ctx.fillText(wp.name, pos[0], pos[1] - spacing);
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
@@ -380,19 +376,19 @@ export default function Canvas({
       ctx.lineWidth = 3;
 
       ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
+      ctx.moveTo(pos[0], pos[1]);
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let pos = scalePoint(arrToVec2(wp.value.to));
-        ctx.lineTo(pos.x, pos.y);
+        let pos = scalePoint(wp.value.to);
+        ctx.lineTo(pos[0], pos[1]);
       }
       ctx.stroke();
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
         ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
-        let pos = scalePoint(arrToVec2(wp.value.to));
+        let pos = scalePoint(wp.value.to);
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+        ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -409,14 +405,20 @@ export default function Canvas({
 
     // Draw the dot
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, Math.min(3, scaleFeetToPixels(1000)), 0, Math.PI * 2);
+    ctx.arc(
+      pos[0],
+      pos[1],
+      Math.min(3, scaleFeetToPixels(1000)),
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
 
     // Draw the separation circle
     ctx.beginPath();
     ctx.arc(
-      pos.x,
-      pos.y,
+      pos[0],
+      pos[1],
       scaleFeetToPixels(nauticalMilesToFeet * 0.8),
       0,
       Math.PI * 2
@@ -425,12 +427,7 @@ export default function Canvas({
 
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
-    const end = movePoint(
-      aircraft.pos.x,
-      aircraft.pos.y,
-      length,
-      aircraft.heading
-    );
+    const end = movePoint(aircraft.pos, length, aircraft.heading);
     let endPos = scalePoint(end);
 
     if (selectedAircraft() == aircraft.id) {
@@ -439,8 +436,8 @@ export default function Canvas({
       ctx.strokeStyle = '#00aa00';
     }
     ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    ctx.lineTo(endPos.x, endPos.y);
+    ctx.moveTo(pos[0], pos[1]);
+    ctx.lineTo(endPos[0], endPos[1]);
     ctx.stroke();
 
     // Draw info
@@ -454,7 +451,7 @@ export default function Canvas({
     }
 
     // Draw callsign
-    ctx.fillText(aircraft.id, pos.x + spacing, pos.y - spacing);
+    ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
     // Draw altitude
     let altitudeIcon = ' ';
@@ -471,8 +468,8 @@ export default function Canvas({
         Math.round(aircraft.target.altitude / 100)
           .toString()
           .padStart(3, '0'),
-      pos.x + spacing,
-      pos.y - spacing + fontSize()
+      pos[0] + spacing,
+      pos[1] - spacing + fontSize()
     );
 
     // Draw heading
@@ -490,15 +487,15 @@ export default function Canvas({
         .replace('360', '000') +
         ' ' +
         targetHeadingInfo,
-      pos.x + spacing,
-      pos.y - spacing + fontSize() * 2
+      pos[0] + spacing,
+      pos[1] - spacing + fontSize() * 2
     );
 
     // Draw speed
     ctx.fillText(
       Math.round(aircraft.speed).toString(),
-      pos.x + spacing,
-      pos.y - spacing + fontSize() * 3
+      pos[0] + spacing,
+      pos[1] - spacing + fontSize() * 3
     );
   }
 
@@ -511,22 +508,22 @@ export default function Canvas({
     ctx.fillStyle = '#555';
     ctx.lineWidth = scaleFeetToPixels(200);
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.lineTo(c.x, c.y);
-    ctx.lineTo(d.x, d.y);
-    ctx.lineTo(a.x, a.y);
+    ctx.moveTo(a[0], a[1]);
+    ctx.lineTo(b[0], b[1]);
+    ctx.lineTo(c[0], c[1]);
+    ctx.lineTo(d[0], d[1]);
+    ctx.lineTo(a[0], a[1]);
     ctx.fill();
 
     // TODO: we should show aprons nicer than a debug line
-    let apron_a = scalePoint(arrToVec2(terminal.apron[0]));
-    let apron_b = scalePoint(arrToVec2(terminal.apron[1]));
+    let apron_a = scalePoint(terminal.apron[0]);
+    let apron_b = scalePoint(terminal.apron[1]);
 
     ctx.strokeStyle = '#00aa00';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(apron_a.x, apron_a.y);
-    ctx.lineTo(apron_b.x, apron_b.y);
+    ctx.moveTo(apron_a[0], apron_a[1]);
+    ctx.lineTo(apron_b[0], apron_b[1]);
     ctx.stroke();
 
     for (let i = 0; i < terminal.gates.length; i++) {
@@ -541,21 +538,21 @@ export default function Canvas({
 
     ctx.fillStyle = 'red';
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+    ctx.arc(pos[0], pos[1], 5, 0, Math.PI * 2);
     ctx.fill();
 
     let fontSize = 16;
     let textWidth = ctx.measureText(id).width + 10;
     ctx.fillStyle = '#000a';
     ctx.fillRect(
-      pos.x - textWidth * 0.5,
-      pos.y - fontSize * 0.5 - fontSize,
+      pos[0] - textWidth * 0.5,
+      pos[1] - fontSize * 0.5 - fontSize,
       textWidth,
       fontSize
     );
 
     ctx.fillStyle = '#dd9904';
-    ctx.fillText(id, pos.x, pos.y - fontSize);
+    ctx.fillText(id, pos[0], pos[1] - fontSize);
   }
 
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
@@ -566,8 +563,8 @@ export default function Canvas({
     ctx.strokeStyle = '#555';
     ctx.lineWidth = scaleFeetToPixels(200);
     ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(end[0], end[1]);
     ctx.stroke();
   }
 
@@ -578,14 +575,14 @@ export default function Canvas({
     let textWidth = ctx.measureText(taxiway.id).width + 10;
     ctx.fillStyle = '#000a';
     ctx.fillRect(
-      middle.x - textWidth * 0.5,
-      middle.y - fontSize() * 0.5,
+      middle[0] - textWidth * 0.5,
+      middle[1] - fontSize() * 0.5,
       textWidth,
       fontSize()
     );
     ctx.textAlign = 'center';
     ctx.fillStyle = '#dd9904';
-    ctx.fillText(taxiway.id, middle.x, middle.y);
+    ctx.fillText(taxiway.id, middle[0], middle[1]);
   }
 
   function drawRunwayGround(ctx: Ctx, runway: Runway) {
@@ -597,22 +594,22 @@ export default function Canvas({
     ctx.strokeStyle = '#222';
     ctx.lineWidth = scaleFeetToPixels(250);
     ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(end[0], end[1]);
     ctx.stroke();
 
     // Draw runway label
     let textWidth = ctx.measureText(runway.id).width + 10;
     ctx.fillStyle = '#000a';
     ctx.fillRect(
-      start.x - textWidth * 0.5,
-      start.y - fontSize() * 0.5,
+      start[0] - textWidth * 0.5,
+      start[1] - fontSize() * 0.5,
       textWidth,
       fontSize()
     );
     ctx.textAlign = 'center';
     ctx.fillStyle = '#dd9904';
-    ctx.fillText(runway.id, start.x, start.y);
+    ctx.fillText(runway.id, start[0], start[1]);
   }
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
@@ -629,18 +626,18 @@ export default function Canvas({
       ctx.lineWidth = scaleFeetToPixels(50);
 
       ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
+      ctx.moveTo(pos[0], pos[1]);
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let pos = scalePoint(arrToVec2(wp.value));
-        ctx.lineTo(pos.x, pos.y);
+        let pos = scalePoint(wp.value);
+        ctx.lineTo(pos[0], pos[1]);
       }
       ctx.stroke();
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
         ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
-        let pos = scalePoint(arrToVec2(wp.value));
+        let pos = scalePoint(wp.value);
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+        ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -652,24 +649,19 @@ export default function Canvas({
 
     // Draw the dot
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, scaleFeetToPixels(50), 0, Math.PI * 2);
+    ctx.arc(pos[0], pos[1], scaleFeetToPixels(50), 0, Math.PI * 2);
     ctx.fill();
 
     // Draw the direction
     ctx.strokeStyle = taxi_color;
     ctx.lineWidth = 2;
     const length = 400;
-    const end = movePoint(
-      aircraft.pos.x,
-      aircraft.pos.y,
-      length,
-      aircraft.heading
-    );
+    const end = movePoint(aircraft.pos, length, aircraft.heading);
     let endPos = scalePoint(end);
 
     ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    ctx.lineTo(endPos.x, endPos.y);
+    ctx.moveTo(pos[0], pos[1]);
+    ctx.lineTo(endPos[0], endPos[1]);
     ctx.stroke();
 
     if (aircraft.created > Date.now()) {
@@ -682,7 +674,7 @@ export default function Canvas({
     ctx.fillStyle = taxi_color;
 
     // Draw callsign
-    ctx.fillText(aircraft.id, pos.x + spacing, pos.y - spacing);
+    ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
     // Draw altitude
     let drawAlt = aircraft.altitude > 0;
@@ -701,16 +693,16 @@ export default function Canvas({
           Math.round(aircraft.target.altitude / 100)
             .toString()
             .padStart(3, '0'),
-        pos.x + spacing,
-        pos.y - spacing + fontSize()
+        pos[0] + spacing,
+        pos[1] - spacing + fontSize()
       );
     }
 
     // Draw speed
     ctx.fillText(
       Math.round(aircraft.speed).toString(),
-      pos.x + spacing,
-      pos.y - spacing + fontSize() * (drawAlt ? 2 : 1)
+      pos[0] + spacing,
+      pos[1] - spacing + fontSize() * (drawAlt ? 2 : 1)
     );
   }
 

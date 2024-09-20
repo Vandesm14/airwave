@@ -14,9 +14,8 @@ use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
-  angle_between_points, deserialize_vec2,
+  angle_between_points,
   pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
-  serialize_vec2,
 };
 
 use super::{
@@ -95,8 +94,6 @@ impl FlightPlan {
 pub struct Aircraft {
   pub id: Intern<String>,
 
-  #[serde(serialize_with = "serialize_vec2")]
-  #[serde(deserialize_with = "deserialize_vec2")]
   pub pos: Vec2,
   pub speed: f32,
   pub heading: f32,
