@@ -70,7 +70,7 @@ impl Engine {
     let mut bundle = Bundle::from(world);
     bundle.dt = dt;
 
-    println!("tick events: {:?}", self.events);
+    tracing::debug!("tick events: {:?}", self.events);
     for aircraft in aircraft.iter_mut() {
       // Capture the previous state
       bundle.prev = aircraft.clone();
@@ -81,7 +81,9 @@ impl Engine {
           HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
 
           // Apply all actions
-          println!("event: {event:?} {:?}", &bundle.actions);
+          if !bundle.actions.is_empty() {
+            tracing::debug!("event: {event:?} {:?}", &bundle.actions);
+          }
           for action in bundle.actions.iter() {
             if action.id == aircraft.id {
               AircraftAllActionHandler::run(aircraft, &action.kind);
@@ -97,7 +99,7 @@ impl Engine {
       AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
 
       // Apply all actions
-      println!("state effects: {:?}", &bundle.actions);
+      tracing::debug!("state effects: {:?}", &bundle.actions);
       for action in bundle.actions.iter() {
         if action.id == aircraft.id {
           AircraftAllActionHandler::run(aircraft, &action.kind);
@@ -110,7 +112,6 @@ impl Engine {
       AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
 
       // Apply all actions
-      // println!("value effects: {:?}", &bundle.actions);
       for action in bundle.actions.iter() {
         if action.id == aircraft.id {
           AircraftAllActionHandler::run(aircraft, &action.kind);
@@ -120,7 +121,7 @@ impl Engine {
     }
 
     // Capture the left over events and actions for next time
-    println!("new events: {:?}", bundle.events);
+    tracing::debug!("new events: {:?}", bundle.events);
     self.events = core::mem::take(&mut bundle.events);
 
     self.events.clone()
