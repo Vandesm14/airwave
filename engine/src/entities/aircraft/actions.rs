@@ -8,7 +8,7 @@ use crate::{
   pathfinder::{Node, NodeBehavior, NodeVORData},
 };
 
-use super::{Aircraft, AircraftState};
+use super::{Aircraft, AircraftCallouts, AircraftState};
 
 #[derive(Debug, Clone, PartialEq)]
 
@@ -52,6 +52,7 @@ pub enum ActionKind {
     waypoints: Vec<Node<Vec2>>,
   },
   Flying(Vec<Node<NodeVORData>>),
+  Callouts(AircraftCallouts),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -159,6 +160,9 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           current: current.clone(),
           waypoints: waypoints.clone(),
         }
+      }
+      ActionKind::Callouts(callouts) => {
+        aircraft.callouts = *callouts;
       }
     }
   }

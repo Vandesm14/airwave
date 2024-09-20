@@ -120,6 +120,7 @@ pub enum CommandReply {
   TaxiToGates { runway: String },
   DirectionOfDeparture { direction: String },
   ContactCenter { altitude: f32 },
+  ContactClearance { arrival: String },
   Empty,
 }
 
@@ -174,6 +175,13 @@ impl fmt::Display for CommandWithFreq {
           f,
           "Center, {} is at {} feet, with you.",
           decoded_callsign, altitude
+        )
+      }
+      CommandReply::ContactClearance { arrival } => {
+        write!(
+          f,
+          "Clearance, {} requesting IFR clearance to {}.",
+          decoded_callsign, arrival
         )
       }
       CommandReply::Empty => {

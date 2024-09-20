@@ -26,6 +26,18 @@ use super::{
 
 const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
 
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+pub struct AircraftCallouts {
+  pub clearance: bool,
+}
+
+impl AircraftCallouts {
+  pub fn mark_clearance(mut self) -> Self {
+    self.clearance = true;
+    self
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
   pub heading: f32,
@@ -102,6 +114,7 @@ pub struct Aircraft {
   pub state: AircraftState,
   pub target: AircraftTargets,
   pub flight_plan: FlightPlan,
+  pub callouts: AircraftCallouts,
 
   pub frequency: f32,
   pub created: Duration,
@@ -155,6 +168,7 @@ impl Aircraft {
         Intern::from(String::new()),
         Intern::from(String::new()),
       ),
+      callouts: AircraftCallouts::default(),
 
       frequency: airspace.frequencies.clearance,
       created: SystemTime::now()

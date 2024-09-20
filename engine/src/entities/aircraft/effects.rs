@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use super::{
   actions::ActionKind,
   events::{Event, EventKind},
@@ -328,6 +330,33 @@ impl AircraftEffect for AircraftContactCenterEffect {
               altitude: aircraft.altitude,
             },
           )),
+        ));
+      }
+    }
+  }
+}
+
+pub struct AircraftContactClearanceEffect;
+impl AircraftEffect for AircraftContactClearanceEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if let AircraftState::Taxiing { .. } = aircraft.state {
+      let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
+      if aircraft.created < now && !aircraft.callouts.clearance {
+        bundle.events.push(Event::new(
+          aircraft.id,
+          EventKind::Callout(CommandWithFreq::new_reply(
+            aircraft.id.to_string(),
+            aircraft.frequency,
+            CommandReply::ContactClearance {
+              arrival: aircraft.flight_plan.arriving.to_string(),
+            },
+          )),
+        ));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Callouts(aircraft.callouts.mark_clearance()),
         ));
       }
     }
