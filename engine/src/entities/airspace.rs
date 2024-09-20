@@ -31,15 +31,16 @@ impl Default for Frequencies {
 }
 
 impl Frequencies {
-  pub fn from_string(&self, s: &str) -> f32 {
+  pub fn try_from_string(&self, s: &str) -> Option<f32> {
     match s {
-      "clearance" => self.clearance,
-      "approach" => self.approach,
-      "departure" => self.departure,
-      "tower" => self.tower,
-      "ground" => self.ground,
-      "center" => self.center,
-      _ => self.center,
+      "clearance" => Some(self.clearance),
+      "approach" => Some(self.approach),
+      "departure" => Some(self.departure),
+      "tower" => Some(self.tower),
+      "ground" => Some(self.ground),
+      "center" => Some(self.center),
+
+      _ => None,
     }
   }
 }

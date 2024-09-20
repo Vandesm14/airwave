@@ -22,6 +22,8 @@ pub enum ActionKind {
   TargetAltitude(f32),
   SyncTargets,
 
+  Frequency(f32),
+  Created(u128),
   Airspace(Option<Intern<String>>),
 
   // Substate
@@ -74,6 +76,8 @@ impl AircraftActionHandler for AircraftAllActionHandler {
         aircraft.sync_targets_to_vals();
       }
 
+      ActionKind::Frequency(frequency) => aircraft.frequency = *frequency,
+      ActionKind::Created(created) => aircraft.created = *created,
       ActionKind::Airspace(spur) => aircraft.airspace = *spur,
 
       ActionKind::PopWaypoint => {

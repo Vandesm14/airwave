@@ -16,6 +16,8 @@ pub enum EventKind {
   Speed(f32),
   Heading(f32),
   Altitude(f32),
+  Frequency(f32),
+  NamedFrequency(String),
   Ident,
 
   // Flying
@@ -47,12 +49,12 @@ impl From<Task> for EventKind {
         EventKind::DirectTo(x.iter().cloned().map(Intern::from).collect())
       }
       Task::DirectionOfTravel => todo!(),
-      Task::Frequency(_) => todo!(),
+      Task::Frequency(x) => EventKind::Frequency(x),
       Task::GoAround => EventKind::GoAround,
       Task::Heading(x) => EventKind::Heading(x),
       Task::Ident => EventKind::Ident,
       Task::Land(x) => EventKind::Land(Intern::from(x)),
-      Task::NamedFrequency(_) => todo!(),
+      Task::NamedFrequency(x) => EventKind::NamedFrequency(x),
       Task::ResumeOwnNavigation => todo!(),
       Task::Speed(x) => EventKind::Speed(x),
       Task::Takeoff(_) => todo!(),
@@ -100,6 +102,22 @@ impl AircraftEventHandler for HandleAircraftEvent {
           aircraft.id,
           ActionKind::TargetAltitude(*altitude),
         ));
+      }
+      EventKind::Frequency(frequency) => {
+        bundle
+          .actions
+          .push(Action::new(aircraft.id, ActionKind::Frequency(*frequency)));
+      }
+      EventKind::NamedFrequency(frq) => {
+        if let Some(airspace) = aircraft.airspace.and_then(|airspace| {
+          bundle.airspaces.iter().find(|a| a.id == airspace)
+        }) {
+          if let Some(frequency) = airspace.frequencies.try_from_string(frq) {
+            bundle
+              .actions
+              .push(Action::new(aircraft.id, ActionKind::Frequency(frequency)));
+          }
+        }
       }
       EventKind::Ident => {
         todo!("TODO: Ident")
