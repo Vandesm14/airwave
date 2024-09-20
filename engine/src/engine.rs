@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+
 use actions::{Action, AircraftActionHandler};
 use effects::{
   AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
   AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
+use internment::Intern;
 
 use crate::{
   entities::{
@@ -53,7 +56,6 @@ impl<'a> From<&'a World> for Bundle<'a> {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Engine {
   pub events: Vec<Event>,
-  pub actions: Vec<Action>,
 }
 
 impl Engine {
@@ -63,9 +65,12 @@ impl Engine {
     aircraft: &mut [Aircraft],
     dt: f32,
   ) -> Vec<Event> {
+    // let id_set: HashSet<Intern<String>> =
+    //   HashSet::from_iter(self.events.iter().map(|e| e.id));
     let mut bundle = Bundle::from(world);
     bundle.dt = dt;
 
+    println!("tick events: {:?}", self.events);
     for aircraft in aircraft.iter_mut() {
       // Capture the previous state
       bundle.prev = aircraft.clone();
@@ -76,11 +81,13 @@ impl Engine {
           HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
 
           // Apply all actions
+          println!("event: {event:?} {:?}", &bundle.actions);
           for action in bundle.actions.iter() {
             if action.id == aircraft.id {
               AircraftAllActionHandler::run(aircraft, &action.kind);
             }
           }
+          bundle.actions.clear();
         }
       }
 
@@ -89,21 +96,32 @@ impl Engine {
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
       AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
 
-      AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
-      AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
-      AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
-
       // Apply all actions
+      println!("state effects: {:?}", &bundle.actions);
       for action in bundle.actions.iter() {
         if action.id == aircraft.id {
           AircraftAllActionHandler::run(aircraft, &action.kind);
         }
       }
+      bundle.actions.clear();
+
+      AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
+      AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
+      AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
+
+      // Apply all actions
+      // println!("value effects: {:?}", &bundle.actions);
+      for action in bundle.actions.iter() {
+        if action.id == aircraft.id {
+          AircraftAllActionHandler::run(aircraft, &action.kind);
+        }
+      }
+      bundle.actions.clear();
     }
 
     // Capture the left over events and actions for next time
+    println!("new events: {:?}", bundle.events);
     self.events = core::mem::take(&mut bundle.events);
-    self.actions = core::mem::take(&mut bundle.actions);
 
     self.events.clone()
   }

@@ -266,7 +266,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             kind: ActionKind::PopWaypoint,
           });
         }
-      } else {
+      } else if aircraft.speed > 0.0 {
         bundle.events.push(Event {
           id: aircraft.id,
           kind: EventKind::TaxiHold,

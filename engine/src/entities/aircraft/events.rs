@@ -160,6 +160,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
             id: aircraft.id,
             kind: ActionKind::Speed(20.0),
           });
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::TargetSpeed(20.0),
+          });
         }
       }
       EventKind::TaxiHold => {
@@ -167,6 +171,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
           bundle.actions.push(Action {
             id: aircraft.id,
             kind: ActionKind::Speed(0.0),
+          });
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::TargetSpeed(0.0),
           });
         }
       }
@@ -318,12 +326,7 @@ pub fn handle_taxi_event(
   waypoint_strings: &[Node<()>],
   pathfinder: &Pathfinder,
 ) {
-  if let AircraftState::Taxiing {
-    waypoints: wps,
-    current,
-    ..
-  } = &aircraft.state
-  {
+  if let AircraftState::Taxiing { current, .. } = &aircraft.state {
     let destinations = waypoint_strings.iter();
     let mut all_waypoints: Vec<Node<Vec2>> = Vec::new();
 
@@ -362,16 +365,16 @@ pub fn handle_taxi_event(
     all_waypoints.reverse();
     bundle.actions.push(Action {
       id: aircraft.id,
-      kind: ActionKind::TaxiWaypoints(all_waypoints),
+      kind: ActionKind::TaxiWaypoints(all_waypoints.clone()),
     });
 
     tracing::info!(
       "Initiating taxi for {}: {:?}",
       aircraft.id,
-      wps.iter().map(|w| w.name).collect::<Vec<_>>()
+      all_waypoints.iter().map(|w| w.name).collect::<Vec<_>>()
     );
 
-    if wps.is_empty() {
+    if all_waypoints.is_empty() {
       return;
     }
   }
