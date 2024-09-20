@@ -14,14 +14,14 @@ use async_openai::{
   },
 };
 use engine::{
-  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
+  command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::Engine,
   entities::{
     aircraft::{
       events::{Event, EventKind},
       Aircraft,
     },
-    world::World,
+    world::{find_random_arrival, find_random_departure, World},
   },
 };
 use futures_util::{
@@ -106,6 +106,18 @@ impl CompatAdapter {
     }
   }
 
+  pub fn spawn_random_aircraft(&mut self) {
+    let departure = find_random_departure(&self.world.airspaces, &mut self.rng);
+    let arrival = find_random_arrival(&self.world.airspaces, &mut self.rng);
+    if let Some((departure, arrival)) = departure.zip(arrival) {
+      self.aircraft.push(Aircraft::random_to_arrive(
+        departure,
+        arrival,
+        &mut self.rng,
+      ));
+    }
+  }
+
   pub fn begin_loop(&mut self) {
     'main_loop: loop {
       if Instant::now() - self.last_tick
@@ -117,8 +129,7 @@ impl CompatAdapter {
           && self.last_spawn.elapsed() >= Duration::from_secs(150)
         {
           self.last_spawn = Instant::now();
-          // self.spawn_random_aircraft();
-          tracing::warn!("TODO: Spawn random aircraft");
+          self.spawn_random_aircraft();
         }
 
         let mut commands: Vec<CommandWithFreq> = Vec::new();

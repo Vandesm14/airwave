@@ -24,12 +24,12 @@ use super::{
 pub enum EventKind {
   // Any
   Speed(f32),
-  Heading(f32),
-  Altitude(f32),
   Frequency(f32),
   NamedFrequency(String),
 
   // Flying
+  Heading(f32),
+  Altitude(f32),
   DirectTo(Vec<Intern<String>>),
   FollowApproach(Intern<String>),
   FollowArrival(Intern<String>),
@@ -59,6 +59,9 @@ pub enum EventKind {
 
   // Callouts
   Callout(CommandWithFreq),
+
+  // Internal
+  Delete(Intern<String>),
 }
 
 impl From<Task> for EventKind {
@@ -337,6 +340,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Callouts are handled outside of the engine.
       EventKind::Callout(..) => {}
+
+      // Internal
+      EventKind::Delete(..) => {
+        // This is handled outside of the engine
+      }
     }
   }
 }

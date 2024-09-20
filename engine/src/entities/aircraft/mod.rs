@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
-  deserialize_vec2,
-  pathfinder::{Node, NodeVORData},
+  angle_between_points, deserialize_vec2,
+  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
   serialize_vec2,
 };
 
@@ -165,6 +165,50 @@ impl Aircraft {
         .unwrap_or(Duration::from_millis(0))
         .as_millis(),
       airspace: Some(airspace.id),
+    }
+    .with_synced_targets()
+  }
+
+  pub fn random_to_arrive(
+    departure: &Airspace,
+    arrival: &Airspace,
+    rng: &mut Rng,
+  ) -> Self {
+    // We can unwrap this because we already filtered out airspaces with no
+    // airports.
+
+    // TODO: when depart from airport
+    // let dep_airport = departure.find_random_airport().unwrap();
+    // let arr_airport = arrival.find_random_airport().unwrap();
+
+    // let mut aircraft = Aircraft::random_flying();
+    // aircraft.flight_plan = (dep_airport.id.clone(), arr_airport.id.clone());
+    // aircraft.pos = dep_airport.center;
+    // aircraft.heading =
+    //   angle_between_points(dep_airport.center, arr_airport.center);
+
+    let arr_airport = arrival.find_random_airport(rng).unwrap();
+    Aircraft {
+      id: Intern::from(Aircraft::random_callsign(rng)),
+      pos: departure.pos,
+      speed: 400.0,
+      heading: angle_between_points(departure.pos, arr_airport.center),
+      altitude: 13000.0,
+      state: AircraftState::Flying {
+        waypoints: vec![Node::new(
+          arrival.id,
+          NodeKind::VOR,
+          NodeBehavior::GoTo,
+          NodeVORData {
+            to: arrival.pos,
+            then: Vec::new(),
+          },
+        )],
+      },
+      flight_plan: FlightPlan::new(departure.id, arr_airport.id),
+      frequency: arrival.frequencies.center,
+      airspace: Some(departure.id),
+      ..Default::default()
     }
     .with_synced_targets()
   }
