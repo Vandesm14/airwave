@@ -180,8 +180,9 @@ pub fn handle_land_event(
   runway_id: Intern<String>,
 ) {
   if let AircraftState::Flying { .. } = aircraft.state {
-    if let Some(airspace) =
-      bundle.airspaces.iter().find(|a| a.id == aircraft.airspace)
+    if let Some(airspace) = aircraft
+      .airspace
+      .and_then(|airspace| bundle.airspaces.iter().find(|a| a.id == airspace))
     {
       if let Some(runway) = airspace
         .airports

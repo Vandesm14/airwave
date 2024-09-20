@@ -108,13 +108,19 @@ impl AircraftEffect for AircraftUpdateAirspaceEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     for airspace in bundle.airspaces.iter() {
       if airspace.contains_point(aircraft.pos) {
-        bundle
-          .actions
-          .push(Action::new(aircraft.id, ActionKind::Airspace(airspace.id)));
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::Airspace(Some(airspace.id)),
+        ));
 
-        break;
+        return;
       }
     }
+
+    bundle.actions.push(Action {
+      id: aircraft.id,
+      kind: ActionKind::Airspace(None),
+    });
   }
 }
 

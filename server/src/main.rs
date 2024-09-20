@@ -180,30 +180,31 @@ async fn main() {
   }
 
   // TODO: Fill all gates with random aircraft.
-  // for airspace in engine.world.airspaces.iter() {
-  //   if !airspace.auto {
-  //     for airport in airspace.airports.iter() {
-  //       let mut now = true;
-  //       for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-  //         if engine.rng.chance(0.4) {
-  //           let mut aircraft =
-  //             Aircraft::random_parked(gate.clone(), &mut engine.rng);
-  //           aircraft.airspace = Some(airspace.id.clone());
-  //           aircraft.flight_plan.arriving = airspace.id.clone();
-  //           aircraft
-  //             .departure_from_arrival(&engine.world.airspaces, &mut engine.rng);
+  for airspace in engine.world.airspaces.iter() {
+    if !airspace.auto {
+      for airport in airspace.airports.iter() {
+        let mut now = true;
+        for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
+          if engine.rng.chance(0.4) {
+            let mut aircraft =
+              Aircraft::random_parked(gate.clone(), &mut engine.rng);
+            aircraft.airspace = Some(airspace.id);
+            aircraft.flight_plan.arriving = airspace.id;
+            aircraft
+              .departure_from_arrival(&engine.world.airspaces, &mut engine.rng);
 
-  //           if now {
-  //             aircraft.created_now();
-  //             now = false;
-  //           }
+            if now {
+              // TODO: created now
+              // aircraft.created_now();
+              now = false;
+            }
 
-  //           engine.world.aircraft.push(aircraft);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+            engine.aircraft.push(aircraft);
+          }
+        }
+      }
+    }
+  }
 
   // TODO: Spawn random
   let mut aircraft = Aircraft {
@@ -213,7 +214,10 @@ async fn main() {
     heading: 180.0,
     altitude: 4000.0,
     target: AircraftTargets::default(),
-    flight_plan: FlightPlan::new("KSFO".into(), "EGLL".into()),
+    flight_plan: FlightPlan::new(
+      Intern::from_ref("KSFO"),
+      Intern::from_ref("EGLL"),
+    ),
     ..Default::default()
   };
   aircraft.sync_targets_to_vals();

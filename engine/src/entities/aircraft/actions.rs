@@ -22,7 +22,7 @@ pub enum ActionKind {
   TargetAltitude(f32),
   SyncTargets,
 
-  Airspace(Intern<String>),
+  Airspace(Option<Intern<String>>),
 
   // Substate
   PopWaypoint,
