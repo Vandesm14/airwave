@@ -561,49 +561,49 @@ pub fn handle_takeoff_event(
   bundle: &mut Bundle,
   runway_id: Intern<String>,
 ) {
-  // if let AircraftState::Taxiing { current, .. } = &aircraft.state {
-  // If we are at the runway
-  if let Some(runway) = bundle
-    .airspaces
-    .iter()
-    .flat_map(|a| a.airports.iter())
-    .flat_map(|a| a.runways.iter())
-    .find(|r| r.id == runway_id)
-  {
-    // if NodeKind::Runway == current.kind && current.name == runway_id {
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::Pos(runway.start()),
-    });
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::TargetSpeed(aircraft.flight_plan.speed),
-    });
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::TargetAltitude(aircraft.flight_plan.altitude),
-    });
+  if let AircraftState::Taxiing { current, .. } = &aircraft.state {
+    // If we are at the runway
+    if let Some(runway) = bundle
+      .airspaces
+      .iter()
+      .flat_map(|a| a.airports.iter())
+      .flat_map(|a| a.runways.iter())
+      .find(|r| r.id == runway_id)
+    {
+      if NodeKind::Runway == current.kind && current.name == runway_id {
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::Pos(runway.start()),
+        });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetSpeed(aircraft.flight_plan.speed),
+        });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetAltitude(aircraft.flight_plan.altitude),
+        });
 
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::Heading(runway.heading),
-    });
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::TargetHeading(runway.heading),
-    });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::Heading(runway.heading),
+        });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetHeading(runway.heading),
+        });
 
-    // TODO: Change this once we have clearances working again
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::Flying(aircraft.flight_plan.waypoints.clone()),
-    })
-    // }
+        // TODO: Change this once we have clearances working again
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::Flying(aircraft.flight_plan.waypoints.clone()),
+        })
+      }
+    }
+
+    // TODO: handle if the waypoint is coming up, update the behavior
+    // to take off (once we have waypoint behaviors for takeoff)
   }
-
-  // TODO: handle if the waypoint is coming up, update the behavior
-  // to take off (once we have waypoint behaviors for takeoff)
-  // }
 }
 
 pub fn handle_clearance_event(
