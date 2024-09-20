@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 
 use actions::{Action, AircraftActionHandler};
 use effects::{
@@ -6,7 +5,6 @@ use effects::{
   AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
-use internment::Intern;
 
 use crate::{
   entities::{

@@ -9,7 +9,7 @@ use clap::Parser;
 use engine::{
   circle_circle_intersection,
   entities::{
-    aircraft::{Aircraft, AircraftTargets, FlightPlan},
+    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
