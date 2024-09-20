@@ -209,12 +209,17 @@ impl Aircraft {
 // Performance stats
 impl Aircraft {
   pub fn dt_climb_speed(&self, dt: f32) -> f32 {
-    // When taking off (no climb until V2)
-    if self.speed < 140.0 {
-      0.0
+    if let AircraftState::Landing(..) = self.state {
+      // Landing
+      (1500.0_f32 / 60.0_f32).round() * dt
     } else {
-      // Flying
-      (2000.0_f32 / 60.0_f32).round() * dt
+      // When taking off or taxiing (no climb until V2)
+      if self.speed < 140.0 {
+        0.0
+      } else {
+        // Flying
+        (2000.0_f32 / 60.0_f32).round() * dt
+      }
     }
   }
 
@@ -227,7 +232,7 @@ impl Aircraft {
     if self.altitude == 0.0 {
       // If landing
       if self.speed > 20.0 {
-        4.0 * dt
+        3.0 * dt
         // If taxiing
       } else {
         5.0 * dt
