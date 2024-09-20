@@ -193,7 +193,13 @@ impl Aircraft {
 // Performance stats
 impl Aircraft {
   pub fn dt_climb_speed(&self, dt: f32) -> f32 {
-    (2000.0_f32 / 60.0_f32).round() * dt
+    // When taking off (no climb until V2)
+    if self.speed < 140.0 {
+      0.0
+    } else {
+      // Flying
+      (2000.0_f32 / 60.0_f32).round() * dt
+    }
   }
 
   pub fn dt_turn_speed(&self, dt: f32) -> f32 {
@@ -210,8 +216,11 @@ impl Aircraft {
       } else {
         5.0 * dt
       }
-      // Air speed
+    } else if self.altitude <= 1000.0 {
+      // When taking off
+      5.0 * dt
     } else {
+      // Flying
       2.0 * dt
     }
   }
