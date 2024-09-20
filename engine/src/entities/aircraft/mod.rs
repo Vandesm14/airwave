@@ -124,14 +124,14 @@ impl Aircraft {
     string
   }
 
-  pub fn random_parked(gate: Gate, rng: &mut Rng) -> Self {
+  pub fn random_parked(gate: Gate, rng: &mut Rng, airspace: &Airspace) -> Self {
     Self {
       id: Intern::from(Self::random_callsign(rng)),
 
       pos: gate.pos,
       speed: 0.0,
       heading: gate.heading,
-      altitude: 00.0,
+      altitude: 0.0,
 
       state: AircraftState::Taxiing {
         current: gate.clone().into(),
@@ -143,12 +143,12 @@ impl Aircraft {
         Intern::from(String::new()),
       ),
 
-      frequency: 118.6,
+      frequency: airspace.frequencies.clearance,
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or(Duration::from_millis(0))
         .as_millis(),
-      airspace: None,
+      airspace: Some(airspace.id),
     }
     .with_synced_targets()
   }
@@ -180,6 +180,13 @@ impl Aircraft {
         .as_millis();
       self.frequency = departure.frequencies.clearance;
     }
+  }
+
+  pub fn created_now(&mut self) {
+    self.created = SystemTime::now()
+      .duration_since(SystemTime::UNIX_EPOCH)
+      .unwrap_or(Duration::from_millis(0))
+      .as_millis();
   }
 }
 

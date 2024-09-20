@@ -179,7 +179,6 @@ async fn main() {
     });
   }
 
-  // TODO: Fill all gates with random aircraft.
   for airspace in engine.world.airspaces.iter() {
     if !airspace.auto {
       for airport in airspace.airports.iter() {
@@ -187,15 +186,13 @@ async fn main() {
         for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
           if engine.rng.chance(0.4) {
             let mut aircraft =
-              Aircraft::random_parked(gate.clone(), &mut engine.rng);
-            aircraft.airspace = Some(airspace.id);
+              Aircraft::random_parked(gate.clone(), &mut engine.rng, airspace);
             aircraft.flight_plan.arriving = airspace.id;
             aircraft
               .departure_from_arrival(&engine.world.airspaces, &mut engine.rng);
 
             if now {
-              // TODO: created now
-              // aircraft.created_now();
+              aircraft.created_now();
               now = false;
             }
 
@@ -205,24 +202,6 @@ async fn main() {
       }
     }
   }
-
-  // TODO: Spawn random
-  let mut aircraft = Aircraft {
-    id: Intern::from_ref("AAL3556"),
-    pos: Vec2::new(NAUTICALMILES_TO_FEET * 10.0, NAUTICALMILES_TO_FEET * 10.0),
-    speed: 250.0,
-    heading: 180.0,
-    altitude: 4000.0,
-    target: AircraftTargets::default(),
-    flight_plan: FlightPlan::new(
-      Intern::from_ref("KSFO"),
-      Intern::from_ref("EGLL"),
-    ),
-    ..Default::default()
-  };
-  aircraft.sync_targets_to_vals();
-
-  engine.aircraft.push(aircraft);
 
   // Generating waypoints between sufficiently close airspaces.
   let mut i = 0;
