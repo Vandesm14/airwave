@@ -90,30 +90,28 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
       aircraft.heading,
       aircraft.speed * KNOT_TO_FEET_PER_SECOND * bundle.dt,
     );
-    bundle
-      .actions
-      .push(Action::new(aircraft.id, ActionKind::Pos(pos)));
+
+    if pos != aircraft.pos {
+      bundle
+        .actions
+        .push(Action::new(aircraft.id, ActionKind::Pos(pos)));
+    }
   }
 }
 
 pub struct AircraftUpdateAirspaceEffect;
 impl AircraftEffect for AircraftUpdateAirspaceEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    for airspace in bundle.airspaces.iter() {
-      if airspace.contains_point(aircraft.pos) {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Airspace(Some(airspace.id)),
-        ));
-
-        return;
-      }
+    let airspace = bundle
+      .airspaces
+      .iter()
+      .find(|a| a.contains_point(aircraft.pos))
+      .map(|a| a.id);
+    if airspace != aircraft.airspace {
+      bundle
+        .actions
+        .push(Action::new(aircraft.id, ActionKind::Airspace(airspace)));
     }
-
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::Airspace(None),
-    });
   }
 }
 
@@ -146,6 +144,10 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         inverse_degrees(angle_between_points(runway.start(), aircraft.pos));
       let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
 
+      if !angle_range.contains(&angle_to_runway) {
+        return;
+      }
+
       // If we are too high, go around.
       if aircraft.altitude - target_altitude > 100.0 {
         bundle.events.push(Event {
@@ -165,11 +167,14 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         return;
       }
 
-      let closest_point =
-        closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
+      let landing_point = if distance_to_runway <= start_descent_distance {
+        let closest_point =
+          closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
 
-      let landing_point =
-        move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.4);
+        move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.8)
+      } else {
+        ils_line.1
+      };
 
       let heading_to_point = angle_between_points(aircraft.pos, landing_point);
       bundle.actions.push(Action::new(
@@ -179,9 +184,7 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 
       // If we aren't within the localizer beacon (+/- 5 degrees), don't do
       // anything.
-      if !angle_range.contains(&angle_to_runway)
-        || distance_to_runway > start_descent_distance
-      {
+      if distance_to_runway > start_descent_distance {
         return;
       }
 
