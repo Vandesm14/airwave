@@ -143,7 +143,15 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::Ident => {
-        todo!("TODO: Ident")
+        bundle.events.push(Event::new(
+          aircraft.id,
+          EventKind::Callout(CommandWithFreq {
+            id: aircraft.id.to_string(),
+            frequency: aircraft.frequency,
+            reply: "".to_owned(),
+            tasks: Vec::new(),
+          }),
+        ));
       }
 
       // Flying
