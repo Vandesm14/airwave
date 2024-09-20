@@ -172,7 +172,7 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         let closest_point =
           closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
 
-        move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.8)
+        move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.5)
       } else {
         ils_line.1
       };
