@@ -193,20 +193,26 @@ impl CompatAdapter {
           .map(|t| Event { id, kind: t.into() }),
       );
 
+      let mut callout = true;
       for task in command.tasks.iter() {
         match task {
           Task::DirectionOfTravel | Task::Ident => {
-            // Don't generate a callout
+            // Don't generate a callout for these commands
+            callout = command.tasks.len() > 1;
           }
 
           _ => {
             // Generate a callout from the command
-            self
-              .outgoing_sender
-              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-              .unwrap();
+            callout = true;
           }
         }
+      }
+
+      if callout {
+        self
+          .outgoing_sender
+          .try_broadcast(OutgoingReply::Reply(command.clone().into()))
+          .unwrap();
       }
     }
   }
