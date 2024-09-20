@@ -1,8 +1,8 @@
 use actions::{Action, AircraftActionHandler};
 use effects::{
-  AircraftIsNowParkedEffect, AircraftUpdateAirspaceEffect,
-  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
-  AircraftUpdateTaxiingEffect,
+  AircraftContactCenterEffect, AircraftIsNowParkedEffect,
+  AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
+  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
 use turborand::rng::Rng;
@@ -152,17 +152,7 @@ impl Engine {
       bundle.actions.clear();
 
       AircraftIsNowParkedEffect::run(aircraft, &mut bundle);
-
-      // Apply all actions
-      if !bundle.actions.is_empty() {
-        tracing::debug!("parked actions: {:?}", &bundle.actions);
-      }
-      for action in bundle.actions.iter() {
-        if action.id == aircraft.id {
-          AircraftAllActionHandler::run(aircraft, &action.kind);
-        }
-      }
-      bundle.actions.clear();
+      AircraftContactCenterEffect::run(aircraft, &mut bundle);
     }
 
     // Capture the left over events and actions for next time

@@ -6,6 +6,7 @@ use super::{
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
+  command::{CommandReply, CommandWithFreq},
   delta_angle,
   engine::Bundle,
   inverse_degrees, move_point, normalize_angle,
@@ -305,7 +306,6 @@ impl AircraftEffect for AircraftIsNowParkedEffect {
         && aircraft.pos == current.value
         && Some(aircraft.flight_plan.arriving) == aircraft.airspace
       {
-        dbg!("evt");
         bundle
           .events
           .push(Event::new(aircraft.id, EventKind::DepartureFromArrival));
@@ -314,14 +314,22 @@ impl AircraftEffect for AircraftIsNowParkedEffect {
   }
 }
 
-// Example of an effect that triggers a one-time event based on previous and current state
-//
-// pub struct AircraftIsPast205Effect;
-// impl AircraftEffect for AircraftIsPast205Effect {
-//   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-//     if bundle.prev.speed <= 205.0 && aircraft.speed >= 205.0 {
-//       println!("Past 205");
-//       bundle.events.push(Event::Land(Intern::from_ref("27")));
-//     }
-//   }
-// }
+pub struct AircraftContactCenterEffect;
+impl AircraftEffect for AircraftContactCenterEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if let AircraftState::Flying { .. } = aircraft.state {
+      if bundle.prev.airspace.is_some() && aircraft.airspace.is_none() {
+        bundle.events.push(Event::new(
+          aircraft.id,
+          EventKind::Callout(CommandWithFreq::new_reply(
+            aircraft.id.to_string(),
+            aircraft.frequency,
+            CommandReply::ContactCenter {
+              altitude: aircraft.altitude,
+            },
+          )),
+        ));
+      }
+    }
+  }
+}
