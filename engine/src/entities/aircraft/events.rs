@@ -61,7 +61,7 @@ pub enum EventKind {
   Callout(CommandWithFreq),
 
   // Internal
-  Delete(Intern<String>),
+  Delete,
 }
 
 impl From<Task> for EventKind {
@@ -344,7 +344,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::Callout(..) => {}
 
       // Internal
-      EventKind::Delete(..) => {
+      EventKind::Delete => {
         // This is handled outside of the engine
       }
     }

@@ -169,6 +169,21 @@ impl CompatAdapter {
               .try_broadcast(OutgoingReply::Reply(command.clone().into()))
               .unwrap();
           }
+
+          if let Event {
+            id,
+            kind: EventKind::Delete,
+          } = event
+          {
+            let index = self
+              .aircraft
+              .iter()
+              .enumerate()
+              .find_map(|(i, a)| (a.id == *id).then_some(i));
+            if let Some(index) = index {
+              self.aircraft.swap_remove(index);
+            }
+          }
         }
 
         // TODO: self.cleanup();
