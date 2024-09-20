@@ -158,10 +158,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let AircraftState::Taxiing { .. } = aircraft.state {
           bundle.actions.push(Action {
             id: aircraft.id,
-            kind: ActionKind::Speed(20.0),
-          });
-          bundle.actions.push(Action {
-            id: aircraft.id,
             kind: ActionKind::TargetSpeed(20.0),
           });
         }
