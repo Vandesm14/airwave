@@ -124,10 +124,17 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
       }
       EventKind::Heading(heading) => {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::TargetHeading(*heading),
-        ));
+        if let AircraftState::Flying { .. } = aircraft.state {
+          bundle.actions.push(Action::new(
+            aircraft.id,
+            ActionKind::TargetHeading(*heading),
+          ));
+
+          // Cancel waypoints
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
+        }
       }
       EventKind::Altitude(altitude) => {
         bundle.actions.push(Action::new(
