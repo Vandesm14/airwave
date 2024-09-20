@@ -2,6 +2,8 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
+use std::time::{Duration, SystemTime};
+
 use actions::Action;
 use glam::Vec2;
 use internment::Intern;
@@ -81,10 +83,12 @@ pub struct Aircraft {
   pub heading: f32,
   pub altitude: f32,
 
-  pub target: AircraftTargets,
   pub state: AircraftState,
+  pub target: AircraftTargets,
   pub flight_plan: FlightPlan,
 
+  pub frequency: f32,
+  pub created: u128,
   pub airspace: Option<Intern<String>>,
 }
 
@@ -120,24 +124,27 @@ impl Aircraft {
   pub fn random_parked(gate: Gate, rng: &mut Rng) -> Self {
     Self {
       id: Intern::from(Self::random_callsign(rng)),
-      flight_plan: FlightPlan::new(
-        Intern::from(String::new()),
-        Intern::from(String::new()),
-      ),
+
+      pos: gate.pos,
+      speed: 0.0,
+      heading: gate.heading,
+      altitude: 00.0,
+
       state: AircraftState::Taxiing {
         current: gate.clone().into(),
         waypoints: Vec::new(),
       },
-      pos: gate.pos,
-      heading: gate.heading,
-      speed: 0.0,
-      altitude: 00.0,
-      // frequency: 118.6,
       target: AircraftTargets::default(),
-      // created: SystemTime::now()
-      //   .duration_since(SystemTime::UNIX_EPOCH)
-      //   .unwrap_or(Duration::from_millis(0))
-      //   .as_millis(),
+      flight_plan: FlightPlan::new(
+        Intern::from(String::new()),
+        Intern::from(String::new()),
+      ),
+
+      frequency: 118.6,
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .as_millis(),
       airspace: None,
     }
     .with_synced_targets()
@@ -184,6 +191,18 @@ impl Aircraft {
   }
 
   pub fn dt_speed_speed(&self, dt: f32) -> f32 {
-    2.0 * dt
+    // Taxi speed
+    if self.altitude == 0.0 {
+      // If landing
+      if self.speed > 20.0 {
+        4.0 * dt
+        // If taxiing
+      } else {
+        5.0 * dt
+      }
+      // Air speed
+    } else {
+      2.0 * dt
+    }
   }
 }
