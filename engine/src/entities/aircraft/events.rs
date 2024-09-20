@@ -151,9 +151,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .push(Action::new(aircraft.id, ActionKind::Frequency(*frequency)));
       }
       EventKind::NamedFrequency(frq) => {
-        if let Some(airspace) = aircraft.airspace.and_then(|airspace| {
-          bundle.airspaces.iter().find(|a| a.id == airspace)
-        }) {
+        let airspace_id =
+          aircraft.airspace.unwrap_or(aircraft.flight_plan.arriving);
+        if let Some(airspace) =
+          bundle.airspaces.iter().find(|a| a.id == airspace_id)
+        {
           if let Some(frequency) = airspace.frequencies.try_from_string(frq) {
             bundle
               .actions
