@@ -2,7 +2,10 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
-use std::time::{Duration, SystemTime};
+use std::{
+  ops::{Add, RangeInclusive},
+  time::{Duration, SystemTime},
+};
 
 use actions::Action;
 use glam::Vec2;
@@ -21,6 +24,8 @@ use super::{
   airspace::Airspace,
   world::find_random_airspace,
 };
+
+const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
@@ -51,7 +56,6 @@ impl Default for AircraftState {
   }
 }
 
-// TODO: use internment
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FlightPlan {
   pub departing: Intern<String>,
@@ -62,7 +66,6 @@ pub struct FlightPlan {
 }
 
 impl FlightPlan {
-  // TODO: use internment
   pub fn new(departing: Intern<String>, arriving: Intern<String>) -> Self {
     Self {
       departing,
@@ -162,20 +165,20 @@ impl Aircraft {
 
     // TODO: when airport as destination
     // TODO: handle errors
-    if let Some(((arrival, airspace), departure)) =
+    if let Some(((arrival, departure), airspace)) =
       arrival.zip(departure).zip(self.airspace)
     {
-      self.flight_plan = FlightPlan::new(airspace.id, arrival.id);
+      self.flight_plan = FlightPlan::new(airspace, arrival.id);
 
       // TODO: created and frequency
-      // self.created = SystemTime::now()
-      //   .duration_since(SystemTime::UNIX_EPOCH)
-      //   .unwrap_or(Duration::from_millis(0))
-      //   .add(Duration::from_secs(
-      //     rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-      //   ))
-      //   .as_millis();
-      // self.frequency = departure.frequencies.clearance;
+      self.created = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_millis(0))
+        .add(Duration::from_secs(
+          rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+        ))
+        .as_millis();
+      self.frequency = departure.frequencies.clearance;
     }
   }
 }

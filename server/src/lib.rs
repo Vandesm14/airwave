@@ -149,8 +149,11 @@ impl CompatAdapter {
 
   fn execute_command(&mut self, command: CommandWithFreq) {
     let id = Intern::new(command.id);
-    // TODO: check for frequency
-    if self.aircraft.iter().any(|a| a.id == id) {
+    if self
+      .aircraft
+      .iter()
+      .any(|a| a.id == id && a.frequency == command.frequency)
+    {
       self.engine.events.extend(
         command
           .tasks
