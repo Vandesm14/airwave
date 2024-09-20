@@ -235,6 +235,10 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
             id: aircraft.id,
             kind: ActionKind::PopWaypoint,
           });
+
+          for e in current.value.then.iter() {
+            bundle.events.push(Event::new(aircraft.id, e.clone()));
+          }
         }
       }
     }
