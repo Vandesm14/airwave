@@ -149,7 +149,6 @@ impl CompatAdapter {
 
   fn execute_command(&mut self, command: CommandWithFreq) {
     let id = Intern::new(command.id);
-    dbg!(id, command.frequency);
     if self
       .aircraft
       .iter()
