@@ -34,7 +34,7 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
       altitude = aircraft.target.altitude;
     }
     if (heading - aircraft.target.heading).abs() < turn_speed {
-      heading = normalize_angle(aircraft.target.heading);
+      heading = aircraft.target.heading;
     }
     if (speed - aircraft.target.speed).abs() < speed_speed {
       speed = aircraft.target.speed;
@@ -51,9 +51,9 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     if heading != aircraft.target.heading {
       let delta_angle = delta_angle(heading, aircraft.target.heading);
       if delta_angle < 0.0 {
-        heading = normalize_angle(heading - turn_speed);
+        heading -= turn_speed;
       } else {
-        heading = normalize_angle(heading + turn_speed);
+        heading += turn_speed;
       }
     }
     if speed != aircraft.target.speed {
@@ -70,9 +70,10 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
         .push(Action::new(aircraft.id, ActionKind::Altitude(altitude)));
     }
     if heading != aircraft.heading {
-      bundle
-        .actions
-        .push(Action::new(aircraft.id, ActionKind::Heading(heading)));
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::Heading(normalize_angle(heading)),
+      ));
     }
     if speed != aircraft.speed {
       bundle
