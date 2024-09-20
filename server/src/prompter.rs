@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use async_openai::error::OpenAIError;
-use engine::command::{Command, CommandReply, CommandReplyKind, Tasks};
+use engine::command::{Command, CommandReply, Tasks};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -182,13 +182,9 @@ impl Prompter {
 
     let command = Command {
       id: split.callsign.clone(),
-      reply: CommandReply::new(
-        split.callsign,
-        CommandReplyKind::WithCallsign {
-          text: split.request,
-        },
-      )
-      .to_string(),
+      reply: CommandReply::WithCallsign {
+        text: split.request,
+      },
       tasks,
     };
 

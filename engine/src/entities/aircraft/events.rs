@@ -6,7 +6,7 @@ use turborand::TurboRand;
 
 use crate::{
   angle_between_points,
-  command::{CommandReply, CommandReplyKind, CommandWithFreq, Task},
+  command::{CommandReply, CommandWithFreq, Task},
   engine::Bundle,
   entities::{
     airport::Runway,
@@ -310,11 +310,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             EventKind::Callout(CommandWithFreq {
               id: aircraft.id.to_string(),
               frequency: aircraft.frequency,
-              reply: CommandReply {
-                callsign: aircraft.id.to_string(),
-                kind: CommandReplyKind::DirectionOfDeparture { direction },
-              }
-              .to_string(),
+              reply: CommandReply::DirectionOfDeparture { direction },
               tasks: Vec::new(),
             }),
           ));
@@ -326,7 +322,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
           EventKind::Callout(CommandWithFreq {
             id: aircraft.id.to_string(),
             frequency: aircraft.frequency,
-            reply: "".to_owned(),
+            reply: CommandReply::Empty,
             tasks: Vec::new(),
           }),
         ));

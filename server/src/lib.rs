@@ -14,7 +14,7 @@ use async_openai::{
   },
 };
 use engine::{
-  command::{CommandWithFreq, Task},
+  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
   engine::Engine,
   entities::{
     aircraft::{
@@ -47,8 +47,8 @@ pub mod prompter;
 #[serde(tag = "type", content = "value")]
 pub enum OutgoingReply {
   // Partial/Small Updates
-  ATCReply(CommandWithFreq),
-  Reply(CommandWithFreq),
+  ATCReply(OutgoingCommandReply),
+  Reply(OutgoingCommandReply),
 
   // Full State Updates
   Aircraft(Vec<Aircraft>),
@@ -155,7 +155,7 @@ impl CompatAdapter {
           {
             self
               .outgoing_sender
-              .try_broadcast(OutgoingReply::Reply(command.clone()))
+              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
               .unwrap();
           }
         }
@@ -192,7 +192,7 @@ impl CompatAdapter {
             // Generate a callout from the command
             self
               .outgoing_sender
-              .try_broadcast(OutgoingReply::Reply(command.clone()))
+              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
               .unwrap();
           }
         }
@@ -326,11 +326,10 @@ pub async fn receive_commands_from(
               let text = response.text().await.unwrap();
               if let Ok(reply) = serde_json::from_str::<AudioResponse>(&text) {
                 update_tx
-                  .broadcast(OutgoingReply::ATCReply(CommandWithFreq {
+                  .broadcast(OutgoingReply::ATCReply(OutgoingCommandReply {
                     id: "ATC".to_owned(),
                     frequency,
                     reply: reply.text.clone(),
-                    tasks: Vec::new(),
                   }))
                   .await
                   .unwrap();
@@ -350,11 +349,10 @@ pub async fn receive_commands_from(
               frequency,
             } => {
               update_tx
-                .broadcast(OutgoingReply::ATCReply(CommandWithFreq {
+                .broadcast(OutgoingReply::ATCReply(OutgoingCommandReply {
                   id: "ATC".to_owned(),
                   frequency,
                   reply: string.clone(),
-                  tasks: Vec::new(),
                 }))
                 .await
                 .unwrap();
