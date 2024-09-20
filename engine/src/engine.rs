@@ -1,4 +1,3 @@
-
 use actions::{Action, AircraftActionHandler};
 use effects::{
   AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
@@ -106,7 +105,27 @@ impl Engine {
       bundle.actions.clear();
 
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
+
+      // Apply all actions
+      tracing::debug!("state effects: {:?}", &bundle.actions);
+      for action in bundle.actions.iter() {
+        if action.id == aircraft.id {
+          AircraftAllActionHandler::run(aircraft, &action.kind);
+        }
+      }
+      bundle.actions.clear();
+
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
+
+      // Apply all actions
+      tracing::debug!("state effects: {:?}", &bundle.actions);
+      for action in bundle.actions.iter() {
+        if action.id == aircraft.id {
+          AircraftAllActionHandler::run(aircraft, &action.kind);
+        }
+      }
+      bundle.actions.clear();
+
       AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
 
       // Apply all actions

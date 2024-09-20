@@ -25,6 +25,7 @@ pub enum EventKind {
   FollowApproach(Intern<String>),
   FollowArrival(Intern<String>),
   FollowDeparture(Intern<String>),
+  ResumeOwnNavigation,
 
   // Transitions
   Land(Intern<String>),
@@ -56,7 +57,7 @@ impl From<Task> for EventKind {
       } => EventKind::Clearance {
         speed,
         altitude,
-        departure: departure.map(|x| Intern::from(x)),
+        departure: departure.map(Intern::from),
       },
       Task::Depart(x) => EventKind::FollowDeparture(Intern::from(x)),
       Task::Direct(x) => {
@@ -69,7 +70,7 @@ impl From<Task> for EventKind {
       Task::Ident => EventKind::Ident,
       Task::Land(x) => EventKind::Land(Intern::from(x)),
       Task::NamedFrequency(x) => EventKind::NamedFrequency(x),
-      Task::ResumeOwnNavigation => todo!(),
+      Task::ResumeOwnNavigation => EventKind::ResumeOwnNavigation,
       Task::Speed(x) => EventKind::Speed(x),
       Task::Takeoff(x) => EventKind::Takeoff(Intern::from(x)),
       Task::Taxi(x) => EventKind::Taxi(x),
@@ -156,6 +157,37 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::FollowDeparture(waypoint) => {
         if let AircraftState::Flying { .. } = aircraft.state {
           handle_departure_event(aircraft, bundle, *waypoint);
+        }
+      }
+      EventKind::ResumeOwnNavigation => {
+        if let AircraftState::Flying { .. } = aircraft.state {
+          let arrival = bundle
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.arriving);
+
+          if let Some(arrival) = arrival {
+            bundle.actions.push(Action {
+              id: aircraft.id,
+              kind: ActionKind::TargetSpeed(400.0),
+            });
+            bundle.actions.push(Action {
+              id: aircraft.id,
+              kind: ActionKind::TargetAltitude(13000.0),
+            });
+            bundle.actions.push(Action {
+              id: aircraft.id,
+              kind: ActionKind::Flying(vec![Node {
+                name: arrival.id,
+                kind: NodeKind::Runway,
+                behavior: NodeBehavior::GoTo,
+                value: NodeVORData {
+                  to: arrival.pos,
+                  then: Vec::new(),
+                },
+              }]),
+            });
+          }
         }
       }
 
@@ -434,7 +466,7 @@ pub fn handle_takeoff_event(
   bundle: &mut Bundle,
   runway_id: Intern<String>,
 ) {
-  if let AircraftState::Taxiing { current, waypoints } = &aircraft.state {
+  if let AircraftState::Taxiing { current, .. } = &aircraft.state {
     // If we are at the runway
     if let Some(runway) = bundle
       .airspaces
