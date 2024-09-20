@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use glam::Vec2;
 use internment::Intern;
 
@@ -26,6 +28,11 @@ pub enum ActionKind {
     speed: Option<f32>,
     altitude: Option<f32>,
     waypoints: Vec<Node<NodeVORData>>,
+  },
+  DepartureFromArrival {
+    departure: Intern<String>,
+    destination: Intern<String>,
+    wait_time: Duration,
   },
 
   Frequency(f32),
@@ -94,6 +101,15 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           aircraft.flight_plan.altitude = *altitude;
         }
         aircraft.flight_plan.waypoints = waypoints.clone();
+      }
+      ActionKind::DepartureFromArrival {
+        departure,
+        destination,
+        wait_time,
+      } => {
+        if let AircraftState::Taxiing { .. } = aircraft.state {
+          aircraft.departure_from_arrival(*departure, *destination, *wait_time);
+        }
       }
 
       ActionKind::Frequency(frequency) => aircraft.frequency = *frequency,

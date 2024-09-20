@@ -141,7 +141,10 @@ impl CompatAdapter {
         }
 
         let dt = 1.0 / self.rate as f32;
-        let events = self.engine.tick(&self.world, &mut self.aircraft, dt);
+        let events =
+          self
+            .engine
+            .tick(&self.world, &mut self.aircraft, &mut self.rng, dt);
 
         // Run through all callout events and broadcast them
         for event in events.iter() {

@@ -1,16 +1,24 @@
+use std::time::Duration;
+
 use glam::Vec2;
 use internment::Intern;
+use turborand::TurboRand;
 
 use crate::{
   angle_between_points,
   command::{CommandReply, CommandReplyKind, CommandWithFreq, Task},
   engine::Bundle,
-  entities::{airport::Runway, world::closest_airport},
+  entities::{
+    airport::Runway,
+    world::{closest_airport, find_random_airspace},
+  },
   heading_to_direction,
   pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData, Pathfinder},
 };
 
-use super::{actions::ActionKind, Action, Aircraft, AircraftState};
+use super::{
+  actions::ActionKind, Action, Aircraft, AircraftState, DEPARTURE_WAIT_RANGE,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EventKind {
@@ -20,7 +28,6 @@ pub enum EventKind {
   Altitude(f32),
   Frequency(f32),
   NamedFrequency(String),
-  Ident,
 
   // Flying
   DirectTo(Vec<Intern<String>>),
@@ -34,6 +41,7 @@ pub enum EventKind {
   GoAround,
   Touchdown,
   Takeoff(Intern<String>),
+  DepartureFromArrival,
 
   // Taxiing
   Taxi(Vec<Node<()>>),
@@ -47,6 +55,7 @@ pub enum EventKind {
 
   // Requests
   DirectionOfTravel,
+  Ident,
 
   // Callouts
   Callout(CommandWithFreq),
@@ -142,17 +151,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
           }
         }
       }
-      EventKind::Ident => {
-        bundle.events.push(Event::new(
-          aircraft.id,
-          EventKind::Callout(CommandWithFreq {
-            id: aircraft.id.to_string(),
-            frequency: aircraft.frequency,
-            reply: "".to_owned(),
-            tasks: Vec::new(),
-          }),
-        ));
-      }
 
       // Flying
       EventKind::DirectTo(waypoints) => {
@@ -229,6 +227,32 @@ impl AircraftEventHandler for HandleAircraftEvent {
           handle_takeoff_event(aircraft, bundle, *runway);
         }
       }
+      EventKind::DepartureFromArrival => {
+        if let AircraftState::Taxiing { .. } = aircraft.state {
+          let departure = bundle
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.arriving);
+          let arrival = find_random_airspace(bundle.airspaces, bundle.rng);
+          if let Some((departure, destination)) = departure.zip(arrival) {
+            let frequency = departure.frequencies.clearance;
+            let wait_time = Duration::from_secs(
+              bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+            );
+            bundle.actions.push(Action::new(
+              aircraft.id,
+              ActionKind::DepartureFromArrival {
+                departure: departure.id,
+                destination: destination.id,
+                wait_time,
+              },
+            ));
+            bundle
+              .actions
+              .push(Action::new(aircraft.id, ActionKind::Frequency(frequency)))
+          }
+        }
+      }
 
       // Taxiing
       EventKind::Taxi(waypoints) => {
@@ -295,6 +319,17 @@ impl AircraftEventHandler for HandleAircraftEvent {
             }),
           ));
         }
+      }
+      EventKind::Ident => {
+        bundle.events.push(Event::new(
+          aircraft.id,
+          EventKind::Callout(CommandWithFreq {
+            id: aircraft.id.to_string(),
+            frequency: aircraft.frequency,
+            reply: "".to_owned(),
+            tasks: Vec::new(),
+          }),
+        ));
       }
 
       // Callouts are handled outside of the engine.

@@ -169,7 +169,7 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn departure_from_arrival(
+  pub fn make_random_departure(
     &mut self,
     airspaces: &[Airspace],
     rng: &mut Rng,
@@ -181,21 +181,37 @@ impl Aircraft {
 
     // TODO: when airport as destination
     // TODO: handle errors
-    if let Some(((arrival, departure), airspace)) =
-      arrival.zip(departure).zip(self.airspace)
-    {
-      self.flight_plan = FlightPlan::new(airspace, arrival.id);
-
-      // TODO: created and frequency
-      self.created = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .add(Duration::from_secs(
-          rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-        ))
-        .as_millis();
+    if let Some((arrival, departure)) = arrival.zip(departure) {
+      self.departure_from_arrival(
+        departure.id,
+        arrival.id,
+        Duration::from_secs(rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap()),
+      );
       self.frequency = departure.frequencies.clearance;
     }
+  }
+
+  pub fn departure_from_arrival(
+    &mut self,
+    departure: Intern<String>,
+    arrival: Intern<String>,
+    wait_time: Duration,
+  ) {
+    // TODO: true when airports
+    // let departure =
+    //   airspaces.iter().find(|a| a.id == self.flight_plan.arriving);
+    // let arrival = find_random_airspace(airspaces, rng);
+
+    // TODO: when airport as destination
+    // TODO: handle errors
+    self.flight_plan = FlightPlan::new(departure, arrival);
+
+    // TODO: created and frequency
+    self.created = SystemTime::now()
+      .duration_since(SystemTime::UNIX_EPOCH)
+      .unwrap_or(Duration::from_millis(0))
+      .add(wait_time)
+      .as_millis();
   }
 
   pub fn created_now(&mut self) {

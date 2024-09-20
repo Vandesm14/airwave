@@ -6,9 +6,11 @@ use super::{
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
-  delta_angle, engine::Bundle, inverse_degrees, move_point, normalize_angle,
-  pathfinder::NodeBehavior, Line, KNOT_TO_FEET_PER_SECOND,
-  NAUTICALMILES_TO_FEET,
+  delta_angle,
+  engine::Bundle,
+  inverse_degrees, move_point, normalize_angle,
+  pathfinder::{NodeBehavior, NodeKind},
+  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
 pub trait AircraftEffect {
@@ -289,6 +291,24 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             kind: EventKind::TaxiHold,
           });
         }
+      }
+    }
+  }
+}
+
+pub struct AircraftIsNowParkedEffect;
+impl AircraftEffect for AircraftIsNowParkedEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if let AircraftState::Taxiing { current, .. } = &aircraft.state {
+      if aircraft.speed == 0.0
+        && current.kind == NodeKind::Gate
+        && aircraft.pos == current.value
+        && Some(aircraft.flight_plan.arriving) == aircraft.airspace
+      {
+        dbg!("evt");
+        bundle
+          .events
+          .push(Event::new(aircraft.id, EventKind::DepartureFromArrival));
       }
     }
   }

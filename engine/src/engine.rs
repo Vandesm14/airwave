@@ -1,9 +1,11 @@
 use actions::{Action, AircraftActionHandler};
 use effects::{
-  AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
-  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
+  AircraftIsNowParkedEffect, AircraftUpdateAirspaceEffect,
+  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
+  AircraftUpdateTaxiingEffect,
 };
 use events::Event;
+use turborand::rng::Rng;
 
 use crate::{
   entities::{
@@ -33,19 +35,21 @@ pub struct Bundle<'a> {
   pub waypoints: &'a [Node<NodeVORData>],
   pub waypoint_sets: &'a WaypointSet,
 
+  pub rng: &'a mut Rng,
   pub dt: f32,
 }
 
-impl<'a> From<&'a World> for Bundle<'a> {
-  fn from(value: &'a World) -> Self {
+impl<'a> Bundle<'a> {
+  pub fn from_world(world: &'a World, rng: &'a mut Rng, dt: f32) -> Self {
     Self {
       prev: Aircraft::default(),
       events: Vec::new(),
       actions: Vec::new(),
-      airspaces: &value.airspaces,
-      waypoints: &value.waypoints,
-      waypoint_sets: &value.waypoint_sets,
-      dt: 0.0,
+      airspaces: &world.airspaces,
+      waypoints: &world.waypoints,
+      waypoint_sets: &world.waypoint_sets,
+      rng,
+      dt,
     }
   }
 }
@@ -60,12 +64,12 @@ impl Engine {
     &mut self,
     world: &World,
     aircraft: &mut [Aircraft],
+    rng: &mut Rng,
     dt: f32,
   ) -> Vec<Event> {
     // let id_set: HashSet<Intern<String>> =
     //   HashSet::from_iter(self.events.iter().map(|e| e.id));
-    let mut bundle = Bundle::from(world);
-    bundle.dt = dt;
+    let mut bundle = Bundle::from_world(world, rng, dt);
 
     if !self.events.is_empty() {
       tracing::debug!("tick events: {:?}", self.events);
@@ -139,6 +143,19 @@ impl Engine {
       // Apply all actions
       if !bundle.actions.is_empty() {
         tracing::debug!("airspace actions: {:?}", &bundle.actions);
+      }
+      for action in bundle.actions.iter() {
+        if action.id == aircraft.id {
+          AircraftAllActionHandler::run(aircraft, &action.kind);
+        }
+      }
+      bundle.actions.clear();
+
+      AircraftIsNowParkedEffect::run(aircraft, &mut bundle);
+
+      // Apply all actions
+      if !bundle.actions.is_empty() {
+        tracing::debug!("parked actions: {:?}", &bundle.actions);
       }
       for action in bundle.actions.iter() {
         if action.id == aircraft.id {

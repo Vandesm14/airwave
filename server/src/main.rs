@@ -189,7 +189,7 @@ async fn main() {
               Aircraft::random_parked(gate.clone(), &mut engine.rng, airspace);
             aircraft.flight_plan.arriving = airspace.id;
             aircraft
-              .departure_from_arrival(&engine.world.airspaces, &mut engine.rng);
+              .make_random_departure(&engine.world.airspaces, &mut engine.rng);
 
             if now {
               aircraft.created_now();
