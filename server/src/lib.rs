@@ -14,7 +14,7 @@ use async_openai::{
   },
 };
 use engine::{
-  command::{CommandWithFreq, OutgoingCommandReply, Task},
+  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
   engine::Engine,
   entities::{
     aircraft::{
@@ -41,6 +41,8 @@ use turborand::rng::Rng;
 
 pub mod airport;
 pub mod prompter;
+
+const SPAWN_LIMIT: usize = 30;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -124,6 +126,39 @@ impl CompatAdapter {
     }
   }
 
+  pub fn prepare(&mut self) {
+    self.spawn_random_aircraft();
+
+    let mut i = 0;
+    let mut last_spawn = 0;
+    loop {
+      if i - last_spawn >= 500 && self.aircraft.len() < SPAWN_LIMIT {
+        self.spawn_random_aircraft();
+        last_spawn = i;
+      }
+
+      let dt = 1.0 / self.rate as f32;
+      let events =
+        self
+          .engine
+          .tick(&self.world, &mut self.aircraft, &mut self.rng, dt);
+
+      if events.into_iter().any(|e| {
+        matches!(
+          e.kind,
+          EventKind::Callout(CommandWithFreq {
+            reply: CommandReply::ArriveInAirspace { .. },
+            ..
+          })
+        )
+      }) {
+        return;
+      }
+
+      i += 1;
+    }
+  }
+
   pub fn begin_loop(&mut self) {
     'main_loop: loop {
       if Instant::now() - self.last_tick
@@ -131,7 +166,7 @@ impl CompatAdapter {
       {
         self.last_tick = Instant::now();
 
-        if self.aircraft.len() < 30
+        if self.aircraft.len() < SPAWN_LIMIT
           && self.last_spawn.elapsed() >= Duration::from_secs(150)
         {
           self.last_spawn = Instant::now();

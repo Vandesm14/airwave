@@ -298,6 +298,10 @@ async fn main() {
 
   //
 
+  tracing::info!("Preparing spawn area...");
+  engine.prepare();
+
+  tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || engine.begin_loop());
 
   let listener = TcpListener::bind(address).await.unwrap();
