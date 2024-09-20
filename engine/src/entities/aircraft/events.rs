@@ -30,6 +30,7 @@ pub enum EventKind {
   Land(Intern<String>),
   GoAround,
   Touchdown,
+  Takeoff(Intern<String>),
 
   // Taxiing
   Taxi(Vec<Node<()>>),
@@ -57,7 +58,7 @@ impl From<Task> for EventKind {
       Task::NamedFrequency(x) => EventKind::NamedFrequency(x),
       Task::ResumeOwnNavigation => todo!(),
       Task::Speed(x) => EventKind::Speed(x),
-      Task::Takeoff(_) => todo!(),
+      Task::Takeoff(x) => EventKind::Takeoff(Intern::from(x)),
       Task::Taxi(x) => EventKind::Taxi(x),
       Task::TaxiContinue => EventKind::TaxiContinue,
       Task::TaxiHold => EventKind::TaxiHold,
@@ -147,11 +148,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Transitions
       EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
-      EventKind::Touchdown => {
-        if let AircraftState::Landing(runway) = &aircraft.state {
-          handle_touchdown_event(aircraft, bundle, runway);
-        }
-      }
       EventKind::GoAround => {
         if let AircraftState::Landing(..) = aircraft.state {
           bundle
@@ -160,6 +156,16 @@ impl AircraftEventHandler for HandleAircraftEvent {
           bundle
             .actions
             .push(Action::new(aircraft.id, ActionKind::SyncTargets));
+        }
+      }
+      EventKind::Touchdown => {
+        if let AircraftState::Landing(runway) = &aircraft.state {
+          handle_touchdown_event(aircraft, bundle, runway);
+        }
+      }
+      EventKind::Takeoff(runway) => {
+        if let AircraftState::Taxiing { .. } = aircraft.state {
+          handle_takeoff_event(aircraft, bundle, *runway);
         }
       }
 
@@ -397,4 +403,43 @@ pub fn handle_taxi_event(
     id: aircraft.id,
     kind: EventKind::TaxiContinue,
   });
+}
+
+pub fn handle_takeoff_event(
+  aircraft: &Aircraft,
+  bundle: &mut Bundle,
+  runway_id: Intern<String>,
+) {
+  if let AircraftState::Taxiing { current, waypoints } = &aircraft.state {
+    // If we are at the runway
+    if let Some(runway) = bundle
+      .airspaces
+      .iter()
+      .flat_map(|a| a.airports.iter())
+      .flat_map(|a| a.runways.iter())
+      .find(|r| r.id == runway_id)
+    {
+      if NodeKind::Runway == current.kind && current.name == runway_id {
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetSpeed(220.0),
+        });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetAltitude(3000.0),
+        });
+
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::Heading(runway.heading),
+        });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetHeading(runway.heading),
+        });
+      }
+    }
+
+    // TODO: handle if the waypoint is coming up, update the behavior to take off
+  }
 }
