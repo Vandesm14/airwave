@@ -186,7 +186,6 @@ impl CompatAdapter {
           }
         }
 
-        // TODO: self.cleanup();
         self.broadcast_aircraft();
         // TODO: self.save_world();
       }

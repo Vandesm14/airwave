@@ -366,3 +366,20 @@ impl AircraftEffect for AircraftContactClearanceEffect {
     }
   }
 }
+
+pub struct AircraftDeleteWhenInAirspaceEffect;
+impl AircraftEffect for AircraftDeleteWhenInAirspaceEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if let AircraftState::Flying { .. } = aircraft.state {
+      if let Some(airspace) = aircraft.airspace.and_then(|airspace_id| {
+        bundle.airspaces.iter().find(|a| a.id == airspace_id)
+      }) {
+        if airspace.id == aircraft.flight_plan.arriving && airspace.auto {
+          bundle
+            .events
+            .push(Event::new(aircraft.id, EventKind::Delete));
+        }
+      }
+    }
+  }
+}
