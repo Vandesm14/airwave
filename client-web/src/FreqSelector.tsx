@@ -63,9 +63,9 @@ export default function FreqSelector() {
       <div class="row">
         <select name="frequency" onchange={(e) => changeViaKey(e.target.value)}>
           {foundAirspace()?.frequencies
-            ? Object.keys(foundAirspace()?.frequencies).map((k) => (
+            ? Object.entries(foundAirspace()?.frequencies).map(([k, v]) => (
                 <option value={k} selected={k === key()}>
-                  {k}
+                  {k} - {v}
                 </option>
               ))
             : null}
