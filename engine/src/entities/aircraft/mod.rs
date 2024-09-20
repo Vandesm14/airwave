@@ -104,7 +104,7 @@ pub struct Aircraft {
   pub flight_plan: FlightPlan,
 
   pub frequency: f32,
-  pub created: u128,
+  pub created: Duration,
   pub airspace: Option<Intern<String>>,
 }
 
@@ -159,8 +159,7 @@ impl Aircraft {
       frequency: airspace.frequencies.clearance,
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or(Duration::from_millis(0))
-        .as_millis(),
+        .unwrap(),
       airspace: Some(airspace.id),
     }
     .with_synced_targets()
@@ -229,16 +228,14 @@ impl Aircraft {
     self.flight_plan = FlightPlan::new(departure, arrival);
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)
-      .unwrap_or(Duration::from_millis(0))
-      .add(wait_time)
-      .as_millis();
+      .unwrap()
+      .add(wait_time);
   }
 
   pub fn created_now(&mut self) {
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)
-      .unwrap_or(Duration::from_millis(0))
-      .as_millis();
+      .unwrap();
   }
 }
 

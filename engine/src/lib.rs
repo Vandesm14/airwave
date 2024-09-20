@@ -1,4 +1,8 @@
-use std::{collections::HashMap, f32::consts::PI};
+use std::{
+  collections::HashMap,
+  f32::consts::PI,
+  time::{Duration, Instant},
+};
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
@@ -28,12 +32,6 @@ pub const COUNTERCLOCKWISE: f32 = 270.0;
 
 pub fn normalize_angle(angle: f32) -> f32 {
   (360.0 + angle) % 360.0
-}
-
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct XY {
-  pub x: f32,
-  pub y: f32,
 }
 
 pub fn serialize_intern_string<S>(

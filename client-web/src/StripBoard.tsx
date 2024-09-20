@@ -10,7 +10,6 @@ import {
 import {
   calculateDistance,
   distanceToAirspace,
-  distanceToDestination,
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib/lib';
@@ -79,7 +78,7 @@ function assignAircraftToStrips(
     if (isTaxiingToRunway && isDepartingAndInLocalAirspace) {
       return 'Takeoff';
     } else if (isInLocalAirspace) {
-      if (aircraft.created < Date.now()) {
+      if (aircraft.created.secs < Date.now() / 1000) {
         return 'Ground';
       } else {
         return 'Parked';
@@ -133,7 +132,7 @@ function Strip({ strip }: StripProps) {
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
 
-  let sinceCreated = formatTime(Date.now() - strip.created);
+  let sinceCreated = formatTime(Date.now() - strip.created.secs * 1000);
 
   if (isAircraftFlying(strip.state)) {
     if (strip.state.value.waypoints.length > 0) {
@@ -269,7 +268,8 @@ export default function StripBoard({
         strips[category].push(aircraft);
       }
 
-      const timeSorter = (a: Aircraft, b: Aircraft) => b.created - a.created;
+      const timeSorter = (a: Aircraft, b: Aircraft) =>
+        b.created.secs - a.created.secs;
       const nameSorter = (a: Aircraft, b: Aircraft) =>
         ('' + a.id).localeCompare(b.id);
       const distanteToAirportSorter = (a: Aircraft, b: Aircraft) => {

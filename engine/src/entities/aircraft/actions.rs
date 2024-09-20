@@ -36,7 +36,7 @@ pub enum ActionKind {
   },
 
   Frequency(f32),
-  Created(u128),
+  Created(Duration),
   Airspace(Option<Intern<String>>),
 
   // Substate

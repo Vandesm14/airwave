@@ -39,6 +39,11 @@ export type AircraftState =
   | AircraftStateLanding
   | AircraftStateTaxiing;
 
+type Duration = {
+  secs: number;
+  nanos: number;
+};
+
 export type Aircraft = {
   id: string;
   frequency: number;
@@ -69,7 +74,7 @@ export type Aircraft = {
     arriving: string;
   };
 
-  created: number;
+  created: Duration;
   airspace: string | null;
 };
 

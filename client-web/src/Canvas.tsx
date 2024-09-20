@@ -664,7 +664,7 @@ export default function Canvas({
     ctx.lineTo(endPos[0], endPos[1]);
     ctx.stroke();
 
-    if (aircraft.created > Date.now()) {
+    if (aircraft.created.secs > Date.now() / 1000) {
       return;
     }
 
