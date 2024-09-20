@@ -145,6 +145,16 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         inverse_degrees(angle_between_points(runway.start(), aircraft.pos));
       let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
 
+      // If we have passed the start of the runway (landed),
+      // set our state to taxiing.
+      if distance_to_end <= runway.length.powf(2.0) {
+        bundle.events.push(Event {
+          id: aircraft.id,
+          kind: EventKind::Touchdown,
+        });
+        return;
+      }
+
       if !angle_range.contains(&angle_to_runway) {
         return;
       }
@@ -154,16 +164,6 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         bundle.events.push(Event {
           id: aircraft.id,
           kind: EventKind::GoAround,
-        });
-        return;
-      }
-
-      // If we have passed the start of the runway (landed),
-      // set our state to taxiing.
-      if distance_to_end <= runway.length.powf(2.0) {
-        bundle.events.push(Event {
-          id: aircraft.id,
-          kind: EventKind::Touchdown,
         });
         return;
       }

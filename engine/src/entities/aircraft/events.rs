@@ -304,14 +304,18 @@ pub fn handle_touchdown_event(
 ) {
   bundle
     .actions
+    .push(Action::new(aircraft.id, ActionKind::TargetAltitude(0.0)));
+  bundle
+    .actions
     .push(Action::new(aircraft.id, ActionKind::Altitude(0.0)));
+  bundle.actions.push(Action::new(
+    aircraft.id,
+    ActionKind::TargetHeading(runway.heading),
+  ));
   bundle.actions.push(Action::new(
     aircraft.id,
     ActionKind::Heading(runway.heading),
   ));
-  bundle
-    .actions
-    .push(Action::new(aircraft.id, ActionKind::SyncTargets));
 
   bundle
     .actions

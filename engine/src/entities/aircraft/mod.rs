@@ -227,7 +227,7 @@ impl Aircraft {
     if self.altitude == 0.0 {
       // If landing
       if self.speed > 20.0 {
-        3.0 * dt
+        3.3 * dt
         // If taxiing
       } else {
         5.0 * dt
