@@ -259,7 +259,8 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             kind: ActionKind::PopWaypoint,
           });
         }
-      } else if aircraft.speed > 0.0 {
+        // Only hold if we are not stopped and we are at or below taxi speed.
+      } else if aircraft.speed > 0.0 && aircraft.speed <= 20.0 {
         bundle.events.push(Event {
           id: aircraft.id,
           kind: EventKind::TaxiHold,
