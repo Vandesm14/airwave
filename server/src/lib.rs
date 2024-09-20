@@ -14,12 +14,14 @@ use async_openai::{
   },
 };
 use engine::{
-  command::CommandWithFreq,
+  angle_between_points,
+  command::{CommandReply, CommandReplyKind, CommandWithFreq, Task},
   engine::Engine,
   entities::{
     aircraft::{events::Event, Aircraft},
     world::World,
   },
+  heading_to_direction,
 };
 use futures_util::{
   stream::{SplitSink, SplitStream},
@@ -148,12 +150,74 @@ impl CompatAdapter {
   }
 
   fn execute_command(&mut self, command: CommandWithFreq) {
-    let id = Intern::new(command.id);
+    let id = Intern::from_ref(&command.id);
     if self
       .aircraft
       .iter()
       .any(|a| a.id == id && a.frequency == command.frequency)
     {
+      // TODO: Special-casing replies isn't a good idea. Have the engine handle
+      //       and return a "Reply" event or something
+      for task in command.tasks.iter() {
+        match task {
+          Task::DirectionOfTravel => {
+            if let Some(aircraft) = self
+              .aircraft
+              .iter()
+              .find(|a| a.id == id && a.frequency == command.frequency)
+            {
+              if let Some(arrival) = self
+                .world
+                .airspaces
+                .iter()
+                .find(|a| a.id == aircraft.flight_plan.arriving)
+              {
+                let heading = angle_between_points(aircraft.pos, arrival.pos);
+                let direction = heading_to_direction(heading);
+
+                self
+                  .outgoing_sender
+                  .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
+                    id: command.id.clone(),
+                    frequency: command.frequency,
+                    reply: CommandReply {
+                      callsign: aircraft.id.to_string(),
+                      kind: CommandReplyKind::DirectionOfDeparture {
+                        direction: direction.into(),
+                      },
+                    }
+                    .to_string(),
+                    tasks: command.tasks,
+                  }))
+                  .unwrap();
+
+                return;
+              }
+            }
+          }
+          Task::Ident => {
+            self
+              .outgoing_sender
+              .try_broadcast(OutgoingReply::Reply(CommandWithFreq {
+                id: command.id.clone(),
+                frequency: command.frequency,
+                reply: "".to_owned(),
+                tasks: vec![],
+              }))
+              .unwrap();
+
+            return;
+          }
+
+          _ => {}
+        }
+      }
+
+      self
+        .outgoing_sender
+        .try_broadcast(OutgoingReply::Reply(command.clone()))
+        .unwrap();
+
       self.engine.events.extend(
         command
           .tasks

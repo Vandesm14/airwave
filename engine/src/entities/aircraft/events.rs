@@ -437,6 +437,12 @@ pub fn handle_takeoff_event(
           id: aircraft.id,
           kind: ActionKind::TargetHeading(runway.heading),
         });
+
+        // TODO: Change this once we have clearances working again
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::Flying(Vec::new()),
+        })
       }
     }
 
