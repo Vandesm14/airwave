@@ -56,7 +56,7 @@ impl Default for AircraftState {
   }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FlightPlan {
   // To and From
   pub arriving: Intern<String>,
@@ -68,12 +68,25 @@ pub struct FlightPlan {
   pub waypoints: Vec<Node<NodeVORData>>,
 }
 
+impl Default for FlightPlan {
+  fn default() -> Self {
+    Self {
+      arriving: Intern::from_ref("arriving"),
+      departing: Intern::from_ref("departing"),
+
+      speed: 220.0,
+      altitude: 3000.0,
+      waypoints: Vec::new(),
+    }
+  }
+}
+
 impl FlightPlan {
   pub fn new(departing: Intern<String>, arriving: Intern<String>) -> Self {
     Self {
       departing,
       arriving,
-      ..Default::default()
+      ..Self::default()
     }
   }
 }
