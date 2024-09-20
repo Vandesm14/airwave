@@ -1,9 +1,9 @@
 use actions::{Action, AircraftActionHandler};
 use effects::{
-  AircraftContactCenterEffect, AircraftContactClearanceEffect,
-  AircraftIsNowParkedEffect, AircraftUpdateAirspaceEffect,
-  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
-  AircraftUpdateTaxiingEffect,
+  AircraftContactApproachEffect, AircraftContactCenterEffect,
+  AircraftContactClearanceEffect, AircraftIsNowParkedEffect,
+  AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
+  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
 use turborand::rng::Rng;
@@ -155,6 +155,7 @@ impl Engine {
       AircraftIsNowParkedEffect::run(aircraft, &mut bundle);
       AircraftContactCenterEffect::run(aircraft, &mut bundle);
       AircraftContactClearanceEffect::run(aircraft, &mut bundle);
+      AircraftContactApproachEffect::run(aircraft, &mut bundle);
 
       // Apply all actions
       if !bundle.actions.is_empty() {

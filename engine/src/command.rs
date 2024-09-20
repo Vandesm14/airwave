@@ -116,13 +116,13 @@ pub fn decode_callsign(callsign: &str) -> String {
 pub enum CommandReply {
   WithCallsign { text: String },
   WithoutCallsign { text: String },
-  ArriveInAirspace { direction: String },
   HoldShortRunway { runway: String },
   ReadyForDeparture { airport: String },
   TaxiToGates { runway: String },
   DirectionOfDeparture { direction: String },
   ContactCenter { altitude: f32 },
   ContactClearance { arrival: String },
+  ArriveInAirspace { direction: String, altitude: f32 },
   Empty,
 }
 
@@ -137,11 +137,15 @@ impl fmt::Display for CommandWithFreq {
       CommandReply::WithoutCallsign { text } => {
         write!(f, "{text}.")
       }
-      CommandReply::ArriveInAirspace { direction } => {
+      CommandReply::ArriveInAirspace {
+        direction,
+        altitude,
+      } => {
         write!(
           f,
-          "Approach, {} is {direction} of the airport, with you.",
+          "Approach, {} is {direction} of the airport at {}, with you.",
           decoded_callsign,
+          abbreviate_altitude(*altitude)
         )
       }
       CommandReply::HoldShortRunway { runway } => {

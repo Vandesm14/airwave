@@ -11,7 +11,7 @@ use crate::{
   command::{CommandReply, CommandWithFreq},
   delta_angle,
   engine::Bundle,
-  inverse_degrees, move_point, normalize_angle,
+  heading_to_direction, inverse_degrees, move_point, normalize_angle,
   pathfinder::{NodeBehavior, NodeKind},
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
@@ -335,6 +335,36 @@ impl AircraftEffect for AircraftContactCenterEffect {
             },
           )),
         ));
+      }
+    }
+  }
+}
+
+pub struct AircraftContactApproachEffect;
+impl AircraftEffect for AircraftContactApproachEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if let AircraftState::Flying { .. } = aircraft.state {
+      if bundle.prev.airspace.is_none() && aircraft.airspace.is_some() {
+        if let Some(airspace) = bundle
+          .airspaces
+          .iter()
+          .find(|a| a.id == aircraft.airspace.unwrap())
+        {
+          let heading = angle_between_points(aircraft.pos, airspace.pos);
+          let direction = heading_to_direction(heading);
+
+          bundle.events.push(Event::new(
+            aircraft.id,
+            EventKind::Callout(CommandWithFreq::new_reply(
+              aircraft.id.to_string(),
+              aircraft.frequency,
+              CommandReply::ArriveInAirspace {
+                direction: direction.into(),
+                altitude: aircraft.altitude,
+              },
+            )),
+          ));
+        }
       }
     }
   }
