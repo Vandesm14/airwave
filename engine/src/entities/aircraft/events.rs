@@ -478,11 +478,15 @@ pub fn handle_takeoff_event(
       if NodeKind::Runway == current.kind && current.name == runway_id {
         bundle.actions.push(Action {
           id: aircraft.id,
-          kind: ActionKind::TargetSpeed(220.0),
+          kind: ActionKind::Pos(runway.start()),
         });
         bundle.actions.push(Action {
           id: aircraft.id,
-          kind: ActionKind::TargetAltitude(3000.0),
+          kind: ActionKind::TargetSpeed(aircraft.flight_plan.speed),
+        });
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TargetAltitude(aircraft.flight_plan.altitude),
         });
 
         bundle.actions.push(Action {
@@ -497,7 +501,7 @@ pub fn handle_takeoff_event(
         // TODO: Change this once we have clearances working again
         bundle.actions.push(Action {
           id: aircraft.id,
-          kind: ActionKind::Flying(Vec::new()),
+          kind: ActionKind::Flying(aircraft.flight_plan.waypoints.clone()),
         })
       }
     }
