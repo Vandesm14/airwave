@@ -710,7 +710,7 @@ export default function Canvas({
     ctx.fillText(
       Math.round(aircraft.speed).toString(),
       pos.x + spacing,
-      pos.y - spacing + fontSize() * (drawAlt ? 1 : 0)
+      pos.y - spacing + fontSize() * (drawAlt ? 2 : 1)
     );
   }
 
