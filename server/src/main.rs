@@ -3,7 +3,12 @@ use core::{
   net::{IpAddr, Ipv4Addr, SocketAddr},
   str::FromStr,
 };
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  ops::Add,
+  path::PathBuf,
+  sync::Arc,
+  time::{Duration, SystemTime},
+};
 
 use clap::Parser;
 use engine::{
@@ -185,12 +190,18 @@ async fn main() {
       for airport in airspace.airports.iter() {
         let mut now = true;
         for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          if engine.rng.chance(0.4) {
+          if engine.rng.chance(0.3) {
             let mut aircraft =
               Aircraft::random_parked(gate.clone(), &mut engine.rng, airspace);
             aircraft.flight_plan.arriving = airspace.id;
             aircraft
               .make_random_departure(&engine.world.airspaces, &mut engine.rng);
+            aircraft.created = SystemTime::now()
+              .duration_since(SystemTime::UNIX_EPOCH)
+              .unwrap()
+              .add(Duration::from_secs(
+                engine.rng.sample_iter(120..=1800).unwrap(),
+              ));
 
             if now {
               aircraft.created_now();
