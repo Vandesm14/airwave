@@ -174,19 +174,7 @@ impl Aircraft {
     arrival: &Airspace,
     rng: &mut Rng,
   ) -> Self {
-    // We can unwrap this because we already filtered out airspaces with no
-    // airports.
-
     // TODO: when depart from airport
-    // let dep_airport = departure.find_random_airport().unwrap();
-    // let arr_airport = arrival.find_random_airport().unwrap();
-
-    // let mut aircraft = Aircraft::random_flying();
-    // aircraft.flight_plan = (dep_airport.id.clone(), arr_airport.id.clone());
-    // aircraft.pos = dep_airport.center;
-    // aircraft.heading =
-    //   angle_between_points(dep_airport.center, arr_airport.center);
-
     let arr_airport = arrival.find_random_airport(rng).unwrap();
     Aircraft {
       id: Intern::from(Aircraft::random_callsign(rng)),
@@ -224,7 +212,6 @@ impl Aircraft {
     let arrival = find_random_airspace(airspaces, rng);
 
     // TODO: when airport as destination
-    // TODO: handle errors
     if let Some((arrival, departure)) = arrival.zip(departure) {
       self.departure_from_arrival(
         departure.id,
@@ -241,16 +228,8 @@ impl Aircraft {
     arrival: Intern<String>,
     wait_time: Duration,
   ) {
-    // TODO: true when airports
-    // let departure =
-    //   airspaces.iter().find(|a| a.id == self.flight_plan.arriving);
-    // let arrival = find_random_airspace(airspaces, rng);
-
     // TODO: when airport as destination
-    // TODO: handle errors
     self.flight_plan = FlightPlan::new(departure, arrival);
-
-    // TODO: created and frequency
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)
       .unwrap_or(Duration::from_millis(0))
