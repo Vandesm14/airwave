@@ -1,7 +1,4 @@
-use std::{
-  collections::HashMap,
-  f32::consts::PI,
-};
+use std::{collections::HashMap, f32::consts::PI};
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
@@ -252,6 +249,15 @@ pub fn heading_to_direction(heading: f32) -> &'static str {
 
   // This should never happen, but we'll return "Unknown" just in case
   "Unknown"
+}
+
+/// Abbreviates an altitude to feet or flight level (depending on the altitude).
+pub fn abbreviate_altitude(altitude: f32) -> String {
+  if altitude < 13000.0 {
+    format!("{:?} feet", altitude)
+  } else {
+    format!("Flight Level {:?}", altitude)
+  }
 }
 
 fn closest_point_on_line(

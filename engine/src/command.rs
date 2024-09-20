@@ -2,7 +2,7 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::pathfinder::Node;
+use crate::{abbreviate_altitude, pathfinder::Node};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -176,7 +176,8 @@ impl fmt::Display for CommandWithFreq {
         write!(
           f,
           "Center, {} is at {} feet, with you.",
-          decoded_callsign, altitude
+          decoded_callsign,
+          abbreviate_altitude(*altitude)
         )
       }
       CommandReply::ContactClearance { arrival } => {
