@@ -11,6 +11,14 @@ use crate::{
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum Callout {
+  Clearance { destination: Intern<String> },
+  HoldShort { runway: Intern<String> },
+  InAirspace {},
+  OnGround,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum EventKind {
   // Any
   Speed(f32),
@@ -42,6 +50,9 @@ pub enum EventKind {
     altitude: Option<f32>,
     departure: Option<Intern<String>>,
   },
+
+  // Callouts
+  Callout(Callout),
 }
 
 impl From<Task> for EventKind {
@@ -254,6 +265,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
           );
         }
       }
+
+      // Callouts are handled outside of the engine.
+      EventKind::Callout(..) => {}
     }
   }
 }
