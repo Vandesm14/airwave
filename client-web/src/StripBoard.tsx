@@ -174,7 +174,7 @@ function Strip({ strip }: StripProps) {
   let bottomStatus = '';
   let theirs = strip.frequency !== ourFrequency();
 
-  if (sinceCreated.startsWith('-')) {
+  if (sinceCreated.startsWith('-') && sinceCreated !== '--:--') {
     theirs = true;
   }
 
