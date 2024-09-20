@@ -11,6 +11,7 @@ import {
   Airspace,
   arrToVec2,
   Gate,
+  NodeVec2,
   NodeVOR,
   Runway,
   Taxiway,
