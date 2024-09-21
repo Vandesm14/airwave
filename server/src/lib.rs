@@ -421,6 +421,7 @@ pub async fn receive_commands_from(
                 .unwrap();
 
               let text = response.text().await.unwrap();
+              tracing::info!("Transcribed request: {} chars", text.len());
               if let Ok(reply) = serde_json::from_str::<AudioResponse>(&text) {
                 update_tx
                   .broadcast(OutgoingReply::ATCReply(OutgoingCommandReply {
