@@ -450,12 +450,12 @@ export default function Canvas({
 
     resetTransform(ctx);
 
-    if (aircraft.is_colliding) {
-      ctx.fillStyle = '#ff2222';
-      ctx.strokeStyle = '#ff2222';
-    } else if (selectedAircraft() == aircraft.id) {
+    if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = '#aaaa00';
       ctx.strokeStyle = '#aaaa00';
+    } else if (aircraft.is_colliding) {
+      ctx.fillStyle = '#ff2222';
+      ctx.strokeStyle = '#ff2222';
     } else {
       ctx.fillStyle = '#00aa00';
       ctx.strokeStyle = '#00aa00';
@@ -472,7 +472,7 @@ export default function Canvas({
     );
     ctx.fill();
 
-    // Draw the collision circle
+    // Draw the separation circle
     ctx.beginPath();
     ctx.arc(
       pos[0],
@@ -483,13 +483,13 @@ export default function Canvas({
     );
     ctx.stroke();
 
-    // Draw the separation circle
+    // Draw the collision circle
     if (aircraft.is_colliding) {
       ctx.beginPath();
       ctx.arc(
         pos[0],
         pos[1],
-        scaleFeetToPixels(nauticalMilesToFeet * 8),
+        scaleFeetToPixels(nauticalMilesToFeet * 15),
         0,
         Math.PI * 2
       );
@@ -501,11 +501,6 @@ export default function Canvas({
     const end = movePoint(aircraft.pos, length, aircraft.heading);
     let endPos = scalePoint(end);
 
-    if (selectedAircraft() == aircraft.id) {
-      ctx.strokeStyle = '#aaaa00';
-    } else {
-      ctx.strokeStyle = '#00aa00';
-    }
     ctx.beginPath();
     ctx.moveTo(pos[0], pos[1]);
     ctx.lineTo(endPos[0], endPos[1]);
@@ -515,8 +510,11 @@ export default function Canvas({
     let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
     ctx.textAlign = 'left';
     ctx.fillStyle = '#44ff44';
+
     if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = '#FFE045';
+    } else if (aircraft.is_colliding) {
+      ctx.fillStyle = '#aa2222';
     } else if (aircraft.flight_plan.departing === ourAirspace()) {
       ctx.fillStyle = '#3087f2';
     }
