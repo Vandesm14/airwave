@@ -258,16 +258,18 @@ $transparent-black: #000a;
           }
         }
 
-        &.selected {
+        &.colliding {
+          border: 1px solid #ff2222;
+
           .callsign {
-            color: #ffe045;
+            color: #ff2222;
             font-weight: bold;
           }
         }
 
-        &.colliding {
+        &.selected {
           .callsign {
-            color: #ff2222;
+            color: #ffe045;
             font-weight: bold;
           }
         }

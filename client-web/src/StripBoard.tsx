@@ -304,6 +304,14 @@ export default function StripBoard({
         Yours: {aircrafts().length - strips().None.length} (All:{' '}
         {aircrafts().length})
       </div>
+      {strips().Colliding.length > 0 ? (
+        <>
+          <div class="header">Colliding</div>
+          {strips().Colliding.map((strip) => (
+            <Strip strip={strip}></Strip>
+          ))}
+        </>
+      ) : null}
       {strips().Selected.length > 0 ? (
         <>
           <div class="header">Selected</div>
@@ -313,7 +321,7 @@ export default function StripBoard({
         </>
       ) : null}
       {stripEntries().map(([key, list]) =>
-        key !== 'None' && key !== 'Selected' ? (
+        key !== 'None' && key !== 'Selected' && key !== 'Colliding' ? (
           <>
             <div class="header">
               {key}
