@@ -7,17 +7,11 @@ use crate::{abbreviate_altitude, pathfinder::Node};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum TaskWaypointKind {
-  Approach,
-  Arrival,
-  Departure,
-  Direct,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TaskWaypoint {
-  pub id: Intern<String>,
-  pub kind: TaskWaypointKind,
+pub enum TaskWaypoint {
+  Approach(Intern<String>),
+  Arrival(Intern<String>),
+  Departure(Intern<String>),
+  Direct(Intern<String>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

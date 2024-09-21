@@ -6,9 +6,7 @@ use turborand::TurboRand;
 
 use crate::{
   angle_between_points,
-  command::{
-    CommandReply, CommandWithFreq, Task, TaskWaypoint, TaskWaypointKind,
-  },
+  command::{CommandReply, CommandWithFreq, Task, TaskWaypoint},
   engine::Bundle,
   entities::{
     airport::Runway,
@@ -458,18 +456,18 @@ pub fn parse_task_waypoints(
 ) -> Option<Vec<Node<NodeVORData>>> {
   let mut waypoint_strings: Vec<Intern<String>> = Vec::new();
   for wp in waypoints.iter() {
-    match wp.kind {
-      TaskWaypointKind::Approach => {
-        parse_approach(bundle, &mut waypoint_strings, wp.id)
+    match wp {
+      TaskWaypoint::Approach(id) => {
+        parse_approach(bundle, &mut waypoint_strings, *id)
       }
-      TaskWaypointKind::Arrival => {
-        parse_arrival(bundle, &mut waypoint_strings, wp.id)
+      TaskWaypoint::Arrival(id) => {
+        parse_arrival(bundle, &mut waypoint_strings, *id)
       }
-      TaskWaypointKind::Departure => {
-        parse_departure(bundle, &mut waypoint_strings, wp.id)
+      TaskWaypoint::Departure(id) => {
+        parse_departure(bundle, &mut waypoint_strings, *id)
       }
-      TaskWaypointKind::Direct => {
-        waypoint_strings.push(wp.id);
+      TaskWaypoint::Direct(id) => {
+        waypoint_strings.push(*id);
       }
     }
   }

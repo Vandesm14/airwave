@@ -9,7 +9,9 @@
         {
           "type": "direct",
           "value": [
-            "SAY"
+            {
+              "direct": "SAY"
+            }
           ]
         }
       ]
@@ -20,7 +22,9 @@
         {
           "type": "direct",
           "value": [
-            "ROAD"
+            {
+              "direct": "ROAD"
+            }
           ]
         }
       ]
@@ -31,8 +35,12 @@
         {
           "type": "direct",
           "value": [
-            "DUDE",
-            "ROAD"
+            {
+              "direct": "DUDE"
+            },
+            {
+              "direct": "ROAD"
+            }
           ]
         }
       ]
@@ -43,7 +51,142 @@
         {
           "type": "direct",
           "value": [
-            "A7"
+            {
+              "direct": "A7"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Follow red approach.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "approach": "RED"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Follow Romeo, Echo, Delta approach.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "approach": "RED"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Approach via OCEAN.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "approach": "OCEAN"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Follow red departure.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "departure": "RED"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Follow Romeo, Echo, Delta departure.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "departure": "RED"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Depart via OCEAN.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "departure": "OCEAN"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Follow red arrival.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "arrival": "RED"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Follow Romeo, Echo, Delta arrival.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "arrival": "RED"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Arrive via OCEAN.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "arrival": "OCEAN"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Direct to Bravo 1 then follow OCEAN arrival.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "direct": "B1"
+            },
+            {
+              "arrival": "OCEAN"
+            }
           ]
         }
       ]
