@@ -206,6 +206,7 @@ function Strip({ strip }: StripProps) {
       classList={{
         strip: true,
         theirs,
+        colliding: strip.is_colliding,
         selected: selectedAircraft() === strip.id,
         departure: airspace() === strip.flight_plan.departing,
       }}

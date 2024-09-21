@@ -264,6 +264,13 @@ $transparent-black: #000a;
             font-weight: bold;
           }
         }
+
+        &.colliding {
+          .callsign {
+            color: #ff2222;
+            font-weight: bold;
+          }
+        }
       }
     }
 
