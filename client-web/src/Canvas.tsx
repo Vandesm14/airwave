@@ -775,6 +775,40 @@ export default function Canvas({
     );
   }
 
+  function drawFlightPlanWaypoints(ctx: Ctx, aircraft: Aircraft) {
+    resetTransform(ctx);
+    let pos = scalePoint(aircraft.pos);
+
+    if (selectedAircraft() == aircraft.id) {
+      console.log(JSON.stringify(aircraft, null, 2));
+    }
+
+    if (
+      aircraft.state.type === 'taxiing' &&
+      selectedAircraft() == aircraft.id
+    ) {
+      ctx.strokeStyle = '#ff990033';
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.moveTo(pos[0], pos[1]);
+
+      for (let wp of aircraft.flight_plan.waypoints.slice().reverse()) {
+        let pos = scalePoint(wp.value.to);
+        ctx.lineTo(pos[0], pos[1]);
+      }
+      ctx.stroke();
+
+      for (let wp of aircraft.flight_plan.waypoints.slice().reverse()) {
+        ctx.fillStyle = '#ff9900';
+        let pos = scalePoint(wp.value.to);
+        ctx.beginPath();
+        ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
   function drawCollodingMessage(ctx: Ctx, aircrafts: Array<Aircraft>) {
     let names: Array<String> = aircrafts
       .filter((a) => a.is_colliding)
@@ -805,6 +839,10 @@ export default function Canvas({
 
     for (let aircraft of aircrafts.filter((a) => a.altitude >= 1000)) {
       drawBlip(ctx, aircraft);
+    }
+
+    for (let aircraft of aircrafts.filter((a) => a.id == selectedAircraft())) {
+      drawFlightPlanWaypoints(ctx, aircraft);
     }
   }
 

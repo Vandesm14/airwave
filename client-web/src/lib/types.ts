@@ -13,7 +13,7 @@ export type NodeVOR = {
   name: string;
   kind: 'vor';
   behavior: 'goto' | 'holdshort';
-  value: { to: Vec2 };
+  value: { to: Vec2; then: Array<unknown> };
 };
 
 export type AircraftStateFlying = {
@@ -68,6 +68,10 @@ export type Aircraft = {
   flight_plan: {
     departing: string;
     arriving: string;
+
+    speed: number;
+    altitude: number;
+    waypoints: Array<NodeVOR>;
   };
   callouts: {
     clearance: boolean;
