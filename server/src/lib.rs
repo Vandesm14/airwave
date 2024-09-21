@@ -43,6 +43,7 @@ pub mod airport;
 pub mod prompter;
 
 const SPAWN_LIMIT: usize = 30;
+const SPAWN_RATE_SECS: u64 = 60;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -130,11 +131,14 @@ impl CompatAdapter {
     self.spawn_random_aircraft();
 
     let mut i = 0;
-    let mut last_spawn = 0;
+    let mut last_spawn = 0.0;
     loop {
-      if i - last_spawn >= 500 && self.aircraft.len() < SPAWN_LIMIT {
+      let realtime = i as f32 * 1.0 / self.rate as f32;
+      if realtime - last_spawn >= SPAWN_RATE_SECS as f32
+        && self.aircraft.len() < SPAWN_LIMIT
+      {
         self.spawn_random_aircraft();
-        last_spawn = i;
+        last_spawn = realtime;
       }
 
       let dt = 1.0 / self.rate as f32;
@@ -151,8 +155,9 @@ impl CompatAdapter {
             ..
           })
         )
-      }) {
-        tracing::info!("Done ({i} steps).");
+      }) || self.aircraft.iter().any(|a| a.is_colliding)
+      {
+        tracing::info!("Done ({realtime} simulated seconds).");
         return;
       }
 
@@ -168,7 +173,7 @@ impl CompatAdapter {
         self.last_tick = Instant::now();
 
         if self.aircraft.len() < SPAWN_LIMIT
-          && self.last_spawn.elapsed() >= Duration::from_secs(150)
+          && self.last_spawn.elapsed() >= Duration::from_secs(SPAWN_RATE_SECS)
         {
           self.last_spawn = Instant::now();
           self.spawn_random_aircraft();
