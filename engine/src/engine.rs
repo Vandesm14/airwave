@@ -4,8 +4,9 @@ use actions::{Action, AircraftActionHandler};
 use effects::{
   AircraftContactApproachEffect, AircraftContactCenterEffect,
   AircraftContactClearanceEffect, AircraftIsNowParkedEffect,
-  AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
-  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
+  AircraftSetDescentOnAutoAirspaceEffect, AircraftUpdateAirspaceEffect,
+  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
+  AircraftUpdateTaxiingEffect,
 };
 use events::Event;
 use internment::Intern;
@@ -188,6 +189,7 @@ impl Engine {
       AircraftContactCenterEffect::run(aircraft, &mut bundle);
       AircraftContactClearanceEffect::run(aircraft, &mut bundle);
       AircraftContactApproachEffect::run(aircraft, &mut bundle);
+      AircraftSetDescentOnAutoAirspaceEffect::run(aircraft, &mut bundle);
 
       // Apply all actions
       if !bundle.actions.is_empty() {

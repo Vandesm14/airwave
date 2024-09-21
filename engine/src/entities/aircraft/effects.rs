@@ -11,6 +11,7 @@ use crate::{
   command::{CommandReply, CommandWithFreq},
   delta_angle,
   engine::Bundle,
+  entities::world::closest_airspace,
   heading_to_direction, inverse_degrees, move_point, normalize_angle,
   pathfinder::{NodeBehavior, NodeKind},
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
@@ -412,6 +413,28 @@ impl AircraftEffect for AircraftDeleteWhenInAirspaceEffect {
           bundle
             .events
             .push(Event::new(aircraft.id, EventKind::Delete));
+        }
+      }
+    }
+  }
+}
+
+pub struct AircraftSetDescentOnAutoAirspaceEffect;
+impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if let AircraftState::Flying { .. } = aircraft.state {
+      if let Some(airspace) = bundle
+        .airspaces
+        .iter()
+        .find(|a| a.id == aircraft.flight_plan.arriving)
+      {
+        if airspace.auto
+          && airspace.pos.distance_squared(aircraft.pos)
+            <= airspace.size.powf(2.0)
+        {
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::TargetAltitude(4000.0)));
         }
       }
     }
