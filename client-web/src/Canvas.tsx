@@ -159,8 +159,9 @@ export default function Canvas({
         ]);
         for (let aircraft of render().aircrafts) {
           let distance = calculateSquaredDistance(coords, aircraft.pos);
+          // TODO: Make the distance scale depending on the zoom level
           let maxDistance = isGround() ? Math.pow(200, 2) : Math.pow(8000, 2);
-          console.log(aircraft.id, aircraft.pos, coords, distance, maxDistance);
+
           if (
             distance <= maxDistance &&
             ((isGround() && aircraft.altitude < 1000) ||
