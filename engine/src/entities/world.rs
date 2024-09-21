@@ -7,7 +7,7 @@ use turborand::{rng::Rng, TurboRand};
 
 use crate::pathfinder::{Node, NodeVORData};
 
-use super::{airport::Airport, airspace::Airspace};
+use super::{aircraft::events::Event, airport::Airport, airspace::Airspace};
 
 pub fn find_random_airspace_with<'a>(
   airspaces: &'a [Airspace],
@@ -97,9 +97,9 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WaypointSet {
-  pub arrival: HashMap<Intern<String>, Vec<Intern<String>>>,
-  pub approach: HashMap<Intern<String>, Vec<Intern<String>>>,
-  pub departure: HashMap<Intern<String>, Vec<Intern<String>>>,
+  pub arrival: HashMap<Intern<String>, Vec<Node<NodeVORData>>>,
+  pub approach: HashMap<Intern<String>, Vec<Node<NodeVORData>>>,
+  pub departure: HashMap<Intern<String>, Vec<Node<NodeVORData>>>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

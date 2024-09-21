@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use glam::Vec2;
 use internment::Intern;
+use serde::{Deserialize, Serialize};
 use turborand::TurboRand;
 
 use crate::{
@@ -20,7 +21,7 @@ use super::{
   actions::ActionKind, Action, Aircraft, AircraftState, DEPARTURE_WAIT_RANGE,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventKind {
   // Any
   Speed(f32),
@@ -93,7 +94,7 @@ impl From<Task> for EventKind {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
   pub id: Intern<String>,
   pub kind: EventKind,
@@ -416,67 +417,68 @@ pub fn parse_waypoint_strings(
 
 pub fn parse_arrival(
   bundle: &Bundle,
-  waypoints: &mut Vec<Intern<String>>,
+  waypoints: &mut Vec<Node<NodeVORData>>,
   arrival_string: Intern<String>,
 ) {
-  if let Some(waypoint_strings) =
-    bundle.waypoint_sets.arrival.get(&arrival_string)
-  {
-    waypoints.extend(waypoint_strings);
+  if let Some(wps) = bundle.waypoint_sets.arrival.get(&arrival_string) {
+    waypoints.extend(wps.to_vec());
   }
 }
 
 pub fn parse_approach(
   bundle: &Bundle,
-  waypoints: &mut Vec<Intern<String>>,
+  waypoints: &mut Vec<Node<NodeVORData>>,
   approach_string: Intern<String>,
 ) {
-  if let Some(waypoint_strings) =
-    bundle.waypoint_sets.approach.get(&approach_string)
-  {
-    waypoints.extend(waypoint_strings);
+  if let Some(wps) = bundle.waypoint_sets.approach.get(&approach_string) {
+    waypoints.extend(wps.to_vec());
   }
 }
 
 pub fn parse_departure(
   bundle: &Bundle,
-  waypoints: &mut Vec<Intern<String>>,
+  waypoints: &mut Vec<Node<NodeVORData>>,
   departure_string: Intern<String>,
 ) {
-  if let Some(waypoint_strings) =
-    bundle.waypoint_sets.departure.get(&departure_string)
-  {
-    waypoints.extend(waypoint_strings);
+  if let Some(wps) = bundle.waypoint_sets.departure.get(&departure_string) {
+    waypoints.extend(wps.to_vec());
+  }
+}
+
+pub fn parse_direct(
+  bundle: &Bundle,
+  waypoints: &mut Vec<Node<NodeVORData>>,
+  name: Intern<String>,
+) {
+  if let Some(wp) = bundle.waypoints.iter().find(|wp| wp.name == name) {
+    waypoints.push(wp.clone());
   }
 }
 
 pub fn parse_task_waypoints(
   aircraft: &Aircraft,
   bundle: &mut Bundle,
-  waypoints: &[TaskWaypoint],
-) -> Option<Vec<Node<NodeVORData>>> {
-  let mut waypoint_strings: Vec<Intern<String>> = Vec::new();
-  for wp in waypoints.iter() {
+  task_waypoints: &[TaskWaypoint],
+) -> Vec<Node<NodeVORData>> {
+  let mut waypoints: Vec<Node<NodeVORData>> = Vec::new();
+  for wp in task_waypoints.iter() {
     match wp {
-      TaskWaypoint::Approach(id) => {
-        parse_approach(bundle, &mut waypoint_strings, *id)
-      }
-      TaskWaypoint::Arrival(id) => {
-        parse_arrival(bundle, &mut waypoint_strings, *id)
-      }
+      TaskWaypoint::Approach(id) => parse_approach(bundle, &mut waypoints, *id),
+      TaskWaypoint::Arrival(id) => parse_arrival(bundle, &mut waypoints, *id),
       TaskWaypoint::Departure(id) => {
-        parse_departure(bundle, &mut waypoint_strings, *id)
+        parse_departure(bundle, &mut waypoints, *id)
       }
       TaskWaypoint::Direct(id) => {
-        waypoint_strings.push(*id);
+        parse_direct(bundle, &mut waypoints, *id);
       }
       TaskWaypoint::Destination => {
-        waypoint_strings.push(aircraft.flight_plan.arriving);
+        let id = aircraft.flight_plan.arriving;
+        parse_direct(bundle, &mut waypoints, id);
       }
     }
   }
 
-  parse_waypoint_strings(bundle, &waypoint_strings)
+  waypoints
 }
 
 pub fn handle_direct_to_event(
@@ -484,12 +486,11 @@ pub fn handle_direct_to_event(
   bundle: &mut Bundle,
   waypoints: &[TaskWaypoint],
 ) {
-  if let Some(wps) = parse_task_waypoints(aircraft, bundle, waypoints) {
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::Flying(wps),
-    });
-  }
+  let waypoints = parse_task_waypoints(aircraft, bundle, waypoints);
+  bundle.actions.push(Action {
+    id: aircraft.id,
+    kind: ActionKind::Flying(waypoints),
+  });
 }
 
 pub fn handle_taxi_event(
@@ -614,7 +615,7 @@ pub fn handle_clearance_event(
   departure: Option<&[TaskWaypoint]>,
 ) {
   let waypoints = departure
-    .and_then(|departure| parse_task_waypoints(aircraft, bundle, departure))
+    .map(|departure| parse_task_waypoints(aircraft, bundle, departure))
     .unwrap_or_default();
 
   bundle.actions.push(Action {

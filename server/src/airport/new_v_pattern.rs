@@ -516,92 +516,48 @@ pub fn setup(
 
   //
 
-  waypoint_sets.arrival.insert(
-    Intern::from_ref("A6"),
-    vec![
-      Intern::from_ref("A6"),
-      waypoint_blaze.name,
-      waypoint_orbit.name,
-      waypoint_vista.name,
-    ],
-  );
-
-  waypoint_sets.arrival.insert(
-    Intern::from_ref("E4"),
-    vec![
-      Intern::from_ref("E4"),
-      waypoint_crest.name,
-      waypoint_orbit.name,
-      waypoint_vista.name,
-    ],
-  );
-
-  waypoint_sets.arrival.insert(
-    Intern::from_ref("A5"),
-    vec![
-      Intern::from_ref("A5"),
-      waypoint_swift.name,
-      waypoint_orbit.name,
-      waypoint_vista.name,
-    ],
-  );
-
-  waypoint_sets.arrival.insert(
-    Intern::from_ref("A9"),
-    vec![
-      Intern::from_ref("A9"),
-      waypoint_short.name,
-      waypoint_ready.name,
-      waypoint_sonic.name,
-    ],
-  );
-
-  waypoint_sets.arrival.insert(
-    Intern::from_ref("B1"),
-    vec![
-      Intern::from_ref("B1"),
-      waypoint_arrow.name,
-      waypoint_ready.name,
-      waypoint_sonic.name,
-    ],
-  );
-
-  //
-
   waypoint_sets.approach.insert(
     waypoint_blaze.name,
     vec![
-      waypoint_blaze.name,
-      waypoint_orbit.name,
-      waypoint_vista.name,
+      waypoint_blaze.clone(),
+      waypoint_orbit.clone(),
+      waypoint_vista
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
     ],
   );
 
   waypoint_sets.approach.insert(
     waypoint_crest.name,
     vec![
-      waypoint_crest.name,
-      waypoint_orbit.name,
-      waypoint_vista.name,
+      waypoint_crest.clone(),
+      waypoint_orbit.clone(),
+      waypoint_vista
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
     ],
   );
 
   waypoint_sets.approach.insert(
     waypoint_swift.name,
     vec![
-      waypoint_swift.name,
-      waypoint_orbit.name,
-      waypoint_vista.name,
+      waypoint_swift.clone(),
+      waypoint_orbit.clone(),
+      waypoint_vista
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
     ],
   );
 
   waypoint_sets.approach.insert(
     waypoint_royal.name,
     vec![
-      waypoint_royal.name,
-      waypoint_blaze.name,
-      waypoint_orbit.name,
-      waypoint_vista.name,
+      waypoint_royal.clone(),
+      waypoint_blaze.clone(),
+      waypoint_orbit.clone(),
+      waypoint_vista
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
     ],
   );
 
@@ -610,37 +566,45 @@ pub fn setup(
   waypoint_sets.approach.insert(
     waypoint_quick.name,
     vec![
-      waypoint_quick.name,
-      waypoint_ready.name,
-      waypoint_sonic.name,
+      waypoint_quick.clone(),
+      waypoint_ready.clone(),
+      waypoint_sonic
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
     ],
   );
 
   waypoint_sets.approach.insert(
     waypoint_short.name,
     vec![
-      waypoint_short.name,
-      waypoint_ready.name,
-      waypoint_sonic.name,
+      waypoint_short.clone(),
+      waypoint_ready.clone(),
+      waypoint_sonic
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
     ],
   );
 
   waypoint_sets.approach.insert(
     waypoint_arrow.name,
     vec![
-      waypoint_arrow.name,
-      waypoint_ready.name,
-      waypoint_sonic.name,
+      waypoint_arrow.clone(),
+      waypoint_ready.clone(),
+      waypoint_sonic
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
     ],
   );
 
   waypoint_sets.approach.insert(
     waypoint_ocean.name,
     vec![
-      waypoint_ocean.name,
-      waypoint_arrow.name,
-      waypoint_ready.name,
-      waypoint_sonic.name,
+      waypoint_ocean.clone(),
+      waypoint_arrow.clone(),
+      waypoint_ready.clone(),
+      waypoint_sonic
+        .clone()
+        .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
     ],
   );
 
@@ -649,33 +613,33 @@ pub fn setup(
   waypoint_sets.departure.insert(
     waypoint_royal.name,
     vec![
-      waypoint_quack.name,
-      waypoint_state.name,
-      waypoint_royal.name,
+      waypoint_quack.clone(),
+      waypoint_state.clone(),
+      waypoint_royal.clone(),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_state.name,
-    vec![waypoint_quack.name, waypoint_state.name],
+    vec![waypoint_quack.clone(), waypoint_state.clone()],
   );
 
   waypoint_sets.departure.insert(
     waypoint_unite.name,
     vec![
-      waypoint_quack.name,
-      waypoint_state.name,
-      waypoint_unite.name,
+      waypoint_quack.clone(),
+      waypoint_state.clone(),
+      waypoint_unite.clone(),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_blaze.name,
     vec![
-      waypoint_quack.name,
-      waypoint_state.name,
-      waypoint_royal.name,
-      waypoint_blaze.name,
+      waypoint_quack.clone(),
+      waypoint_state.clone(),
+      waypoint_royal.clone(),
+      waypoint_blaze.clone(),
     ],
   );
 
@@ -684,33 +648,33 @@ pub fn setup(
   waypoint_sets.departure.insert(
     waypoint_goose.name,
     vec![
-      waypoint_paper.name,
-      waypoint_ghost.name,
-      waypoint_goose.name,
+      waypoint_paper.clone(),
+      waypoint_ghost.clone(),
+      waypoint_goose.clone(),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_ghost.name,
-    vec![waypoint_paper.name, waypoint_ghost.name],
+    vec![waypoint_paper.clone(), waypoint_ghost.clone()],
   );
 
   waypoint_sets.departure.insert(
     waypoint_ocean.name,
     vec![
-      waypoint_paper.name,
-      waypoint_ghost.name,
-      waypoint_ocean.name,
+      waypoint_paper.clone(),
+      waypoint_ghost.clone(),
+      waypoint_ocean.clone(),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_arrow.name,
     vec![
-      waypoint_paper.name,
-      waypoint_ghost.name,
-      waypoint_ocean.name,
-      waypoint_arrow.name,
+      waypoint_paper.clone(),
+      waypoint_ghost.clone(),
+      waypoint_ocean.clone(),
+      waypoint_arrow.clone(),
     ],
   );
 

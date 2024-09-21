@@ -73,6 +73,13 @@ impl<T> Node<T> {
   }
 }
 
+impl Node<NodeVORData> {
+  pub fn with_behavior(mut self, behavior: Vec<EventKind>) -> Self {
+    self.value.then = behavior;
+    self
+  }
+}
+
 impl From<Gate> for Node<Vec2> {
   fn from(value: Gate) -> Self {
     Self {

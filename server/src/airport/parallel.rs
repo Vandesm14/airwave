@@ -249,7 +249,11 @@ pub fn setup(
 
   waypoint_sets.approach.insert(
     Intern::from_ref("FOAM"),
-    vec![waypoint_foam.name, waypoint_cork.name, waypoint_tack.name],
+    vec![
+      waypoint_foam.clone(),
+      waypoint_cork.clone(),
+      waypoint_tack.clone(),
+    ],
   );
 
   waypoints.push(waypoint_tack);
@@ -302,7 +306,11 @@ pub fn setup(
 
   waypoint_sets.approach.insert(
     Intern::from_ref("BALL"),
-    vec![waypoint_ball.name, waypoint_jest.name, waypoint_lord.name],
+    vec![
+      waypoint_ball.clone(),
+      waypoint_jest.clone(),
+      waypoint_lord.clone(),
+    ],
   );
 
   waypoints.push(waypoint_lord);
@@ -351,12 +359,12 @@ pub fn setup(
 
   waypoint_sets.departure.insert(
     Intern::from_ref("IDEA"),
-    vec![waypoint_note.name, waypoint_idea.name],
+    vec![waypoint_note.clone(), waypoint_idea.clone()],
   );
 
   waypoint_sets.departure.insert(
     Intern::from_ref("BULB"),
-    vec![waypoint_note.name, waypoint_bulb.name],
+    vec![waypoint_note.clone(), waypoint_bulb.clone()],
   );
 
   waypoints.push(waypoint_note);
@@ -405,12 +413,12 @@ pub fn setup(
 
   waypoint_sets.departure.insert(
     Intern::from_ref("TOWN"),
-    vec![waypoint_king.name, waypoint_town.name],
+    vec![waypoint_king.clone(), waypoint_town.clone()],
   );
 
   waypoint_sets.departure.insert(
     Intern::from_ref("GOLD"),
-    vec![waypoint_king.name, waypoint_gold.name],
+    vec![waypoint_king.clone(), waypoint_gold.clone()],
   );
 
   waypoints.push(waypoint_king);
