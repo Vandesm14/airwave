@@ -616,9 +616,10 @@ pub fn handle_clearance_event(
   altitude: Option<f32>,
   departure: Option<&[TaskWaypoint]>,
 ) {
-  let waypoints = departure
+  let mut waypoints = departure
     .map(|departure| parse_task_waypoints(aircraft, bundle, departure))
     .unwrap_or_default();
+  waypoints.reverse();
 
   bundle.actions.push(Action {
     id: aircraft.id,
