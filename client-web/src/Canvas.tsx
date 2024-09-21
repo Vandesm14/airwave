@@ -81,12 +81,12 @@ export default function Canvas({
 
   function scalePixelPoint(vec2: Vec2): Vec2 {
     let x = scalePixelsToFeet(vec2[0]);
-    let y = scalePixelsToFeet(vec2[1]);
+    let y = scalePixelsToFeet(-vec2[1]);
 
     x -= radar().shiftPoint.x;
     y += radar().shiftPoint.y;
 
-    return [x, -y];
+    return [x, y];
   }
 
   createEffect(() => {
@@ -157,11 +157,15 @@ export default function Canvas({
           e.offsetX - canvas.width * 0.5,
           e.offsetY - canvas.height * 0.5,
         ]);
-        for (let aircraft of aircrafts()) {
+        for (let aircraft of render().aircrafts) {
           let distance = calculateSquaredDistance(coords, aircraft.pos);
-          let maxDistance = Math.pow(4000, 2);
+          let maxDistance = isGround() ? Math.pow(200, 2) : Math.pow(8000, 2);
           console.log(aircraft.id, aircraft.pos, coords, distance, maxDistance);
-          if (distance <= maxDistance) {
+          if (
+            distance <= maxDistance &&
+            ((isGround() && aircraft.altitude < 1000) ||
+              (!isGround() && aircraft.altitude >= 1000))
+          ) {
             setSelectedAircraft(aircraft.id);
             break;
           }
