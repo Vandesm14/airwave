@@ -7,7 +7,7 @@ use turborand::{rng::Rng, TurboRand};
 
 use crate::pathfinder::{Node, NodeVORData};
 
-use super::{aircraft::events::Event, airport::Airport, airspace::Airspace};
+use super::{airport::Airport, airspace::Airspace};
 
 pub fn find_random_airspace_with<'a>(
   airspaces: &'a [Airspace],
