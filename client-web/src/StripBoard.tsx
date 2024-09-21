@@ -16,6 +16,7 @@ import {
 
 type Strips = {
   Selected: Array<Aircraft>;
+  Colliding: Array<Aircraft>;
   Center: Array<Aircraft>;
   Approach: Array<Aircraft>;
   Landing: Array<Aircraft>;
@@ -28,6 +29,7 @@ type Strips = {
 
 const newStrips = (): Strips => ({
   Selected: [],
+  Colliding: [],
   Center: [],
   Approach: [],
   Landing: [],
@@ -99,10 +101,14 @@ function assignAircraftToStrips(
       return 'Center';
     }
   } else {
-    if (aircraft.id === selectedAircraft) {
-      return 'Selected';
+    if (aircraft.is_colliding) {
+      return 'Colliding';
     } else {
-      return 'None';
+      if (aircraft.id === selectedAircraft) {
+        return 'Selected';
+      } else {
+        return 'None';
+      }
     }
   }
 }
