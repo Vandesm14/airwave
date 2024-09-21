@@ -56,6 +56,7 @@ async fn main() {
   update_tx.set_overflow(true);
 
   let rng = Rng::with_seed(0);
+  let mut world_rng = Rng::with_seed(0);
   let mut engine = CompatAdapter::new(
     command_rx,
     update_tx.clone(),
@@ -118,7 +119,7 @@ async fn main() {
     ..Default::default()
   };
 
-  airport.setup(&mut engine.rng)(
+  airport.setup(&mut world_rng)(
     &mut airport_ksfo,
     &mut engine.world.waypoints,
     &mut engine.world.waypoint_sets,
@@ -147,8 +148,8 @@ async fn main() {
       i += 1;
 
       let position = Vec2::new(
-        (engine.rng.f32() - 0.5) * world_radius,
-        (engine.rng.f32() - 0.5) * world_radius,
+        (world_rng.f32() - 0.5) * world_radius,
+        (world_rng.f32() - 0.5) * world_radius,
       );
 
       for airspace in engine.world.airspaces.iter() {
