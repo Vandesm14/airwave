@@ -514,13 +514,19 @@ pub fn setup(
     },
   };
 
-  //
+  // Runway 13 Approaches
 
   waypoint_sets.approach.insert(
     waypoint_blaze.name,
     vec![
-      waypoint_blaze.clone(),
-      waypoint_orbit.clone(),
+      waypoint_blaze.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
+      waypoint_orbit.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_vista
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
@@ -530,8 +536,14 @@ pub fn setup(
   waypoint_sets.approach.insert(
     waypoint_crest.name,
     vec![
-      waypoint_crest.clone(),
-      waypoint_orbit.clone(),
+      waypoint_crest.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
+      waypoint_orbit.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_vista
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
@@ -541,8 +553,14 @@ pub fn setup(
   waypoint_sets.approach.insert(
     waypoint_swift.name,
     vec![
-      waypoint_swift.clone(),
-      waypoint_orbit.clone(),
+      waypoint_swift.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
+      waypoint_orbit.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_vista
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
@@ -552,22 +570,34 @@ pub fn setup(
   waypoint_sets.approach.insert(
     waypoint_royal.name,
     vec![
-      waypoint_royal.clone(),
+      waypoint_royal.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
       waypoint_blaze.clone(),
-      waypoint_orbit.clone(),
+      waypoint_orbit.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_vista
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("13"))]),
     ],
   );
 
-  //
+  // Runway 22 Approaches
 
   waypoint_sets.approach.insert(
     waypoint_quick.name,
     vec![
-      waypoint_quick.clone(),
-      waypoint_ready.clone(),
+      waypoint_quick.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
+      waypoint_ready.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_sonic
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
@@ -577,8 +607,14 @@ pub fn setup(
   waypoint_sets.approach.insert(
     waypoint_short.name,
     vec![
-      waypoint_short.clone(),
-      waypoint_ready.clone(),
+      waypoint_short.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
+      waypoint_ready.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_sonic
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
@@ -588,8 +624,14 @@ pub fn setup(
   waypoint_sets.approach.insert(
     waypoint_arrow.name,
     vec![
-      waypoint_arrow.clone(),
-      waypoint_ready.clone(),
+      waypoint_arrow.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
+      waypoint_ready.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_sonic
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
@@ -599,9 +641,15 @@ pub fn setup(
   waypoint_sets.approach.insert(
     waypoint_ocean.name,
     vec![
-      waypoint_ocean.clone(),
+      waypoint_ocean.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(7000.0),
+        EventKind::SpeedAtOrBelow(300.0),
+      ]),
       waypoint_arrow.clone(),
-      waypoint_ready.clone(),
+      waypoint_ready.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrBelow(4000.0),
+        EventKind::SpeedAtOrBelow(230.0),
+      ]),
       waypoint_sonic
         .clone()
         .with_behavior(vec![EventKind::Land(Intern::from_ref("22"))]),
@@ -613,32 +661,59 @@ pub fn setup(
   waypoint_sets.departure.insert(
     waypoint_royal.name,
     vec![
-      waypoint_quack.clone(),
+      waypoint_quack.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
       waypoint_state.clone(),
-      waypoint_royal.clone(),
+      waypoint_royal.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_state.name,
-    vec![waypoint_quack.clone(), waypoint_state.clone()],
+    vec![
+      waypoint_quack.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
+      waypoint_state.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
+    ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_unite.name,
     vec![
-      waypoint_quack.clone(),
+      waypoint_quack.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
       waypoint_state.clone(),
-      waypoint_unite.clone(),
+      waypoint_unite.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_blaze.name,
     vec![
-      waypoint_quack.clone(),
+      waypoint_quack.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
       waypoint_state.clone(),
-      waypoint_royal.clone(),
+      waypoint_royal.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
       waypoint_blaze.clone(),
     ],
   );
@@ -648,32 +723,59 @@ pub fn setup(
   waypoint_sets.departure.insert(
     waypoint_goose.name,
     vec![
-      waypoint_paper.clone(),
+      waypoint_paper.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
       waypoint_ghost.clone(),
-      waypoint_goose.clone(),
+      waypoint_goose.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_ghost.name,
-    vec![waypoint_paper.clone(), waypoint_ghost.clone()],
+    vec![
+      waypoint_paper.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
+      waypoint_ghost.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
+    ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_ocean.name,
     vec![
-      waypoint_paper.clone(),
+      waypoint_paper.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
       waypoint_ghost.clone(),
-      waypoint_ocean.clone(),
+      waypoint_ocean.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
     ],
   );
 
   waypoint_sets.departure.insert(
     waypoint_arrow.name,
     vec![
-      waypoint_paper.clone(),
+      waypoint_paper.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(7000.0),
+        EventKind::SpeedAtOrAbove(250.0),
+      ]),
       waypoint_ghost.clone(),
-      waypoint_ocean.clone(),
+      waypoint_ocean.clone().with_behavior(vec![
+        EventKind::AltitudeAtOrAbove(13000.0),
+        EventKind::SpeedAtOrAbove(350.0),
+      ]),
       waypoint_arrow.clone(),
     ],
   );

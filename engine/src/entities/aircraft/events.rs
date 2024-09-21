@@ -25,12 +25,16 @@ use super::{
 pub enum EventKind {
   // Any
   Speed(f32),
+  SpeedAtOrBelow(f32),
+  SpeedAtOrAbove(f32),
   Frequency(f32),
   NamedFrequency(String),
 
   // Flying
   Heading(f32),
   Altitude(f32),
+  AltitudeAtOrBelow(f32),
+  AltitudeAtOrAbove(f32),
   DirectTo(Vec<TaskWaypoint>),
   ResumeOwnNavigation,
 
@@ -120,6 +124,20 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .actions
           .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
       }
+      EventKind::SpeedAtOrBelow(speed) => {
+        if aircraft.target.speed > *speed {
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
+        }
+      }
+      EventKind::SpeedAtOrAbove(speed) => {
+        if aircraft.target.speed < *speed {
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
+        }
+      }
       EventKind::Heading(heading) => {
         if let AircraftState::Flying { .. } = aircraft.state {
           bundle.actions.push(Action::new(
@@ -138,6 +156,22 @@ impl AircraftEventHandler for HandleAircraftEvent {
           aircraft.id,
           ActionKind::TargetAltitude(*altitude),
         ));
+      }
+      EventKind::AltitudeAtOrBelow(altitude) => {
+        if aircraft.target.altitude > *altitude {
+          bundle.actions.push(Action::new(
+            aircraft.id,
+            ActionKind::TargetAltitude(*altitude),
+          ));
+        }
+      }
+      EventKind::AltitudeAtOrAbove(altitude) => {
+        if aircraft.target.altitude < *altitude {
+          bundle.actions.push(Action::new(
+            aircraft.id,
+            ActionKind::TargetAltitude(*altitude),
+          ));
+        }
       }
       EventKind::Frequency(frequency) => {
         bundle
