@@ -46,34 +46,34 @@ type Duration = {
 
 export type Aircraft = {
   id: string;
-  frequency: number;
+  is_colliding: boolean;
 
   pos: Vec2;
-
-  target: {
-    /** Name of cleared runway to land on */
-    runway: null | string;
-    /** In Degrees (0 is north; up) */
-    heading: number;
-    /** In Knots */
-    speed: number;
-    /** In Feet */
-    altitude: number;
-  };
-
-  /** In Degrees (0 is north; up) */
-  heading: number;
   /** In Knots */
   speed: number;
+  /** In Degrees (0 is north; up) */
+  heading: number;
   /** In Feet */
   altitude: number;
 
   state: AircraftState;
+  target: {
+    /** In Knots */
+    speed: number;
+    /** In Degrees (0 is north; up) */
+    heading: number;
+    /** In Feet */
+    altitude: number;
+  };
   flight_plan: {
     departing: string;
     arriving: string;
   };
+  callouts: {
+    clearance: boolean;
+  };
 
+  frequency: number;
   created: Duration;
   airspace: string | null;
 };

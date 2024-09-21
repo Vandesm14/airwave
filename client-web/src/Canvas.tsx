@@ -10,7 +10,6 @@ import {
   Aircraft,
   Airspace,
   Gate,
-  NodeVec2,
   NodeVOR,
   Runway,
   Taxiway,
@@ -216,7 +215,7 @@ export default function Canvas({
 
     setRender((render) => {
       let now = Date.now();
-      let duration = isGround() ? 1000 * 0.5 : 1000 * 4;
+      let duration = isGround() ? 1000 * 0.5 : 1000 * 1;
 
       if (now - render.lastDraw > duration || render.doInitialDraw) {
         render.lastDraw = now;
@@ -425,7 +424,10 @@ export default function Canvas({
 
     resetTransform(ctx);
 
-    if (selectedAircraft() == aircraft.id) {
+    if (aircraft.is_colliding) {
+      ctx.fillStyle = '#ff2222';
+      ctx.strokeStyle = '#ff2222';
+    } else if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = '#aaaa00';
       ctx.strokeStyle = '#aaaa00';
     } else {

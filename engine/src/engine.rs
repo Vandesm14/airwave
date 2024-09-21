@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use actions::{Action, AircraftActionHandler};
 use effects::{
   AircraftContactApproachEffect, AircraftContactCenterEffect,
@@ -6,6 +8,8 @@ use effects::{
   AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
+use internment::Intern;
+use itertools::Itertools;
 use turborand::rng::Rng;
 
 use crate::{
@@ -64,18 +68,38 @@ impl Engine {
   pub fn tick(
     &mut self,
     world: &World,
-    aircraft: &mut [Aircraft],
+    aircrafts: &mut [Aircraft],
     rng: &mut Rng,
     dt: f32,
   ) -> Vec<Event> {
-    // let id_set: HashSet<Intern<String>> =
-    //   HashSet::from_iter(self.events.iter().map(|e| e.id));
     let mut bundle = Bundle::from_world(world, rng, dt);
+
+    let mut collisions: HashSet<Intern<String>> = HashSet::new();
+    for pair in aircrafts.iter().combinations(2) {
+      let aircraft = pair.first().unwrap();
+      let other_aircraft = pair.last().unwrap();
+
+      let distance = aircraft.pos.distance_squared(other_aircraft.pos);
+      let vertical_distance =
+        (aircraft.altitude - other_aircraft.altitude).abs();
+
+      if aircraft.altitude > 1000.0
+        && distance <= (10000.0_f32).powf(2.0)
+        && vertical_distance < 1000.0
+      {
+        collisions.insert(aircraft.id);
+        collisions.insert(other_aircraft.id);
+      }
+    }
+
+    aircrafts.iter_mut().for_each(|aircraft| {
+      aircraft.is_colliding = collisions.contains(&aircraft.id);
+    });
 
     if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
-    for aircraft in aircraft.iter_mut() {
+    for aircraft in aircrafts.iter_mut() {
       // Capture the previous state
       bundle.prev = aircraft.clone();
 

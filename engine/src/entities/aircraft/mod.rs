@@ -105,6 +105,7 @@ impl FlightPlan {
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub id: Intern<String>,
+  pub is_colliding: bool,
 
   pub pos: Vec2,
   pub speed: f32,
@@ -153,6 +154,7 @@ impl Aircraft {
   pub fn random_parked(gate: Gate, rng: &mut Rng, airspace: &Airspace) -> Self {
     Self {
       id: Intern::from(Self::random_callsign(rng)),
+      is_colliding: false,
 
       pos: gate.pos,
       speed: 0.0,
