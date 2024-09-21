@@ -486,7 +486,9 @@ pub fn handle_direct_to_event(
   bundle: &mut Bundle,
   waypoints: &[TaskWaypoint],
 ) {
-  let waypoints = parse_task_waypoints(aircraft, bundle, waypoints);
+  let mut waypoints = parse_task_waypoints(aircraft, bundle, waypoints);
+  waypoints.reverse();
+
   bundle.actions.push(Action {
     id: aircraft.id,
     kind: ActionKind::Flying(waypoints),
