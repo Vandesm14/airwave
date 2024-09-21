@@ -93,7 +93,14 @@ impl Engine {
     }
 
     aircrafts.iter_mut().for_each(|aircraft| {
-      aircraft.is_colliding = collisions.contains(&aircraft.id);
+      let is_colliding = collisions.contains(&aircraft.id);
+
+      // TODO: Fire collision events
+      // if is_colliding && aircraft.is_colliding != is_colliding {
+      //   self.events.push();
+      // }
+
+      aircraft.is_colliding = is_colliding;
     });
 
     if !self.events.is_empty() {
