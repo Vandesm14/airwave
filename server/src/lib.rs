@@ -14,7 +14,7 @@ use async_openai::{
   },
 };
 use engine::{
-  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
+  command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::Engine,
   entities::{
     aircraft::{
