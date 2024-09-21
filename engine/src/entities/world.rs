@@ -5,10 +5,7 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::{
-  pathfinder::{Node, NodeVORData},
-  serialize_hashmap_of_intern_string,
-};
+use crate::pathfinder::{Node, NodeVORData};
 
 use super::{airport::Airport, airspace::Airspace};
 
@@ -100,11 +97,8 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WaypointSet {
-  #[serde(serialize_with = "serialize_hashmap_of_intern_string")]
   pub arrival: HashMap<Intern<String>, Vec<Intern<String>>>,
-  #[serde(serialize_with = "serialize_hashmap_of_intern_string")]
   pub approach: HashMap<Intern<String>, Vec<Intern<String>>>,
-  #[serde(serialize_with = "serialize_hashmap_of_intern_string")]
   pub departure: HashMap<Intern<String>, Vec<Intern<String>>>,
 }
 

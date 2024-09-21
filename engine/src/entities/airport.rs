@@ -5,12 +5,11 @@ use serde::{Deserialize, Serialize};
 use crate::{
   inverse_degrees, move_point,
   pathfinder::{Object, Pathfinder},
-  serialize_intern_string, Line,
+  Line,
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airport {
-  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   pub center: Vec2,
   pub runways: Vec<Runway>,
@@ -56,7 +55,6 @@ impl Airport {
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Runway {
-  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   pub pos: Vec2,
   pub heading: f32,
@@ -75,7 +73,6 @@ impl Runway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Taxiway {
-  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   pub a: Vec2,
   pub b: Vec2,
@@ -96,7 +93,6 @@ impl Taxiway {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Terminal {
-  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   pub a: Vec2,
   pub b: Vec2,
@@ -109,7 +105,6 @@ pub struct Terminal {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Gate {
-  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   pub pos: Vec2,
   pub heading: f32,

@@ -3,8 +3,6 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::serialize_intern_string;
-
 use super::airport::Airport;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,7 +46,6 @@ impl Frequencies {
 // TODO: Support non-circular (regional) airspaces
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airspace {
-  #[serde(serialize_with = "serialize_intern_string")]
   pub id: Intern<String>,
   pub pos: Vec2,
   pub size: f32,

@@ -30,31 +30,6 @@ pub fn normalize_angle(angle: f32) -> f32 {
   (360.0 + angle) % 360.0
 }
 
-pub fn serialize_intern_string<S>(
-  intern: &Intern<String>,
-  serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  intern.to_string().serialize(serializer)
-}
-
-pub fn serialize_hashmap_of_intern_string<S>(
-  map: &HashMap<Intern<String>, Vec<Intern<String>>>,
-  serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let new_map: HashMap<String, Vec<String>> =
-    HashMap::from_iter(map.iter().map(|(k, v)| {
-      (k.to_string(), v.iter().map(|x| x.to_string()).collect())
-    }));
-
-  new_map.serialize(serializer)
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct Line(pub Vec2, pub Vec2);
 
