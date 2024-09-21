@@ -14,7 +14,7 @@ async-channel.workspace = true
 async-broadcast.workspace = true
 
 serde.workspace = true
-serde_json.workspace = true
+bson.workspace = true
 internment.workspace = true
 
 tracing.workspace = true

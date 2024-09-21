@@ -327,7 +327,7 @@ pub async fn broadcast_updates_to(
       Err(async_broadcast::RecvError::Closed) => break,
     };
 
-    let ser = match serde_json::to_string(&update) {
+    let ser = match bson::to_vec(&update) {
       Ok(ser) => ser,
       Err(e) => {
         tracing::error!("Unable to serialise update: {e}");
@@ -335,7 +335,7 @@ pub async fn broadcast_updates_to(
       }
     };
 
-    if let Err(e) = writer.send(Message::Text(ser)).await {
+    if let Err(e) = writer.send(Message::Binary(ser)).await {
       match e {
         tungstenite::Error::ConnectionClosed => break,
         tungstenite::Error::AlreadyClosed
@@ -374,8 +374,8 @@ pub async fn receive_commands_from(
           }
         };
 
-        if let Message::Text(text) = message {
-          let req: FrontendRequest = match serde_json::from_str(&text) {
+        if let Message::Binary(text) = message {
+          let req: FrontendRequest = match bson::from_slice(&text) {
             Ok(req) => req,
             Err(e) => {
               tracing::error!("Received malformed command: {e}");

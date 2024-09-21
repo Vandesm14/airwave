@@ -13,6 +13,7 @@ import { createEffect, createSignal, onMount } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
+import { BSON } from './../node_modules/bson/lib/bson.mjs';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -60,7 +61,7 @@ export default function App() {
       blob.arrayBuffer().then((value) => {
         console.log('send voice request');
         socket.send(
-          JSON.stringify({
+          BSON.serialize({
             type: 'voice',
             value: {
               data: [...new Uint8Array(value)],
@@ -84,7 +85,7 @@ export default function App() {
 
   function sendTextMessage(text: string) {
     socket.send(
-      JSON.stringify({ type: 'text', value: { text, frequency: frequency() } })
+      BSON.serialize({ type: 'text', value: { text, frequency: frequency() } })
     );
   }
 
@@ -129,10 +130,11 @@ export default function App() {
     socket.send(JSON.stringify({ type: 'connect' }));
   };
 
-  socket.onmessage = function (event) {
+  socket.onmessage = async function (event) {
     // console.log(`[message] Data received from server: ${event.data}`);
 
-    let json: ServerEvent = JSON.parse(event.data);
+    let bytes = await event.data.arrayBuffer();
+    let json: ServerEvent = BSON.deserialize(bytes) as any;
     switch (json.type) {
       case 'aircraft':
         setAircrafts(json.value);
