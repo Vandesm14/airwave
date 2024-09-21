@@ -4,10 +4,8 @@ use glam::Vec2;
 use internment::Intern;
 
 use crate::{
-  closest_point_on_line,
   entities::airport::Runway,
   pathfinder::{Node, NodeBehavior, NodeVORData},
-  Line,
 };
 
 use super::{Aircraft, AircraftCallouts, AircraftState};
