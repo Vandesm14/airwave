@@ -152,22 +152,47 @@ export default function Canvas({
           return { ...radar };
         });
 
-        let coords: Vec2 = scalePixelPoint([
+        // Convert the cursor position to your coordinate system
+        const coords: Vec2 = scalePixelPoint([
           e.offsetX - canvas.width * 0.5,
           e.offsetY - canvas.height * 0.5,
         ]);
-        for (let aircraft of render().aircrafts) {
-          let distance = calculateSquaredDistance(coords, aircraft.pos);
-          let maxDistance = Math.pow(scalePixelsToFeet(100), 2);
 
-          if (
-            distance <= maxDistance &&
-            ((isGround() && aircraft.altitude < 1000) ||
-              (!isGround() && aircraft.altitude >= 1000))
-          ) {
-            setSelectedAircraft(aircraft.id);
-            break;
+        // Initialize variables to keep track of the closest aircraft
+        let closestAircraft = null;
+        let smallestDistance = Infinity;
+
+        // Define the maximum allowable distance squared
+        const maxDistanceSquared = Math.pow(scalePixelsToFeet(100), 2);
+
+        // Iterate through all aircraft to find the closest one within the criteria
+        for (const aircraft of render().aircrafts) {
+          // Calculate the squared distance between the cursor and the aircraft
+          const distanceSquared = calculateSquaredDistance(
+            coords,
+            aircraft.pos
+          );
+
+          // Check if the aircraft is within the maximum distance
+          if (distanceSquared <= maxDistanceSquared) {
+            // Check altitude based on whether it's on the ground or not
+            const altitudeCondition = isGround()
+              ? aircraft.altitude < 1000
+              : aircraft.altitude >= 1000;
+
+            if (altitudeCondition) {
+              // If this aircraft is closer than any previously found, update the closestAircraft
+              if (distanceSquared < smallestDistance) {
+                smallestDistance = distanceSquared;
+                closestAircraft = aircraft;
+              }
+            }
           }
+        }
+
+        // After checking all aircraft, select the closest one if any were found
+        if (closestAircraft !== null) {
+          setSelectedAircraft(closestAircraft.id);
         }
       });
       canvas.addEventListener('mouseup', (_) => {
