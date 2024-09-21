@@ -108,7 +108,7 @@ async fn main() {
     size: MANUAL_TOWER_AIRSPACE_RADIUS,
     airports: vec![],
     auto: false,
-    altitude: 0.0..=7000.0,
+    altitude: 0.0..=10000.0,
     frequencies: player_one_frequencies.clone(),
   };
 
@@ -171,7 +171,7 @@ async fn main() {
       size: AUTO_TOWER_AIRSPACE_RADIUS,
       airports: vec![],
       auto: true,
-      altitude: 0.0..=7000.0,
+      altitude: 0.0..=10000.0,
       frequencies: player_one_frequencies.clone(),
     });
 
