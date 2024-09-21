@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use std::{ops::Mul, time::SystemTime};
 
 use super::{
   actions::ActionKind,
@@ -11,7 +11,6 @@ use crate::{
   command::{CommandReply, CommandWithFreq},
   delta_angle,
   engine::Bundle,
-  entities::world::closest_airspace,
   heading_to_direction, inverse_degrees, move_point, normalize_angle,
   pathfinder::{NodeBehavior, NodeKind},
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
@@ -409,7 +408,7 @@ impl AircraftEffect for AircraftDeleteWhenInAirspaceEffect {
       if let Some(airspace) = aircraft.airspace.and_then(|airspace_id| {
         bundle.airspaces.iter().find(|a| a.id == airspace_id)
       }) {
-        if airspace.id == aircraft.flight_plan.arriving && airspace.auto {
+        if airspace.auto && airspace.id == aircraft.flight_plan.arriving {
           bundle
             .events
             .push(Event::new(aircraft.id, EventKind::Delete));
@@ -430,11 +429,14 @@ impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
       {
         if airspace.auto
           && airspace.pos.distance_squared(aircraft.pos)
-            <= airspace.size.powf(2.0)
+            <= airspace.size.mul(2.0).powf(2.0)
         {
           bundle
             .actions
             .push(Action::new(aircraft.id, ActionKind::TargetAltitude(4000.0)));
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::TargetSpeed(250.0)));
         }
       }
     }

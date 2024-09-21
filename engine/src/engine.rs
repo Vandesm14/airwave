@@ -3,10 +3,10 @@ use std::collections::HashSet;
 use actions::{Action, AircraftActionHandler};
 use effects::{
   AircraftContactApproachEffect, AircraftContactCenterEffect,
-  AircraftContactClearanceEffect, AircraftIsNowParkedEffect,
-  AircraftSetDescentOnAutoAirspaceEffect, AircraftUpdateAirspaceEffect,
-  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
-  AircraftUpdateTaxiingEffect,
+  AircraftContactClearanceEffect, AircraftDeleteWhenInAirspaceEffect,
+  AircraftIsNowParkedEffect, AircraftSetDescentOnAutoAirspaceEffect,
+  AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
+  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
 use internment::Intern;
@@ -189,6 +189,7 @@ impl Engine {
       AircraftContactCenterEffect::run(aircraft, &mut bundle);
       AircraftContactClearanceEffect::run(aircraft, &mut bundle);
       AircraftContactApproachEffect::run(aircraft, &mut bundle);
+      AircraftDeleteWhenInAirspaceEffect::run(aircraft, &mut bundle);
       AircraftSetDescentOnAutoAirspaceEffect::run(aircraft, &mut bundle);
 
       // Apply all actions
@@ -205,7 +206,7 @@ impl Engine {
 
     // Capture the left over events and actions for next time
     if !bundle.events.is_empty() {
-      tracing::trace!("new events: {:?}", bundle.events);
+      tracing::info!("new events: {:?}", bundle.events);
     }
     self.events = core::mem::take(&mut bundle.events);
 

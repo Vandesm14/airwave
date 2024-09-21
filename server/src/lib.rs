@@ -146,6 +146,7 @@ impl CompatAdapter {
         self
           .engine
           .tick(&self.world, &mut self.aircraft, &mut self.rng, dt);
+      self.cleanup(&events);
 
       if self.aircraft.iter().any(|aircraft| {
         if let Some(airspace) = self
@@ -220,25 +221,30 @@ impl CompatAdapter {
               .try_broadcast(OutgoingReply::Reply(command.clone().into()))
               .unwrap();
           }
-
-          if let Event {
-            id,
-            kind: EventKind::Delete,
-          } = event
-          {
-            let index = self
-              .aircraft
-              .iter()
-              .enumerate()
-              .find_map(|(i, a)| (a.id == *id).then_some(i));
-            if let Some(index) = index {
-              self.aircraft.swap_remove(index);
-            }
-          }
         }
 
+        self.cleanup(&events);
         self.broadcast_aircraft();
         // TODO: self.save_world();
+      }
+    }
+  }
+
+  fn cleanup(&mut self, events: &[Event]) {
+    for event in events.iter() {
+      if let Event {
+        id,
+        kind: EventKind::Delete,
+      } = event
+      {
+        let index = self
+          .aircraft
+          .iter()
+          .enumerate()
+          .find_map(|(i, a)| (a.id == *id).then_some(i));
+        if let Some(index) = index {
+          self.aircraft.swap_remove(index);
+        }
       }
     }
   }
