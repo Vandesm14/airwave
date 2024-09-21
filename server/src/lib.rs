@@ -216,10 +216,12 @@ impl CompatAdapter {
             ..
           } = event
           {
-            self
+            if let Err(e) = self
               .outgoing_sender
               .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-              .unwrap();
+            {
+              tracing::error!("error sending outgoing reply: {e}")
+            }
           }
         }
 
