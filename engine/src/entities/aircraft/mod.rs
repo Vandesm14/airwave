@@ -29,11 +29,16 @@ const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftCallouts {
   pub clearance: bool,
+  pub approach: bool,
 }
 
 impl AircraftCallouts {
   pub fn mark_clearance(mut self) -> Self {
     self.clearance = true;
+    self
+  }
+  pub fn mark_approach(mut self) -> Self {
+    self.approach = true;
     self
   }
 }
