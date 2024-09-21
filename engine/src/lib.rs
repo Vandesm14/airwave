@@ -226,9 +226,9 @@ pub fn heading_to_direction(heading: f32) -> &'static str {
 /// Abbreviates an altitude to feet or flight level (depending on the altitude).
 pub fn abbreviate_altitude(altitude: f32) -> String {
   if altitude < 13000.0 {
-    format!("{:?} feet", altitude.round())
+    format!("{} thousand feet", (altitude / 1000.0).round())
   } else {
-    format!("Flight Level {:?}", (altitude / 100.0).round())
+    format!("Flight Level {}", (altitude / 100.0).round())
   }
 }
 
