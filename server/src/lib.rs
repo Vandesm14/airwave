@@ -42,7 +42,7 @@ use turborand::rng::Rng;
 pub mod airport;
 pub mod prompter;
 
-const SPAWN_LIMIT: usize = 30;
+const SPAWN_LIMIT: usize = 40;
 const SPAWN_RATE_SECS: u64 = 60;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -67,11 +67,11 @@ async fn main() {
 
   let player_one_frequencies = Frequencies {
     clearance: 118.7,
-    approach: 118.5,
-    departure: 118.5,
+    approach: 118.6,
+    departure: 118.6,
     tower: 118.5,
     ground: 118.5,
-    center: 118.6,
+    center: 118.7,
   };
 
   // let player_two_frequencies = Frequencies {
