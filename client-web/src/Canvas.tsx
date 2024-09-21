@@ -215,7 +215,7 @@ export default function Canvas({
 
     setRender((render) => {
       let now = Date.now();
-      let duration = isGround() ? 1000 * 0.5 : 1000 * 1;
+      let duration = isGround() ? 1000 * 0.5 : 1000 * 4;
 
       if (now - render.lastDraw > duration || render.doInitialDraw) {
         render.lastDraw = now;
@@ -261,6 +261,8 @@ export default function Canvas({
       } else {
         drawTower(ctx, world(), render().aircrafts);
       }
+
+      drawCollodingMessage(ctx, render().aircrafts);
     }
   }
 
@@ -446,16 +448,29 @@ export default function Canvas({
     );
     ctx.fill();
 
-    // Draw the separation circle
+    // Draw the collision circle
     ctx.beginPath();
     ctx.arc(
       pos[0],
       pos[1],
-      scaleFeetToPixels(nauticalMilesToFeet * 0.8),
+      scaleFeetToPixels(nauticalMilesToFeet * 1),
       0,
       Math.PI * 2
     );
     ctx.stroke();
+
+    // Draw the separation circle
+    if (aircraft.is_colliding) {
+      ctx.beginPath();
+      ctx.arc(
+        pos[0],
+        pos[1],
+        scaleFeetToPixels(nauticalMilesToFeet * 8),
+        0,
+        Math.PI * 2
+      );
+      ctx.stroke();
+    }
 
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
@@ -736,6 +751,19 @@ export default function Canvas({
       pos[0] + spacing,
       pos[1] - spacing + fontSize() * (drawAlt ? 2 : 1)
     );
+  }
+
+  function drawCollodingMessage(ctx: Ctx, aircrafts: Array<Aircraft>) {
+    let names: Array<String> = aircrafts
+      .filter((a) => a.is_colliding)
+      .map((a) => a.id);
+    if (names.length > 0) {
+      ctx.font = `900 ${24}px monospace`;
+      let message = `SEPARATION WARNING: ${names.join(', ')}`;
+      ctx.fillStyle = '#ff0000';
+      ctx.textAlign = 'center';
+      ctx.fillText(message, 0, -canvas.height * 0.5 + 100);
+    }
   }
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
