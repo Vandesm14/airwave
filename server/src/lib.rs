@@ -114,6 +114,13 @@ impl CompatAdapter {
       aircraft.id = Intern::from(Aircraft::random_callsign(&mut self.rng));
     }
 
+    if aircraft.flight_plan.departing == aircraft.flight_plan.arriving {
+      tracing::warn!(
+        "deleted a flight departing and arriving at the same airspace"
+      );
+      return;
+    }
+
     self.aircraft.push(aircraft);
   }
 
