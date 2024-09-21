@@ -184,13 +184,11 @@ impl Aircraft {
     arrival: &Airspace,
     rng: &mut Rng,
   ) -> Self {
-    // TODO: when depart from airport
-    let arr_airport = arrival.find_random_airport(rng).unwrap();
     Aircraft {
       id: Intern::from(Aircraft::random_callsign(rng)),
       pos: departure.pos,
       speed: 400.0,
-      heading: angle_between_points(departure.pos, arr_airport.center),
+      heading: angle_between_points(departure.pos, arrival.pos),
       altitude: 13000.0,
       state: AircraftState::Flying {
         waypoints: vec![Node::new(
@@ -203,7 +201,7 @@ impl Aircraft {
           },
         )],
       },
-      flight_plan: FlightPlan::new(departure.id, arr_airport.id),
+      flight_plan: FlightPlan::new(departure.id, arrival.id),
       frequency: arrival.frequencies.center,
       airspace: Some(departure.id),
       ..Default::default()

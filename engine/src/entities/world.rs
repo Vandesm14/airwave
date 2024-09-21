@@ -14,17 +14,21 @@ use super::{airport::Airport, airspace::Airspace};
 
 pub fn find_random_airspace_with<'a>(
   airspaces: &'a [Airspace],
-  auto: bool,
+  auto: Option<bool>,
   require_airports: bool,
   rng: &mut Rng,
 ) -> Option<&'a Airspace> {
   let filtered_airspaces = airspaces.iter().filter(|a| {
-    if auto != a.auto {
+    if let Some(auto) = auto {
+      if auto != a.auto {
+        return false;
+      }
+    }
+
+    if require_airports && a.airports.is_empty() {
       return false;
     }
-    if require_airports {
-      return !a.airports.is_empty();
-    }
+
     true
   });
 
@@ -46,14 +50,14 @@ pub fn find_random_departure<'a>(
   // that a departure airspace needs an airport. This just saves us time
   // when testing and messing about with single airspaces instead of those
   // plus an airport.
-  find_random_airspace_with(airspaces, true, false, rng)
+  find_random_airspace_with(airspaces, Some(true), false, rng)
 }
 
 pub fn find_random_arrival<'a>(
   airspaces: &'a [Airspace],
   rng: &mut Rng,
 ) -> Option<&'a Airspace> {
-  find_random_airspace_with(airspaces, false, true, rng)
+  find_random_airspace_with(airspaces, None, false, rng)
 }
 
 pub fn closest_airport(
