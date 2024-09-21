@@ -4,8 +4,10 @@ use glam::Vec2;
 use internment::Intern;
 
 use crate::{
+  closest_point_on_line,
   entities::airport::Runway,
   pathfinder::{Node, NodeBehavior, NodeVORData},
+  Line,
 };
 
 use super::{Aircraft, AircraftCallouts, AircraftState};
@@ -152,7 +154,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       }
       ActionKind::Flying(waypoints) => {
         aircraft.state = AircraftState::Flying {
-          waypoints: waypoints.clone(),
+          waypoints: prune_waypoints(aircraft, waypoints),
         }
       }
       ActionKind::Taxi { current, waypoints } => {
@@ -166,4 +168,92 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       }
     }
   }
+}
+
+fn prune_waypoints(
+  aircraft: &Aircraft,
+  waypoints: &[Node<NodeVORData>],
+) -> Vec<Node<NodeVORData>> {
+  if waypoints.len() < 2 {
+    return waypoints.to_vec();
+  }
+
+  let waypoints = waypoints.iter().rev().cloned().collect::<Vec<_>>();
+  // let mut distance = f32::MAX;
+  // let mut index_of_closest = 0;
+  // for (i, wp) in waypoints.iter().enumerate() {
+  //   let our_distance = aircraft.pos.distance_squared(wp.value.to);
+  //   if our_distance < distance {
+  //     distance = our_distance;
+  //     index_of_closest = i;
+  //   }
+  // }
+
+  // let before = if index_of_closest > 0 {
+  //   waypoints.get(index_of_closest - 1)
+  // } else {
+  //   None
+  // };
+  // let closest = waypoints.get(index_of_closest).unwrap();
+  // let after = if index_of_closest != waypoints.len() - 1 {
+  //   waypoints.get(index_of_closest + 1)
+  // } else {
+  //   None
+  // };
+
+  // let line_before = before.map(|w| Line::new(w.value.to, closest.value.to));
+  // let line_after = after.map(|w| Line::new(w.value.to, closest.value.to));
+
+  // let point_line_before =
+  //   line_before.map(|l| closest_point_on_line(aircraft.pos, l.0, l.1));
+  // let point_line_after =
+  //   line_after.map(|l| closest_point_on_line(aircraft.pos, l.0, l.1));
+
+  // let distance_line_before =
+  //   point_line_before.map(|p| p.distance_squared(aircraft.pos));
+  // let distance_line_after =
+  //   point_line_after.map(|p| p.distance_squared(aircraft.pos));
+
+  // println!("closest: {index_of_closest:?}");
+
+  // let mut prune_index = 0;
+  // if let Some((distance_line_before, distance_line_after)) =
+  //   distance_line_before.zip(distance_line_after)
+  // {
+  //   if distance_line_before < distance_line_after {
+  //     // use before point
+  //     prune_index = index_of_closest;
+  //   } else {
+  //     // use after point
+  //     prune_index = index_of_closest.saturating_add(1).min(waypoints.len() - 1);
+  //   }
+  // }
+
+  // println!(
+  //   "{}; {:?} prune_index: {:?}",
+  //   aircraft.id, waypoints, prune_index
+  // );
+
+  // waypoints.iter().skip(prune_index).rev().cloned().collect()
+
+  if waypoints.len() < 2 {
+    return waypoints.iter().rev().cloned().collect();
+  }
+
+  let mut skip_amount = 0;
+
+  for (i, wp) in waypoints.windows(2).enumerate() {
+    let a = wp.first().unwrap();
+    let b = wp.last().unwrap();
+
+    let wp_distance = a.value.to.distance_squared(b.value.to);
+    let distance = aircraft.pos.distance_squared(b.value.to);
+
+    if distance < wp_distance {
+      println!("was: {:?}", a.name);
+      skip_amount = i + 1;
+    }
+  }
+
+  waypoints.iter().skip(skip_amount).rev().cloned().collect()
 }

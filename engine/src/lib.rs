@@ -233,6 +233,7 @@ pub fn abbreviate_altitude(altitude: f32) -> String {
   }
 }
 
+// TODO: Use [`Line`] instead
 fn closest_point_on_line(
   point: Vec2,
   line_start: Vec2,
