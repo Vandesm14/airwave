@@ -262,7 +262,7 @@ export default function Canvas({
         drawTower(ctx, world(), render().aircrafts);
       }
 
-      drawCollodingMessage(ctx, render().aircrafts);
+      drawCollodingMessage(ctx, aircrafts());
     }
   }
 
