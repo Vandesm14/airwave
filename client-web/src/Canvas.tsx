@@ -26,6 +26,7 @@ import {
   onMount,
 } from 'solid-js';
 import {
+  calculateSquaredDistance,
   headingToDegrees,
   knotToFeetPerSecond,
   midpointBetweenPoints,
@@ -50,7 +51,7 @@ export default function Canvas({
 
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
-  let [selectedAircraft] = useAtom(selectedAircraftAtom);
+  let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
   let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
@@ -74,6 +75,16 @@ export default function Canvas({
 
     x = scaleFeetToPixels(x);
     y = scaleFeetToPixels(y);
+
+    return [x, -y];
+  }
+
+  function scalePixelPoint(vec2: Vec2): Vec2 {
+    let x = scalePixelsToFeet(vec2[0]);
+    let y = scalePixelsToFeet(vec2[1]);
+
+    x -= radar().shiftPoint.x;
+    y += radar().shiftPoint.y;
 
     return [x, -y];
   }
@@ -141,6 +152,20 @@ export default function Canvas({
 
           return { ...radar };
         });
+
+        let coords: Vec2 = scalePixelPoint([
+          e.offsetX - canvas.width * 0.5,
+          e.offsetY - canvas.height * 0.5,
+        ]);
+        for (let aircraft of aircrafts()) {
+          let distance = calculateSquaredDistance(coords, aircraft.pos);
+          let maxDistance = Math.pow(4000, 2);
+          console.log(aircraft.id, aircraft.pos, coords, distance, maxDistance);
+          if (distance <= maxDistance) {
+            setSelectedAircraft(aircraft.id);
+            break;
+          }
+        }
       });
       canvas.addEventListener('mouseup', (_) => {
         setRadar((radar) => {
