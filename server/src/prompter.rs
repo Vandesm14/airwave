@@ -194,7 +194,7 @@ impl Prompter {
   pub async fn execute(&self) -> Result<Command, Error> {
     let command = self.execute_hidden().await?;
 
-    tracing::debug!("execution result: {:?}", command);
+    tracing::info!("prompt result: {:?}", command);
 
     Ok(command)
   }
