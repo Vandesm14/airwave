@@ -353,20 +353,22 @@ impl AircraftEffect for AircraftContactApproachEffect {
           .iter()
           .find(|a| a.id == aircraft.airspace.unwrap())
         {
-          let heading = angle_between_points(aircraft.pos, airspace.pos);
-          let direction = heading_to_direction(heading);
+          if !airspace.auto {
+            let heading = angle_between_points(aircraft.pos, airspace.pos);
+            let direction = heading_to_direction(heading);
 
-          bundle.events.push(Event::new(
-            aircraft.id,
-            EventKind::Callout(CommandWithFreq::new_reply(
-              aircraft.id.to_string(),
-              aircraft.frequency,
-              CommandReply::ArriveInAirspace {
-                direction: direction.into(),
-                altitude: aircraft.altitude,
-              },
-            )),
-          ));
+            bundle.events.push(Event::new(
+              aircraft.id,
+              EventKind::Callout(CommandWithFreq::new_reply(
+                aircraft.id.to_string(),
+                aircraft.frequency,
+                CommandReply::ArriveInAirspace {
+                  direction: direction.into(),
+                  altitude: aircraft.altitude,
+                },
+              )),
+            ));
+          }
         }
       }
     }
