@@ -152,6 +152,7 @@ impl CompatAdapter {
           })
         )
       }) {
+        tracing::info!("Done ({i} steps).");
         return;
       }
 
