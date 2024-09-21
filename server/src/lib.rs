@@ -147,15 +147,19 @@ impl CompatAdapter {
           .engine
           .tick(&self.world, &mut self.aircraft, &mut self.rng, dt);
 
-      if events.into_iter().any(|e| {
-        matches!(
-          e.kind,
-          EventKind::Callout(CommandWithFreq {
-            reply: CommandReply::ArriveInAirspace { .. },
-            ..
-          })
-        )
-      }) || self.aircraft.iter().any(|a| a.is_colliding)
+      if self.aircraft.iter().any(|aircraft| {
+        if let Some(airspace) = self
+          .world
+          .airspaces
+          .iter()
+          .find(|a| a.id == aircraft.flight_plan.arriving)
+        {
+          return !airspace.auto && airspace.contains_point(aircraft.pos, None);
+        }
+
+        false
+      })
+      // || self.aircraft.iter().any(|a| a.is_colliding)
       {
         tracing::info!("Done ({realtime} simulated seconds).");
         return;
