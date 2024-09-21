@@ -81,7 +81,7 @@ pub struct PromptObject {
 #[derive(Error, Debug)]
 pub enum LoadPromptError {
   #[error("failed to deserialize: {0}")]
-  Deserialize(#[from] serde_json::Error),
+  Deserialize(serde_json::Error, String),
   #[error("failed to load file: {0}")]
   FS(String),
 }
@@ -106,8 +106,6 @@ pub struct Prompter {
 
 #[derive(Error, Debug)]
 pub enum Error {
-  #[error("failed to deserialize: {0}")]
-  Deserialize(#[from] serde_json::Error),
   #[error("{0}")]
   LoadPromptError(#[from] LoadPromptError),
   #[error("error from OpenAI: {0}")]
@@ -127,8 +125,8 @@ impl Prompter {
   fn load_prompt(path: PathBuf) -> Result<Vec<String>, LoadPromptError> {
     let prompt = fs::read_to_string(path.clone())
       .map_err(|_| LoadPromptError::FS(path.to_str().unwrap().into()))?;
-    let object: PromptObject =
-      serde_json::from_str(&prompt).map_err(LoadPromptError::Deserialize)?;
+    let object: PromptObject = serde_json::from_str(&prompt)
+      .map_err(|e| LoadPromptError::Deserialize(e, prompt))?;
     let mut full_prompt: Vec<String> = Vec::new();
 
     for path in object.imports {
@@ -153,8 +151,8 @@ impl Prompter {
     let result =
       send_chatgpt_request(prompt.clone(), self.message.clone()).await?;
     if let Some(result) = result {
-      let json: CallsignAndRequest =
-        serde_json::from_str(&result).map_err(LoadPromptError::Deserialize)?;
+      let json: CallsignAndRequest = serde_json::from_str(&result)
+        .map_err(|e| LoadPromptError::Deserialize(e, result))?;
 
       Ok(json)
     } else {
@@ -167,8 +165,8 @@ impl Prompter {
       Self::load_prompt_as_string("server/prompts/main.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), string).await?;
     if let Some(result) = result {
-      let json: Tasks =
-        serde_json::from_str(&result).map_err(LoadPromptError::Deserialize)?;
+      let json: Tasks = serde_json::from_str(&result)
+        .map_err(|e| LoadPromptError::Deserialize(e, result))?;
 
       Ok(json)
     } else {
