@@ -344,7 +344,10 @@ pub struct AircraftContactApproachEffect;
 impl AircraftEffect for AircraftContactApproachEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     if let AircraftState::Flying { .. } = aircraft.state {
-      if bundle.prev.airspace.is_none() && aircraft.airspace.is_some() {
+      if bundle.prev.airspace.is_none()
+        && aircraft.airspace.is_some()
+        && Some(aircraft.flight_plan.arriving) == aircraft.airspace
+      {
         if let Some(airspace) = bundle
           .airspaces
           .iter()
