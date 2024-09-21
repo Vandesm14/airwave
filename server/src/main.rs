@@ -70,7 +70,7 @@ async fn main() {
     departure: 118.5,
     tower: 118.5,
     ground: 118.5,
-    center: 118.5,
+    center: 118.6,
   };
 
   // let player_two_frequencies = Frequencies {
