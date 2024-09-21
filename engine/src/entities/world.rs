@@ -46,10 +46,6 @@ pub fn find_random_departure<'a>(
   airspaces: &'a [Airspace],
   rng: &mut Rng,
 ) -> Option<&'a Airspace> {
-  // TODO: We should probably do `true` for the second bool, which specifies
-  // that a departure airspace needs an airport. This just saves us time
-  // when testing and messing about with single airspaces instead of those
-  // plus an airport.
   find_random_airspace_with(airspaces, Some(true), false, rng)
 }
 

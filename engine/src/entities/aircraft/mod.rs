@@ -214,12 +214,10 @@ impl Aircraft {
     airspaces: &[Airspace],
     rng: &mut Rng,
   ) {
-    // TODO: true when airports
     let departure =
       airspaces.iter().find(|a| a.id == self.flight_plan.arriving);
     let arrival = find_random_airspace(airspaces, rng);
 
-    // TODO: when airport as destination
     if let Some((arrival, departure)) = arrival.zip(departure) {
       self.departure_from_arrival(
         departure.id,
@@ -236,7 +234,6 @@ impl Aircraft {
     arrival: Intern<String>,
     wait_time: Duration,
   ) {
-    // TODO: when airport as destination
     self.flight_plan = FlightPlan::new(departure, arrival);
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)

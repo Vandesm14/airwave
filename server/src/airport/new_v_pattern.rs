@@ -13,8 +13,6 @@ use engine::{
 };
 use internment::Intern;
 
-// TODO: Add tasks to the correct waypoints to clear landings, et cetera.
-
 pub fn setup(
   airport: &mut Airport,
   waypoints: &mut Vec<Node<NodeVORData>>,

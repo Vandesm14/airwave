@@ -93,9 +93,7 @@ impl From<Taxiway> for Line {
 
 impl From<Terminal> for Line {
   fn from(value: Terminal) -> Self {
-    // TODO: This means that terminals can only have one enterance, AB
-
-    Line::new(value.a, value.b)
+    value.apron
   }
 }
 
