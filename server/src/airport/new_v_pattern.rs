@@ -656,7 +656,7 @@ pub fn setup(
     ],
   );
 
-  //
+  // Runway 22 Departures
 
   waypoint_sets.departure.insert(
     waypoint_royal.name,
@@ -718,7 +718,7 @@ pub fn setup(
     ],
   );
 
-  //
+  // Runway 13 Departures
 
   waypoint_sets.departure.insert(
     waypoint_goose.name,
