@@ -435,13 +435,16 @@ impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
         if airspace.auto
           && airspace.pos.distance_squared(aircraft.pos)
             <= airspace.size.mul(2.0).powf(2.0)
+          && (aircraft.target.altitude > 7000.0
+            || aircraft.target.speed > 250.0)
         {
+          bundle.events.push(Event::new(
+            aircraft.id,
+            EventKind::AltitudeAtOrBelow(7000.0),
+          ));
           bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::TargetAltitude(4000.0)));
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::TargetSpeed(250.0)));
+            .events
+            .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
         }
       }
     }
