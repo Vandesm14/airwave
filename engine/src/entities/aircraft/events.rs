@@ -451,6 +451,7 @@ pub fn parse_departure(
 }
 
 pub fn parse_task_waypoints(
+  aircraft: &Aircraft,
   bundle: &mut Bundle,
   waypoints: &[TaskWaypoint],
 ) -> Option<Vec<Node<NodeVORData>>> {
@@ -469,6 +470,9 @@ pub fn parse_task_waypoints(
       TaskWaypoint::Direct(id) => {
         waypoint_strings.push(*id);
       }
+      TaskWaypoint::Destination => {
+        waypoint_strings.push(aircraft.flight_plan.arriving);
+      }
     }
   }
 
@@ -480,7 +484,7 @@ pub fn handle_direct_to_event(
   bundle: &mut Bundle,
   waypoints: &[TaskWaypoint],
 ) {
-  if let Some(wps) = parse_task_waypoints(bundle, waypoints) {
+  if let Some(wps) = parse_task_waypoints(aircraft, bundle, waypoints) {
     bundle.actions.push(Action {
       id: aircraft.id,
       kind: ActionKind::Flying(wps),
@@ -610,7 +614,7 @@ pub fn handle_clearance_event(
   departure: Option<&[TaskWaypoint]>,
 ) {
   let waypoints = departure
-    .and_then(|departure| parse_task_waypoints(bundle, departure))
+    .and_then(|departure| parse_task_waypoints(aircraft, bundle, departure))
     .unwrap_or_default();
 
   bundle.actions.push(Action {

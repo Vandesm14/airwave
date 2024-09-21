@@ -34,7 +34,11 @@
         {
           "type": "clearance",
           "value": {
-            "departure": "OCEAN",
+            "departure": [
+              {
+                "departure": "OCEAN"
+              }
+            ],
             "altitude": 7000
           }
         }
@@ -46,19 +50,27 @@
         {
           "type": "clearance",
           "value": {
-            "departure": "OCEAN",
+            "departure": [
+              {
+                "departure": "OCEAN"
+              }
+            ],
             "altitude": 7000
           }
         }
       ]
     },
     {
-      "user": "Cleared via OCEAN departure.",
+      "user": "Cleared to destination via A6.",
       "assistant": [
         {
           "type": "clearance",
           "value": {
-            "departure": "OCEAN"
+            "departure": [
+              {
+                "direct": "A6"
+              }
+            ]
           }
         }
       ]

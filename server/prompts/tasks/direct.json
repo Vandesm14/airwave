@@ -190,6 +190,19 @@
           ]
         }
       ]
+    },
+    {
+      "user": "Direct to destination.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": [
+            {
+              "destination": null
+            }
+          ]
+        }
+      ]
     }
   ]
 }

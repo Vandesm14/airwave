@@ -12,6 +12,7 @@ pub enum TaskWaypoint {
   Arrival(Intern<String>),
   Departure(Intern<String>),
   Direct(Intern<String>),
+  Destination,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
