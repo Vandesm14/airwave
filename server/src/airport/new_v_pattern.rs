@@ -266,7 +266,7 @@ pub fn setup(
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![EventKind::Land(runway_13.id)],
+      then: vec![],
     },
   };
 
@@ -280,7 +280,7 @@ pub fn setup(
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 4.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
@@ -294,7 +294,7 @@ pub fn setup(
         inverse_degrees(runway_13.heading),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
@@ -308,7 +308,7 @@ pub fn setup(
         add_degrees(inverse_degrees(runway_13.heading), -45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
@@ -322,7 +322,7 @@ pub fn setup(
         add_degrees(inverse_degrees(runway_13.heading), 45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
@@ -338,7 +338,7 @@ pub fn setup(
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 12.0,
       ),
-      then: vec![EventKind::Land(runway_22.id)],
+      then: vec![],
     },
   };
 
@@ -352,7 +352,7 @@ pub fn setup(
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 4.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
@@ -366,7 +366,7 @@ pub fn setup(
         inverse_degrees(runway_22.heading),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
@@ -380,7 +380,7 @@ pub fn setup(
         add_degrees(inverse_degrees(runway_22.heading), -45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
@@ -394,7 +394,7 @@ pub fn setup(
         add_degrees(inverse_degrees(runway_22.heading), 45.0),
         NAUTICALMILES_TO_FEET * 6.0,
       ),
-      then: vec![EventKind::Altitude(4000.0), EventKind::Speed(250.0)],
+      then: vec![],
     },
   };
 
