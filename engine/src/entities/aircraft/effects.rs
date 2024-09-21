@@ -111,7 +111,7 @@ impl AircraftEffect for AircraftUpdateAirspaceEffect {
     let airspace = bundle
       .airspaces
       .iter()
-      .find(|a| a.contains_point(aircraft.pos))
+      .find(|a| a.contains_point(aircraft.pos, Some(aircraft.altitude)))
       .map(|a| a.id);
     if airspace != aircraft.airspace {
       bundle

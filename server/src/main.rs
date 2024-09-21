@@ -65,12 +65,12 @@ async fn main() {
   );
 
   let player_one_frequencies = Frequencies {
-    clearance: 118.5,
-    approach: 118.6,
-    departure: 118.6,
+    clearance: 118.7,
+    approach: 118.5,
+    departure: 118.5,
     tower: 118.5,
     ground: 118.5,
-    center: 118.7,
+    center: 118.5,
   };
 
   // let player_two_frequencies = Frequencies {
@@ -108,6 +108,7 @@ async fn main() {
     size: MANUAL_TOWER_AIRSPACE_RADIUS,
     airports: vec![],
     auto: false,
+    altitude: 0.0..=7000.0,
     frequencies: player_one_frequencies.clone(),
   };
 
@@ -170,6 +171,7 @@ async fn main() {
       size: AUTO_TOWER_AIRSPACE_RADIUS,
       airports: vec![],
       auto: true,
+      altitude: 0.0..=7000.0,
       frequencies: player_one_frequencies.clone(),
     });
 

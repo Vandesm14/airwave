@@ -59,7 +59,7 @@ pub fn closest_airport(
 ) -> Option<&Airport> {
   let mut closest: Option<&Airport> = None;
   let mut distance = f32::MAX;
-  for airspace in airspaces.iter().filter(|a| a.contains_point(point)) {
+  for airspace in airspaces.iter().filter(|a| a.contains_point(point, None)) {
     for airport in airspace.airports.iter() {
       if airport.center.distance_squared(point) < distance {
         distance = airport.center.distance_squared(point);

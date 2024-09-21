@@ -186,12 +186,12 @@ impl Aircraft {
     arrival: &Airspace,
     rng: &mut Rng,
   ) -> Self {
-    Aircraft {
+    let mut aircraft = Aircraft {
       id: Intern::from(Aircraft::random_callsign(rng)),
       pos: departure.pos,
-      speed: 400.0,
+      speed: 250.0,
       heading: angle_between_points(departure.pos, arrival.pos),
-      altitude: 13000.0,
+      altitude: 1000.0,
       state: AircraftState::Flying {
         waypoints: vec![Node::new(
           arrival.id,
@@ -207,8 +207,13 @@ impl Aircraft {
       frequency: arrival.frequencies.center,
       airspace: Some(departure.id),
       ..Default::default()
-    }
-    .with_synced_targets()
+    };
+
+    aircraft.sync_targets_to_vals();
+    aircraft.target.speed = 400.0;
+    aircraft.target.altitude = 13000.0;
+
+    aircraft
   }
 
   pub fn make_random_departure(

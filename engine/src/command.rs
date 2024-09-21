@@ -185,7 +185,7 @@ impl fmt::Display for CommandWithFreq {
       CommandReply::ContactCenter { altitude } => {
         write!(
           f,
-          "Center, {} is at {} feet, with you.",
+          "Center, {} is at {}, with you.",
           decoded_callsign,
           abbreviate_altitude(*altitude)
         )

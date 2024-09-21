@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
@@ -44,12 +46,13 @@ impl Frequencies {
 }
 
 // TODO: Support non-circular (regional) airspaces
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Airspace {
   pub id: Intern<String>,
   pub pos: Vec2,
   pub size: f32,
   pub airports: Vec<Airport>,
+  pub altitude: RangeInclusive<f32>,
 
   /// Determines whether the airspace is automatically controlled.
   pub auto: bool,
@@ -57,9 +60,12 @@ pub struct Airspace {
 }
 
 impl Airspace {
-  pub fn contains_point(&self, point: Vec2) -> bool {
+  pub fn contains_point(&self, point: Vec2, altitude: Option<f32>) -> bool {
     let distance = point.distance_squared(self.pos);
     distance <= self.size.powf(2.0)
+      && altitude
+        .map(|altitude| self.altitude.contains(&altitude))
+        .unwrap_or(true)
   }
 
   pub fn find_random_airport(&self, rng: &mut Rng) -> Option<&Airport> {
