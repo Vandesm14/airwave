@@ -1,36 +1,47 @@
 use core::fmt;
 
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use crate::{abbreviate_altitude, pathfinder::Node};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TaskWaypointKind {
+  Approach,
+  Arrival,
+  Departure,
+  Direct,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TaskWaypoint {
+  pub id: Intern<String>,
+  pub kind: TaskWaypointKind,
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(tag = "type", content = "value")]
 pub enum Task {
   Altitude(f32),
-  Approach(String),
-  Arrival(String),
-
   Clearance {
-    departure: Option<String>,
+    departure: Option<Vec<TaskWaypoint>>,
     altitude: Option<f32>,
     speed: Option<f32>,
   },
-
-  Depart(String),
-  Direct(Vec<String>),
+  Direct(Vec<TaskWaypoint>),
   DirectionOfTravel,
   Frequency(f32),
   GoAround,
   Heading(f32),
   Ident,
-  Land(String),
+  Land(Intern<String>),
   NamedFrequency(String),
   #[serde(rename = "resume")]
   ResumeOwnNavigation,
   Speed(f32),
-  Takeoff(String),
+  Takeoff(Intern<String>),
 
   Taxi(Vec<Node<()>>),
   TaxiContinue,
