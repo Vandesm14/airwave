@@ -779,10 +779,6 @@ export default function Canvas({
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
 
-    if (selectedAircraft() == aircraft.id) {
-      console.log(JSON.stringify(aircraft, null, 2));
-    }
-
     if (
       aircraft.state.type === 'taxiing' &&
       selectedAircraft() == aircraft.id
