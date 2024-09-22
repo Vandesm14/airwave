@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["engine", "map-viewer", "server"]
+members = ["engine", "map-viewer", "server", "client-web/src-tauri"]
 
 [workspace.package]
 version = "0.1.0"

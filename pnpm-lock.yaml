@@ -33,6 +33,9 @@ importers:
         specifier: ^1.8.21
         version: 1.8.21
     devDependencies:
+      '@types/node':
+        specifier: ^22.5.5
+        version: 22.5.5
       sass:
         specifier: ^1.77.8
         version: 1.77.8
@@ -41,7 +44,7 @@ importers:
         version: 0.30.1(solid-js@1.8.21)(vite@5.4.2)
       vite:
         specifier: ^5.4.2
-        version: 5.4.2(sass@1.77.8)
+        version: 5.4.2(@types/node@22.5.5)(sass@1.77.8)
       vite-plugin-solid:
         specifier: ^2.10.2
         version: 2.10.2(solid-js@1.8.21)(vite@5.4.2)
@@ -852,6 +855,12 @@ packages:
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
     dev: true
 
+  /@types/node@22.5.5:
+    resolution: {integrity: sha512-Xjs4y5UPO/CLdzpgR6GirZJx36yScjh73+2NlLlkFRSoQN8B0DpfXPdZGnvVmLRLOsqDpOfTNv7D9trgGhmOIA==}
+    dependencies:
+      undici-types: 6.19.8
+    dev: true
+
   /ansi-styles@3.2.1:
     resolution: {integrity: sha512-VT0ZI6kZRdTh8YyJw3SMbYm/u+NqfsAxEpWO0Pf9sq8/e94WxxOpPKx9FR1FlyCtOVDNOQ+8ntlqFxiRc+r5qA==}
     engines: {node: '>=4'}
@@ -1310,7 +1319,7 @@ packages:
       '@solid-devtools/debugger': 0.23.4(solid-js@1.8.21)
       '@solid-devtools/shared': 0.13.2(solid-js@1.8.21)
       solid-js: 1.8.21
-      vite: 5.4.2(sass@1.77.8)
+      vite: 5.4.2(@types/node@22.5.5)(sass@1.77.8)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -1375,6 +1384,10 @@ packages:
     hasBin: true
     dev: true
 
+  /undici-types@6.19.8:
+    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
+    dev: true
+
   /update-browserslist-db@1.1.0(browserslist@4.23.3):
     resolution: {integrity: sha512-EdRAaAyk2cUE1wOf2DkEhzxqOQvFOoRJFNS6NeyJ01Gp2beMRpBAINjM2iDXE3KCuKhwnvHIQCJm6ThL2Z+HzQ==}
     hasBin: true
@@ -1406,13 +1419,13 @@ packages:
       merge-anything: 5.1.7
       solid-js: 1.8.21
       solid-refresh: 0.6.3(solid-js@1.8.21)
-      vite: 5.4.2(sass@1.77.8)
+      vite: 5.4.2(@types/node@22.5.5)(sass@1.77.8)
       vitefu: 0.2.5(vite@5.4.2)
     transitivePeerDependencies:
       - supports-color
     dev: true
 
-  /vite@5.4.2(sass@1.77.8):
+  /vite@5.4.2(@types/node@22.5.5)(sass@1.77.8):
     resolution: {integrity: sha512-dDrQTRHp5C1fTFzcSaMxjk6vdpKvT+2/mIdE07Gw2ykehT49O0z/VHS3zZ8iV/Gh8BJJKHWOe5RjaNrW5xf/GA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -1443,6 +1456,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 22.5.5
       esbuild: 0.21.5
       postcss: 8.4.41
       rollup: 4.20.0
@@ -1459,7 +1473,7 @@ packages:
       vite:
         optional: true
     dependencies:
-      vite: 5.4.2(sass@1.77.8)
+      vite: 5.4.2(@types/node@22.5.5)(sass@1.77.8)
     dev: true
 
   /yallist@3.1.1:
