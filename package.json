@@ -8,7 +8,9 @@
     "client-web:dev": "pnpm --dir client-web dev",
     "client-web:build": "pnpm --dir client-web build",
     "client-web:preview": "pnpm --dir client-web preview",
-    "run-all": "zellij --layout zellij.kdl"
+    "run-all": "zellij --layout zellij.kdl",
+    "tauri:dev": "WEBKIT_DISABLE_DMABUF_RENDERER=1 pnpm tauri dev",
+    "tauri:build": "WEBKIT_DISABLE_DMABUF_RENDERER=1 pnpm tauri build"
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
