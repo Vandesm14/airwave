@@ -186,9 +186,9 @@ impl Engine {
       bundle.actions.clear();
 
       AircraftIsNowParkedEffect::run(aircraft, &mut bundle);
-      AircraftContactCenterEffect::run(aircraft, &mut bundle);
+      // AircraftContactCenterEffect::run(aircraft, &mut bundle);
       AircraftContactClearanceEffect::run(aircraft, &mut bundle);
-      AircraftContactApproachEffect::run(aircraft, &mut bundle);
+      // AircraftContactApproachEffect::run(aircraft, &mut bundle);
       AircraftDeleteWhenInAirspaceEffect::run(aircraft, &mut bundle);
       AircraftSetDescentOnAutoAirspaceEffect::run(aircraft, &mut bundle);
 
