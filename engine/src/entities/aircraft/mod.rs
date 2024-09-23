@@ -211,6 +211,9 @@ impl Aircraft {
       flight_plan: FlightPlan::new(departure.id, arrival.id),
       frequency: arrival.frequencies.center,
       airspace: Some(departure.id),
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap(),
       ..Default::default()
     };
 
