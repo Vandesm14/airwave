@@ -309,7 +309,6 @@ impl AircraftEffect for AircraftIsNowParkedEffect {
     if let AircraftState::Taxiing { current, .. } = &aircraft.state {
       if aircraft.speed == 0.0
         && current.kind == NodeKind::Gate
-        && aircraft.pos == current.value
         && Some(aircraft.flight_plan.arriving) == aircraft.airspace
       {
         bundle
