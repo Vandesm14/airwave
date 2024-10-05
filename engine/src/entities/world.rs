@@ -50,7 +50,7 @@ pub fn find_random_arrival<'a>(
   airspaces: &'a [Airspace],
   rng: &mut Rng,
 ) -> Option<&'a Airspace> {
-  find_random_airspace_with(airspaces, None, false, rng)
+  find_random_airspace_with(airspaces, Some(false), true, rng)
 }
 
 pub fn closest_airport(
