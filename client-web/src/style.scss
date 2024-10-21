@@ -30,7 +30,8 @@ $transparent-black: #000a;
     border: 1px solid white;
 
     .talk-button,
-    .discard-button {
+    .discard-button,
+    .tts-toggle {
       border: 1px solid white;
       color: white;
       background-color: transparent;
@@ -47,6 +48,16 @@ $transparent-black: #000a;
       &.recording {
         font-weight: bold;
         color: rgb(255, 78, 78);
+      }
+    }
+
+    .tts-toggle {
+      &.enabled {
+        color: hsl(0, 100%, 65%);
+      }
+
+      &:not(.enabled) {
+        color: hsl(110, 100%, 65%);
       }
     }
   }

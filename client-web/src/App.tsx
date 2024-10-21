@@ -5,6 +5,7 @@ import {
   isRecordingAtom,
   messagesAtom,
   selectedAircraftAtom,
+  useTTSAtom,
   worldAtom,
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
@@ -26,13 +27,18 @@ export default function App() {
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
+  let [useTTS, setUseTTS] = useAtom(useTTSAtom);
 
   async function getMedia(constraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
   }
 
   function speak(message: RadioMessage) {
-    if ('speechSynthesis' in window && frequency() === message.frequency) {
+    if (
+      useTTS() &&
+      'speechSynthesis' in window &&
+      frequency() === message.frequency
+    ) {
       if (window.speechSynthesis.speaking || isRecording()) {
         setTimeout(() => speak(message), 500);
       } else {
@@ -168,6 +174,10 @@ export default function App() {
     console.log(`[error]`);
   };
 
+  function toggleTTS() {
+    setUseTTS((useTTS) => !useTTS);
+  }
+
   return (
     <div id="radar">
       <Chatbox sendMessage={sendTextMessage}></Chatbox>
@@ -177,6 +187,12 @@ export default function App() {
         <FreqSelector></FreqSelector>
       </div>
       <div class="bottom-right-buttons">
+        <button
+          classList={{ 'tts-toggle': true, enabled: useTTS() }}
+          onClick={toggleTTS}
+        >
+          {useTTS() ? 'Disable TTS' : 'Enable TTS'}
+        </button>
         <button
           class={`talk-button ${isRecording() ? 'recording' : ''}`}
           onMouseDown={startRecording}
