@@ -256,6 +256,11 @@ export default function StripBoard({
 
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
+  let [_, setFrequency] = useAtom(frequencyAtom);
+
+  let foundAirspace = createMemo(() =>
+    world().airspaces.find((a) => a.id === airspace())
+  );
 
   createEffect(() => {
     // This is to prevent initial loading state from removing saved strips.
@@ -298,6 +303,19 @@ export default function StripBoard({
     }
   });
 
+  function onClickHeader(name: string) {
+    let key = name.toLowerCase();
+    if (name === 'Landing' || name === 'Takeoff') {
+      key = 'tower';
+    } else if (name === 'Parked') {
+      key = 'clearance';
+    }
+
+    if (foundAirspace()?.frequencies && foundAirspace()?.frequencies[key]) {
+      setFrequency(foundAirspace()?.frequencies[key]);
+    }
+  }
+
   return (
     <div id="stripboard">
       <div class="header">
@@ -323,7 +341,7 @@ export default function StripBoard({
       {stripEntries().map(([key, list]) =>
         key !== 'None' && key !== 'Selected' && key !== 'Colliding' ? (
           <>
-            <div class="header">
+            <div class="header" onmousedown={() => onClickHeader(key)}>
               {key}
               {list.length > 0 ? ` (${list.length})` : ''}
             </div>
