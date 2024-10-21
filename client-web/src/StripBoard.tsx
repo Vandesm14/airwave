@@ -74,6 +74,10 @@ function assignAircraftToStrips(
     ourAirspace === aircraft.flight_plan.arriving &&
     aircraft.airspace !== aircraft.flight_plan.departing;
 
+  if (aircraft.is_colliding) {
+    return 'Colliding';
+  }
+
   if (isInLocalAirspace && isLanding) {
     return 'Landing';
   } else if (isTaxiing) {
@@ -101,14 +105,10 @@ function assignAircraftToStrips(
       return 'Center';
     }
   } else {
-    if (aircraft.is_colliding) {
-      return 'Colliding';
+    if (aircraft.id === selectedAircraft) {
+      return 'Selected';
     } else {
-      if (aircraft.id === selectedAircraft) {
-        return 'Selected';
-      } else {
-        return 'None';
-      }
+      return 'None';
     }
   }
 }
