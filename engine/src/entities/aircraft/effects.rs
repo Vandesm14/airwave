@@ -426,23 +426,23 @@ pub struct AircraftSetDescentOnAutoAirspaceEffect;
 impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     if let AircraftState::Flying { .. } = aircraft.state {
-      if let Some(airspace) = bundle
-        .airspaces
-        .iter()
-        .find(|a| a.id == aircraft.flight_plan.arriving)
-      {
-        if airspace.pos.distance_squared(aircraft.pos)
-          <= airspace.size.mul(2.0).powf(2.0)
-          && (aircraft.target.altitude > 7000.0
-            || aircraft.target.speed > 250.0)
+      if aircraft.target.altitude > 7000.0 || aircraft.target.speed > 250.0 {
+        if let Some(airspace) = bundle
+          .airspaces
+          .iter()
+          .find(|a| a.id == aircraft.flight_plan.arriving)
         {
-          bundle.events.push(Event::new(
-            aircraft.id,
-            EventKind::AltitudeAtOrBelow(7000.0),
-          ));
-          bundle
-            .events
-            .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
+          if airspace.pos.distance_squared(aircraft.pos)
+            <= airspace.size.mul(2.0).powf(2.0)
+          {
+            bundle.events.push(Event::new(
+              aircraft.id,
+              EventKind::AltitudeAtOrBelow(7000.0),
+            ));
+            bundle
+              .events
+              .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
+          }
         }
       }
     }
