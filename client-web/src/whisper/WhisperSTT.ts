@@ -1,9 +1,6 @@
 import { RecordRTCPromisesHandler } from 'recordrtc';
-import axios from 'axios';
 
 const AUDIO_TYPE = 'audio';
-const MODEL = 'whisper-1';
-const TRANSCRIPTIONS_API_URL = 'http://localhost:8000/transcribe';
 
 export class WhisperSTT {
   private recorder: RecordRTCPromisesHandler | null;
