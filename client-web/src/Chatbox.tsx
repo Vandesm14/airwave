@@ -56,7 +56,9 @@ export default function Chatbox({
   }
 
   function clearAll() {
-    setMessages([]);
+    if (confirm('Clear all messages?')) {
+      setMessages([]);
+    }
   }
 
   function handleSendMessage(text) {
