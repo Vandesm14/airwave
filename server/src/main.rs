@@ -106,7 +106,7 @@ async fn main() {
   let mut airspace_ksfo = Airspace {
     id: Intern::from_ref("KSFO"),
     pos: Vec2::ZERO,
-    size: MANUAL_TOWER_AIRSPACE_RADIUS,
+    radius: MANUAL_TOWER_AIRSPACE_RADIUS,
     airports: vec![],
     auto: false,
     altitude: 0.0..=10000.0,
@@ -157,7 +157,7 @@ async fn main() {
           position,
           airspace.pos,
           AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
-          airspace.size + TOWER_AIRSPACE_PADDING_RADIUS,
+          airspace.radius + TOWER_AIRSPACE_PADDING_RADIUS,
         ) {
           continue 'outer;
         }
@@ -169,7 +169,7 @@ async fn main() {
     engine.world.airspaces.push(Airspace {
       id: Intern::from_ref(airspace_name),
       pos: airspace_position,
-      size: AUTO_TOWER_AIRSPACE_RADIUS,
+      radius: AUTO_TOWER_AIRSPACE_RADIUS,
       airports: vec![],
       auto: true,
       altitude: 0.0..=10000.0,
@@ -254,7 +254,7 @@ async fn main() {
         if circle_circle_intersection(
           intersection_test_airspace.pos,
           waypoint,
-          intersection_test_airspace.size,
+          intersection_test_airspace.radius,
           CENTER_WAYPOINT_RADIUS,
         ) {
           tracing::trace!(

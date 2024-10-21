@@ -50,7 +50,7 @@ impl Frequencies {
 pub struct Airspace {
   pub id: Intern<String>,
   pub pos: Vec2,
-  pub size: f32,
+  pub radius: f32,
   pub airports: Vec<Airport>,
   pub altitude: RangeInclusive<f32>,
 
@@ -62,7 +62,7 @@ pub struct Airspace {
 impl Airspace {
   pub fn contains_point(&self, point: Vec2, altitude: Option<f32>) -> bool {
     let distance = point.distance_squared(self.pos);
-    distance <= self.size.powf(2.0)
+    distance <= self.radius.powf(2.0)
       && altitude
         .map(|altitude| self.altitude.contains(&altitude))
         .unwrap_or(true)

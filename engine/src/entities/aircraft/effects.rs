@@ -433,7 +433,7 @@ impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
           .find(|a| a.id == aircraft.flight_plan.arriving)
         {
           if airspace.pos.distance_squared(aircraft.pos)
-            <= airspace.size.mul(2.0).powf(2.0)
+            <= airspace.radius.mul(2.0).powf(2.0)
           {
             bundle.events.push(Event::new(
               aircraft.id,

@@ -155,7 +155,7 @@ export type Frequencies = {
 export type Airspace = {
   id: string;
   pos: Vec2;
-  size: number;
+  radius: number;
   airports: Array<Airport>;
   auto: boolean;
   frequencies: Frequencies;
