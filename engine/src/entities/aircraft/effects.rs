@@ -431,9 +431,8 @@ impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
         .iter()
         .find(|a| a.id == aircraft.flight_plan.arriving)
       {
-        if airspace.auto
-          && airspace.pos.distance_squared(aircraft.pos)
-            <= airspace.size.mul(2.0).powf(2.0)
+        if airspace.pos.distance_squared(aircraft.pos)
+          <= airspace.size.mul(2.0).powf(2.0)
           && (aircraft.target.altitude > 7000.0
             || aircraft.target.speed > 250.0)
         {
