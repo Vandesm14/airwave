@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use actions::{Action, AircraftActionHandler};
 use effects::{
-  AircraftContactApproachEffect, AircraftContactCenterEffect,
   AircraftContactClearanceEffect, AircraftDeleteWhenInAirspaceEffect,
   AircraftIsNowParkedEffect, AircraftSetDescentOnAutoAirspaceEffect,
   AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
