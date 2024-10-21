@@ -138,7 +138,7 @@ impl fmt::Display for CommandWithFreq {
 
     match &self.reply {
       CommandReply::WithCallsign { text } => {
-        write!(f, "{text} {}.", decoded_callsign)
+        write!(f, "{text}, {}.", decoded_callsign)
       }
       CommandReply::WithoutCallsign { text } => {
         write!(f, "{text}.")
