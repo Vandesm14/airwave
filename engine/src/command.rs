@@ -138,7 +138,7 @@ impl fmt::Display for CommandWithFreq {
 
     match &self.reply {
       CommandReply::WithCallsign { text } => {
-        write!(f, "{text}, {}.", decoded_callsign)
+        write!(f, "{text} {}.", decoded_callsign)
       }
       CommandReply::WithoutCallsign { text } => {
         write!(f, "{text}.")
@@ -176,11 +176,7 @@ impl fmt::Display for CommandWithFreq {
         )
       }
       CommandReply::DirectionOfDeparture { direction } => {
-        write!(
-          f,
-          "Clearence, {} is departing to the {direction}.",
-          decoded_callsign,
-        )
+        write!(f, "{} is departing to the {direction}.", decoded_callsign,)
       }
       CommandReply::ContactCenter { altitude } => {
         write!(
