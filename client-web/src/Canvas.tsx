@@ -55,9 +55,6 @@ export default function Canvas({
   let isGround = createMemo(() => radar().scale > groundScale);
   let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
 
-  let [control] = useAtom(controlAtom);
-  let [ourAirspace] = useAtom(control().airspace);
-
   function scaleFeetToPixels(num: number): number {
     const FEET_TO_PIXELS = 0.003;
     return num * FEET_TO_PIXELS * radar().scale;
@@ -515,7 +512,7 @@ export default function Canvas({
       ctx.fillStyle = '#FFE045';
     } else if (aircraft.is_colliding) {
       ctx.fillStyle = '#aa2222';
-    } else if (aircraft.flight_plan.departing === ourAirspace()) {
+    } else if (aircraft.flight_plan.departing === world().airspace.id) {
       ctx.fillStyle = '#3087f2';
     }
 
@@ -819,17 +816,16 @@ export default function Canvas({
   }
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
-    for (let airspace of world.airspaces) {
-      drawAirspace(ctx, airspace);
+    let airspace = world.airspace;
+    drawAirspace(ctx, airspace);
 
-      for (let airport of airspace.airports) {
-        for (let runway of airport.runways) {
-          drawRunway(ctx, runway);
-        }
+    for (let airport of airspace.airports) {
+      for (let runway of airport.runways) {
+        drawRunway(ctx, runway);
       }
     }
 
-    for (let wp of world.waypoints) {
+    for (let wp of [...world.airports, ...world.connections]) {
       drawWaypoint(ctx, wp);
     }
 
@@ -843,24 +839,21 @@ export default function Canvas({
   }
 
   function drawGround(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
-    // TODO: only draws selected airspace in ground and approach view
-    // center view shows all airspaces
-    for (let airspace of world.airspaces) {
-      drawAirspace(ctx, airspace);
+    let airspace = world.airspace;
+    drawAirspace(ctx, airspace);
 
-      for (let airport of airspace.airports) {
-        for (let taxiway of airport.taxiways) {
-          drawTaxiway(ctx, taxiway);
-        }
-        for (let runway of airport.runways) {
-          drawRunwayGround(ctx, runway);
-        }
-        for (let terminal of airport.terminals) {
-          drawTerminal(ctx, terminal);
-        }
-        for (let taxiway of airport.taxiways) {
-          drawTaxiwayLabel(ctx, taxiway);
-        }
+    for (let airport of airspace.airports) {
+      for (let taxiway of airport.taxiways) {
+        drawTaxiway(ctx, taxiway);
+      }
+      for (let runway of airport.runways) {
+        drawRunwayGround(ctx, runway);
+      }
+      for (let terminal of airport.terminals) {
+        drawTerminal(ctx, terminal);
+      }
+      for (let taxiway of airport.taxiways) {
+        drawTaxiwayLabel(ctx, taxiway);
       }
     }
 

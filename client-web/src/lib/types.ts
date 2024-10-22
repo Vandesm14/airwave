@@ -161,10 +161,37 @@ export type Airspace = {
   frequencies: Frequencies;
 };
 
+export function DefaultAirspace(): Airspace {
+  return {
+    id: 'KSFO',
+    pos: [0, 0],
+    radius: 500,
+    airports: [],
+    auto: false,
+    frequencies: {
+      clearance: 118.5,
+      approach: 118.5,
+      departure: 118.5,
+      tower: 118.5,
+      ground: 118.5,
+      center: 118.5,
+    },
+  };
+}
+
 export type World = {
-  airspaces: Array<Airspace>;
-  waypoints: Array<NodeVOR>;
+  airspace: Airspace;
+  airports: Array<NodeVOR>;
+  connections: Array<NodeVOR>;
 };
+
+export function DefaultWorld(): World {
+  return {
+    airspace: DefaultAirspace(),
+    airports: [],
+    connections: [],
+  };
+}
 
 export type RadioMessage = {
   id: string;

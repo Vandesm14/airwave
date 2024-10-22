@@ -10,12 +10,7 @@ export default function FreqSelector() {
   let [secondary, setSecondary] = makePersisted(createSignal(frequency()));
   let [key, setKey] = createSignal<keyof Frequencies>('approach');
 
-  let [control] = useAtom(controlAtom);
-  let [airspace, setAirspace] = useAtom(control().airspace);
-
-  let foundAirspace = createMemo(() =>
-    world().airspaces.find((a) => a.id === airspace())
-  );
+  let foundAirspace = createMemo(() => world().airspace);
 
   function changeViaKey(key: string) {
     setKey(key as keyof Frequencies);
@@ -79,13 +74,6 @@ export default function FreqSelector() {
         />
       </div>
       <div class="row">
-        <select name="airspace" onchange={(e) => setAirspace(e.target.value)}>
-          {world().airspaces.map((a) => (
-            <option value={a.id} selected={a.id === airspace()}>
-              {a.id}
-            </option>
-          ))}
-        </select>
         <input type="button" value="Swap" onClick={swap} />
         <input
           type="number"

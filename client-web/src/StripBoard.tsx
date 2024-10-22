@@ -258,9 +258,7 @@ export default function StripBoard({
   let [airspace] = useAtom(control().airspace);
   let [_, setFrequency] = useAtom(frequencyAtom);
 
-  let foundAirspace = createMemo(() =>
-    world().airspaces.find((a) => a.id === airspace())
-  );
+  let foundAirspace = createMemo(() => world().airspace);
 
   createEffect(() => {
     // This is to prevent initial loading state from removing saved strips.

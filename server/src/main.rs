@@ -7,10 +7,12 @@ use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use engine::{
+  circle_circle_intersection,
   entities::{
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
+  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
@@ -67,6 +69,14 @@ async fn main() {
   };
 
   const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
+  const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+  const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+  const CENTER_WAYPOINT_RADIUS: f32 = NAUTICALMILES_TO_FEET * 15.0;
+
+  let airspace_names = [
+    "KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL",
+    "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
+  ];
 
   // Create a controlled KSFO airspace
   let mut airspace_ksfo = Airspace {
@@ -91,94 +101,60 @@ async fn main() {
   airspace_ksfo.airports.push(airport_ksfo);
   engine.world.airspace = airspace_ksfo;
 
-  // // Generate randomly positioned uncontrolled airspaces.
-  // for airspace_name in airspace_names {
-  //   // TODO: This is a brute-force approach. A better solution would be to use
-  //   //       some form of jitter or other, potentially, less infinite-loop-prone
-  //   //       solution.
+  // Generate randomly positioned uncontrolled airspaces.
+  for airspace_name in airspace_names {
+    // TODO: This is a brute-force approach. A better solution would be to use
+    //       some form of jitter or other, potentially, less infinite-loop-prone
+    //       solution.
 
-  //   let mut i = 0;
+    let mut i = 0;
 
-  //   let airspace_position = 'outer: loop {
-  //     if i >= 1000 {
-  //       tracing::error!(
-  //         "Unable to find a place for airspace '{airspace_name}'"
-  //       );
-  //       std::process::exit(1);
-  //     }
+    let airspace_position = 'outer: loop {
+      if i >= 1000 {
+        tracing::error!(
+          "Unable to find a place for airspace '{airspace_name}'"
+        );
+        std::process::exit(1);
+      }
 
-  //     i += 1;
+      i += 1;
 
-  //     let position = Vec2::new(
-  //       (world_rng.f32() - 0.5) * world_radius,
-  //       (world_rng.f32() - 0.5) * world_radius,
-  //     );
+      let position = Vec2::new(
+        (world_rng.f32() - 0.5) * world_radius,
+        (world_rng.f32() - 0.5) * world_radius,
+      );
 
-  //     for airspace in engine.world.airspaces.iter() {
-  //       if circle_circle_intersection(
-  //         position,
-  //         airspace.pos,
-  //         AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
-  //         airspace.radius + TOWER_AIRSPACE_PADDING_RADIUS,
-  //       ) {
-  //         continue 'outer;
-  //       }
-  //     }
+      for airport in engine.world.airports.iter() {
+        if circle_circle_intersection(
+          position,
+          airport.value.to,
+          AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
+          AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
+        ) {
+          continue 'outer;
+        }
+      }
 
-  //     break position;
-  //   };
+      break position;
+    };
 
-  //   engine.world.airspaces.push(Airspace {
-  //     id: Intern::from_ref(airspace_name),
-  //     pos: airspace_position,
-  //     radius: AUTO_TOWER_AIRSPACE_RADIUS,
-  //     airports: vec![],
-  //     auto: true,
-  //     altitude: 0.0..=10000.0,
-  //     frequencies: player_one_frequencies.clone(),
-  //   });
+    // engine.world.airspaces.push(Airspace {
+    //   id: Intern::from_ref(airspace_name),
+    //   pos: airspace_position,
+    //   radius: AUTO_TOWER_AIRSPACE_RADIUS,
+    //   airports: vec![],
+    //   auto: true,
+    //   altitude: 0.0..=10000.0,
+    //   frequencies: player_one_frequencies.clone(),
+    // });
 
-  //   engine.world.waypoints.push(Node {
-  //     name: Intern::from_ref(airspace_name),
-  //     kind: NodeKind::Runway,
-  //     behavior: NodeBehavior::GoTo,
-  //     value: NodeVORData {
-  //       to: airspace_position,
-  //       then: vec![],
-  //     },
-  //   });
-  // }
-
-  // let mut aircrafts: Vec<Aircraft> = Vec::new();
-  // for airspace in engine.world.airspaces.iter() {
-  //   if !airspace.auto {
-  //     for airport in airspace.airports.iter() {
-  //       let mut now = true;
-  //       for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-  //         if engine.rng.chance(0.3) {
-  //           let mut aircraft =
-  //             Aircraft::random_parked(gate.clone(), &mut engine.rng, airspace);
-  //           aircraft.flight_plan.arriving = airspace.id;
-  //           aircraft
-  //             .make_random_departure(&engine.world.airspaces, &mut engine.rng);
-  //           aircraft.created = SystemTime::now()
-  //             .duration_since(SystemTime::UNIX_EPOCH)
-  //             .unwrap()
-  //             .add(Duration::from_secs(
-  //               engine.rng.sample_iter(120..=1800).unwrap(),
-  //             ));
-
-  //           if now {
-  //             aircraft.created_now();
-  //             now = false;
-  //           }
-
-  //           aircrafts.push(aircraft);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+    engine.world.airports.push(Node::new(
+      Intern::from_ref(airspace_name),
+      NodeKind::VOR,
+      NodeBehavior::GoTo,
+      NodeVORData::new(airspace_position),
+    ));
+  }
 
   //
 

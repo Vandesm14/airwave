@@ -1,5 +1,5 @@
 import { atom } from 'solid-jotai';
-import { Aircraft, RadioMessage, World } from './types';
+import { Aircraft, DefaultWorld, RadioMessage, World } from './types';
 
 type RadarConfig = {
   scale: number;
@@ -36,10 +36,7 @@ export let radarAtom = atom<RadarConfig>({
 
 export let isRecordingAtom = atom(false);
 export let useTTSAtom = atom(false);
-export let worldAtom = atom<World>({
-  airspaces: [],
-  waypoints: [],
-});
+export let worldAtom = atom<World>(DefaultWorld());
 export let frequencyAtom = atom(118.5);
 export let controlAtom = atom({
   airspace: atom('KSFO'),

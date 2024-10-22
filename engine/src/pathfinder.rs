@@ -41,6 +41,12 @@ pub struct NodeVORData {
   pub then: Vec<EventKind>,
 }
 
+impl NodeVORData {
+  pub fn new(to: Vec2) -> Self {
+    Self { to, then: vec![] }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
   pub name: Intern<String>,
