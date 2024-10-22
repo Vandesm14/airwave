@@ -42,9 +42,6 @@ use turborand::rng::Rng;
 pub mod airport;
 pub mod prompter;
 
-const SPAWN_LIMIT: usize = 40;
-const SPAWN_RATE_SECS: u64 = 60;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
@@ -79,7 +76,6 @@ pub struct CompatAdapter {
   pub rng: Rng,
 
   last_tick: Instant,
-  last_spawn: Instant,
   rate: usize,
 }
 
@@ -104,7 +100,6 @@ impl CompatAdapter {
       rng,
 
       last_tick: Instant::now(),
-      last_spawn: Instant::now(),
       rate: 10,
     }
   }
