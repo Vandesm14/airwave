@@ -404,8 +404,8 @@ export default function Canvas({
 
   function drawWaypoint(ctx: Ctx, wp: NodeVOR) {
     let pos = scalePoint(wp.value.to);
-    ctx.fillStyle = '#444';
-    ctx.strokeStyle = '#444';
+    ctx.fillStyle = '#BB6';
+    ctx.strokeStyle = '#BB6';
     ctx.beginPath();
     ctx.arc(pos[0], pos[1], scaleFeetToPixels(700), 0, Math.PI * 2);
     ctx.fill();

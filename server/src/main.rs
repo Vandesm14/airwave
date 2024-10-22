@@ -79,7 +79,7 @@ async fn main() {
   ];
 
   // Create a controlled KSFO airspace
-  let mut airspace_ksfo = Airspace {
+  let mut player_airspace = Airspace {
     id: Intern::from_ref("KSFO"),
     pos: Vec2::ZERO,
     radius: MANUAL_TOWER_AIRSPACE_RADIUS,
@@ -91,15 +91,14 @@ async fn main() {
 
   let mut airport_ksfo = Airport {
     id: Intern::from_ref("KSFO"),
-    center: airspace_ksfo.pos,
+    center: player_airspace.pos,
     ..Default::default()
   };
 
   airport.setup(&mut world_rng)(&mut airport_ksfo);
 
   airport_ksfo.calculate_waypoints();
-  airspace_ksfo.airports.push(airport_ksfo);
-  engine.world.airspace = airspace_ksfo;
+  player_airspace.airports.push(airport_ksfo);
 
   // Generate randomly positioned uncontrolled airspaces.
   for airspace_name in airspace_names {
@@ -138,23 +137,28 @@ async fn main() {
       break position;
     };
 
-    // engine.world.airspaces.push(Airspace {
-    //   id: Intern::from_ref(airspace_name),
-    //   pos: airspace_position,
-    //   radius: AUTO_TOWER_AIRSPACE_RADIUS,
-    //   airports: vec![],
-    //   auto: true,
-    //   altitude: 0.0..=10000.0,
-    //   frequencies: player_one_frequencies.clone(),
-    // });
-
+    // Generate a waypoint for the airport
     engine.world.airports.push(Node::new(
       Intern::from_ref(airspace_name),
       NodeKind::VOR,
       NodeBehavior::GoTo,
       NodeVORData::new(airspace_position),
     ));
+
+    // Generate a waypoint between our airport and the airspace
+    engine.world.connections.push(Node::new(
+      Intern::from_ref(airspace_name),
+      NodeKind::VOR,
+      NodeBehavior::GoTo,
+      NodeVORData::new(
+        player_airspace
+          .pos
+          .move_towards(airspace_position, MANUAL_TOWER_AIRSPACE_RADIUS),
+      ),
+    ));
   }
+
+  engine.world.airspace = player_airspace;
 
   //
 
