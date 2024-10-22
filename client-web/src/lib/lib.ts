@@ -5,6 +5,10 @@ export const timeScale = 1;
 export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
 
+export function isSome<T>(value: T): boolean {
+  return value !== undefined && value !== null;
+}
+
 export function headingToDegrees(heading: number) {
   return (heading + 360 + 90) % 360;
 }

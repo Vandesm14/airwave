@@ -35,7 +35,7 @@ export let radarAtom = atom<RadarConfig>({
 });
 
 export let isRecordingAtom = atom(false);
-export let useTTSAtom = atom(true);
+export let useTTSAtom = atom(false);
 export let worldAtom = atom<World>({
   airspaces: [],
   waypoints: [],

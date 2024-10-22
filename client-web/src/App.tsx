@@ -14,20 +14,20 @@ import { createEffect, createSignal, onMount } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
+import { useStorageAtom } from './lib/hooks';
 
 export default function App() {
   const whisper = new WhisperSTT();
 
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
-
   let [aircrafts, setAircrafts] = createSignal<Array<Aircraft>>([], {
     equals: false,
   });
   let [, setWorld] = useAtom(worldAtom);
   let [messages, setMessages] = useAtom(messagesAtom);
-  let [frequency] = useAtom(frequencyAtom);
+  let [frequency] = useStorageAtom(frequencyAtom);
   let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
-  let [useTTS, setUseTTS] = useAtom(useTTSAtom);
+  let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
 
   async function getMedia(constraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
