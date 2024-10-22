@@ -1,25 +1,15 @@
-use std::time::Duration;
-
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
-use turborand::TurboRand;
 
 use crate::{
-  angle_between_points,
-  command::{CommandReply, CommandWithFreq, Task, TaskWaypoint},
+  command::{CommandReply, CommandWithFreq, Task},
   engine::Bundle,
-  entities::{
-    airport::Runway,
-    world::{closest_airport, find_random_airspace},
-  },
-  heading_to_direction,
-  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData, Pathfinder},
+  entities::{airport::Runway, world::closest_airport},
+  pathfinder::{Node, NodeBehavior, NodeKind, Pathfinder},
 };
 
-use super::{
-  actions::ActionKind, Action, Aircraft, AircraftState, DEPARTURE_WAIT_RANGE,
-};
+use super::{actions::ActionKind, Action, Aircraft, AircraftState};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventKind {
@@ -35,7 +25,6 @@ pub enum EventKind {
   Altitude(f32),
   AltitudeAtOrBelow(f32),
   AltitudeAtOrAbove(f32),
-  DirectTo(Vec<TaskWaypoint>),
   ResumeOwnNavigation,
 
   // Transitions
@@ -43,20 +32,13 @@ pub enum EventKind {
   GoAround,
   Touchdown,
   Takeoff(Intern<String>),
-  DepartureFromArrival,
 
   // Taxiing
   Taxi(Vec<Node<()>>),
   TaxiContinue,
   TaxiHold,
-  Clearance {
-    speed: Option<f32>,
-    altitude: Option<f32>,
-    departure: Option<Vec<TaskWaypoint>>,
-  },
 
   // Requests
-  DirectionOfTravel,
   Ident,
 
   // Callouts
@@ -70,17 +52,6 @@ impl From<Task> for EventKind {
   fn from(value: Task) -> Self {
     match value {
       Task::Altitude(x) => EventKind::Altitude(x),
-      Task::Clearance {
-        departure,
-        altitude,
-        speed,
-      } => EventKind::Clearance {
-        speed,
-        altitude,
-        departure,
-      },
-      Task::Direct(x) => EventKind::DirectTo(x),
-      Task::DirectionOfTravel => EventKind::DirectionOfTravel,
       Task::Frequency(x) => EventKind::Frequency(x),
       Task::GoAround => EventKind::GoAround,
       Task::Heading(x) => EventKind::Heading(x),
@@ -179,31 +150,22 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .push(Action::new(aircraft.id, ActionKind::Frequency(*frequency)));
       }
       EventKind::NamedFrequency(frq) => {
-        let airspace_id =
-          aircraft.airspace.unwrap_or(aircraft.flight_plan.arriving);
-        if let Some(airspace) =
-          bundle.airspaces.iter().find(|a| a.id == airspace_id)
+        if let Some(frequency) =
+          bundle.airspace.frequencies.try_from_string(frq)
         {
-          if let Some(frequency) = airspace.frequencies.try_from_string(frq) {
-            bundle
-              .actions
-              .push(Action::new(aircraft.id, ActionKind::Frequency(frequency)));
-          }
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::Frequency(frequency)));
         }
       }
 
       // Flying
-      EventKind::DirectTo(waypoints) => {
-        if let AircraftState::Flying { .. } = aircraft.state {
-          handle_direct_to_event(aircraft, bundle, waypoints);
-        }
-      }
       EventKind::ResumeOwnNavigation => {
         if let AircraftState::Flying { .. } = aircraft.state {
           let arrival = bundle
-            .airspaces
+            .connections
             .iter()
-            .find(|a| a.id == aircraft.flight_plan.arriving);
+            .find(|a| a.name == aircraft.flight_plan.arriving);
 
           if let Some(arrival) = arrival {
             bundle.actions.push(Action {
@@ -216,15 +178,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             });
             bundle.actions.push(Action {
               id: aircraft.id,
-              kind: ActionKind::Flying(vec![Node {
-                name: arrival.id,
-                kind: NodeKind::Runway,
-                behavior: NodeBehavior::GoTo,
-                value: NodeVORData {
-                  to: arrival.pos,
-                  then: Vec::new(),
-                },
-              }]),
+              kind: ActionKind::Flying(vec![arrival.clone()]),
             });
           }
         }
@@ -252,37 +206,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
           handle_takeoff_event(aircraft, bundle, *runway);
         }
       }
-      EventKind::DepartureFromArrival => {
-        if let AircraftState::Taxiing { .. } = aircraft.state {
-          let departure = bundle
-            .airspaces
-            .iter()
-            .find(|a| a.id == aircraft.flight_plan.arriving);
-          let arrival = find_random_airspace(bundle.airspaces, bundle.rng);
-          if let Some((departure, destination)) = departure.zip(arrival) {
-            let frequency = departure.frequencies.clearance;
-            let wait_time = Duration::from_secs(
-              bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-            );
-            bundle.actions.push(Action::new(
-              aircraft.id,
-              ActionKind::DepartureFromArrival {
-                departure: departure.id,
-                destination: destination.id,
-                wait_time,
-              },
-            ));
-            bundle
-              .actions
-              .push(Action::new(aircraft.id, ActionKind::Frequency(frequency)))
-          }
-        }
-      }
 
       // Taxiing
       EventKind::Taxi(waypoints) => {
         if let AircraftState::Taxiing { .. } = aircraft.state {
-          if let Some(airport) = closest_airport(bundle.airspaces, aircraft.pos)
+          if let Some(airport) = closest_airport(bundle.airspace, aircraft.pos)
           {
             handle_taxi_event(aircraft, bundle, waypoints, &airport.pathfinder);
           }
@@ -308,43 +236,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
           });
         }
       }
-      EventKind::Clearance {
-        speed,
-        altitude,
-        departure,
-      } => {
-        if let AircraftState::Taxiing { .. } = aircraft.state {
-          handle_clearance_event(
-            aircraft,
-            bundle,
-            *speed,
-            *altitude,
-            departure.as_deref(),
-          );
-        }
-      }
 
       // Requests
-      EventKind::DirectionOfTravel => {
-        if let Some(arrival) = bundle
-          .airspaces
-          .iter()
-          .find(|a| a.id == aircraft.flight_plan.arriving)
-        {
-          let heading = angle_between_points(aircraft.pos, arrival.pos);
-          let direction: String = heading_to_direction(heading).into();
-
-          bundle.events.push(Event::new(
-            aircraft.id,
-            EventKind::Callout(CommandWithFreq {
-              id: aircraft.id.to_string(),
-              frequency: aircraft.frequency,
-              reply: CommandReply::DirectionOfDeparture { direction },
-              tasks: Vec::new(),
-            }),
-          ));
-        }
-      }
       EventKind::Ident => {
         bundle.events.push(Event::new(
           aircraft.id,
@@ -377,21 +270,17 @@ pub fn handle_land_event(
   runway_id: Intern<String>,
 ) {
   if let AircraftState::Flying { .. } = aircraft.state {
-    if let Some(airspace) = aircraft
+    if let Some(runway) = bundle
       .airspace
-      .and_then(|airspace| bundle.airspaces.iter().find(|a| a.id == airspace))
+      .airports
+      .iter()
+      .flat_map(|a| a.runways.iter())
+      .find(|r| r.id == runway_id)
     {
-      if let Some(runway) = airspace
-        .airports
-        .iter()
-        .flat_map(|a| a.runways.iter())
-        .find(|r| r.id == runway_id)
-      {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Landing(runway.clone()),
-        ));
-      }
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::Landing(runway.clone()),
+      ));
     }
   }
 }
@@ -432,101 +321,6 @@ pub fn handle_touchdown_event(
       waypoints: Vec::new(),
     },
   ));
-}
-
-pub fn parse_waypoint_strings(
-  bundle: &Bundle,
-  waypoint_strings: &[Intern<String>],
-) -> Option<Vec<Node<NodeVORData>>> {
-  waypoint_strings
-    .iter()
-    .map(|w| bundle.waypoints.iter().find(|n| &n.name == w).cloned())
-    .rev()
-    .try_fold(Vec::new(), |mut vec, item| {
-      vec.push(item?);
-
-      Some(vec)
-    })
-}
-
-pub fn parse_arrival(
-  bundle: &Bundle,
-  waypoints: &mut Vec<Node<NodeVORData>>,
-  arrival_string: Intern<String>,
-) {
-  if let Some(wps) = bundle.waypoint_sets.arrival.get(&arrival_string) {
-    waypoints.extend(wps.to_vec());
-  }
-}
-
-pub fn parse_approach(
-  bundle: &Bundle,
-  waypoints: &mut Vec<Node<NodeVORData>>,
-  approach_string: Intern<String>,
-) {
-  if let Some(wps) = bundle.waypoint_sets.approach.get(&approach_string) {
-    waypoints.extend(wps.to_vec());
-  }
-}
-
-pub fn parse_departure(
-  bundle: &Bundle,
-  waypoints: &mut Vec<Node<NodeVORData>>,
-  departure_string: Intern<String>,
-) {
-  if let Some(wps) = bundle.waypoint_sets.departure.get(&departure_string) {
-    waypoints.extend(wps.to_vec());
-  }
-}
-
-pub fn parse_direct(
-  bundle: &Bundle,
-  waypoints: &mut Vec<Node<NodeVORData>>,
-  name: Intern<String>,
-) {
-  if let Some(wp) = bundle.waypoints.iter().find(|wp| wp.name == name) {
-    waypoints.push(wp.clone());
-  }
-}
-
-pub fn parse_task_waypoints(
-  aircraft: &Aircraft,
-  bundle: &mut Bundle,
-  task_waypoints: &[TaskWaypoint],
-) -> Vec<Node<NodeVORData>> {
-  let mut waypoints: Vec<Node<NodeVORData>> = Vec::new();
-  for wp in task_waypoints.iter() {
-    match wp {
-      TaskWaypoint::Approach(id) => parse_approach(bundle, &mut waypoints, *id),
-      TaskWaypoint::Arrival(id) => parse_arrival(bundle, &mut waypoints, *id),
-      TaskWaypoint::Departure(id) => {
-        parse_departure(bundle, &mut waypoints, *id)
-      }
-      TaskWaypoint::Direct(id) => {
-        parse_direct(bundle, &mut waypoints, *id);
-      }
-      TaskWaypoint::Destination => {
-        let id = aircraft.flight_plan.arriving;
-        parse_direct(bundle, &mut waypoints, id);
-      }
-    }
-  }
-
-  waypoints
-}
-
-pub fn handle_direct_to_event(
-  aircraft: &Aircraft,
-  bundle: &mut Bundle,
-  waypoints: &[TaskWaypoint],
-) {
-  let mut waypoints = parse_task_waypoints(aircraft, bundle, waypoints);
-  waypoints.reverse();
-
-  bundle.actions.push(Action {
-    id: aircraft.id,
-    kind: ActionKind::Flying(waypoints),
-  });
 }
 
 pub fn handle_taxi_event(
@@ -602,9 +396,9 @@ pub fn handle_takeoff_event(
   if let AircraftState::Taxiing { current, .. } = &aircraft.state {
     // If we are at the runway
     if let Some(runway) = bundle
-      .airspaces
+      .airspace
+      .airports
       .iter()
-      .flat_map(|a| a.airports.iter())
       .flat_map(|a| a.runways.iter())
       .find(|r| r.id == runway_id)
     {
@@ -641,26 +435,4 @@ pub fn handle_takeoff_event(
     // TODO: handle if the waypoint is coming up, update the behavior
     // to take off (once we have waypoint behaviors for takeoff)
   }
-}
-
-pub fn handle_clearance_event(
-  aircraft: &Aircraft,
-  bundle: &mut Bundle,
-  speed: Option<f32>,
-  altitude: Option<f32>,
-  departure: Option<&[TaskWaypoint]>,
-) {
-  let mut waypoints = departure
-    .map(|departure| parse_task_waypoints(aircraft, bundle, departure))
-    .unwrap_or_default();
-  waypoints.reverse();
-
-  bundle.actions.push(Action {
-    id: aircraft.id,
-    kind: ActionKind::Clearance {
-      speed,
-      altitude,
-      waypoints,
-    },
-  });
 }

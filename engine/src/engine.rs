@@ -2,10 +2,9 @@ use std::collections::HashSet;
 
 use actions::{Action, AircraftActionHandler};
 use effects::{
-  AircraftContactClearanceEffect, AircraftDeleteWhenInAirspaceEffect,
-  AircraftIsNowParkedEffect, AircraftSetDescentOnAutoAirspaceEffect,
-  AircraftUpdateAirspaceEffect, AircraftUpdateFlyingEffect,
-  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
+  AircraftSetDescentOnAutoAirspaceEffect, AircraftUpdateAirspaceEffect,
+  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
+  AircraftUpdateTaxiingEffect,
 };
 use events::Event;
 use internment::Intern;
@@ -24,7 +23,7 @@ use crate::{
       *,
     },
     airspace::Airspace,
-    world::{WaypointSet, World},
+    world::World,
   },
   pathfinder::{Node, NodeVORData},
   NAUTICALMILES_TO_FEET,
@@ -37,9 +36,9 @@ pub struct Bundle<'a> {
   pub events: Vec<Event>,
   pub actions: Vec<Action>,
 
-  pub airspaces: &'a [Airspace],
-  pub waypoints: &'a [Node<NodeVORData>],
-  pub waypoint_sets: &'a WaypointSet,
+  pub airspace: &'a Airspace,
+  pub airports: &'a Vec<Node<NodeVORData>>,
+  pub connections: &'a Vec<Node<NodeVORData>>,
 
   pub rng: &'a mut Rng,
   pub dt: f32,
@@ -51,9 +50,9 @@ impl<'a> Bundle<'a> {
       prev: Aircraft::default(),
       events: Vec::new(),
       actions: Vec::new(),
-      airspaces: &world.airspaces,
-      waypoints: &world.waypoints,
-      waypoint_sets: &world.waypoint_sets,
+      airspace: &world.airspace,
+      airports: &world.airports,
+      connections: &world.connections,
       rng,
       dt,
     }
@@ -184,11 +183,6 @@ impl Engine {
       }
       bundle.actions.clear();
 
-      AircraftIsNowParkedEffect::run(aircraft, &mut bundle);
-      // AircraftContactCenterEffect::run(aircraft, &mut bundle);
-      AircraftContactClearanceEffect::run(aircraft, &mut bundle);
-      // AircraftContactApproachEffect::run(aircraft, &mut bundle);
-      AircraftDeleteWhenInAirspaceEffect::run(aircraft, &mut bundle);
       AircraftSetDescentOnAutoAirspaceEffect::run(aircraft, &mut bundle);
 
       // Apply all actions

@@ -74,33 +74,7 @@ async fn main() {
     center: 118.7,
   };
 
-  // let player_two_frequencies = Frequencies {
-  //   approach: 118.6,
-  //   departure: 118.6,
-  //   tower: 118.6,
-  //   ground: 118.6,
-  //   center: 118.6,
-  // };
-
-  // let mut airport_egll =
-  //   Airport::new(airspace_egll.id.clone(), airspace_egll.pos);
-  // airport::parallel::setup(
-  //   &mut airport_egll,
-  //   &mut engine.world.waypoints,
-  //   &mut engine.world.waypoint_sets,
-  // );
-  // airport_egll.calculate_waypoints();
-  // airspace_egll.airports.push(airport_egll);
-
   const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
-  const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-  const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-  const CENTER_WAYPOINT_RADIUS: f32 = NAUTICALMILES_TO_FEET * 15.0;
-
-  let airspace_names = [
-    "KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL",
-    "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
-  ];
 
   // Create a controlled KSFO airspace
   let mut airspace_ksfo = Airspace {
@@ -119,190 +93,102 @@ async fn main() {
     ..Default::default()
   };
 
-  airport.setup(&mut world_rng)(
-    &mut airport_ksfo,
-    &mut engine.world.waypoints,
-    &mut engine.world.waypoint_sets,
-  );
+  airport.setup(&mut world_rng)(&mut airport_ksfo);
 
   airport_ksfo.calculate_waypoints();
   airspace_ksfo.airports.push(airport_ksfo);
-  engine.world.airspaces.push(airspace_ksfo);
+  engine.world.airspace = airspace_ksfo;
 
-  // Generate randomly positioned uncontrolled airspaces.
-  for airspace_name in airspace_names {
-    // TODO: This is a brute-force approach. A better solution would be to use
-    //       some form of jitter or other, potentially, less infinite-loop-prone
-    //       solution.
+  // // Generate randomly positioned uncontrolled airspaces.
+  // for airspace_name in airspace_names {
+  //   // TODO: This is a brute-force approach. A better solution would be to use
+  //   //       some form of jitter or other, potentially, less infinite-loop-prone
+  //   //       solution.
 
-    let mut i = 0;
+  //   let mut i = 0;
 
-    let airspace_position = 'outer: loop {
-      if i >= 1000 {
-        tracing::error!(
-          "Unable to find a place for airspace '{airspace_name}'"
-        );
-        std::process::exit(1);
-      }
+  //   let airspace_position = 'outer: loop {
+  //     if i >= 1000 {
+  //       tracing::error!(
+  //         "Unable to find a place for airspace '{airspace_name}'"
+  //       );
+  //       std::process::exit(1);
+  //     }
 
-      i += 1;
+  //     i += 1;
 
-      let position = Vec2::new(
-        (world_rng.f32() - 0.5) * world_radius,
-        (world_rng.f32() - 0.5) * world_radius,
-      );
+  //     let position = Vec2::new(
+  //       (world_rng.f32() - 0.5) * world_radius,
+  //       (world_rng.f32() - 0.5) * world_radius,
+  //     );
 
-      for airspace in engine.world.airspaces.iter() {
-        if circle_circle_intersection(
-          position,
-          airspace.pos,
-          AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
-          airspace.radius + TOWER_AIRSPACE_PADDING_RADIUS,
-        ) {
-          continue 'outer;
-        }
-      }
+  //     for airspace in engine.world.airspaces.iter() {
+  //       if circle_circle_intersection(
+  //         position,
+  //         airspace.pos,
+  //         AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
+  //         airspace.radius + TOWER_AIRSPACE_PADDING_RADIUS,
+  //       ) {
+  //         continue 'outer;
+  //       }
+  //     }
 
-      break position;
-    };
+  //     break position;
+  //   };
 
-    engine.world.airspaces.push(Airspace {
-      id: Intern::from_ref(airspace_name),
-      pos: airspace_position,
-      radius: AUTO_TOWER_AIRSPACE_RADIUS,
-      airports: vec![],
-      auto: true,
-      altitude: 0.0..=10000.0,
-      frequencies: player_one_frequencies.clone(),
-    });
+  //   engine.world.airspaces.push(Airspace {
+  //     id: Intern::from_ref(airspace_name),
+  //     pos: airspace_position,
+  //     radius: AUTO_TOWER_AIRSPACE_RADIUS,
+  //     airports: vec![],
+  //     auto: true,
+  //     altitude: 0.0..=10000.0,
+  //     frequencies: player_one_frequencies.clone(),
+  //   });
 
-    engine.world.waypoints.push(Node {
-      name: Intern::from_ref(airspace_name),
-      kind: NodeKind::Runway,
-      behavior: NodeBehavior::GoTo,
-      value: NodeVORData {
-        to: airspace_position,
-        then: vec![],
-      },
-    });
-  }
+  //   engine.world.waypoints.push(Node {
+  //     name: Intern::from_ref(airspace_name),
+  //     kind: NodeKind::Runway,
+  //     behavior: NodeBehavior::GoTo,
+  //     value: NodeVORData {
+  //       to: airspace_position,
+  //       then: vec![],
+  //     },
+  //   });
+  // }
 
-  let mut aircrafts: Vec<Aircraft> = Vec::new();
-  for airspace in engine.world.airspaces.iter() {
-    if !airspace.auto {
-      for airport in airspace.airports.iter() {
-        let mut now = true;
-        for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-          if engine.rng.chance(0.3) {
-            let mut aircraft =
-              Aircraft::random_parked(gate.clone(), &mut engine.rng, airspace);
-            aircraft.flight_plan.arriving = airspace.id;
-            aircraft
-              .make_random_departure(&engine.world.airspaces, &mut engine.rng);
-            aircraft.created = SystemTime::now()
-              .duration_since(SystemTime::UNIX_EPOCH)
-              .unwrap()
-              .add(Duration::from_secs(
-                engine.rng.sample_iter(120..=1800).unwrap(),
-              ));
+  // let mut aircrafts: Vec<Aircraft> = Vec::new();
+  // for airspace in engine.world.airspaces.iter() {
+  //   if !airspace.auto {
+  //     for airport in airspace.airports.iter() {
+  //       let mut now = true;
+  //       for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
+  //         if engine.rng.chance(0.3) {
+  //           let mut aircraft =
+  //             Aircraft::random_parked(gate.clone(), &mut engine.rng, airspace);
+  //           aircraft.flight_plan.arriving = airspace.id;
+  //           aircraft
+  //             .make_random_departure(&engine.world.airspaces, &mut engine.rng);
+  //           aircraft.created = SystemTime::now()
+  //             .duration_since(SystemTime::UNIX_EPOCH)
+  //             .unwrap()
+  //             .add(Duration::from_secs(
+  //               engine.rng.sample_iter(120..=1800).unwrap(),
+  //             ));
 
-            if now {
-              aircraft.created_now();
-              now = false;
-            }
+  //           if now {
+  //             aircraft.created_now();
+  //             now = false;
+  //           }
 
-            aircrafts.push(aircraft);
-          }
-        }
-      }
-    }
-  }
-
-  for aircraft in aircrafts.drain(..) {
-    engine.add_aircraft(aircraft);
-  }
-
-  // Generating waypoints between sufficiently close airspaces.
-  let mut i = 0;
-  let mut iota = || {
-    let t = i;
-    i += 1;
-    t
-  };
-
-  fn n_to_an(i: usize) -> String {
-    let n = i % 9;
-    let n = n + 1;
-
-    let wraps = u8::try_from(i / 9).unwrap();
-
-    if wraps > b'Z' {
-      tracing::error!("Too many waypoints to generate a unique one");
-      std::process::exit(1);
-    }
-
-    let l = (b'A' + wraps) as char;
-
-    format!("{l}{n}")
-  }
-
-  for airspace in engine.world.airspaces.iter() {
-    'second: for other_airspace in engine.world.airspaces.iter() {
-      let waypoint = airspace.pos.lerp(other_airspace.pos, 0.5);
-
-      for intersection_test_airspace in engine.world.airspaces.iter() {
-        if circle_circle_intersection(
-          intersection_test_airspace.pos,
-          waypoint,
-          intersection_test_airspace.radius,
-          CENTER_WAYPOINT_RADIUS,
-        ) {
-          tracing::trace!(
-            "Skipping waypoint at {} between {} and {}",
-            waypoint,
-            airspace.id,
-            other_airspace.id
-          );
-          continue 'second;
-        }
-      }
-
-      for intersection_test_waypoint in engine.world.waypoints.iter() {
-        if circle_circle_intersection(
-          intersection_test_waypoint.value.to,
-          waypoint,
-          CENTER_WAYPOINT_RADIUS,
-          CENTER_WAYPOINT_RADIUS,
-        ) {
-          tracing::trace!(
-            "Skipping waypoint at {} between {} ({}) ({})",
-            waypoint,
-            intersection_test_waypoint.value.to,
-            intersection_test_waypoint.name,
-            waypoint == intersection_test_waypoint.value.to,
-          );
-          continue 'second;
-        }
-      }
-
-      let waypoint_id = iota();
-
-      engine.world.waypoints.push(Node {
-        name: Intern::from(n_to_an(waypoint_id)),
-        kind: NodeKind::Runway,
-        behavior: NodeBehavior::GoTo,
-        value: NodeVORData {
-          to: waypoint,
-          then: vec![],
-        },
-      });
-    }
-  }
+  //           aircrafts.push(aircraft);
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   //
-
-  tracing::info!("Preparing spawn area...");
-  engine.prepare();
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || engine.begin_loop());

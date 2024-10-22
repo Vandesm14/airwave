@@ -21,7 +21,7 @@ use engine::{
       events::{Event, EventKind},
       Aircraft,
     },
-    world::{find_random_arrival, find_random_departure, World},
+    world::World,
   },
 };
 use futures_util::{
@@ -124,72 +124,12 @@ impl CompatAdapter {
     self.aircraft.push(aircraft);
   }
 
-  pub fn spawn_random_aircraft(&mut self) {
-    let departure = find_random_departure(&self.world.airspaces, &mut self.rng);
-    let arrival = find_random_arrival(&self.world.airspaces, &mut self.rng);
-    if let Some((departure, arrival)) = departure.zip(arrival) {
-      let aircraft =
-        Aircraft::random_to_arrive(departure, arrival, &mut self.rng);
-      self.add_aircraft(aircraft);
-    }
-  }
-
-  pub fn prepare(&mut self) {
-    self.spawn_random_aircraft();
-
-    let mut i = 0;
-    let mut last_spawn = 0.0;
-    loop {
-      let realtime = i as f32 * 1.0 / self.rate as f32;
-      if realtime - last_spawn >= SPAWN_RATE_SECS as f32
-        && self.aircraft.len() < SPAWN_LIMIT
-      {
-        self.spawn_random_aircraft();
-        last_spawn = realtime;
-      }
-
-      let dt = 1.0 / self.rate as f32;
-      let events =
-        self
-          .engine
-          .tick(&self.world, &mut self.aircraft, &mut self.rng, dt);
-      self.cleanup(&events);
-
-      if self.aircraft.iter().any(|aircraft| {
-        if let Some(airspace) = self
-          .world
-          .airspaces
-          .iter()
-          .find(|a| a.id == aircraft.flight_plan.arriving)
-        {
-          return !airspace.auto && airspace.contains_point(aircraft.pos, None);
-        }
-
-        false
-      })
-      // || self.aircraft.iter().any(|a| a.is_colliding)
-      {
-        tracing::info!("Done ({realtime} simulated seconds).");
-        return;
-      }
-
-      i += 1;
-    }
-  }
-
   pub fn begin_loop(&mut self) {
     'main_loop: loop {
       if Instant::now() - self.last_tick
         >= Duration::from_secs_f32(1.0 / self.rate as f32)
       {
         self.last_tick = Instant::now();
-
-        if self.aircraft.len() < SPAWN_LIMIT
-          && self.last_spawn.elapsed() >= Duration::from_secs(SPAWN_RATE_SECS)
-        {
-          self.last_spawn = Instant::now();
-          self.spawn_random_aircraft();
-        }
 
         let mut commands: Vec<CommandWithFreq> = Vec::new();
 
@@ -276,7 +216,7 @@ impl CompatAdapter {
       let mut callout = true;
       for task in command.tasks.iter() {
         match task {
-          Task::DirectionOfTravel | Task::Ident => {
+          Task::Ident => {
             // Don't generate a callout for these commands
             callout = command.tasks.len() > 1;
           }

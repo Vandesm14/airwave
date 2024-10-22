@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-
 use glam::Vec2;
-use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
@@ -53,18 +50,13 @@ pub fn find_random_arrival<'a>(
   find_random_airspace_with(airspaces, Some(false), true, rng)
 }
 
-pub fn closest_airport(
-  airspaces: &[Airspace],
-  point: Vec2,
-) -> Option<&Airport> {
+pub fn closest_airport(airspace: &Airspace, point: Vec2) -> Option<&Airport> {
   let mut closest: Option<&Airport> = None;
   let mut distance = f32::MAX;
-  for airspace in airspaces.iter().filter(|a| a.contains_point(point, None)) {
-    for airport in airspace.airports.iter() {
-      if airport.center.distance_squared(point) < distance {
-        distance = airport.center.distance_squared(point);
-        closest = Some(airport);
-      }
+  for airport in airspace.airports.iter() {
+    if airport.center.distance_squared(point) < distance {
+      distance = airport.center.distance_squared(point);
+      closest = Some(airport);
     }
   }
 
@@ -96,17 +88,10 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct WaypointSet {
-  pub arrival: HashMap<Intern<String>, Vec<Node<NodeVORData>>>,
-  pub approach: HashMap<Intern<String>, Vec<Node<NodeVORData>>>,
-  pub departure: HashMap<Intern<String>, Vec<Node<NodeVORData>>>,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
-  pub airspaces: Vec<Airspace>,
-  pub waypoints: Vec<Node<NodeVORData>>,
-  pub waypoint_sets: WaypointSet,
+  pub airspace: Airspace,
+  pub airports: Vec<Node<NodeVORData>>,
+  pub connections: Vec<Node<NodeVORData>>,
 }
 
 impl World {}

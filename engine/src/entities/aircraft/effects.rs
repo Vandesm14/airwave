@@ -1,4 +1,4 @@
-use std::{ops::Mul, time::SystemTime};
+use std::ops::Mul;
 
 use super::{
   actions::ActionKind,
@@ -11,8 +11,8 @@ use crate::{
   command::{CommandReply, CommandWithFreq},
   delta_angle,
   engine::Bundle,
-  heading_to_direction, inverse_degrees, move_point, normalize_angle,
-  pathfinder::{NodeBehavior, NodeKind},
+  inverse_degrees, move_point, normalize_angle,
+  pathfinder::NodeBehavior,
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
@@ -107,18 +107,7 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
 
 pub struct AircraftUpdateAirspaceEffect;
 impl AircraftEffect for AircraftUpdateAirspaceEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    let airspace = bundle
-      .airspaces
-      .iter()
-      .find(|a| a.contains_point(aircraft.pos, Some(aircraft.altitude)))
-      .map(|a| a.id);
-    if airspace != aircraft.airspace {
-      bundle
-        .actions
-        .push(Action::new(aircraft.id, ActionKind::Airspace(airspace)));
-    }
-  }
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {}
 }
 
 pub struct AircraftUpdateLandingEffect;
@@ -303,22 +292,6 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
   }
 }
 
-pub struct AircraftIsNowParkedEffect;
-impl AircraftEffect for AircraftIsNowParkedEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Taxiing { current, .. } = &aircraft.state {
-      if aircraft.speed == 0.0
-        && current.kind == NodeKind::Gate
-        && Some(aircraft.flight_plan.arriving) == aircraft.airspace
-      {
-        bundle
-          .events
-          .push(Event::new(aircraft.id, EventKind::DepartureFromArrival));
-      }
-    }
-  }
-}
-
 pub struct AircraftContactCenterEffect;
 impl AircraftEffect for AircraftContactCenterEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
@@ -339,111 +312,21 @@ impl AircraftEffect for AircraftContactCenterEffect {
   }
 }
 
-pub struct AircraftContactApproachEffect;
-impl AircraftEffect for AircraftContactApproachEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Flying { .. } = aircraft.state {
-      if bundle.prev.airspace.is_none()
-        && aircraft.airspace.is_some()
-        && Some(aircraft.flight_plan.arriving) == aircraft.airspace
-      {
-        if let Some(airspace) = bundle
-          .airspaces
-          .iter()
-          .find(|a| a.id == aircraft.airspace.unwrap())
-        {
-          if !airspace.auto {
-            let heading = angle_between_points(aircraft.pos, airspace.pos);
-            let direction = heading_to_direction(heading);
-
-            bundle.events.push(Event::new(
-              aircraft.id,
-              EventKind::Callout(CommandWithFreq::new_reply(
-                aircraft.id.to_string(),
-                aircraft.frequency,
-                CommandReply::ArriveInAirspace {
-                  direction: direction.into(),
-                  altitude: aircraft.altitude,
-                },
-              )),
-            ));
-          }
-        }
-      }
-    }
-  }
-}
-
-pub struct AircraftContactClearanceEffect;
-impl AircraftEffect for AircraftContactClearanceEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Taxiing { current, .. } = &aircraft.state {
-      let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
-      if aircraft.created < now
-        && !aircraft.callouts.clearance
-        && current.kind == NodeKind::Gate
-        && aircraft.airspace == Some(aircraft.flight_plan.departing)
-      {
-        bundle.events.push(Event::new(
-          aircraft.id,
-          EventKind::Callout(CommandWithFreq::new_reply(
-            aircraft.id.to_string(),
-            aircraft.frequency,
-            CommandReply::ContactClearance {
-              arrival: aircraft.flight_plan.arriving.to_string(),
-            },
-          )),
-        ));
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::Callouts(aircraft.callouts.mark_clearance()),
-        ));
-      }
-    }
-  }
-}
-
-pub struct AircraftDeleteWhenInAirspaceEffect;
-impl AircraftEffect for AircraftDeleteWhenInAirspaceEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Flying { .. } = aircraft.state {
-      if let Some(airspace) = aircraft.airspace.and_then(|airspace_id| {
-        bundle.airspaces.iter().find(|a| a.id == airspace_id)
-      }) {
-        if airspace.auto && airspace.id == aircraft.flight_plan.arriving {
-          bundle
-            .events
-            .push(Event::new(aircraft.id, EventKind::Delete));
-        }
-      }
-    }
-  }
-}
-
 pub struct AircraftSetDescentOnAutoAirspaceEffect;
 impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     if let AircraftState::Flying { .. } = aircraft.state {
-      if aircraft.target.altitude > 7000.0 || aircraft.target.speed > 250.0 {
-        if let Some(airspace) = bundle
-          .airspaces
-          .iter()
-          .find(|a| a.id == aircraft.flight_plan.arriving)
-        {
-          if airspace.pos.distance_squared(aircraft.pos)
-            <= airspace.radius.mul(2.0).powf(2.0)
-          {
-            bundle.events.push(Event::new(
-              aircraft.id,
-              EventKind::AltitudeAtOrBelow(7000.0),
-            ));
-            bundle
-              .events
-              .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
-          }
-        }
+      if (aircraft.target.altitude > 7000.0 || aircraft.target.speed > 250.0)
+        && bundle.airspace.pos.distance_squared(aircraft.pos)
+          <= bundle.airspace.radius.mul(2.0).powf(2.0)
+      {
+        bundle.events.push(Event::new(
+          aircraft.id,
+          EventKind::AltitudeAtOrBelow(7000.0),
+        ));
+        bundle
+          .events
+          .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
       }
     }
   }

@@ -20,13 +20,6 @@ pub enum TaskWaypoint {
 #[serde(tag = "type", content = "value")]
 pub enum Task {
   Altitude(f32),
-  Clearance {
-    departure: Option<Vec<TaskWaypoint>>,
-    altitude: Option<f32>,
-    speed: Option<f32>,
-  },
-  Direct(Vec<TaskWaypoint>),
-  DirectionOfTravel,
   Frequency(f32),
   GoAround,
   Heading(f32),

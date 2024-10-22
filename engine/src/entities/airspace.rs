@@ -59,6 +59,20 @@ pub struct Airspace {
   pub frequencies: Frequencies,
 }
 
+impl Default for Airspace {
+  fn default() -> Self {
+    Self {
+      id: Default::default(),
+      pos: Default::default(),
+      radius: Default::default(),
+      airports: Default::default(),
+      altitude: 0.0..=10000.0,
+      auto: Default::default(),
+      frequencies: Default::default(),
+    }
+  }
+}
+
 impl Airspace {
   pub fn contains_point(&self, point: Vec2, altitude: Option<f32>) -> bool {
     let distance = point.distance_squared(self.pos);
