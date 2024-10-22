@@ -2,13 +2,9 @@ use glam::Vec2;
 
 use engine::{
   add_degrees,
-  entities::{
-    aircraft::events::EventKind,
-    airport::{Airport, Gate, Runway, Taxiway, Terminal},
-  },
+  entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
   find_projected_intersection, inverse_degrees, move_point,
-  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
-  Line, CLOCKWISE, COUNTERCLOCKWISE, NAUTICALMILES_TO_FEET,
+  Line, CLOCKWISE, COUNTERCLOCKWISE,
 };
 use internment::Intern;
 

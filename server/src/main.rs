@@ -4,21 +4,16 @@ use core::{
   str::FromStr,
 };
 use std::{
-  ops::Add,
   path::PathBuf,
   sync::Arc,
-  time::{Duration, SystemTime},
 };
 
 use clap::Parser;
 use engine::{
-  circle_circle_intersection,
   entities::{
-    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
   },
-  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
