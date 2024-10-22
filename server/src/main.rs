@@ -3,10 +3,7 @@ use core::{
   net::{IpAddr, Ipv4Addr, SocketAddr},
   str::FromStr,
 };
-use std::{
-  path::PathBuf,
-  sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use engine::{

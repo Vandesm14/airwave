@@ -3,8 +3,8 @@ use glam::Vec2;
 use engine::{
   add_degrees,
   entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
-  find_projected_intersection, inverse_degrees, move_point,
-  Line, CLOCKWISE, COUNTERCLOCKWISE,
+  find_projected_intersection, inverse_degrees, move_point, Line, CLOCKWISE,
+  COUNTERCLOCKWISE,
 };
 use internment::Intern;
 
