@@ -66,7 +66,6 @@ async fn main() {
   );
 
   let player_one_frequencies = Frequencies {
-    clearance: 118.7,
     approach: 118.6,
     departure: 118.6,
     tower: 118.5,
@@ -77,7 +76,6 @@ async fn main() {
   const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
   const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
   const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-  const CENTER_WAYPOINT_RADIUS: f32 = NAUTICALMILES_TO_FEET * 15.0;
 
   let airspace_names = [
     "KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL",

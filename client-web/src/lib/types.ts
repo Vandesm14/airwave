@@ -143,7 +143,6 @@ export type Airport = {
 };
 
 export type Frequencies = {
-  clearance: number;
   approach: number;
   departure: number;
   tower: number;
@@ -168,7 +167,6 @@ export function DefaultAirspace(): Airspace {
     airports: [],
     auto: false,
     frequencies: {
-      clearance: 118.5,
       approach: 118.5,
       departure: 118.5,
       tower: 118.5,

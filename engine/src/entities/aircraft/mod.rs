@@ -21,7 +21,6 @@ use crate::{
 use super::{
   airport::{Gate, Runway},
   airspace::Airspace,
-  world::{find_random_airspace, Connection},
 };
 
 const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
@@ -175,7 +174,7 @@ impl Aircraft {
       ),
       callouts: AircraftCallouts::default(),
 
-      frequency: airspace.frequencies.clearance,
+      frequency: airspace.frequencies.ground,
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap(),
