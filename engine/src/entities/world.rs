@@ -1,8 +1,7 @@
 use glam::Vec2;
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
-
-use crate::pathfinder::{Node, NodeVORData};
 
 use super::{airport::Airport, airspace::Airspace};
 
@@ -88,10 +87,25 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ConnectionState {
+  #[default]
+  Inactive,
+  Active,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Connection {
+  pub id: Intern<String>,
+  pub state: ConnectionState,
+  pub pos: Vec2,
+  pub transition: Vec2,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspace: Airspace,
-  pub airports: Vec<Node<NodeVORData>>,
-  pub connections: Vec<Node<NodeVORData>>,
+  pub connections: Vec<Connection>,
 }
 
 impl World {}

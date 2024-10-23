@@ -39,7 +39,7 @@ export function distanceToAirspace(
   airspace: string
 ): number {
   let distance = 0;
-  let destination = world.airspaces.find((a) => a.id === airspace);
+  let destination = world.connections.find((a) => a.id === airspace);
   if (destination) {
     distance = calculateDistance(aircraft.pos, destination.pos);
   }

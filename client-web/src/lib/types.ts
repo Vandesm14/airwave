@@ -178,16 +178,21 @@ export function DefaultAirspace(): Airspace {
   };
 }
 
+export type Connection = {
+  id: string;
+  state: 'inactive' | 'active';
+  pos: Vec2;
+  transition: Vec2;
+};
+
 export type World = {
   airspace: Airspace;
-  airports: Array<NodeVOR>;
-  connections: Array<NodeVOR>;
+  connections: Array<Connection>;
 };
 
 export function DefaultWorld(): World {
   return {
     airspace: DefaultAirspace(),
-    airports: [],
     connections: [],
   };
 }

@@ -1,6 +1,5 @@
 import { useAtom } from 'solid-jotai';
 import {
-  controlAtom,
   radarAtom,
   renderAtom,
   selectedAircraftAtom,
@@ -9,8 +8,8 @@ import {
 import {
   Aircraft,
   Airspace,
+  Connection,
   Gate,
-  NodeVOR,
   Runway,
   Taxiway,
   Terminal,
@@ -402,10 +401,10 @@ export default function Canvas({
     }
   }
 
-  function drawWaypoint(ctx: Ctx, wp: NodeVOR) {
-    let pos = scalePoint(wp.value.to);
-    ctx.fillStyle = '#BB6';
-    ctx.strokeStyle = '#BB6';
+  function drawWaypoint(ctx: Ctx, name: string, position: Vec2, color: string) {
+    let pos = scalePoint(position);
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
     ctx.beginPath();
     ctx.arc(pos[0], pos[1], scaleFeetToPixels(700), 0, Math.PI * 2);
     ctx.fill();
@@ -418,7 +417,26 @@ export default function Canvas({
     let spacing = scaleFeetToPixels(2000 + nauticalMilesToFeet * 0.2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(wp.name, pos[0], pos[1] - spacing);
+    ctx.fillText(name, pos[0], pos[1] - spacing);
+  }
+
+  function drawConnection(ctx: Ctx, connection: Connection) {
+    let activeColor = '#c9c94e';
+    let inactiveColor = '#444';
+
+    drawWaypoint(
+      ctx,
+      connection.id,
+      connection.pos,
+      connection.state === 'active' ? activeColor : inactiveColor
+    );
+
+    drawWaypoint(
+      ctx,
+      connection.id,
+      connection.transition,
+      connection.state === 'active' ? activeColor : inactiveColor
+    );
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
@@ -811,8 +829,8 @@ export default function Canvas({
       }
     }
 
-    for (let wp of [...world.airports, ...world.connections]) {
-      drawWaypoint(ctx, wp);
+    for (let connection of world.connections) {
+      drawConnection(ctx, connection);
     }
 
     for (let aircraft of aircrafts.filter((a) => a.altitude >= 1000)) {

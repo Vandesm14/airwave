@@ -21,7 +21,7 @@ use crate::{
 use super::{
   airport::{Gate, Runway},
   airspace::Airspace,
-  world::find_random_airspace,
+  world::{find_random_airspace, Connection},
 };
 
 const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
@@ -220,25 +220,6 @@ impl Aircraft {
     aircraft.target.altitude = 13000.0;
 
     aircraft
-  }
-
-  pub fn make_random_departure(
-    &mut self,
-    airspaces: &[Airspace],
-    rng: &mut Rng,
-  ) {
-    let departure =
-      airspaces.iter().find(|a| a.id == self.flight_plan.arriving);
-    let arrival = find_random_airspace(airspaces, rng);
-
-    if let Some((arrival, departure)) = arrival.zip(departure) {
-      self.departure_from_arrival(
-        departure.id,
-        arrival.id,
-        Duration::from_secs(rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap()),
-      );
-      self.frequency = departure.frequencies.clearance;
-    }
   }
 
   pub fn departure_from_arrival(

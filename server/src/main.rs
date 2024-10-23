@@ -3,16 +3,22 @@ use core::{
   net::{IpAddr, Ipv4Addr, SocketAddr},
   str::FromStr,
 };
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  ops::Add,
+  path::PathBuf,
+  sync::Arc,
+  time::{Duration, SystemTime},
+};
 
 use clap::Parser;
 use engine::{
   circle_circle_intersection,
   entities::{
+    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
+    world::{Connection, ConnectionState},
   },
-  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
   NAUTICALMILES_TO_FEET,
 };
 use futures_util::StreamExt as _;
@@ -123,10 +129,10 @@ async fn main() {
         (world_rng.f32() - 0.5) * world_radius,
       );
 
-      for airport in engine.world.airports.iter() {
+      for airport in engine.world.connections.iter() {
         if circle_circle_intersection(
           position,
-          airport.value.to,
+          airport.pos,
           AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
           AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
         ) {
@@ -137,25 +143,54 @@ async fn main() {
       break position;
     };
 
-    // Generate a waypoint for the airport
-    engine.world.airports.push(Node::new(
-      Intern::from_ref(airspace_name),
-      NodeKind::VOR,
-      NodeBehavior::GoTo,
-      NodeVORData::new(airspace_position),
-    ));
+    let connection = Connection {
+      id: Intern::from_ref(airspace_name),
+      state: ConnectionState::Active,
+      pos: airspace_position,
+      transition: player_airspace
+        .pos
+        .move_towards(airspace_position, MANUAL_TOWER_AIRSPACE_RADIUS),
+    };
 
-    // Generate a waypoint between our airport and the airspace
-    engine.world.connections.push(Node::new(
-      Intern::from_ref(airspace_name),
-      NodeKind::VOR,
-      NodeBehavior::GoTo,
-      NodeVORData::new(
-        player_airspace
-          .pos
-          .move_towards(airspace_position, MANUAL_TOWER_AIRSPACE_RADIUS),
-      ),
-    ));
+    engine.world.connections.push(connection);
+  }
+
+  let mut aircrafts: Vec<Aircraft> = Vec::new();
+  for airport in player_airspace.airports.iter() {
+    let mut now = true;
+    for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
+      if engine.rng.chance(0.3) {
+        let mut aircraft = Aircraft::random_parked(
+          gate.clone(),
+          &mut engine.rng,
+          &player_airspace,
+        );
+        aircraft.flight_plan.departing = player_airspace.id;
+        aircraft.flight_plan.arriving = engine
+          .rng
+          .sample(&engine.world.connections)
+          .map(|c| c.id)
+          .unwrap_or_default();
+
+        aircraft.created = SystemTime::now()
+          .duration_since(SystemTime::UNIX_EPOCH)
+          .unwrap()
+          .add(Duration::from_secs(
+            engine.rng.sample_iter(120..=1800).unwrap(),
+          ));
+
+        if now {
+          aircraft.created_now();
+          now = false;
+        }
+
+        aircrafts.push(aircraft);
+      }
+    }
+  }
+
+  for aircraft in aircrafts.drain(..) {
+    engine.add_aircraft(aircraft);
   }
 
   engine.world.airspace = player_airspace;

@@ -47,6 +47,15 @@ impl NodeVORData {
   }
 }
 
+pub fn new_vor(name: Intern<String>, to: Vec2) -> Node<NodeVORData> {
+  Node {
+    name,
+    kind: NodeKind::VOR,
+    behavior: NodeBehavior::GoTo,
+    value: NodeVORData::new(to),
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
   pub name: Intern<String>,

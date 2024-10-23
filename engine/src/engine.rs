@@ -23,9 +23,8 @@ use crate::{
       *,
     },
     airspace::Airspace,
-    world::World,
+    world::{Connection, World},
   },
-  pathfinder::{Node, NodeVORData},
   NAUTICALMILES_TO_FEET,
 };
 
@@ -37,8 +36,7 @@ pub struct Bundle<'a> {
   pub actions: Vec<Action>,
 
   pub airspace: &'a Airspace,
-  pub airports: &'a Vec<Node<NodeVORData>>,
-  pub connections: &'a Vec<Node<NodeVORData>>,
+  pub connections: &'a Vec<Connection>,
 
   pub rng: &'a mut Rng,
   pub dt: f32,
@@ -51,7 +49,6 @@ impl<'a> Bundle<'a> {
       events: Vec::new(),
       actions: Vec::new(),
       airspace: &world.airspace,
-      airports: &world.airports,
       connections: &world.connections,
       rng,
       dt,

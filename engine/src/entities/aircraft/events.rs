@@ -6,7 +6,7 @@ use crate::{
   command::{CommandReply, CommandWithFreq, Task},
   engine::Bundle,
   entities::{airport::Runway, world::closest_airport},
-  pathfinder::{Node, NodeBehavior, NodeKind, Pathfinder},
+  pathfinder::{new_vor, Node, NodeBehavior, NodeKind, Pathfinder},
 };
 
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
@@ -165,7 +165,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
           let arrival = bundle
             .connections
             .iter()
-            .find(|a| a.name == aircraft.flight_plan.arriving);
+            .find(|a| a.id == aircraft.flight_plan.arriving);
 
           if let Some(arrival) = arrival {
             bundle.actions.push(Action {
@@ -178,7 +178,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             });
             bundle.actions.push(Action {
               id: aircraft.id,
-              kind: ActionKind::Flying(vec![arrival.clone()]),
+              kind: ActionKind::Flying(vec![new_vor(arrival.id, arrival.pos)]),
             });
           }
         }
