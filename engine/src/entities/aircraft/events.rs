@@ -426,8 +426,5 @@ pub fn handle_takeoff_event(
         });
       }
     }
-
-    // TODO: handle if the waypoint is coming up, update the behavior
-    // to take off (once we have waypoint behaviors for takeoff)
   }
 }
