@@ -421,22 +421,24 @@ export default function Canvas({
   }
 
   function drawConnection(ctx: Ctx, connection: Connection) {
-    let activeColor = '#c9c94e';
+    let activeColor = '#a5a54d';
     let inactiveColor = '#444';
+    let selectedColor = '#66ff00';
 
-    drawWaypoint(
-      ctx,
-      connection.id,
-      connection.pos,
-      connection.state === 'active' ? activeColor : inactiveColor
-    );
+    let color = connection.state === 'active' ? activeColor : inactiveColor;
 
-    drawWaypoint(
-      ctx,
-      connection.id,
-      connection.transition,
-      connection.state === 'active' ? activeColor : inactiveColor
-    );
+    let aircraft = aircrafts().find((a) => a.id === selectedAircraft());
+    if (aircraft) {
+      if (aircraft.flight_plan.arriving === connection.id) {
+        color = selectedColor;
+      }
+    }
+
+    // Draw the airport waypoint
+    drawWaypoint(ctx, connection.id, connection.pos, color);
+
+    // Draw the transition waypoint
+    drawWaypoint(ctx, connection.id, connection.transition, color);
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
