@@ -71,7 +71,6 @@ export type Aircraft = {
 
     speed: number;
     altitude: number;
-    waypoints: Array<NodeVOR>;
   };
   callouts: {
     clearance: boolean;

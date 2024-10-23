@@ -81,7 +81,6 @@ pub struct FlightPlan {
   // IFR Clearance
   pub speed: f32,
   pub altitude: f32,
-  pub waypoints: Vec<Node<NodeVORData>>,
 }
 
 impl Default for FlightPlan {
@@ -92,7 +91,6 @@ impl Default for FlightPlan {
 
       speed: 220.0,
       altitude: 3000.0,
-      waypoints: Vec::new(),
     }
   }
 }

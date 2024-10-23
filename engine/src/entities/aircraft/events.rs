@@ -424,11 +424,6 @@ pub fn handle_takeoff_event(
           id: aircraft.id,
           kind: ActionKind::TargetHeading(runway.heading),
         });
-
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::Flying(aircraft.flight_plan.waypoints.clone()),
-        })
       }
     }
 

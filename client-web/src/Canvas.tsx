@@ -785,20 +785,6 @@ export default function Canvas({
 
       ctx.beginPath();
       ctx.moveTo(pos[0], pos[1]);
-
-      for (let wp of aircraft.flight_plan.waypoints.slice().reverse()) {
-        let pos = scalePoint(wp.value.to);
-        ctx.lineTo(pos[0], pos[1]);
-      }
-      ctx.stroke();
-
-      for (let wp of aircraft.flight_plan.waypoints.slice().reverse()) {
-        ctx.fillStyle = '#ff9900';
-        let pos = scalePoint(wp.value.to);
-        ctx.beginPath();
-        ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
     }
   }
 
