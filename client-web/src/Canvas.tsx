@@ -742,7 +742,10 @@ export default function Canvas({
     ctx.lineTo(endPos[0], endPos[1]);
     ctx.stroke();
 
-    if (aircraft.state.type === 'parked') {
+    if (
+      aircraft.state.type === 'parked' &&
+      aircraft.id !== selectedAircraft()
+    ) {
       return;
     }
 
