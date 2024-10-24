@@ -46,5 +46,3 @@ pub struct World {
   pub airspace: Airspace,
   pub connections: Vec<Connection>,
 }
-
-impl World {}
