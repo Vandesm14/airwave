@@ -441,10 +441,6 @@ pub fn handle_takeoff_event(
       if NodeKind::Runway == current.kind && current.name == runway_id {
         bundle.actions.push(Action {
           id: aircraft.id,
-          kind: ActionKind::Pos(runway.start()),
-        });
-        bundle.actions.push(Action {
-          id: aircraft.id,
           kind: ActionKind::TargetSpeed(aircraft.flight_plan.speed),
         });
         bundle.actions.push(Action {
