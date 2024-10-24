@@ -2,21 +2,13 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
-use std::{
-  ops::Add,
-  time::{Duration, SystemTime},
-};
-
 use actions::Action;
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::{
-  angle_between_points,
-  pathfinder::{Node, NodeBehavior, NodeKind, NodeVORData},
-};
+use crate::pathfinder::{Node, NodeVORData};
 
 use super::{
   airport::{Gate, Runway},
@@ -102,7 +94,6 @@ pub struct Aircraft {
   pub flight_plan: FlightPlan,
 
   pub frequency: f32,
-  pub created: Duration,
 }
 
 // Helper methods
@@ -155,9 +146,6 @@ impl Aircraft {
       ),
 
       frequency: airspace.frequencies.ground,
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap(),
     }
     .with_synced_targets()
   }
@@ -180,49 +168,8 @@ impl Aircraft {
       flight_plan,
 
       frequency,
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap(),
     }
     .with_synced_targets()
-  }
-
-  pub fn random_to_arrive(
-    departure: &Airspace,
-    arrival: &Airspace,
-    rng: &mut Rng,
-  ) -> Self {
-    let mut aircraft = Aircraft {
-      id: Intern::from(Aircraft::random_callsign(rng)),
-      pos: departure.pos,
-      speed: 250.0,
-      heading: angle_between_points(departure.pos, arrival.pos),
-      altitude: 1000.0,
-      state: AircraftState::Flying {
-        waypoints: vec![Node::new(
-          arrival.id,
-          NodeKind::VOR,
-          NodeBehavior::GoTo,
-          NodeVORData {
-            to: arrival.pos,
-            then: Vec::new(),
-          },
-        )],
-        enroute: false,
-      },
-      flight_plan: FlightPlan::new(departure.id, arrival.id),
-      frequency: arrival.frequencies.center,
-      created: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap(),
-      ..Default::default()
-    };
-
-    aircraft.sync_targets_to_vals();
-    aircraft.target.speed = 400.0;
-    aircraft.target.altitude = 13000.0;
-
-    aircraft
   }
 
   pub fn flip_flight_plan(&mut self) {
@@ -231,20 +178,6 @@ impl Aircraft {
 
     self.flight_plan.departing = a;
     self.flight_plan.arriving = d;
-  }
-
-  pub fn departure_from_arrival(&mut self, wait_time: Duration) {
-    self.flip_flight_plan();
-    self.created = SystemTime::now()
-      .duration_since(SystemTime::UNIX_EPOCH)
-      .unwrap()
-      .add(wait_time);
-  }
-
-  pub fn created_now(&mut self) {
-    self.created = SystemTime::now()
-      .duration_since(SystemTime::UNIX_EPOCH)
-      .unwrap();
   }
 }
 

@@ -74,7 +74,6 @@ export type Aircraft = {
   };
 
   frequency: number;
-  created: Duration;
 };
 
 export function isAircraftFlying(

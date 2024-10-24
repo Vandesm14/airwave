@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use glam::Vec2;
 use internment::Intern;
 
@@ -25,7 +23,6 @@ pub enum ActionKind {
   SyncTargets,
 
   Frequency(f32),
-  Created(Duration),
 
   // Substate
   PopWaypoint,
@@ -80,7 +77,6 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       }
 
       ActionKind::Frequency(frequency) => aircraft.frequency = *frequency,
-      ActionKind::Created(created) => aircraft.created = *created,
 
       ActionKind::PopWaypoint => {
         if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {

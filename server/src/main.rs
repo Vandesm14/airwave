@@ -3,12 +3,7 @@ use core::{
   net::{IpAddr, Ipv4Addr, SocketAddr},
   str::FromStr,
 };
-use std::{
-  ops::Add,
-  path::PathBuf,
-  sync::Arc,
-  time::{Duration, SystemTime},
-};
+use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use engine::{
@@ -156,7 +151,6 @@ async fn main() {
 
   let mut aircrafts: Vec<Aircraft> = Vec::new();
   for airport in player_airspace.airports.iter() {
-    let mut now = true;
     for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
       if engine.rng.chance(0.3) {
         let mut aircraft = Aircraft::random_parked(
@@ -170,18 +164,6 @@ async fn main() {
           .sample(&engine.world.connections)
           .map(|c| c.id)
           .unwrap_or_default();
-
-        aircraft.created = SystemTime::now()
-          .duration_since(SystemTime::UNIX_EPOCH)
-          .unwrap()
-          .add(Duration::from_secs(
-            engine.rng.sample_iter(120..=1800).unwrap(),
-          ));
-
-        if now {
-          aircraft.created_now();
-          now = false;
-        }
 
         aircrafts.push(aircraft);
       }
