@@ -49,6 +49,7 @@ pub enum ActionKind {
   Flying(Vec<Node<NodeVORData>>),
   Callouts(AircraftCallouts),
   EnRoute(bool),
+  FlipFlightPlan,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -152,6 +153,9 @@ impl AircraftActionHandler for AircraftAllActionHandler {
         if let AircraftState::Flying { enroute, .. } = &mut aircraft.state {
           *enroute = *bool;
         }
+      }
+      ActionKind::FlipFlightPlan => {
+        aircraft.flip_flight_plan();
       }
     }
   }

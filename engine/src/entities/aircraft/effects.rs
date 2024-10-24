@@ -198,7 +198,8 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 pub struct AircraftUpdateFlyingEffect;
 impl AircraftEffect for AircraftUpdateFlyingEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND;
+    let dt = aircraft.dt_enroute(bundle.dt);
+    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
     if let AircraftState::Flying { waypoints, .. } = &aircraft.state {
       if let Some(current) = waypoints.last() {
         let heading = angle_between_points(aircraft.pos, current.value.to);

@@ -33,6 +33,7 @@ pub enum EventKind {
   Touchdown,
   Takeoff(Intern<String>),
   EnRoute(bool),
+  FlipFlightPlan,
 
   // Taxiing
   Taxi(Vec<Node<()>>),
@@ -171,7 +172,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
           if let Some(arrival) = arrival {
             bundle.actions.push(Action {
               id: aircraft.id,
-              kind: ActionKind::TargetSpeed(400.0),
+              kind: ActionKind::TargetSpeed(300.0),
             });
             bundle.actions.push(Action {
               id: aircraft.id,
@@ -180,9 +181,14 @@ impl AircraftEventHandler for HandleAircraftEvent {
             bundle.actions.push(Action {
               id: aircraft.id,
               kind: ActionKind::Flying(vec![
-                new_vor(arrival.id, arrival.transition)
-                  .with_behavior(vec![EventKind::EnRoute(false)]),
-                new_vor(arrival.id, arrival.pos),
+                new_vor(arrival.id, arrival.transition).with_behavior(vec![
+                  EventKind::EnRoute(false),
+                  EventKind::SpeedAtOrBelow(250.0),
+                ]),
+                new_vor(arrival.id, arrival.pos).with_behavior(vec![
+                  EventKind::AltitudeAtOrBelow(7000.0),
+                  EventKind::FlipFlightPlan,
+                ]),
                 new_vor(arrival.id, arrival.transition)
                   .with_behavior(vec![EventKind::EnRoute(true)]),
               ]),
@@ -220,6 +226,12 @@ impl AircraftEventHandler for HandleAircraftEvent {
             kind: ActionKind::EnRoute(*bool),
           });
         }
+      }
+      EventKind::FlipFlightPlan => {
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::FlipFlightPlan,
+        });
       }
 
       // Taxiing

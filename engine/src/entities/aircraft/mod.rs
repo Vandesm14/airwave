@@ -255,6 +255,14 @@ impl Aircraft {
     aircraft
   }
 
+  pub fn flip_flight_plan(&mut self) {
+    let d = self.flight_plan.departing;
+    let a = self.flight_plan.arriving;
+
+    self.flight_plan.departing = a;
+    self.flight_plan.arriving = d;
+  }
+
   pub fn departure_from_arrival(
     &mut self,
     departure: Intern<String>,
