@@ -91,8 +91,6 @@ async fn main() {
     pos: Vec2::ZERO,
     radius: MANUAL_TOWER_AIRSPACE_RADIUS,
     airports: vec![],
-    auto: false,
-    altitude: 0.0..=10000.0,
     frequencies: player_one_frequencies.clone(),
   };
 

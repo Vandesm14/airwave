@@ -288,23 +288,3 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
     }
   }
 }
-
-// pub struct AircraftSetDescentOnAutoAirspaceEffect;
-// impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
-//   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-//     if let AircraftState::Flying { .. } = aircraft.state {
-//       if (aircraft.target.altitude > 7000.0 || aircraft.target.speed > 250.0)
-//         && bundle.airspace.pos.distance_squared(aircraft.pos)
-//           <= bundle.airspace.radius.mul(2.0).powf(2.0)
-//       {
-//         bundle.events.push(Event::new(
-//           aircraft.id,
-//           EventKind::AltitudeAtOrBelow(7000.0),
-//         ));
-//         bundle
-//           .events
-//           .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
-//       }
-//     }
-//   }
-// }

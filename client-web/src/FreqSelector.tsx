@@ -1,5 +1,5 @@
 import { useAtom } from 'solid-jotai';
-import { controlAtom, frequencyAtom, worldAtom } from './lib/atoms';
+import { frequencyAtom, worldAtom } from './lib/atoms';
 import { createMemo, createSignal, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { Frequencies } from './lib/types';

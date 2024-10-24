@@ -151,7 +151,6 @@ export type Airspace = {
   pos: Vec2;
   radius: number;
   airports: Array<Airport>;
-  auto: boolean;
   frequencies: Frequencies;
 };
 
@@ -161,7 +160,6 @@ export function DefaultAirspace(): Airspace {
     pos: [0, 0],
     radius: 500,
     airports: [],
-    auto: false,
     frequencies: {
       approach: 118.5,
       departure: 118.5,
