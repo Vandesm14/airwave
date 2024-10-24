@@ -105,11 +105,6 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
   }
 }
 
-pub struct AircraftUpdateAirspaceEffect;
-impl AircraftEffect for AircraftUpdateAirspaceEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {}
-}
-
 pub struct AircraftUpdateLandingEffect;
 impl AircraftEffect for AircraftUpdateLandingEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {

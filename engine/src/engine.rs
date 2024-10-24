@@ -2,9 +2,8 @@ use std::collections::HashSet;
 
 use actions::{Action, AircraftActionHandler};
 use effects::{
-  AircraftSetDescentOnAutoAirspaceEffect, AircraftUpdateAirspaceEffect,
-  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
-  AircraftUpdateTaxiingEffect,
+  AircraftSetDescentOnAutoAirspaceEffect, AircraftUpdateFlyingEffect,
+  AircraftUpdateLandingEffect, AircraftUpdateTaxiingEffect,
 };
 use events::Event;
 use internment::Intern;
@@ -166,8 +165,6 @@ impl Engine {
         }
       }
       bundle.actions.clear();
-
-      AircraftUpdateAirspaceEffect::run(aircraft, &mut bundle);
 
       // Apply all actions
       if !bundle.actions.is_empty() {
