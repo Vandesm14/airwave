@@ -17,26 +17,28 @@ import {
 type Strips = {
   Selected: Array<Aircraft>;
   Colliding: Array<Aircraft>;
-  Center: Array<Aircraft>;
+  Inbound: Array<Aircraft>;
   Approach: Array<Aircraft>;
   Landing: Array<Aircraft>;
   Parked: Array<Aircraft>;
   Ground: Array<Aircraft>;
   Takeoff: Array<Aircraft>;
   Departure: Array<Aircraft>;
+  Outbound: Array<Aircraft>;
   None: Array<Aircraft>;
 };
 
 const newStrips = (): Strips => ({
   Selected: [],
   Colliding: [],
-  Center: [],
+  Inbound: [],
   Approach: [],
   Landing: [],
   Parked: [],
   Ground: [],
   Takeoff: [],
   Departure: [],
+  Outbound: [],
   None: [],
 });
 
@@ -64,7 +66,8 @@ function assignAircraftToStrips(
     }
   })();
 
-  const isInLocalAirspace = aircraft.airspace === ourAirspace;
+  const isInLocalAirspace =
+    aircraft.state.type === 'flying' ? !aircraft.state.value.enroute : true;
   const isDepartingAndInLocalAirspace =
     isInLocalAirspace && aircraft.airspace === aircraft.flight_plan.departing;
   const isDepartingFromLocalAirspace =
@@ -96,13 +99,13 @@ function assignAircraftToStrips(
     if (isInLocalAirspace) {
       return 'Departure';
     } else {
-      return 'Center';
+      return 'Outbound';
     }
   } else if (isArrivingToLocalAirspace) {
     if (isInLocalAirspace) {
       return 'Approach';
     } else {
-      return 'Center';
+      return 'Inbound';
     }
   } else {
     if (aircraft.id === selectedAircraft) {
