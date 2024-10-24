@@ -181,15 +181,20 @@ impl AircraftEventHandler for HandleAircraftEvent {
             bundle.actions.push(Action {
               id: aircraft.id,
               kind: ActionKind::Flying(vec![
-                new_vor(arrival.id, arrival.transition).with_behavior(vec![
-                  EventKind::EnRoute(false),
-                  EventKind::SpeedAtOrBelow(250.0),
-                ]),
-                new_vor(arrival.id, arrival.pos).with_behavior(vec![
-                  EventKind::AltitudeAtOrBelow(7000.0),
-                  EventKind::FlipFlightPlan,
-                ]),
                 new_vor(arrival.id, arrival.transition)
+                  .with_name(Intern::from_ref("TRSN"))
+                  .with_behavior(vec![
+                    EventKind::EnRoute(false),
+                    EventKind::SpeedAtOrBelow(250.0),
+                  ]),
+                new_vor(arrival.id, arrival.pos)
+                  .with_name(Intern::from_ref("APRT"))
+                  .with_behavior(vec![
+                    EventKind::AltitudeAtOrBelow(7000.0),
+                    EventKind::FlipFlightPlan,
+                  ]),
+                new_vor(arrival.id, arrival.transition)
+                  .with_name(Intern::from_ref("TRSN"))
                   .with_behavior(vec![EventKind::EnRoute(true)]),
               ]),
             });

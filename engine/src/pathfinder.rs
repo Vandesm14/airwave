@@ -89,6 +89,11 @@ impl<T> Node<T> {
 }
 
 impl Node<NodeVORData> {
+  pub fn with_name(mut self, name: Intern<String>) -> Self {
+    self.name = name;
+    self
+  }
+
   pub fn with_behavior(mut self, behavior: Vec<EventKind>) -> Self {
     self.value.then = behavior;
     self
