@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom, worldAtom } from './lib/atoms';
-import { createMemo, createSignal, onMount } from 'solid-js';
+import { createEffect, createMemo, createSignal, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { Frequencies } from './lib/types';
 
@@ -9,6 +9,18 @@ export default function FreqSelector() {
   let [world] = useAtom(worldAtom);
   let [secondary, setSecondary] = makePersisted(createSignal(frequency()));
   let [key, setKey] = createSignal<keyof Frequencies>('approach');
+
+  function updateKeyByFreqChange() {
+    let newKey = Object.entries(foundAirspace().frequencies).find(
+      ([k, v]) => v === frequency()
+    ) as [keyof Frequencies, number];
+
+    if (newKey) {
+      setKey(newKey[0]);
+    }
+  }
+
+  createEffect(() => updateKeyByFreqChange());
 
   let foundAirspace = createMemo(() => world().airspace);
 
@@ -56,10 +68,14 @@ export default function FreqSelector() {
   return (
     <div id="freq-selector">
       <div class="row">
-        <select name="frequency" onchange={(e) => changeViaKey(e.target.value)}>
-          {foundAirspace()?.frequencies
-            ? Object.entries(foundAirspace()?.frequencies).map(([k, v]) => (
-                <option value={k} selected={k === key()}>
+        <select
+          name="frequency"
+          onchange={(e) => changeViaKey(e.target.value)}
+          value={key()}
+        >
+          {foundAirspace().frequencies
+            ? Object.entries(foundAirspace().frequencies).map(([k, v]) => (
+                <option value={k}>
                   {k} - {v}
                 </option>
               ))
