@@ -309,9 +309,7 @@ export default function StripBoard({
       key = 'clearance';
     }
 
-    if (foundAirspace()?.frequencies && foundAirspace()?.frequencies[key]) {
-      setFrequency(foundAirspace()?.frequencies[key]);
-    }
+    setFrequency(foundAirspace().frequencies[key]);
   }
 
   return (
