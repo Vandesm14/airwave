@@ -72,13 +72,9 @@ export type Aircraft = {
     speed: number;
     altitude: number;
   };
-  callouts: {
-    clearance: boolean;
-  };
 
   frequency: number;
   created: Duration;
-  airspace: string | null;
 };
 
 export function isAircraftFlying(

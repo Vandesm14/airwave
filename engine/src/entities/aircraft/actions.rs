@@ -8,7 +8,7 @@ use crate::{
   pathfinder::{Node, NodeBehavior, NodeVORData},
 };
 
-use super::{Aircraft, AircraftCallouts, AircraftState};
+use super::{Aircraft, AircraftState};
 
 #[derive(Debug, Clone, PartialEq)]
 
@@ -24,15 +24,8 @@ pub enum ActionKind {
   TargetAltitude(f32),
   SyncTargets,
 
-  DepartureFromArrival {
-    departure: Intern<String>,
-    destination: Intern<String>,
-    wait_time: Duration,
-  },
-
   Frequency(f32),
   Created(Duration),
-  Airspace(Option<Intern<String>>),
 
   // Substate
   PopWaypoint,
@@ -47,7 +40,6 @@ pub enum ActionKind {
     waypoints: Vec<Node<Vec2>>,
   },
   Flying(Vec<Node<NodeVORData>>),
-  Callouts(AircraftCallouts),
   EnRoute(bool),
   FlipFlightPlan,
 }
@@ -87,19 +79,8 @@ impl AircraftActionHandler for AircraftAllActionHandler {
         aircraft.sync_targets_to_vals();
       }
 
-      ActionKind::DepartureFromArrival {
-        departure,
-        destination,
-        wait_time,
-      } => {
-        if let AircraftState::Taxiing { .. } = aircraft.state {
-          aircraft.departure_from_arrival(*departure, *destination, *wait_time);
-        }
-      }
-
       ActionKind::Frequency(frequency) => aircraft.frequency = *frequency,
       ActionKind::Created(created) => aircraft.created = *created,
-      ActionKind::Airspace(spur) => aircraft.airspace = *spur,
 
       ActionKind::PopWaypoint => {
         if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
@@ -146,9 +127,6 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           waypoints: waypoints.clone(),
         }
       }
-      ActionKind::Callouts(callouts) => {
-        aircraft.callouts = *callouts;
-      }
       ActionKind::EnRoute(bool) => {
         if let AircraftState::Flying { enroute, .. } = &mut aircraft.state {
           *enroute = *bool;
@@ -161,28 +139,28 @@ impl AircraftActionHandler for AircraftAllActionHandler {
   }
 }
 
-fn prune_waypoints(
-  aircraft: &Aircraft,
-  waypoints: &[Node<NodeVORData>],
-) -> Vec<Node<NodeVORData>> {
-  if waypoints.len() < 2 {
-    return waypoints.to_vec();
-  }
+// fn prune_waypoints(
+//   aircraft: &Aircraft,
+//   waypoints: &[Node<NodeVORData>],
+// ) -> Vec<Node<NodeVORData>> {
+//   if waypoints.len() < 2 {
+//     return waypoints.to_vec();
+//   }
 
-  let waypoints = waypoints.iter().rev().cloned().collect::<Vec<_>>();
-  let mut skip_amount = 0;
-  for (i, wp) in waypoints.windows(2).enumerate() {
-    let a = wp.first().unwrap();
-    let b = wp.last().unwrap();
+//   let waypoints = waypoints.iter().rev().cloned().collect::<Vec<_>>();
+//   let mut skip_amount = 0;
+//   for (i, wp) in waypoints.windows(2).enumerate() {
+//     let a = wp.first().unwrap();
+//     let b = wp.last().unwrap();
 
-    let wp_distance = a.value.to.distance_squared(b.value.to);
-    let distance = aircraft.pos.distance_squared(b.value.to);
+//     let wp_distance = a.value.to.distance_squared(b.value.to);
+//     let distance = aircraft.pos.distance_squared(b.value.to);
 
-    if distance < wp_distance {
-      println!("was: {:?}", a.name);
-      skip_amount = i + 1;
-    }
-  }
+//     if distance < wp_distance {
+//       println!("was: {:?}", a.name);
+//       skip_amount = i + 1;
+//     }
+//   }
 
-  waypoints.iter().skip(skip_amount).rev().cloned().collect()
-}
+//   waypoints.iter().skip(skip_amount).rev().cloned().collect()
+// }

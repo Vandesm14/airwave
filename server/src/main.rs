@@ -196,7 +196,6 @@ async fn main() {
 
   let mut aircraft = Aircraft::random_flying(
     118.5,
-    Some(player_airspace.id),
     FlightPlan::new(player_airspace.id, Intern::from_ref("EGLL")),
   );
 

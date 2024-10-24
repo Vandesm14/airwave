@@ -3,7 +3,7 @@ pub mod effects;
 pub mod events;
 
 use std::{
-  ops::{Add, RangeInclusive},
+  ops::Add,
   time::{Duration, SystemTime},
 };
 
@@ -22,25 +22,6 @@ use super::{
   airport::{Gate, Runway},
   airspace::Airspace,
 };
-
-const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 600..=1200;
-
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
-pub struct AircraftCallouts {
-  pub clearance: bool,
-  pub approach: bool,
-}
-
-impl AircraftCallouts {
-  pub fn mark_clearance(mut self) -> Self {
-    self.clearance = true;
-    self
-  }
-  pub fn mark_approach(mut self) -> Self {
-    self.approach = true;
-    self
-  }
-}
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
@@ -119,11 +100,9 @@ pub struct Aircraft {
   pub state: AircraftState,
   pub target: AircraftTargets,
   pub flight_plan: FlightPlan,
-  pub callouts: AircraftCallouts,
 
   pub frequency: f32,
   pub created: Duration,
-  pub airspace: Option<Intern<String>>,
 }
 
 // Helper methods
@@ -174,22 +153,16 @@ impl Aircraft {
         Intern::from(String::new()),
         Intern::from(String::new()),
       ),
-      callouts: AircraftCallouts::default(),
 
       frequency: airspace.frequencies.ground,
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap(),
-      airspace: Some(airspace.id),
     }
     .with_synced_targets()
   }
 
-  pub fn random_flying(
-    frequency: f32,
-    airspace: Option<Intern<String>>,
-    flight_plan: FlightPlan,
-  ) -> Self {
+  pub fn random_flying(frequency: f32, flight_plan: FlightPlan) -> Self {
     Self {
       id: Intern::from(Aircraft::random_callsign(&mut Default::default())),
       is_colliding: false,
@@ -205,13 +178,11 @@ impl Aircraft {
       },
       target: AircraftTargets::default(),
       flight_plan,
-      callouts: AircraftCallouts::default(),
 
       frequency,
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap(),
-      airspace,
     }
     .with_synced_targets()
   }
@@ -241,7 +212,6 @@ impl Aircraft {
       },
       flight_plan: FlightPlan::new(departure.id, arrival.id),
       frequency: arrival.frequencies.center,
-      airspace: Some(departure.id),
       created: SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap(),
@@ -263,18 +233,12 @@ impl Aircraft {
     self.flight_plan.arriving = d;
   }
 
-  pub fn departure_from_arrival(
-    &mut self,
-    departure: Intern<String>,
-    arrival: Intern<String>,
-    wait_time: Duration,
-  ) {
-    self.flight_plan = FlightPlan::new(departure, arrival);
+  pub fn departure_from_arrival(&mut self, wait_time: Duration) {
+    self.flip_flight_plan();
     self.created = SystemTime::now()
       .duration_since(SystemTime::UNIX_EPOCH)
       .unwrap()
       .add(wait_time);
-    self.callouts = AircraftCallouts::default();
   }
 
   pub fn created_now(&mut self) {

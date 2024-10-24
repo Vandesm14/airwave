@@ -69,13 +69,12 @@ function assignAircraftToStrips(
   const isInLocalAirspace =
     aircraft.state.type === 'flying' ? !aircraft.state.value.enroute : true;
   const isDepartingAndInLocalAirspace =
-    isInLocalAirspace && aircraft.airspace === aircraft.flight_plan.departing;
+    isInLocalAirspace && ourAirspace === aircraft.flight_plan.departing;
   const isDepartingFromLocalAirspace =
     ourAirspace === aircraft.flight_plan.departing;
 
   const isArrivingToLocalAirspace =
-    ourAirspace === aircraft.flight_plan.arriving &&
-    aircraft.airspace !== aircraft.flight_plan.departing;
+    ourAirspace === aircraft.flight_plan.arriving;
 
   if (aircraft.is_colliding) {
     return 'Colliding';
