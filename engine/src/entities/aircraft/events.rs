@@ -178,7 +178,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
             });
             bundle.actions.push(Action {
               id: aircraft.id,
-              kind: ActionKind::Flying(vec![new_vor(arrival.id, arrival.pos)]),
+              kind: ActionKind::Flying(vec![new_vor(
+                arrival.id,
+                arrival.transition,
+              )]),
             });
           }
         }
