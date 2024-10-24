@@ -203,14 +203,16 @@ $transparent-black: #000a;
       padding: 5px;
 
       position: relative;
-      min-height: 200px;
       background-color: $transparent-black;
 
       border: 1px solid white;
+
       min-width: 300px;
       max-width: 20%;
 
-      max-height: 85vh;
+      min-height: 200px;
+      max-height: 80vh;
+
       overflow-y: auto;
 
       color: white;
