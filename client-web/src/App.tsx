@@ -127,7 +127,7 @@ export default function App() {
     path = search.get('ws');
   }
 
-  let socket = new WebSocket(`ws://${path}`);
+  let socket = new WebSocket(`wss://${path}`);
   socket.onopen = function (_) {
     console.log('[open] Connection established');
     console.log('Sending to server');

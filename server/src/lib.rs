@@ -33,6 +33,7 @@ use prompter::Prompter;
 use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
+use tokio_rustls::server::TlsStream;
 use tokio_tungstenite::{
   tungstenite::{self, Message},
   WebSocketStream,
@@ -252,7 +253,7 @@ impl CompatAdapter {
 }
 
 pub async fn broadcast_updates_to(
-  mut writer: SplitSink<WebSocketStream<TcpStream>, Message>,
+  mut writer: SplitSink<WebSocketStream<TlsStream<TcpStream>>, Message>,
   mut update_rx: async_broadcast::Receiver<OutgoingReply>,
 ) {
   loop {
@@ -290,7 +291,7 @@ pub async fn broadcast_updates_to(
 
 pub async fn receive_commands_from(
   openai_api_key: Arc<str>,
-  reader: SplitStream<WebSocketStream<TcpStream>>,
+  reader: SplitStream<WebSocketStream<TlsStream<TcpStream>>>,
   update_tx: async_broadcast::Sender<OutgoingReply>,
   command_tx: async_channel::Sender<IncomingUpdate>,
 ) {

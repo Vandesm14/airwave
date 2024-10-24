@@ -3,16 +3,17 @@ use core::{
   net::{IpAddr, Ipv4Addr, SocketAddr},
   str::FromStr,
 };
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  io::{self},
+  path::PathBuf,
+  sync::Arc,
+};
 
 use clap::Parser;
 use engine::{
   circle_circle_intersection,
   entities::{
-    aircraft::{
-      events::{Event, EventKind},
-      Aircraft, FlightPlan,
-    },
+    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
     world::{Connection, ConnectionState},
@@ -22,11 +23,19 @@ use engine::{
 use futures_util::StreamExt as _;
 use glam::Vec2;
 use internment::Intern;
+use rustls::{crypto, pki_types::pem::PemObject};
 use server::{
   airport::{self, AirportSetupFn},
   CompatAdapter, IncomingUpdate, OutgoingReply,
 };
 use tokio::net::TcpListener;
+use tokio_rustls::{
+  rustls::{
+    self,
+    pki_types::{CertificateDer, PrivateKeyDer},
+  },
+  TlsAcceptor,
+};
 use turborand::{rng::Rng, SeededCore, TurboRand};
 
 #[tokio::main]
@@ -179,6 +188,22 @@ async fn main() {
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || engine.begin_loop());
 
+  let provider = crypto::aws_lc_rs::default_provider();
+  provider.install_default().unwrap();
+
+  let certs = CertificateDer::pem_file_iter("cert.pem")
+    .unwrap()
+    .map(|c| c.unwrap())
+    .collect::<Vec<_>>();
+  let key = PrivateKeyDer::from_pem_file("key.pem").unwrap();
+
+  let config = rustls::ServerConfig::builder()
+    .with_no_client_auth()
+    .with_single_cert(certs, key)
+    .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))
+    .unwrap();
+  let acceptor = TlsAcceptor::from(Arc::new(config));
+
   let listener = TcpListener::bind(address).await.unwrap();
   tracing::info!("Listening on {address}");
 
@@ -186,11 +211,20 @@ async fn main() {
     let openai_api_key = openai_api_key.clone();
     let command_tx = command_tx.clone();
     let update_rx = update_rx.clone();
+    let acceptor = acceptor.clone();
 
     let (stream, _) = match listener.accept().await {
       Ok(stream) => stream,
       Err(e) => {
         tracing::error!("Unable to accept TCP stream: {e}");
+        continue;
+      }
+    };
+
+    let stream = match acceptor.accept(stream).await {
+      Ok(stream) => stream,
+      Err(e) => {
+        tracing::error!("Unable to accept TLS stream: {e}");
         continue;
       }
     };

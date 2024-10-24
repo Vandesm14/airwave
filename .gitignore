@@ -13,6 +13,7 @@ client-web/dist/
 
 # Environment
 .env
+*.pem
 assets/
 
 # From Replit
