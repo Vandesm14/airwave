@@ -14,7 +14,7 @@ use clap::Parser;
 use engine::{
   circle_circle_intersection,
   entities::{
-    aircraft::Aircraft,
+    aircraft::{Aircraft, AircraftState},
     airport::Airport,
     airspace::{Airspace, Frequencies},
     world::{Connection, ConnectionState},
