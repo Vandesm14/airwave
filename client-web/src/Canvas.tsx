@@ -326,16 +326,6 @@ export default function Canvas({
     ctx.beginPath();
     ctx.arc(pos[0], pos[1], scaleFeetToPixels(airspace.radius), 0, Math.PI * 2);
     ctx.stroke();
-
-    // Draw airspace name
-    ctx.fillStyle = colors.text_grey;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(
-      airspace.id,
-      pos[0],
-      pos[1] - scaleFeetToPixels(airspace.radius) - 20
-    );
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
