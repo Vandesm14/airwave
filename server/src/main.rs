@@ -172,29 +172,6 @@ async fn main() {
     engine.add_aircraft(aircraft);
   }
 
-  let mut aircraft = Aircraft::random_flying(
-    118.5,
-    FlightPlan::new(player_airspace.id, Intern::from_ref("EGLL")),
-  );
-
-  let egll = engine
-    .world
-    .connections
-    .iter()
-    .find(|c| c.id == Intern::from_ref("EGLL"))
-    .unwrap();
-
-  aircraft.pos = player_airspace.pos.lerp(egll.transition, 0.9);
-  aircraft.heading = 200.0;
-  aircraft.sync_targets_to_vals();
-
-  engine.engine.events.push(Event {
-    id: aircraft.id,
-    kind: EventKind::ResumeOwnNavigation,
-  });
-
-  engine.add_aircraft(aircraft);
-
   engine.world.airspace = player_airspace;
 
   //
