@@ -53,6 +53,7 @@ function assignAircraftToStrips(
 ): keyof Strips {
   const isLanding = aircraft.state.type === 'landing';
   const isTaxiing = aircraft.state.type === 'taxiing';
+  const isParked = aircraft.state.type === 'parked';
 
   const isTaxiingToRunway = (() => {
     if (isAircraftTaxiing(aircraft.state)) {
@@ -82,15 +83,15 @@ function assignAircraftToStrips(
 
   if (isInLocalAirspace && isLanding) {
     return 'Landing';
-  } else if (isTaxiing) {
+  } else if (isTaxiing || isParked) {
     if (isTaxiingToRunway && isDepartingAndInLocalAirspace) {
       return 'Takeoff';
     } else if (isInLocalAirspace) {
-      // if (aircraft.created.secs < Date.now() / 1000) {
-      return 'Ground';
-      // } else {
-      //   return 'Parked';
-      // }
+      if (aircraft.state.type === 'parked') {
+        return 'Parked';
+      } else {
+        return 'Ground';
+      }
     } else {
       return 'None';
     }
@@ -195,6 +196,9 @@ function Strip({ strip }: StripProps) {
     }
 
     bottomStatus = current.name;
+  } else if (strip.state.type === 'parked') {
+    topStatus = 'PARK';
+    bottomStatus = strip.state.value.name;
   }
 
   let distance = distanceToAirspace(strip, world(), airspace());

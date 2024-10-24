@@ -34,10 +34,16 @@ export type AircraftStateTaxiing = {
   };
 };
 
+export type AircraftStateParked = {
+  type: 'parked';
+  value: NodeVec2;
+};
+
 export type AircraftState =
   | AircraftStateFlying
   | AircraftStateLanding
-  | AircraftStateTaxiing;
+  | AircraftStateTaxiing
+  | AircraftStateParked;
 
 type Duration = {
   secs: number;
@@ -92,6 +98,12 @@ export function isAircraftTaxiing(
   state: AircraftState
 ): state is AircraftStateTaxiing {
   return state.type === 'taxiing';
+}
+
+export function isAircraftParked(
+  state: AircraftState
+): state is AircraftStateParked {
+  return state.type === 'parked';
 }
 
 export type Vec2 = [number, number];

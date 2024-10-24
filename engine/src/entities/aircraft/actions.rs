@@ -29,6 +29,8 @@ pub enum ActionKind {
   TaxiWaypoints(Vec<Node<Vec2>>),
   TaxiCurrent(Node<Vec2>),
   TaxiLastAsGoto,
+  EnRoute(bool),
+  FlipFlightPlan,
 
   // State
   Landing(Runway),
@@ -37,8 +39,7 @@ pub enum ActionKind {
     waypoints: Vec<Node<Vec2>>,
   },
   Flying(Vec<Node<NodeVORData>>),
-  EnRoute(bool),
-  FlipFlightPlan,
+  Parked(Node<Vec2>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -78,6 +79,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
 
       ActionKind::Frequency(frequency) => aircraft.frequency = *frequency,
 
+      // Substate
       ActionKind::PopWaypoint => {
         if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
           waypoints.pop();
@@ -93,6 +95,11 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::TaxiWaypoints(w) => {
         if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
           *waypoints = w.clone();
+        } else if let AircraftState::Parked(current) = &mut aircraft.state {
+          aircraft.state = AircraftState::Taxiing {
+            current: current.clone(),
+            waypoints: w.clone(),
+          };
         }
       }
       ActionKind::TaxiCurrent(w) => {
@@ -107,7 +114,16 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           }
         }
       }
+      ActionKind::EnRoute(bool) => {
+        if let AircraftState::Flying { enroute, .. } = &mut aircraft.state {
+          *enroute = *bool;
+        }
+      }
+      ActionKind::FlipFlightPlan => {
+        aircraft.flip_flight_plan();
+      }
 
+      // State
       ActionKind::Landing(runway) => {
         aircraft.state = AircraftState::Landing(runway.clone())
       }
@@ -123,13 +139,8 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           waypoints: waypoints.clone(),
         }
       }
-      ActionKind::EnRoute(bool) => {
-        if let AircraftState::Flying { enroute, .. } = &mut aircraft.state {
-          *enroute = *bool;
-        }
-      }
-      ActionKind::FlipFlightPlan => {
-        aircraft.flip_flight_plan();
+      ActionKind::Parked(id) => {
+        aircraft.state = AircraftState::Parked(id.clone())
       }
     }
   }

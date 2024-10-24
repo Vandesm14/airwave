@@ -241,7 +241,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Taxiing
       EventKind::Taxi(waypoints) => {
-        if let AircraftState::Taxiing { .. } = aircraft.state {
+        if let AircraftState::Taxiing { .. } | AircraftState::Parked(..) =
+          aircraft.state
+        {
           if let Some(airport) = closest_airport(bundle.airspace, aircraft.pos)
           {
             handle_taxi_event(aircraft, bundle, waypoints, &airport.pathfinder);
@@ -361,7 +363,9 @@ pub fn handle_taxi_event(
   waypoint_strings: &[Node<()>],
   pathfinder: &Pathfinder,
 ) {
-  if let AircraftState::Taxiing { current, .. } = &aircraft.state {
+  if let AircraftState::Taxiing { current, .. }
+  | AircraftState::Parked(current) = &aircraft.state
+  {
     let destinations = waypoint_strings.iter();
     let mut all_waypoints: Vec<Node<Vec2>> = Vec::new();
 

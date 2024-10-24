@@ -35,6 +35,7 @@ pub enum AircraftState {
     current: Node<Vec2>,
     waypoints: Vec<Node<Vec2>>,
   },
+  Parked(Node<Vec2>),
 }
 
 impl Default for AircraftState {
@@ -135,10 +136,7 @@ impl Aircraft {
       heading: gate.heading,
       altitude: 0.0,
 
-      state: AircraftState::Taxiing {
-        current: gate.clone().into(),
-        waypoints: Vec::new(),
-      },
+      state: AircraftState::Parked(gate.clone().into()),
       target: AircraftTargets::default(),
       flight_plan: FlightPlan::new(
         Intern::from(String::new()),

@@ -272,17 +272,30 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
       if let Some(waypoint) = waypoint {
         let distance = aircraft.pos.distance_squared(waypoint.value);
 
-        if NodeBehavior::HoldShort == waypoint.behavior
-          && distance <= 250.0_f32.powf(2.0)
-        {
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::TaxiLastAsGoto,
-          });
-          bundle.events.push(Event {
-            id: aircraft.id,
-            kind: EventKind::TaxiHold,
-          });
+        match waypoint.behavior {
+          NodeBehavior::GoTo => {}
+          NodeBehavior::Park => {
+            bundle.events.push(Event {
+              id: aircraft.id,
+              kind: EventKind::TaxiHold,
+            });
+            bundle.actions.push(Action {
+              id: aircraft.id,
+              kind: ActionKind::Parked(waypoint.clone()),
+            });
+          }
+          NodeBehavior::HoldShort => {
+            if distance <= 250.0_f32.powf(2.0) {
+              bundle.actions.push(Action {
+                id: aircraft.id,
+                kind: ActionKind::TaxiLastAsGoto,
+              });
+              bundle.events.push(Event {
+                id: aircraft.id,
+                kind: EventKind::TaxiHold,
+              });
+            }
+          }
         }
       }
     }

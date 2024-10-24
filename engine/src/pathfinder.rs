@@ -31,6 +31,7 @@ pub enum NodeKind {
 #[serde(rename_all = "lowercase")]
 pub enum NodeBehavior {
   GoTo,
+  Park,
   HoldShort,
 }
 
