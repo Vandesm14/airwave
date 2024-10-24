@@ -55,6 +55,7 @@ pub struct AircraftTargets {
 pub enum AircraftState {
   Flying {
     waypoints: Vec<Node<NodeVORData>>,
+    enroute: bool,
   },
   Landing(Runway),
   Taxiing {
@@ -67,6 +68,7 @@ impl Default for AircraftState {
   fn default() -> Self {
     Self::Flying {
       waypoints: Vec::new(),
+      enroute: false,
     }
   }
 }
@@ -204,6 +206,7 @@ impl Aircraft {
             then: Vec::new(),
           },
         )],
+        enroute: false,
       },
       flight_plan: FlightPlan::new(departure.id, arrival.id),
       frequency: arrival.frequencies.center,

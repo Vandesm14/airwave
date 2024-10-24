@@ -100,7 +100,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::Airspace(spur) => aircraft.airspace = *spur,
 
       ActionKind::PopWaypoint => {
-        if let AircraftState::Flying { waypoints } = &mut aircraft.state {
+        if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
           waypoints.pop();
         } else if let AircraftState::Taxiing { current, waypoints } =
           &mut aircraft.state
@@ -135,6 +135,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::Flying(waypoints) => {
         aircraft.state = AircraftState::Flying {
           waypoints: prune_waypoints(aircraft, waypoints),
+          enroute: false,
         }
       }
       ActionKind::Taxi { current, waypoints } => {
