@@ -33,6 +33,7 @@ import {
   runwayInfo,
   toRadians,
 } from './lib/lib';
+import colors from './lib/colors';
 
 const groundScale = 5.0;
 
@@ -320,20 +321,7 @@ export default function Canvas({
   function drawAirspace(ctx: Ctx, airspace: Airspace) {
     resetTransform(ctx);
     let pos = scalePoint(airspace.pos);
-    ctx.strokeStyle = airspace.auto ? '#444' : 'white';
-
-    let selected = selectedAircraft();
-    if (selected) {
-      let aircraft = aircrafts().find((a) => a.id === selected);
-      if (aircraft) {
-        if (
-          airspace.id !== aircraft.airspace &&
-          aircraft.flight_plan.arriving === airspace.id
-        ) {
-          ctx.strokeStyle = '#ffff00';
-        }
-      }
-    }
+    ctx.strokeStyle = colors.special.airspace;
 
     ctx.beginPath();
     ctx.arc(pos[0], pos[1], scaleFeetToPixels(airspace.radius), 0, Math.PI * 2);
@@ -371,8 +359,8 @@ export default function Canvas({
     ctx.stroke();
 
     // Draw the localizer beacon
-    ctx.fillStyle = '#3087f2';
-    ctx.strokeStyle = '#3087f2';
+    ctx.fillStyle = colors.line_blue;
+    ctx.strokeStyle = colors.line_blue;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(start[0], start[1]);
@@ -380,7 +368,7 @@ export default function Canvas({
     ctx.stroke();
 
     // Draw the max and min localizer angle
-    ctx.strokeStyle = '#444444';
+    ctx.strokeStyle = colors.line_grey;
     ctx.beginPath();
     ctx.moveTo(start[0], start[1]);
     ctx.lineTo(ils.maxAngle[0], ils.maxAngle[1]);
@@ -392,7 +380,7 @@ export default function Canvas({
     ctx.stroke();
 
     // Draw the localizer altitude points
-    ctx.strokeStyle = '#3087f2';
+    ctx.strokeStyle = colors.line_blue;
     for (let p of info.ils.altitudePoints) {
       let point = scalePoint(p);
       ctx.beginPath();
@@ -417,13 +405,26 @@ export default function Canvas({
     let spacing = scaleFeetToPixels(2000 + nauticalMilesToFeet * 0.2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
+
+    // Draw the label background
+    let textWidth = ctx.measureText(name).width + 10;
+    ctx.fillStyle = colors.text_background;
+    ctx.fillRect(
+      pos[0] - textWidth * 0.5,
+      pos[1] - spacing - fontSize() * 1,
+      textWidth,
+      fontSize()
+    );
+
+    // Draw the label
+    ctx.fillStyle = color;
     ctx.fillText(name, pos[0], pos[1] - spacing);
   }
 
   function drawConnection(ctx: Ctx, connection: Connection) {
-    let activeColor = '#a5a54d';
-    let inactiveColor = '#444';
-    let selectedColor = '#66ff00';
+    let activeColor = colors.special.connection.active;
+    let inactiveColor = colors.special.connection.inactive;
+    let selectedColor = colors.text_yellow;
 
     let color = connection.state === 'active' ? activeColor : inactiveColor;
 
@@ -468,14 +469,14 @@ export default function Canvas({
     resetTransform(ctx);
 
     if (selectedAircraft() == aircraft.id) {
-      ctx.fillStyle = '#aaaa00';
-      ctx.strokeStyle = '#aaaa00';
+      ctx.fillStyle = colors.line_yellow;
+      ctx.strokeStyle = colors.line_yellow;
     } else if (aircraft.is_colliding) {
-      ctx.fillStyle = '#ff2222';
-      ctx.strokeStyle = '#ff2222';
+      ctx.fillStyle = colors.line_red;
+      ctx.strokeStyle = colors.line_red;
     } else {
-      ctx.fillStyle = '#00aa00';
-      ctx.strokeStyle = '#00aa00';
+      ctx.fillStyle = colors.line_green;
+      ctx.strokeStyle = colors.line_green;
     }
 
     // Draw the dot
@@ -526,14 +527,14 @@ export default function Canvas({
     // Draw info
     let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#44ff44';
+    ctx.fillStyle = colors.text_green;
 
     if (selectedAircraft() == aircraft.id) {
-      ctx.fillStyle = '#FFE045';
+      ctx.fillStyle = colors.text_yellow;
     } else if (aircraft.is_colliding) {
-      ctx.fillStyle = '#aa2222';
+      ctx.fillStyle = colors.text_red;
     } else if (aircraft.flight_plan.departing === world().airspace.id) {
-      ctx.fillStyle = '#3087f2';
+      ctx.fillStyle = colors.line_blue;
     }
 
     // Draw callsign
@@ -591,7 +592,7 @@ export default function Canvas({
     let c = scalePoint(terminal.c);
     let d = scalePoint(terminal.d);
 
-    ctx.fillStyle = '#555';
+    ctx.fillStyle = colors.special.terminal;
     ctx.lineWidth = scaleFeetToPixels(200);
     ctx.beginPath();
     ctx.moveTo(a[0], a[1]);
@@ -605,7 +606,7 @@ export default function Canvas({
     let apron_a = scalePoint(terminal.apron[0]);
     let apron_b = scalePoint(terminal.apron[1]);
 
-    ctx.strokeStyle = '#00aa00';
+    ctx.strokeStyle = colors.line_green;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(apron_a[0], apron_a[1]);
@@ -629,7 +630,7 @@ export default function Canvas({
 
     let fontSize = 16;
     let textWidth = ctx.measureText(id).width + 10;
-    ctx.fillStyle = '#000a';
+    ctx.fillStyle = colors.text_background;
     ctx.fillRect(
       pos[0] - textWidth * 0.5,
       pos[1] - fontSize * 0.5 - fontSize,
@@ -637,7 +638,7 @@ export default function Canvas({
       fontSize
     );
 
-    ctx.fillStyle = '#dd9904';
+    ctx.fillStyle = colors.text_taxi_yellow;
     ctx.fillText(id, pos[0], pos[1] - fontSize);
   }
 
@@ -646,7 +647,7 @@ export default function Canvas({
     let start = scalePoint(taxiway.a);
     let end = scalePoint(taxiway.b);
 
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = colors.special.taxiway;
     ctx.lineWidth = scaleFeetToPixels(200);
     ctx.beginPath();
     ctx.moveTo(start[0], start[1]);
@@ -659,7 +660,7 @@ export default function Canvas({
     let end = scalePoint(taxiway.b);
     let middle = midpointBetweenPoints(start, end);
     let textWidth = ctx.measureText(taxiway.id).width + 10;
-    ctx.fillStyle = '#000a';
+    ctx.fillStyle = colors.text_background;
     ctx.fillRect(
       middle[0] - textWidth * 0.5,
       middle[1] - fontSize() * 0.5,
@@ -667,7 +668,7 @@ export default function Canvas({
       fontSize()
     );
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#dd9904';
+    ctx.fillStyle = colors.text_taxi_yellow;
     ctx.fillText(taxiway.id, middle[0], middle[1]);
   }
 
@@ -686,7 +687,7 @@ export default function Canvas({
 
     // Draw runway label
     let textWidth = ctx.measureText(runway.id).width + 10;
-    ctx.fillStyle = '#000a';
+    ctx.fillStyle = colors.text_background;
     ctx.fillRect(
       start[0] - textWidth * 0.5,
       start[1] - fontSize() * 0.5,
@@ -694,7 +695,7 @@ export default function Canvas({
       fontSize()
     );
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#dd9904';
+    ctx.fillStyle = colors.text_taxi_yellow;
     ctx.fillText(runway.id, start[0], start[1]);
   }
 
@@ -702,7 +703,8 @@ export default function Canvas({
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
-    let taxi_color = selectedAircraft() == aircraft.id ? '#ffe045' : '#ffffff';
+    let taxi_color =
+      selectedAircraft() == aircraft.id ? colors.text_yellow : '#ffffff';
 
     if (
       aircraft.state.type === 'taxiing' &&
@@ -815,7 +817,7 @@ export default function Canvas({
     if (names.length > 0) {
       ctx.font = `900 ${24}px monospace`;
       let message = `SEPARATION WARNING: ${names.join(', ')}`;
-      ctx.fillStyle = '#ff0000';
+      ctx.fillStyle = 'red';
       ctx.textAlign = 'center';
       ctx.fillText(message, 0, -canvas.height * 0.5 + 100);
     }
