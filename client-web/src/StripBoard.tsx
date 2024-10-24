@@ -7,12 +7,7 @@ import {
   selectedAircraftAtom,
   worldAtom,
 } from './lib/atoms';
-import {
-  calculateDistance,
-  distanceToAirspace,
-  nauticalMilesToFeet,
-  runwayInfo,
-} from './lib/lib';
+import { calculateDistance, nauticalMilesToFeet, runwayInfo } from './lib/lib';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -201,7 +196,14 @@ function Strip({ strip }: StripProps) {
     bottomStatus = strip.state.value.name;
   }
 
-  let distance = distanceToAirspace(strip, world(), airspace());
+  let distance = calculateDistance(strip.pos, world().airspace.pos);
+  let distanceText = '';
+
+  if (strip.state.type === 'flying' || strip.state.type === 'landing') {
+    distanceText = `${(distance / nauticalMilesToFeet)
+      .toFixed(1)
+      .slice(0, 4)} NM`;
+  }
 
   function handleMouseDown() {
     setSelectedAircraft(strip.id);
@@ -220,9 +222,7 @@ function Strip({ strip }: StripProps) {
     >
       <div class="vertical">
         <span class="callsign">{strip.id}</span>
-        <span>
-          {(distance / nauticalMilesToFeet).toFixed(1).slice(0, 4)} NM
-        </span>
+        <span>{distanceText}</span>
       </div>
       <div class="vertical">
         <span>{strip.flight_plan.departing}</span>
@@ -283,10 +283,10 @@ export default function StripBoard({
       const nameSorter = (a: Aircraft, b: Aircraft) =>
         ('' + a.id).localeCompare(b.id);
       const distanteToAirportSorter = (a: Aircraft, b: Aircraft) => {
-        return (
-          distanceToAirspace(b, world(), airspace()) -
-          distanceToAirspace(a, world(), airspace())
-        );
+        let distance_a = calculateDistance(a.pos, world().airspace.pos);
+        let distance_b = calculateDistance(b.pos, world().airspace.pos);
+
+        return distance_b - distance_a;
       };
 
       Object.entries(strips).forEach(([key, list]) => {
