@@ -328,7 +328,7 @@ export default function Canvas({
     ctx.stroke();
 
     // Draw airspace name
-    ctx.fillStyle = '#777';
+    ctx.fillStyle = colors.text_grey;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(
@@ -422,7 +422,7 @@ export default function Canvas({
   }
 
   function drawConnection(ctx: Ctx, connection: Connection) {
-    let activeColor = colors.special.connection.active;
+    let activeColor = colors.text_grey;
     let inactiveColor = colors.special.connection.inactive;
     let selectedColor = colors.text_yellow;
 
@@ -638,7 +638,7 @@ export default function Canvas({
       fontSize
     );
 
-    ctx.fillStyle = colors.text_taxi_yellow;
+    ctx.fillStyle = colors.text_orange;
     ctx.fillText(id, pos[0], pos[1] - fontSize);
   }
 
@@ -668,7 +668,7 @@ export default function Canvas({
       fontSize()
     );
     ctx.textAlign = 'center';
-    ctx.fillStyle = colors.text_taxi_yellow;
+    ctx.fillStyle = colors.text_orange;
     ctx.fillText(taxiway.id, middle[0], middle[1]);
   }
 
@@ -695,7 +695,7 @@ export default function Canvas({
       fontSize()
     );
     ctx.textAlign = 'center';
-    ctx.fillStyle = colors.text_taxi_yellow;
+    ctx.fillStyle = colors.text_orange;
     ctx.fillText(runway.id, start[0], start[1]);
   }
 
