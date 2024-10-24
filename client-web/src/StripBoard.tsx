@@ -196,11 +196,6 @@ function Strip({ strip }: StripProps) {
     }
 
     bottomStatus = current.name;
-  } else if (strip.state.type === 'flying') {
-    if (strip.state.value.waypoints.length > 0) {
-      topStatus = 'DCT';
-      bottomStatus = strip.state.value.waypoints.at(-1).name;
-    }
   }
 
   let distance = distanceToAirspace(strip, world(), airspace());
