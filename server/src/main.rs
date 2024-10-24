@@ -76,7 +76,7 @@ async fn main() {
   const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 
   let airspace_names = [
-    "KLAX", "KPHL", "KJFK", "EGNX", "EGGW", "EGSH", "EGMC", "EGSS", "EGLL",
+    "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
     "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
   ];
 
@@ -152,21 +152,19 @@ async fn main() {
   let mut aircrafts: Vec<Aircraft> = Vec::new();
   for airport in player_airspace.airports.iter() {
     for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-      if engine.rng.chance(0.3) {
-        let mut aircraft = Aircraft::random_parked(
-          gate.clone(),
-          &mut engine.rng,
-          &player_airspace,
-        );
-        aircraft.flight_plan.departing = player_airspace.id;
-        aircraft.flight_plan.arriving = engine
-          .rng
-          .sample(&engine.world.connections)
-          .map(|c| c.id)
-          .unwrap_or_default();
+      let mut aircraft = Aircraft::random_parked(
+        gate.clone(),
+        &mut engine.rng,
+        &player_airspace,
+      );
+      aircraft.flight_plan.departing = player_airspace.id;
+      aircraft.flight_plan.arriving = engine
+        .rng
+        .sample(&engine.world.connections)
+        .map(|c| c.id)
+        .unwrap_or_default();
 
-        aircrafts.push(aircraft);
-      }
+      aircrafts.push(aircraft);
     }
   }
 
