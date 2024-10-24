@@ -1,5 +1,3 @@
-use std::ops::Mul;
-
 use super::{
   actions::ActionKind,
   events::{Event, EventKind},
@@ -8,12 +6,9 @@ use super::{
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
-  command::{CommandReply, CommandWithFreq},
-  delta_angle,
-  engine::Bundle,
-  inverse_degrees, move_point, normalize_angle,
-  pathfinder::NodeBehavior,
-  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  delta_angle, engine::Bundle, inverse_degrees, move_point, normalize_angle,
+  pathfinder::NodeBehavior, Line, KNOT_TO_FEET_PER_SECOND,
+  NAUTICALMILES_TO_FEET,
 };
 
 pub trait AircraftEffect {
@@ -23,12 +18,14 @@ pub trait AircraftEffect {
 pub struct AircraftUpdateFromTargetsEffect;
 impl AircraftEffect for AircraftUpdateFromTargetsEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    let dt = aircraft.dt_enroute(bundle.dt);
+
     // In feet per second
-    let climb_speed = aircraft.dt_climb_speed(bundle.dt);
+    let climb_speed = aircraft.dt_climb_speed(dt);
     // In degrees per second
-    let turn_speed = aircraft.dt_turn_speed(bundle.dt);
+    let turn_speed = aircraft.dt_turn_speed(dt);
     // In knots per second
-    let speed_speed = aircraft.dt_speed_speed(bundle.dt);
+    let speed_speed = aircraft.dt_speed_speed(dt);
 
     let mut altitude = aircraft.altitude;
     let mut heading = aircraft.heading;
@@ -91,10 +88,12 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
 pub struct AircraftUpdatePositionEffect;
 impl AircraftEffect for AircraftUpdatePositionEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    let dt = aircraft.dt_enroute(bundle.dt);
+
     let pos = move_point(
       aircraft.pos,
       aircraft.heading,
-      aircraft.speed * KNOT_TO_FEET_PER_SECOND * bundle.dt,
+      aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt,
     );
 
     if pos != aircraft.pos {
@@ -109,6 +108,8 @@ pub struct AircraftUpdateLandingEffect;
 impl AircraftEffect for AircraftUpdateLandingEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     if let AircraftState::Landing(runway) = &aircraft.state {
+      let dt = aircraft.dt_enroute(bundle.dt);
+
       let ils_line = Line::new(
         move_point(runway.end(), runway.heading, 500.0),
         move_point(
@@ -122,8 +123,8 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
       let distance_to_runway = aircraft.pos.distance(runway.start());
       let distance_to_end = aircraft.pos.distance_squared(runway.end());
 
-      let climb_speed = aircraft.dt_climb_speed(bundle.dt);
-      let seconds_for_descent = aircraft.altitude / (climb_speed / bundle.dt);
+      let climb_speed = aircraft.dt_climb_speed(dt);
+      let seconds_for_descent = aircraft.altitude / (climb_speed / dt);
 
       let target_speed_ft_s = distance_to_runway / seconds_for_descent;
       let target_knots = target_speed_ft_s / KNOT_TO_FEET_PER_SECOND;
@@ -287,42 +288,22 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
   }
 }
 
-pub struct AircraftContactCenterEffect;
-impl AircraftEffect for AircraftContactCenterEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Flying { .. } = aircraft.state {
-      if bundle.prev.airspace.is_some() && aircraft.airspace.is_none() {
-        bundle.events.push(Event::new(
-          aircraft.id,
-          EventKind::Callout(CommandWithFreq::new_reply(
-            aircraft.id.to_string(),
-            aircraft.frequency,
-            CommandReply::ContactCenter {
-              altitude: aircraft.altitude,
-            },
-          )),
-        ));
-      }
-    }
-  }
-}
-
-pub struct AircraftSetDescentOnAutoAirspaceEffect;
-impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Flying { .. } = aircraft.state {
-      if (aircraft.target.altitude > 7000.0 || aircraft.target.speed > 250.0)
-        && bundle.airspace.pos.distance_squared(aircraft.pos)
-          <= bundle.airspace.radius.mul(2.0).powf(2.0)
-      {
-        bundle.events.push(Event::new(
-          aircraft.id,
-          EventKind::AltitudeAtOrBelow(7000.0),
-        ));
-        bundle
-          .events
-          .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
-      }
-    }
-  }
-}
+// pub struct AircraftSetDescentOnAutoAirspaceEffect;
+// impl AircraftEffect for AircraftSetDescentOnAutoAirspaceEffect {
+//   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+//     if let AircraftState::Flying { .. } = aircraft.state {
+//       if (aircraft.target.altitude > 7000.0 || aircraft.target.speed > 250.0)
+//         && bundle.airspace.pos.distance_squared(aircraft.pos)
+//           <= bundle.airspace.radius.mul(2.0).powf(2.0)
+//       {
+//         bundle.events.push(Event::new(
+//           aircraft.id,
+//           EventKind::AltitudeAtOrBelow(7000.0),
+//         ));
+//         bundle
+//           .events
+//           .push(Event::new(aircraft.id, EventKind::SpeedAtOrBelow(250.0)));
+//       }
+//     }
+//   }
+// }

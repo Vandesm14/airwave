@@ -48,6 +48,7 @@ pub enum ActionKind {
   },
   Flying(Vec<Node<NodeVORData>>),
   Callouts(AircraftCallouts),
+  EnRoute(bool),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -134,7 +135,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       }
       ActionKind::Flying(waypoints) => {
         aircraft.state = AircraftState::Flying {
-          waypoints: prune_waypoints(aircraft, waypoints),
+          waypoints: waypoints.clone(),
           enroute: false,
         }
       }
@@ -146,6 +147,11 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       }
       ActionKind::Callouts(callouts) => {
         aircraft.callouts = *callouts;
+      }
+      ActionKind::EnRoute(bool) => {
+        if let AircraftState::Flying { enroute, .. } = &mut aircraft.state {
+          *enroute = *bool;
+        }
       }
     }
   }

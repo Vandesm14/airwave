@@ -32,6 +32,7 @@ pub enum EventKind {
   GoAround,
   Touchdown,
   Takeoff(Intern<String>),
+  EnRoute(bool),
 
   // Taxiing
   Taxi(Vec<Node<()>>),
@@ -178,10 +179,13 @@ impl AircraftEventHandler for HandleAircraftEvent {
             });
             bundle.actions.push(Action {
               id: aircraft.id,
-              kind: ActionKind::Flying(vec![new_vor(
-                arrival.id,
-                arrival.transition,
-              )]),
+              kind: ActionKind::Flying(vec![
+                new_vor(arrival.id, arrival.transition)
+                  .with_behavior(vec![EventKind::EnRoute(false)]),
+                new_vor(arrival.id, arrival.pos),
+                new_vor(arrival.id, arrival.transition)
+                  .with_behavior(vec![EventKind::EnRoute(true)]),
+              ]),
             });
           }
         }
@@ -207,6 +211,14 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::Takeoff(runway) => {
         if let AircraftState::Taxiing { .. } = aircraft.state {
           handle_takeoff_event(aircraft, bundle, *runway);
+        }
+      }
+      EventKind::EnRoute(bool) => {
+        if let AircraftState::Flying { .. } = &aircraft.state {
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::EnRoute(*bool),
+          });
         }
       }
 

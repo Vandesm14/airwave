@@ -185,6 +185,37 @@ impl Aircraft {
     .with_synced_targets()
   }
 
+  pub fn random_flying(
+    frequency: f32,
+    airspace: Option<Intern<String>>,
+    flight_plan: FlightPlan,
+  ) -> Self {
+    Self {
+      id: Intern::from(Aircraft::random_callsign(&mut Default::default())),
+      is_colliding: false,
+
+      pos: Vec2::ZERO,
+      speed: 250.0,
+      heading: 0.0,
+      altitude: 7000.0,
+
+      state: AircraftState::Flying {
+        waypoints: Vec::new(),
+        enroute: false,
+      },
+      target: AircraftTargets::default(),
+      flight_plan,
+      callouts: AircraftCallouts::default(),
+
+      frequency,
+      created: SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap(),
+      airspace,
+    }
+    .with_synced_targets()
+  }
+
   pub fn random_to_arrive(
     departure: &Airspace,
     arrival: &Airspace,
@@ -277,6 +308,18 @@ impl Aircraft {
     } else {
       // Flying
       2.0 * dt
+    }
+  }
+
+  pub fn dt_enroute(&self, dt: f32) -> f32 {
+    if let AircraftState::Flying { enroute, .. } = &self.state {
+      if *enroute {
+        dt * 60.0
+      } else {
+        dt
+      }
+    } else {
+      dt
     }
   }
 }
