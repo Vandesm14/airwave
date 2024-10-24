@@ -155,8 +155,8 @@ function Strip({ strip }: StripProps) {
       });
 
       let distanceInNm = distance / nauticalMilesToFeet;
-      let time = (distanceInNm / strip.speed) * 1000 * 60;
-      sinceCreated = formatTime(time);
+      let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
+      sinceCreated = formatTime(time / 15);
     } else {
       sinceCreated = `--:--`;
     }
