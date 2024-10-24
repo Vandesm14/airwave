@@ -18,7 +18,7 @@ export type NodeVOR = {
 
 export type AircraftStateFlying = {
   type: 'flying';
-  value: { waypoints: Array<NodeVOR> };
+  value: { waypoints: Array<NodeVOR>; enroute: boolean };
 };
 
 export type AircraftStateLanding = {
