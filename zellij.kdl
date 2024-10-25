@@ -24,7 +24,7 @@ layout {
       }
       pane split_direction="vertical" {
         pane name="engine server" command="cargo" {
-          args "run" "--bin" "server" "--release" "--" "--address" "0.0.0.0:9001" "--world-radius" "500" "--airport" "new_v_pattern"
+          args "run" "--bin" "server" "--release" "--" "--airport" "new_v_pattern"
         }
       }
       pane size=2 borderless=true {
