@@ -1,5 +1,10 @@
 import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
-import { Aircraft, isAircraftFlying, isAircraftTaxiing } from './lib/types';
+import {
+  Aircraft,
+  Frequencies,
+  isAircraftFlying,
+  isAircraftTaxiing,
+} from './lib/types';
 import { useAtom } from 'solid-jotai';
 import {
   controlAtom,
@@ -301,12 +306,12 @@ export default function StripBoard({
     }
   });
 
-  function onClickHeader(name: string) {
-    let key = name.toLowerCase();
+  function onClickHeader(name: keyof Strips) {
+    let key = name.toLowerCase() as keyof Frequencies;
     if (name === 'Landing' || name === 'Takeoff') {
       key = 'tower';
     } else if (name === 'Parked') {
-      key = 'clearance';
+      key = 'ground';
     }
 
     setFrequency(foundAirspace().frequencies[key]);
@@ -337,7 +342,10 @@ export default function StripBoard({
       {stripEntries().map(([key, list]) =>
         key !== 'None' && key !== 'Selected' && key !== 'Colliding' ? (
           <>
-            <div class="header" onmousedown={() => onClickHeader(key)}>
+            <div
+              class="header"
+              onmousedown={() => onClickHeader(key as keyof Strips)}
+            >
               {key}
               {list.length > 0 ? ` (${list.length})` : ''}
             </div>
