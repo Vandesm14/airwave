@@ -433,6 +433,11 @@ export default function Canvas({
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
+    const isAboveAirspace = aircraft.altitude > 10000;
+    const isSelected = selectedAircraft() === aircraft.id;
+    const isEnroute =
+      aircraft.state.type === 'flying' && aircraft.state.value.enroute;
+
     let pos = scalePoint(aircraft.pos);
     if (aircraft.state.type === 'flying' && selectedAircraft() == aircraft.id) {
       ctx.strokeStyle = '#ffff0033';
@@ -458,7 +463,7 @@ export default function Canvas({
 
     resetTransform(ctx);
 
-    if (selectedAircraft() == aircraft.id) {
+    if (isSelected) {
       ctx.fillStyle = colors.line_yellow;
       ctx.strokeStyle = colors.line_yellow;
     } else if (aircraft.is_colliding) {
@@ -470,26 +475,13 @@ export default function Canvas({
     }
 
     // Draw the dot
-    ctx.beginPath();
-    ctx.arc(
-      pos[0],
-      pos[1],
-      Math.min(3, scaleFeetToPixels(1000)),
-      0,
-      Math.PI * 2
+    const dotSize = Math.max(8, scaleFeetToPixels(3000));
+    ctx.fillRect(
+      pos[0] - dotSize * 0.5,
+      pos[1] - dotSize * 0.5,
+      dotSize,
+      dotSize
     );
-    ctx.fill();
-
-    // Draw the separation circle
-    ctx.beginPath();
-    ctx.arc(
-      pos[0],
-      pos[1],
-      scaleFeetToPixels(nauticalMilesToFeet * 1),
-      0,
-      Math.PI * 2
-    );
-    ctx.stroke();
 
     // Draw the collision circle
     if (aircraft.is_colliding) {
@@ -530,7 +522,9 @@ export default function Canvas({
     // Draw callsign
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
-    const isAboveAirspace = aircraft.altitude > 10000;
+    if ((isAboveAirspace || isEnroute) && !isSelected) {
+      return;
+    }
 
     // Draw altitude
     let altitudeIcon = ' ';
@@ -542,17 +536,18 @@ export default function Canvas({
     ctx.fillText(
       Math.round(aircraft.altitude / 100)
         .toString()
-        .padStart(3, '0') + isAboveAirspace
-        ? altitudeIcon +
+        .padStart(3, '0') +
+        (isAboveAirspace
+          ? ''
+          : altitudeIcon +
             Math.round(aircraft.target.altitude / 100)
               .toString()
-              .padStart(3, '0')
-        : '',
+              .padStart(3, '0')),
       pos[0] + spacing,
       pos[1] - spacing + fontSize()
     );
 
-    if (isAboveAirspace) {
+    if (selectedAircraft() !== aircraft.id) {
       return;
     }
 
@@ -674,6 +669,11 @@ export default function Canvas({
     let info = runwayInfo(runway);
     let start = scalePoint(info.start);
     let end = scalePoint(info.end);
+    let ils = {
+      end: scalePoint(info.ils.end),
+      maxAngle: scalePoint(info.ils.maxAngle),
+      minAngle: scalePoint(info.ils.minAngle),
+    };
 
     ctx.strokeStyle = '#222';
     ctx.lineWidth = scaleFeetToPixels(250);
@@ -694,6 +694,15 @@ export default function Canvas({
     ctx.textAlign = 'center';
     ctx.fillStyle = colors.text_orange;
     ctx.fillText(runway.id, start[0], start[1]);
+
+    // Draw the localizer beacon
+    ctx.fillStyle = colors.line_blue;
+    ctx.strokeStyle = colors.line_blue;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(ils.end[0], ils.end[1]);
+    ctx.stroke();
   }
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
@@ -762,7 +771,6 @@ export default function Canvas({
     ctx.fillStyle = taxi_color;
 
     // Draw callsign
-
     let textWidth = ctx.measureText(aircraft.id).width + 10;
     ctx.fillStyle = colors.text_background;
     ctx.fillRect(
@@ -796,12 +804,12 @@ export default function Canvas({
       );
     }
 
-    // Draw speed
-    ctx.fillText(
-      Math.round(aircraft.speed).toString(),
-      pos[0] + spacing,
-      pos[1] - spacing + fontSize() * (drawAlt ? 2 : 1)
-    );
+    // // Draw speed
+    // ctx.fillText(
+    //   Math.round(aircraft.speed).toString(),
+    //   pos[0] + spacing,
+    //   pos[1] - spacing + fontSize() * (drawAlt ? 2 : 1)
+    // );
   }
 
   function drawFlightPlanWaypoints(ctx: Ctx, aircraft: Aircraft) {
