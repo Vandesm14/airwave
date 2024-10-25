@@ -9,10 +9,7 @@ use clap::Parser;
 use engine::{
   circle_circle_intersection,
   entities::{
-    aircraft::{
-      events::{Event, EventKind},
-      Aircraft, FlightPlan,
-    },
+    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
     world::{Connection, ConnectionState},
@@ -24,7 +21,7 @@ use glam::Vec2;
 use internment::Intern;
 use server::{
   airport::{self, AirportSetupFn},
-  CompatAdapter, IncomingUpdate, OutgoingReply,
+  IncomingUpdate, OutgoingReply, Runner,
 };
 use tokio::net::TcpListener;
 use turborand::{rng::Rng, SeededCore, TurboRand};
@@ -55,7 +52,7 @@ async fn main() {
 
   let rng = Rng::with_seed(0);
   let mut world_rng = Rng::with_seed(0);
-  let mut engine = CompatAdapter::new(
+  let mut runner = Runner::new(
     command_rx,
     update_tx.clone(),
     command_tx.clone(),
@@ -123,7 +120,7 @@ async fn main() {
         (world_rng.f32() - 0.5) * world_radius,
       );
 
-      for airport in engine.world.connections.iter() {
+      for airport in runner.world.connections.iter() {
         if circle_circle_intersection(
           position,
           airport.pos,
@@ -146,7 +143,7 @@ async fn main() {
         .move_towards(airspace_position, MANUAL_TOWER_AIRSPACE_RADIUS),
     };
 
-    engine.world.connections.push(connection);
+    runner.world.connections.push(connection);
   }
 
   let mut aircrafts: Vec<Aircraft> = Vec::new();
@@ -154,13 +151,13 @@ async fn main() {
     for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
       let mut aircraft = Aircraft::random_parked(
         gate.clone(),
-        &mut engine.rng,
+        &mut runner.rng,
         &player_airspace,
       );
       aircraft.flight_plan.departing = player_airspace.id;
-      aircraft.flight_plan.arriving = engine
+      aircraft.flight_plan.arriving = runner
         .rng
-        .sample(&engine.world.connections)
+        .sample(&runner.world.connections)
         .map(|c| c.id)
         .unwrap_or_default();
 
@@ -169,15 +166,15 @@ async fn main() {
   }
 
   for aircraft in aircrafts.drain(..) {
-    engine.add_aircraft(aircraft);
+    runner.add_aircraft(aircraft);
   }
 
-  engine.world.airspace = player_airspace;
+  runner.world.airspace = player_airspace;
 
   //
 
   tracing::info!("Starting game loop...");
-  tokio::task::spawn_blocking(move || engine.begin_loop());
+  tokio::task::spawn_blocking(move || runner.begin_loop());
 
   let listener = TcpListener::bind(address).await.unwrap();
   tracing::info!("Listening on {address}");

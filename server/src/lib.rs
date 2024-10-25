@@ -63,7 +63,7 @@ pub enum IncomingUpdate {
 }
 
 #[derive(Debug, Clone)]
-pub struct CompatAdapter {
+pub struct Runner {
   pub world: World,
   pub aircraft: Vec<Aircraft>,
   pub engine: Engine,
@@ -79,7 +79,7 @@ pub struct CompatAdapter {
   rate: usize,
 }
 
-impl CompatAdapter {
+impl Runner {
   pub fn new(
     receiver: async_channel::Receiver<IncomingUpdate>,
     outgoing_sender: async_broadcast::Sender<OutgoingReply>,
