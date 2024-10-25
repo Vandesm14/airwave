@@ -301,7 +301,7 @@ export default function Canvas({
       if (isGround()) {
         drawGround(ctx, world(), render().aircrafts);
       } else {
-        drawCompass(ctx);
+        // drawCompass(ctx);
         drawTower(ctx, world(), render().aircrafts);
       }
 
