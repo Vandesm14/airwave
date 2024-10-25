@@ -117,11 +117,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
             aircraft.id,
             ActionKind::TargetHeading(*heading),
           ));
-
-          // Cancel waypoints
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
         }
       }
       EventKind::Altitude(altitude) => {
