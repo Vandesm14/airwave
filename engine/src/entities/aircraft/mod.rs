@@ -217,7 +217,7 @@ impl Aircraft {
   pub fn dt_enroute(&self, dt: f32) -> f32 {
     if let AircraftState::Flying { enroute, .. } = &self.state {
       if *enroute {
-        dt * 15.0
+        dt * 10.0
       } else {
         dt
       }
