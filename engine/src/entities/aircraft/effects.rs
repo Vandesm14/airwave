@@ -142,6 +142,11 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
           id: aircraft.id,
           kind: EventKind::Touchdown,
         });
+        bundle.events.push(Event {
+          id: aircraft.id,
+          kind: EventKind::SuccessfulLanding,
+        });
+
         return;
       }
 

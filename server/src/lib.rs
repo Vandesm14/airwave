@@ -171,13 +171,17 @@ impl Runner {
                 tracing::error!("error sending outgoing reply: {e}")
               }
             }
-            EventKind::Takeoff(..) => {
+            EventKind::SuccessfulTakeoff => {
               self.points.takeoffs += 1;
               self.broadcast_points();
+
+              println!("sending points: {:?}", self.points)
             }
-            EventKind::Touchdown => {
+            EventKind::SuccessfulLanding => {
               self.points.landings += 1;
               self.broadcast_points();
+
+              println!("sending points: {:?}", self.points)
             }
 
             _ => {}

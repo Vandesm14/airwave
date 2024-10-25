@@ -48,6 +48,10 @@ pub enum EventKind {
 
   // Internal
   Delete,
+
+  // Points
+  SuccessfulTakeoff,
+  SuccessfulLanding,
 }
 
 impl From<Task> for EventKind {
@@ -289,6 +293,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .events
           .push(Event::new(aircraft.id, EventKind::Delete));
       }
+
+      // Points
+      // Points are handled outside of the engine
+      EventKind::SuccessfulTakeoff => {}
+      EventKind::SuccessfulLanding => {}
     }
   }
 }
@@ -350,6 +359,11 @@ pub fn handle_touchdown_event(
       waypoints: Vec::new(),
     },
   ));
+
+  bundle.events.push(Event {
+    id: aircraft.id,
+    kind: EventKind::SuccessfulLanding,
+  });
 }
 
 pub fn handle_taxi_event(
@@ -455,7 +469,12 @@ pub fn handle_takeoff_event(
         bundle.actions.push(Action {
           id: aircraft.id,
           kind: ActionKind::Flying(vec![]),
-        })
+        });
+
+        bundle.events.push(Event {
+          id: aircraft.id,
+          kind: EventKind::SuccessfulTakeoff,
+        });
       }
     }
   }
