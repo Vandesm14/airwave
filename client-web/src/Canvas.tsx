@@ -755,6 +755,16 @@ export default function Canvas({
     ctx.fillStyle = taxi_color;
 
     // Draw callsign
+
+    let textWidth = ctx.measureText(aircraft.id).width + 10;
+    ctx.fillStyle = colors.text_background;
+    ctx.fillRect(
+      pos[0] + spacing * 0.5,
+      pos[1] - spacing - fontSize() * 0.5,
+      textWidth,
+      fontSize()
+    );
+    ctx.fillStyle = taxi_color;
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
     // Draw altitude
