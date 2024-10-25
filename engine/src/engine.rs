@@ -80,7 +80,7 @@ impl Engine {
         (aircraft.altitude - other_aircraft.altitude).abs();
 
       if aircraft.altitude > 1000.0
-        && distance <= (NAUTICALMILES_TO_FEET * 15.0).powf(2.0)
+        && distance <= (NAUTICALMILES_TO_FEET * 2.0).powf(2.0)
         && vertical_distance < 1000.0
       {
         collisions.insert(aircraft.id);
@@ -88,16 +88,16 @@ impl Engine {
       }
     }
 
-    // aircrafts.iter_mut().for_each(|aircraft| {
-    //   let is_colliding = collisions.contains(&aircraft.id);
+    aircrafts.iter_mut().for_each(|aircraft| {
+      let is_colliding = collisions.contains(&aircraft.id);
 
-    //   // TODO: Fire collision events
-    //   // if is_colliding && aircraft.is_colliding != is_colliding {
-    //   //   self.events.push();
-    //   // }
+      // TODO: Fire collision events
+      // if is_colliding && aircraft.is_colliding != is_colliding {
+      //   self.events.push();
+      // }
 
-    //   aircraft.is_colliding = is_colliding;
-    // });
+      aircraft.is_colliding = is_colliding;
+    });
 
     if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);

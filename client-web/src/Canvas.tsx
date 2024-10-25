@@ -497,7 +497,7 @@ export default function Canvas({
       ctx.arc(
         pos[0],
         pos[1],
-        scaleFeetToPixels(nauticalMilesToFeet * 15),
+        scaleFeetToPixels(nauticalMilesToFeet * 2),
         0,
         Math.PI * 2
       );
@@ -530,6 +530,8 @@ export default function Canvas({
     // Draw callsign
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
+    const isAboveAirspace = aircraft.altitude > 10000;
+
     // Draw altitude
     let altitudeIcon = ' ';
     if (aircraft.altitude < aircraft.target.altitude) {
@@ -540,14 +542,19 @@ export default function Canvas({
     ctx.fillText(
       Math.round(aircraft.altitude / 100)
         .toString()
-        .padStart(3, '0') +
-        altitudeIcon +
-        Math.round(aircraft.target.altitude / 100)
-          .toString()
-          .padStart(3, '0'),
+        .padStart(3, '0') + isAboveAirspace
+        ? altitudeIcon +
+            Math.round(aircraft.target.altitude / 100)
+              .toString()
+              .padStart(3, '0')
+        : '',
       pos[0] + spacing,
       pos[1] - spacing + fontSize()
     );
+
+    if (isAboveAirspace) {
+      return;
+    }
 
     // Draw heading
     let targetHeadingInfo =
