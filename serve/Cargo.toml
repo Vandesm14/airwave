@@ -4,6 +4,12 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = "z"
+strip = true
+
 [dependencies]
 rust-embed = "8"
 clap.workspace = true

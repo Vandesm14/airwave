@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use axum::{
   extract::Path,
   http::{HeaderValue, StatusCode},
-  response::{Html, IntoResponse, Response},
+  response::{IntoResponse, Response},
   routing::get,
   Router,
 };
