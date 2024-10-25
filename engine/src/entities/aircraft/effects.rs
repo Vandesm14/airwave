@@ -283,6 +283,10 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
               id: aircraft.id,
               kind: ActionKind::Parked(waypoint.clone()),
             });
+            bundle.actions.push(Action {
+              id: aircraft.id,
+              kind: ActionKind::FlipFlightPlan,
+            });
           }
           NodeBehavior::HoldShort => {
             if distance <= 250.0_f32.powf(2.0) {
