@@ -1,8 +1,3 @@
-// "dev": "cd web-client && vite",
-// "build": "cd web-client && vite build",
-// "preview": "cd web-client && vite preview",
-// "serve": "cd server && cargo run"
-
 use core::{
   net::{IpAddr, Ipv4Addr, SocketAddr},
   str::FromStr,
