@@ -54,6 +54,7 @@ pub enum OutgoingReply {
   Aircraft(Vec<Aircraft>),
   World(World),
   Size(f32),
+  Points(Points),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -62,11 +63,18 @@ pub enum IncomingUpdate {
   Connect,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Points {
+  landings: usize,
+  takeoffs: usize,
+}
+
 #[derive(Debug, Clone)]
 pub struct Runner {
   pub world: World,
   pub aircraft: Vec<Aircraft>,
   pub engine: Engine,
+  pub points: Points,
 
   pub receiver: async_channel::Receiver<IncomingUpdate>,
   pub outgoing_sender: async_broadcast::Sender<OutgoingReply>,
@@ -91,6 +99,7 @@ impl Runner {
       world: World::default(),
       aircraft: Vec::default(),
       engine: Engine::default(),
+      points: Points::default(),
 
       receiver,
       outgoing_sender,
@@ -153,17 +162,25 @@ impl Runner {
 
         // Run through all callout events and broadcast them
         for event in events.iter() {
-          if let Event {
-            kind: EventKind::Callout(command),
-            ..
-          } = event
-          {
-            if let Err(e) = self
-              .outgoing_sender
-              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-            {
-              tracing::error!("error sending outgoing reply: {e}")
+          match &event.kind {
+            EventKind::Callout(command) => {
+              if let Err(e) = self
+                .outgoing_sender
+                .try_broadcast(OutgoingReply::Reply(command.clone().into()))
+              {
+                tracing::error!("error sending outgoing reply: {e}")
+              }
             }
+            EventKind::Takeoff(..) => {
+              self.points.takeoffs += 1;
+              self.broadcast_points();
+            }
+            EventKind::Touchdown => {
+              self.points.landings += 1;
+              self.broadcast_points();
+            }
+
+            _ => {}
           }
         }
 
@@ -246,8 +263,16 @@ impl Runner {
       .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
   }
 
+  fn broadcast_points(&self) {
+    let _ = self
+      .outgoing_sender
+      .try_broadcast(OutgoingReply::Points(self.points.clone()))
+      .inspect_err(|e| tracing::warn!("failed to broadcast points: {}", e));
+  }
+
   fn broadcast_for_new_client(&self) {
     self.broadcast_world();
+    self.broadcast_points();
   }
 }
 

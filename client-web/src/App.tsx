@@ -4,6 +4,7 @@ import {
   frequencyAtom,
   isRecordingAtom,
   messagesAtom,
+  pointsAtom,
   selectedAircraftAtom,
   useTTSAtom,
   worldAtom,
@@ -28,6 +29,7 @@ export default function App() {
   let [frequency] = useStorageAtom(frequencyAtom);
   let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
+  let [points, setPoints] = useAtom(pointsAtom);
 
   async function getMedia(constraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
@@ -146,6 +148,9 @@ export default function App() {
       case 'world':
         setWorld(json.value);
         break;
+      case 'points':
+        setPoints(json.value);
+        break;
       case 'atcreply':
         speakAsATC(json.value);
         break;
@@ -179,31 +184,43 @@ export default function App() {
   }
 
   return (
-    <div id="radar">
-      <Chatbox sendMessage={sendTextMessage}></Chatbox>
-      <Canvas aircrafts={aircrafts}></Canvas>
-      <div class="top-right">
-        <StripBoard aircrafts={aircrafts}></StripBoard>
-        <FreqSelector></FreqSelector>
+    <>
+      <div class="bottom-left">
+        <div class="points">
+          <p>
+            <b>Landings:</b> {points().landings}
+          </p>
+          <p>
+            <b>Takeoffs:</b> {points().takeoffs}
+          </p>
+        </div>
+        <Chatbox sendMessage={sendTextMessage}></Chatbox>
       </div>
-      <div class="bottom-right-buttons">
-        <button
-          classList={{ 'tts-toggle': true, enabled: useTTS() }}
-          onClick={toggleTTS}
-        >
-          {useTTS() ? 'Disable TTS' : 'Enable TTS'}
-        </button>
-        <button
-          class={`talk-button ${isRecording() ? 'recording' : ''}`}
-          onMouseDown={startRecording}
-          onMouseUp={stopRecording}
-        >
-          {isRecording() ? 'Recording...' : 'Talk'}
-        </button>
-        <button class="discard-button" onClick={discardRecording}>
-          Discard
-        </button>
+      <div id="radar">
+        <Canvas aircrafts={aircrafts}></Canvas>
+        <div class="top-right">
+          <StripBoard aircrafts={aircrafts}></StripBoard>
+          <FreqSelector></FreqSelector>
+        </div>
+        <div class="bottom-right-buttons">
+          <button
+            classList={{ 'tts-toggle': true, enabled: useTTS() }}
+            onClick={toggleTTS}
+          >
+            {useTTS() ? 'Disable TTS' : 'Enable TTS'}
+          </button>
+          <button
+            class={`talk-button ${isRecording() ? 'recording' : ''}`}
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+          >
+            {isRecording() ? 'Recording...' : 'Talk'}
+          </button>
+          <button class="discard-button" onClick={discardRecording}>
+            Discard
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

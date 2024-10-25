@@ -206,12 +206,18 @@ export type RadioMessage = {
   reply: string;
 };
 
+export type Points = {
+  landings: number;
+  takeoffs: number;
+};
+
 export type ServerEvent =
   | {
       type: 'aircraft';
       value: Aircraft[];
     }
   | { type: 'world'; value: World }
+  | { type: 'points'; value: Points }
   | {
       type: 'atcreply';
       value: { id: string; frequency: number; reply: string };
