@@ -296,12 +296,12 @@ export default function Canvas({
 
       ctx.resetTransform();
       ctx.fillRect(0, 0, width, height);
-      // drawCompass(ctx);
       resetTransform(ctx);
 
       if (isGround()) {
         drawGround(ctx, world(), render().aircrafts);
       } else {
+        drawCompass(ctx);
         drawTower(ctx, world(), render().aircrafts);
       }
 
@@ -310,23 +310,25 @@ export default function Canvas({
   }
 
   function drawCompass(ctx: Ctx) {
-    let diameter = canvas.height;
+    let diameter = 200;
     if (canvas.width < canvas.height) {
       diameter = canvas.width;
     }
 
     let radius = diameter * 0.5;
     let origin = {
-      x: canvas.width * 0.5,
-      y: canvas.height * 0.5,
+      x: -canvas.width * 0.5 + diameter * 0.5 + 20,
+      y: -canvas.height * 0.5 + diameter * 0.5 + 20,
     };
 
-    ctx.fillStyle = '#8887';
+    ctx.fillStyle = '#888';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let padding = -10;
-    for (let i = 0; i < 36; i++) {
-      let text = headingToDegrees(i * 10)
+    const increment = 30;
+    const count = 360 / increment;
+    for (let i = 0; i < count; i++) {
+      let text = headingToDegrees(i * increment)
         .toString()
         .padStart(3, '0');
       if (text === '000') {
@@ -334,8 +336,8 @@ export default function Canvas({
       }
       ctx.fillText(
         text,
-        Math.cos(toRadians(i * 10)) * (radius + padding) + origin.x,
-        Math.sin(toRadians(i * 10)) * (radius + padding) + origin.y
+        Math.cos(toRadians(i * increment)) * (radius + padding) + origin.x,
+        Math.sin(toRadians(i * increment)) * (radius + padding) + origin.y
       );
     }
   }
