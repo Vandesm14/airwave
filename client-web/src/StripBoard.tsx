@@ -144,7 +144,7 @@ function Strip({ strip }: StripProps) {
   let sinceCreated = `--:--`;
 
   if (isAircraftFlying(strip.state)) {
-    if (strip.state.value.waypoints.length > 0) {
+    if (strip.state.value.enroute && strip.state.value.waypoints.length > 0) {
       let current = strip.pos;
       let distance = 0;
       let waypoints = strip.state.value.waypoints.slice();
@@ -155,8 +155,20 @@ function Strip({ strip }: StripProps) {
       });
 
       let distanceInNm = distance / nauticalMilesToFeet;
+      let time = (distanceInNm / (strip.speed * 10)) * 1000 * 60 * 60;
+      sinceCreated = formatTime(time);
+    } else if (
+      !strip.state.value.enroute &&
+      strip.state.value.waypoints.length > 0
+    ) {
+      let current = strip.pos;
+      let distance = 0;
+      let waypoint = strip.state.value.waypoints.at(-1);
+      distance += calculateDistance(current, waypoint.value.to);
+
+      let distanceInNm = distance / nauticalMilesToFeet;
       let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
-      sinceCreated = formatTime(time / 10);
+      sinceCreated = formatTime(time);
     } else {
       sinceCreated = `--:--`;
     }
