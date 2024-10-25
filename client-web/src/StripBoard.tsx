@@ -172,6 +172,21 @@ function Strip({ strip }: StripProps) {
     } else {
       sinceCreated = `--:--`;
     }
+  } else if (isAircraftTaxiing(strip.state)) {
+    if (strip.state.value.waypoints.length > 0) {
+      let current = strip.pos;
+      let distance = 0;
+      let waypoints = strip.state.value.waypoints.slice();
+      waypoints.reverse();
+      waypoints.forEach((waypoint) => {
+        distance += calculateDistance(current, waypoint.value);
+        current = waypoint.value;
+      });
+
+      let distanceInNm = distance / nauticalMilesToFeet;
+      let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
+      sinceCreated = formatTime(time);
+    }
   } else if (strip.state.type === 'landing') {
     let distance = calculateDistance(
       strip.pos,
