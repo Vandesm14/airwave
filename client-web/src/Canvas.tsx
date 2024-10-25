@@ -54,6 +54,9 @@ export default function Canvas({
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
   let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
+  let [aircraftTrails, setAircraftTrails] = createSignal<
+    Map<string, Array<{ pos: Vec2; now: number }>>
+  >(new Map());
 
   function scaleFeetToPixels(num: number): number {
     const FEET_TO_PIXELS = 0.003;
@@ -241,6 +244,25 @@ export default function Canvas({
       if (now - render.lastDraw > duration || render.doInitialDraw) {
         render.lastDraw = now;
         render.aircrafts = aircrafts();
+
+        setAircraftTrails((map) => {
+          for (let aircraft of render.aircrafts) {
+            if (map.has(aircraft.id)) {
+              let last = map.get(aircraft.id).at(-1);
+              if (now - last.now > 1000 * 4 * 2) {
+                map.get(aircraft.id).push({ now, pos: aircraft.pos });
+              }
+
+              if (map.get(aircraft.id).length > 10) {
+                map.set(aircraft.id, map.get(aircraft.id).slice(1));
+              }
+            } else {
+              map.set(aircraft.id, [{ now, pos: aircraft.pos }]);
+            }
+          }
+
+          return map;
+        });
 
         render.doInitialDraw = false;
       }
@@ -437,6 +459,22 @@ export default function Canvas({
     const isSelected = selectedAircraft() === aircraft.id;
     const isEnroute =
       aircraft.state.type === 'flying' && aircraft.state.value.enroute;
+
+    // Draw trail
+    let trail = aircraftTrails().get(aircraft.id);
+    if (trail) {
+      const dotSize = Math.max(2, scaleFeetToPixels(750));
+
+      ctx.fillStyle = isSelected ? colors.line_yellow : colors.line_green;
+      for (let point of trail) {
+        ctx.fillRect(
+          scalePoint(point.pos)[0] - dotSize * 0.5,
+          scalePoint(point.pos)[1] - dotSize * 0.5,
+          dotSize,
+          dotSize
+        );
+      }
+    }
 
     let pos = scalePoint(aircraft.pos);
     if (aircraft.state.type === 'flying' && selectedAircraft() == aircraft.id) {
