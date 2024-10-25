@@ -156,7 +156,7 @@ export default function App() {
         break;
       case 'reply':
         if (json.value.frequency == frequency()) {
-          setSelectedAircraft(json.value.id);
+          // setSelectedAircraft(json.value.id);
         }
         if (json.value.reply != '') speakAsAircraft(json.value);
         break;
