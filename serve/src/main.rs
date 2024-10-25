@@ -1,7 +1,4 @@
-use core::{
-  net::{IpAddr, Ipv4Addr, SocketAddr},
-  str::FromStr,
-};
+use core::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 
 use axum::{
@@ -24,7 +21,7 @@ struct Asset;
 async fn main() {
   tracing_subscriber::fmt::init();
 
-  let Cli { dir_path, address } = Cli::parse();
+  let Cli { address } = Cli::parse();
 
   let listener = match TcpListener::bind(address).await {
     Ok(listener) => listener,
@@ -34,7 +31,7 @@ async fn main() {
     }
   };
 
-  tracing::info!("Serving '{}' on {address}", dir_path.display());
+  tracing::info!("Serving on {address}");
 
   let serve = axum::serve(
     listener,
@@ -118,23 +115,7 @@ async fn my_file_server(Path(path): Path<String>) -> impl IntoResponse {
 
 #[derive(Parser)]
 struct Cli {
-  /// The directory to serve files out of.
-  #[arg(value_parser = dir_path, default_value = "client-web/dist")]
-  dir_path: PathBuf,
   /// The socket address to bind the HTTP server to.
   #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080))]
   address: SocketAddr,
-}
-
-fn dir_path(s: &str) -> Result<PathBuf, String> {
-  // TODO: Use into_ok() instead of unwrap() once the conversion from Infallible
-  //       to the never type becomes stable.
-  let path = PathBuf::from_str(s).unwrap();
-  let metadata = path.metadata().map_err(|e| e.to_string())?;
-
-  if !metadata.is_dir() {
-    return Err(format!("{} is not a directory", path.display()));
-  }
-
-  Ok(path)
 }
