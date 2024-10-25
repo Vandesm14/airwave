@@ -475,7 +475,7 @@ export default function Canvas({
     }
 
     // Draw the dot
-    const dotSize = Math.max(8, scaleFeetToPixels(3000));
+    const dotSize = Math.max(6, scaleFeetToPixels(3000));
     ctx.fillRect(
       pos[0] - dotSize * 0.5,
       pos[1] - dotSize * 0.5,
