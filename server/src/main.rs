@@ -77,7 +77,6 @@ async fn main() {
     "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
   ];
 
-  // Create a controlled KSFO airspace
   let mut player_airspace = Airspace {
     id: Intern::from_ref("KSFO"),
     pos: Vec2::ZERO,
