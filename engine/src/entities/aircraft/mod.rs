@@ -81,6 +81,29 @@ impl FlightPlan {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AircraftStats {
+  // Speed^2
+  pub accel: f32,
+  pub decel: f32,
+  pub landing_decel: f32,
+  pub turn_speed: f32,
+
+  // Limits
+  pub max_climb: f32,
+  pub max_altitude: f32,
+
+  pub min_speed: f32,
+  pub cruise_speed: f32,
+  pub max_speed: f32,
+
+  // Cargo
+  pub max_weight: f32,
+  pub dry_weight: f32,
+  pub fuel_capacity: f32,
+  pub seats: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AircraftKind {
   // Airbus
@@ -95,6 +118,20 @@ pub enum AircraftKind {
   // Embraer
   CRJ700,
   ERJ170,
+}
+
+impl AircraftKind {
+  pub fn stats(&self) -> AircraftStats {
+    match self {
+      AircraftKind::A321 => todo!(),
+      AircraftKind::A330 => todo!(),
+      AircraftKind::B737 => todo!(),
+      AircraftKind::B747 => todo!(),
+      AircraftKind::B777 => todo!(),
+      AircraftKind::CRJ700 => todo!(),
+      AircraftKind::ERJ170 => todo!(),
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
