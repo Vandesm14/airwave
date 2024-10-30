@@ -83,23 +83,46 @@ impl FlightPlan {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AircraftStats {
   // Speed^2
+  /// Positive acceleration (speed + speed) (in knots per second)
   pub accel: f32,
+  /// Negative acceleration (speed - speed) (in knots per second)
   pub decel: f32,
+  /// Power of reversers + spoilers + brakes
   pub landing_decel: f32,
+  /// Rate of turn in degrees per second
   pub turn_speed: f32,
+  /// Rate of climb in feet per second
+  pub roc: f32,
+  /// Rate of descent in feet per second
+  pub rod: f32,
 
   // Limits
-  pub max_climb: f32,
+  /// Max altitude in feet
   pub max_altitude: f32,
 
+  /// Minimum speed in knots
   pub min_speed: f32,
+  /// Cruise speed in knots
   pub cruise_speed: f32,
+  /// Maximum speed in knots
   pub max_speed: f32,
 
+  // Performance
+  /// V2 speed in knots (when rotate)
+  pub v2: f32,
+  /// Minimum length of runway for takeoff (in feet)
+  pub takeoff_length: f32,
+  /// Minimum length of runway for landing (in feet)
+  pub landing_length: f32,
+
   // Cargo
+  /// Max weight in pounds
   pub max_weight: f32,
+  /// Dry weight in pounds
   pub dry_weight: f32,
+  /// Fuel capacity in pounds
   pub fuel_capacity: f32,
+  /// Passenger capacity in capita
   pub seats: usize,
 }
 
@@ -107,29 +130,36 @@ pub struct AircraftStats {
 #[serde(rename_all = "lowercase")]
 pub enum AircraftKind {
   // Airbus
-  A321,
-  A330,
+  /// https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=A21N
+  A21N,
+  /// https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=A333
+  A333,
 
   // Boeing
+  /// https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=B737
   B737,
+  /// https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=B74S
   B747,
-  B777,
+  /// https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=B77L
+  B77L,
 
   // Embraer
-  CRJ700,
-  ERJ170,
+  /// https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=CRJ7
+  CRJ7,
+  /// https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=E170
+  E170,
 }
 
 impl AircraftKind {
   pub fn stats(&self) -> AircraftStats {
     match self {
-      AircraftKind::A321 => todo!(),
-      AircraftKind::A330 => todo!(),
+      AircraftKind::A21N => todo!(),
+      AircraftKind::A333 => todo!(),
       AircraftKind::B737 => todo!(),
       AircraftKind::B747 => todo!(),
-      AircraftKind::B777 => todo!(),
-      AircraftKind::CRJ700 => todo!(),
-      AircraftKind::ERJ170 => todo!(),
+      AircraftKind::B77L => todo!(),
+      AircraftKind::CRJ7 => todo!(),
+      AircraftKind::E170 => todo!(),
     }
   }
 }
