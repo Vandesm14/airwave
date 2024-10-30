@@ -110,6 +110,9 @@ export default function Canvas({
   });
 
   onMount(() => {
+    const maxScale = 50.0;
+    const minScale = 0.07;
+
     if (canvas instanceof HTMLCanvasElement && canvas !== null) {
       window.addEventListener('resize', () => {
         canvas.width = canvas.clientWidth;
@@ -128,11 +131,13 @@ export default function Canvas({
         if (e.key === 'PageUp') {
           setRadar((radar) => {
             radar.scale = radar.scale * zoomAmount;
+            radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
             return { ...radar };
           });
         } else if (e.key === 'PageDown') {
           setRadar((radar) => {
             radar.scale = (radar.scale * 1) / zoomAmount;
+            radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
             return { ...radar };
           });
         }
@@ -216,16 +221,12 @@ export default function Canvas({
       });
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
-          let maxScale = 50.0;
-          let minScale = 0.07;
-
           if (e.deltaY > 0) {
             radar.scale *= 0.9;
           } else {
             radar.scale *= 1.1;
           }
 
-          // radar.scale += e.deltaY * -0.001;
           radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
 
           return { ...radar };
