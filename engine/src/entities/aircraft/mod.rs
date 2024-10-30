@@ -80,6 +80,23 @@ impl FlightPlan {
   }
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AircraftKind {
+  // Airbus
+  A321,
+  A330,
+
+  // Boeing
+  B737,
+  B747,
+  B777,
+
+  // Embraer
+  CRJ700,
+  ERJ170,
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub id: Intern<String>,
