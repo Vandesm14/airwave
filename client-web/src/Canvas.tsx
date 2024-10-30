@@ -217,7 +217,7 @@ export default function Canvas({
       canvas.addEventListener('wheel', (e) => {
         setRadar((radar) => {
           let maxScale = 50.0;
-          let minScale = 0.1;
+          let minScale = 0.07;
 
           if (e.deltaY > 0) {
             radar.scale *= 0.9;
