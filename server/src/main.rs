@@ -1,5 +1,4 @@
 use core::{
-  fmt,
   net::{IpAddr, Ipv4Addr, SocketAddr},
   str::FromStr,
 };
@@ -19,12 +18,14 @@ use engine::{
 use futures_util::StreamExt as _;
 use glam::Vec2;
 use internment::Intern;
-use server::{
-  airport::{self, AirportSetupFn},
-  IncomingUpdate, OutgoingReply, Runner,
-};
+use server::{airport::new_v_pattern, IncomingUpdate, OutgoingReply, Runner};
 use tokio::net::TcpListener;
 use turborand::{rng::Rng, SeededCore, TurboRand};
+
+const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
+const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 1000.0;
 
 #[tokio::main]
 async fn main() {
@@ -37,12 +38,8 @@ async fn main() {
     .expect("OPENAI_API_KEY must be set")
     .into();
 
-  let Cli {
-    address,
-    world_radius,
-    airport,
-  } = Cli::parse();
-  let world_radius = NAUTICALMILES_TO_FEET * world_radius;
+  let Cli { address } = Cli::parse();
+  let world_radius = WORLD_RADIUS;
 
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
   let (mut update_tx, update_rx) =
@@ -51,7 +48,7 @@ async fn main() {
   update_tx.set_overflow(true);
 
   let rng = Rng::with_seed(0);
-  let mut world_rng = Rng::with_seed(0);
+  let world_rng = Rng::with_seed(0);
   let mut runner = Runner::new(
     command_rx,
     update_tx.clone(),
@@ -67,10 +64,6 @@ async fn main() {
     ground: 118.5,
     center: 118.7,
   };
-
-  const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
-  const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-  const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 
   let airspace_names = [
     "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
@@ -91,7 +84,7 @@ async fn main() {
     ..Default::default()
   };
 
-  airport.setup(&mut world_rng)(&mut airport_ksfo);
+  new_v_pattern::setup(&mut airport_ksfo);
 
   airport_ksfo.calculate_waypoints();
   player_airspace.airports.push(airport_ksfo);
@@ -218,58 +211,4 @@ struct Cli {
   /// The socket address to bind the WebSocket server to.
   #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))]
   address: SocketAddr,
-
-  /// The airport variation that should be used.
-  #[arg(long, default_value_t = AirportChoice::Random)]
-  airport: AirportChoice,
-  /// The radius of the entire world in nautical miles (NM).
-  #[arg(long, default_value_t = 500.0)]
-  world_radius: f32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AirportChoice {
-  Random,
-  NewVPattern,
-  Parallel,
-}
-
-impl AirportChoice {
-  fn setup(&self, rng: &mut Rng) -> AirportSetupFn {
-    static AIRPORT_SETUPS: &[AirportSetupFn] =
-      &[airport::new_v_pattern::setup, airport::parallel::setup];
-
-    match self {
-      Self::Random => *rng.sample(AIRPORT_SETUPS).unwrap(),
-      Self::NewVPattern => airport::new_v_pattern::setup,
-      Self::Parallel => airport::parallel::setup,
-    }
-  }
-
-  const fn as_str(&self) -> &str {
-    match self {
-      Self::Random => "random",
-      Self::NewVPattern => "new_v_pattern",
-      Self::Parallel => "parallel",
-    }
-  }
-}
-
-impl FromStr for AirportChoice {
-  type Err = String;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    match s {
-      "random" => Ok(Self::Random),
-      "new_v_pattern" => Ok(Self::NewVPattern),
-      "parallel" => Ok(Self::Parallel),
-      _ => Err(format!("'{s}' is an invalid airport type")),
-    }
-  }
-}
-
-impl fmt::Display for AirportChoice {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{}", self.as_str())
-  }
 }
