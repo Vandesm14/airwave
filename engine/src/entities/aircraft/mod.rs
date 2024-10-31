@@ -83,17 +83,15 @@ impl FlightPlan {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AircraftStats {
   // Speed^2
-  /// Positive acceleration (speed + speed) (in knots per second)
-  pub accel: f32,
-  /// Negative acceleration (speed - speed) (in knots per second)
-  pub decel: f32,
-  /// Power of reversers + spoilers + brakes
-  pub landing_decel: f32,
+  /// Thrust in kN
+  pub thrust: f32,
+  /// Drag in kN
+  pub drag: f32,
   /// Rate of turn in degrees per second
   pub turn_speed: f32,
-  /// Rate of climb in feet per second
+  /// Rate of climb in feet per minute
   pub roc: f32,
-  /// Rate of descent in feet per second
+  /// Rate of descent in feet per minute
   pub rod: f32,
 
   // Limits
@@ -102,8 +100,6 @@ pub struct AircraftStats {
 
   /// Minimum speed in knots
   pub min_speed: f32,
-  /// Cruise speed in knots
-  pub cruise_speed: f32,
   /// Maximum speed in knots
   pub max_speed: f32,
 
@@ -116,8 +112,10 @@ pub struct AircraftStats {
   pub landing_length: f32,
 
   // Cargo
-  /// Max weight in pounds
-  pub max_weight: f32,
+  /// Max takeoff weight in pounds
+  pub max_takeoff_weight: f32,
+  /// Max landing weight in pounds
+  pub max_landing_weight: f32,
   /// Dry weight in pounds
   pub dry_weight: f32,
   /// Fuel capacity in pounds
@@ -153,7 +151,25 @@ pub enum AircraftKind {
 impl AircraftKind {
   pub fn stats(&self) -> AircraftStats {
     match self {
-      AircraftKind::A21N => todo!(),
+      AircraftKind::A21N => AircraftStats {
+        thrust: 140.96,
+        // TODO: placeholder
+        drag: 0.0,
+        turn_speed: 1.0,
+        roc: 1500.0,
+        rod: 2500.0,
+        max_altitude: 39000.0,
+        min_speed: 140.0,
+        max_speed: 450.0,
+        v2: 145.0,
+        takeoff_length: 7054.0,
+        landing_length: 6070.0,
+        max_takeoff_weight: 213800.0,
+        max_landing_weight: 174606.0,
+        dry_weight: 103000.0,
+        fuel_capacity: 58232.5,
+        seats: 200,
+      },
       AircraftKind::A333 => todo!(),
       AircraftKind::B737 => todo!(),
       AircraftKind::B747 => todo!(),
