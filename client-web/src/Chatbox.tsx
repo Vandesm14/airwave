@@ -5,7 +5,7 @@ import {
   messagesAtom,
   selectedAircraftAtom,
 } from './lib/atoms';
-import { createEffect, createSignal } from 'solid-js';
+import { createEffect, createSignal, onMount } from 'solid-js';
 
 export default function Chatbox({
   sendMessage,
@@ -20,6 +20,18 @@ export default function Chatbox({
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
+
+  onMount(() => {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 't') {
+        chatboxInput.focus();
+        e.preventDefault();
+      } else if (e.key === 'Escape') {
+        chatboxInput.blur();
+        e.preventDefault();
+      }
+    });
+  });
 
   function resetText() {
     if (selectedAircraft()) {
