@@ -76,12 +76,12 @@ impl From<Task> for EventKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Event {
+pub struct AircraftEvent {
   pub id: Intern<String>,
   pub kind: EventKind,
 }
 
-impl Event {
+impl AircraftEvent {
   pub fn new(id: Intern<String>, kind: EventKind) -> Self {
     Self { id, kind }
   }
@@ -272,15 +272,18 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Requests
       EventKind::Ident => {
-        bundle.events.push(Event::new(
-          aircraft.id,
-          EventKind::Callout(CommandWithFreq {
-            id: aircraft.id.to_string(),
-            frequency: aircraft.frequency,
-            reply: CommandReply::Empty,
-            tasks: Vec::new(),
-          }),
-        ));
+        bundle.events.push(
+          AircraftEvent::new(
+            aircraft.id,
+            EventKind::Callout(CommandWithFreq {
+              id: aircraft.id.to_string(),
+              frequency: aircraft.frequency,
+              reply: CommandReply::Empty,
+              tasks: Vec::new(),
+            }),
+          )
+          .into(),
+        );
       }
 
       // Callouts are handled outside of the engine.
@@ -291,7 +294,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
         // This is handled outside of the engine
         bundle
           .events
-          .push(Event::new(aircraft.id, EventKind::Delete));
+          .push(AircraftEvent::new(aircraft.id, EventKind::Delete).into());
       }
 
       // Points
@@ -360,10 +363,13 @@ pub fn handle_touchdown_event(
     },
   ));
 
-  bundle.events.push(Event {
-    id: aircraft.id,
-    kind: EventKind::SuccessfulLanding,
-  });
+  bundle.events.push(
+    AircraftEvent {
+      id: aircraft.id,
+      kind: EventKind::SuccessfulLanding,
+    }
+    .into(),
+  );
 }
 
 pub fn handle_taxi_event(
@@ -427,10 +433,13 @@ pub fn handle_taxi_event(
     }
   }
 
-  bundle.events.push(Event {
-    id: aircraft.id,
-    kind: EventKind::TaxiContinue,
-  });
+  bundle.events.push(
+    AircraftEvent {
+      id: aircraft.id,
+      kind: EventKind::TaxiContinue,
+    }
+    .into(),
+  );
 }
 
 pub fn handle_takeoff_event(
@@ -471,10 +480,13 @@ pub fn handle_takeoff_event(
           kind: ActionKind::Flying(vec![]),
         });
 
-        bundle.events.push(Event {
-          id: aircraft.id,
-          kind: EventKind::SuccessfulTakeoff,
-        });
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::SuccessfulTakeoff,
+          }
+          .into(),
+        );
       }
     }
   }

@@ -15,10 +15,10 @@ use async_openai::{
 };
 use engine::{
   command::{CommandWithFreq, OutgoingCommandReply, Task},
-  engine::Engine,
+  engine::{Engine, Event},
   entities::{
     aircraft::{
-      events::{Event, EventKind},
+      events::{AircraftEvent, EventKind},
       Aircraft,
     },
     world::World,
@@ -161,7 +161,10 @@ impl Runner {
             .tick(&self.world, &mut self.aircraft, &mut self.rng, dt);
 
         // Run through all callout events and broadcast them
-        for event in events.iter() {
+        for event in events.iter().filter_map(|e| match e {
+          Event::Aircraft(aircraft_event) => Some(aircraft_event),
+          Event::UiEvent(_) => None,
+        }) {
           match &event.kind {
             EventKind::Callout(command) => {
               if let Err(e) = self
@@ -188,16 +191,22 @@ impl Runner {
           }
         }
 
-        self.cleanup(&events);
+        self.cleanup(events.iter().filter_map(|e| match e {
+          Event::Aircraft(aircraft_event) => Some(aircraft_event),
+          Event::UiEvent(_) => None,
+        }));
         self.broadcast_aircraft();
         // TODO: self.save_world();
       }
     }
   }
 
-  fn cleanup(&mut self, events: &[Event]) {
-    for event in events.iter() {
-      if let Event {
+  fn cleanup<'a, T>(&mut self, events: T)
+  where
+    T: Iterator<Item = &'a AircraftEvent>,
+  {
+    for event in events {
+      if let AircraftEvent {
         id,
         kind: EventKind::Delete,
       } = event
@@ -226,7 +235,7 @@ impl Runner {
           .tasks
           .iter()
           .cloned()
-          .map(|t| Event { id, kind: t.into() }),
+          .map(|t| AircraftEvent { id, kind: t.into() }.into()),
       );
 
       let mut callout = true;

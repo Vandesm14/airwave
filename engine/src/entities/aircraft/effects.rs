@@ -1,6 +1,6 @@
 use super::{
   actions::ActionKind,
-  events::{Event, EventKind},
+  events::{AircraftEvent, EventKind},
   Action, Aircraft, AircraftState,
 };
 
@@ -138,14 +138,20 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
       // If we have passed the start of the runway (landed),
       // set our state to taxiing.
       if distance_to_end <= runway.length.powf(2.0) {
-        bundle.events.push(Event {
-          id: aircraft.id,
-          kind: EventKind::Touchdown,
-        });
-        bundle.events.push(Event {
-          id: aircraft.id,
-          kind: EventKind::SuccessfulLanding,
-        });
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Touchdown,
+          }
+          .into(),
+        );
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::SuccessfulLanding,
+          }
+          .into(),
+        );
 
         return;
       }
@@ -156,10 +162,13 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 
       // If we are too high, go around.
       if aircraft.altitude - target_altitude > 100.0 {
-        bundle.events.push(Event {
-          id: aircraft.id,
-          kind: EventKind::GoAround,
-        });
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::GoAround,
+          }
+          .into(),
+        );
         return;
       }
 
@@ -228,7 +237,9 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
           });
 
           for e in current.value.then.iter() {
-            bundle.events.push(Event::new(aircraft.id, e.clone()));
+            bundle
+              .events
+              .push(AircraftEvent::new(aircraft.id, e.clone()).into());
           }
         }
       }
@@ -265,10 +276,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         }
         // Only hold if we are not stopped and we are at or below taxi speed.
       } else if aircraft.speed > 0.0 && aircraft.speed <= 20.0 {
-        bundle.events.push(Event {
-          id: aircraft.id,
-          kind: EventKind::TaxiHold,
-        });
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::TaxiHold,
+          }
+          .into(),
+        );
       }
     }
 
@@ -280,10 +294,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         match waypoint.behavior {
           NodeBehavior::GoTo => {}
           NodeBehavior::Park => {
-            bundle.events.push(Event {
-              id: aircraft.id,
-              kind: EventKind::TaxiHold,
-            });
+            bundle.events.push(
+              AircraftEvent {
+                id: aircraft.id,
+                kind: EventKind::TaxiHold,
+              }
+              .into(),
+            );
             bundle.actions.push(Action {
               id: aircraft.id,
               kind: ActionKind::Parked(waypoint.clone()),
@@ -299,10 +316,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
                 id: aircraft.id,
                 kind: ActionKind::TaxiLastAsGoto,
               });
-              bundle.events.push(Event {
-                id: aircraft.id,
-                kind: EventKind::TaxiHold,
-              });
+              bundle.events.push(
+                AircraftEvent {
+                  id: aircraft.id,
+                  kind: EventKind::TaxiHold,
+                }
+                .into(),
+              );
             }
           }
         }

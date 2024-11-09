@@ -5,9 +5,10 @@ use effects::{
   AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
   AircraftUpdateTaxiingEffect,
 };
-use events::Event;
+use events::AircraftEvent;
 use internment::Intern;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use turborand::rng::Rng;
 
 use crate::{
@@ -52,6 +53,23 @@ impl<'a> Bundle<'a> {
       rng,
       dt,
     }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum UICommand {
+  Purchase(usize),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Event {
+  Aircraft(AircraftEvent),
+  UiEvent(UICommand),
+}
+
+impl From<AircraftEvent> for Event {
+  fn from(value: AircraftEvent) -> Self {
+    Self::Aircraft(value)
   }
 }
 
@@ -107,7 +125,10 @@ impl Engine {
       bundle.prev = aircraft.clone();
 
       // Run through all events
-      for event in self.events.iter() {
+      for event in self.events.iter().filter_map(|e| match e {
+        Event::Aircraft(aircraft_event) => Some(aircraft_event),
+        Event::UiEvent(_) => None,
+      }) {
         if event.id == aircraft.id {
           HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
 
