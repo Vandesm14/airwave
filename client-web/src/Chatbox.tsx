@@ -17,7 +17,7 @@ export default function Chatbox({
   let [messages, setMessages] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
-  let [selectedAircraft] = useAtom(selectedAircraftAtom);
+  let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
 
@@ -62,7 +62,12 @@ export default function Chatbox({
   }
 
   function handleSendMessage(text) {
-    sendMessage(text);
+    if (text.length === 7 && /\w{3}\d{4}/.test(text)) {
+      setSelectedAircraft(text);
+    } else {
+      sendMessage(text);
+    }
+
     resetText();
   }
 
