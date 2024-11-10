@@ -23,7 +23,7 @@ use crate::{
       *,
     },
     airspace::Airspace,
-    world::{Connection, World},
+    world::{Connection, Game, World},
   },
   NAUTICALMILES_TO_FEET,
 };
@@ -153,17 +153,17 @@ impl Engine {
   pub fn tick(
     &mut self,
     world: &World,
-    aircrafts: &mut [Aircraft],
+    game: &mut Game,
     rng: &mut Rng,
     dt: f32,
   ) -> Vec<Event> {
     let mut bundle = Bundle::from_world(world, rng, dt);
-    self.handle_collisions(aircrafts);
+    self.handle_collisions(&mut game.aircraft);
 
     if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
-    for aircraft in aircrafts.iter_mut() {
+    for aircraft in game.aircraft.iter_mut() {
       // Capture the previous state
       bundle.prev = aircraft.clone();
 

@@ -165,12 +165,10 @@ impl Runner {
         }
 
         let dt = 1.0 / self.rate as f32;
-        let events = self.engine.tick(
-          &self.world,
-          &mut self.game.aircraft,
-          &mut self.rng,
-          dt,
-        );
+        let events =
+          self
+            .engine
+            .tick(&self.world, &mut self.game, &mut self.rng, dt);
 
         // Run through all callout events and broadcast them
         for event in events.iter().filter_map(|e| match e {
