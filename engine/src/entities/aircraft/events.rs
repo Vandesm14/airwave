@@ -293,14 +293,14 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Internal
       EventKind::Delete => {
-        // This is handled outside of the engine
+        // This is handled outside of the engine.
         bundle
           .events
           .push(AircraftEvent::new(aircraft.id, EventKind::Delete).into());
       }
 
       // Points
-      // Points are handled outside of the engine
+      // Points are handled within the engine itself.
       EventKind::SuccessfulTakeoff => {}
       EventKind::SuccessfulLanding => {}
     }
