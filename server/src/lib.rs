@@ -36,7 +36,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft,
     },
-    world::{Game, World},
+    world::{Game, Points, World},
   },
 };
 
@@ -66,18 +66,11 @@ pub enum IncomingUpdate {
   Connect,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct Points {
-  landings: usize,
-  takeoffs: usize,
-}
-
 #[derive(Debug, Clone)]
 pub struct Runner {
   pub world: World,
   pub game: Game,
   pub engine: Engine,
-  pub points: Points,
 
   pub receiver: async_channel::Receiver<IncomingUpdate>,
   pub outgoing_sender: async_broadcast::Sender<OutgoingReply>,
@@ -102,7 +95,6 @@ impl Runner {
       world: World::default(),
       game: Game::default(),
       engine: Engine::default(),
-      points: Points::default(),
 
       receiver,
       outgoing_sender,
@@ -176,29 +168,13 @@ impl Runner {
           Event::Aircraft(aircraft_event) => Some(aircraft_event),
           Event::UiEvent(_) => None,
         }) {
-          match &event.kind {
-            EventKind::Callout(command) => {
-              if let Err(e) = self
-                .outgoing_sender
-                .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-              {
-                tracing::error!("error sending outgoing reply: {e}")
-              }
+          if let EventKind::Callout(command) = &event.kind {
+            if let Err(e) = self
+              .outgoing_sender
+              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
+            {
+              tracing::error!("error sending outgoing reply: {e}")
             }
-            EventKind::SuccessfulTakeoff => {
-              self.points.takeoffs += 1;
-              self.broadcast_points();
-
-              println!("sending points: {:?}", self.points)
-            }
-            EventKind::SuccessfulLanding => {
-              self.points.landings += 1;
-              self.broadcast_points();
-
-              println!("sending points: {:?}", self.points)
-            }
-
-            _ => {}
           }
         }
 
@@ -294,7 +270,7 @@ impl Runner {
   fn broadcast_points(&self) {
     let _ = self
       .outgoing_sender
-      .try_broadcast(OutgoingReply::Points(self.points.clone()))
+      .try_broadcast(OutgoingReply::Points(self.game.points.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast points: {}", e));
   }
 

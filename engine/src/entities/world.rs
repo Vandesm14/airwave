@@ -50,9 +50,16 @@ pub struct World {
   pub connections: Vec<Connection>,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Points {
+  pub landings: usize,
+  pub takeoffs: usize,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Game {
   pub aircraft: Vec<Aircraft>,
   pub funds: usize,
   pub purchases: Vec<PurchasableAircraft>,
+  pub points: Points,
 }

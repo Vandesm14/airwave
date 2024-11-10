@@ -14,7 +14,9 @@ use crate::{
         AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
         AircraftUpdatePositionEffect, AircraftUpdateTaxiingEffect,
       },
-      events::{AircraftEvent, AircraftEventHandler, HandleAircraftEvent},
+      events::{
+        AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
+      },
       Aircraft,
     },
     world::{Game, World},
@@ -188,6 +190,24 @@ impl Engine {
 
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
       self.apply_actions(&mut bundle, aircraft, Some("position actions"));
+    }
+
+    for event in bundle.events.iter() {
+      match event {
+        Event::Aircraft(AircraftEvent {
+          kind: EventKind::SuccessfulTakeoff,
+          ..
+        }) => {
+          game.points.takeoffs += 1;
+        }
+        Event::Aircraft(AircraftEvent {
+          kind: EventKind::SuccessfulLanding,
+          ..
+        }) => {
+          game.points.landings += 1;
+        }
+        _ => {}
+      }
     }
 
     // Capture the left over events and actions for next time
