@@ -23,7 +23,11 @@ export default function Chatbox({
 
   onMount(() => {
     document.addEventListener('keydown', (e) => {
-      if (e.key === 't') {
+      if (
+        e.key === 't' &&
+        chatboxInput instanceof HTMLInputElement &&
+        document.activeElement !== chatboxInput
+      ) {
         chatboxInput.focus();
         e.preventDefault();
       } else if (e.key === 'Escape') {
