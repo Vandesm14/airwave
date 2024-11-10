@@ -223,3 +223,8 @@ export type ServerEvent =
       value: { id: string; frequency: number; reply: string };
     }
   | { type: 'reply'; value: RadioMessage };
+
+export type UICommand = {
+  type: 'purchase';
+  value: number;
+};
