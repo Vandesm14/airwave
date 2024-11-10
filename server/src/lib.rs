@@ -21,7 +21,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft,
     },
-    world::World,
+    world::{Game, World},
   },
 };
 use futures_util::{
@@ -74,7 +74,7 @@ pub struct Points {
 #[derive(Debug, Clone)]
 pub struct Runner {
   pub world: World,
-  pub aircraft: Vec<Aircraft>,
+  pub game: Game,
   pub engine: Engine,
   pub points: Points,
 
@@ -99,7 +99,7 @@ impl Runner {
   ) -> Self {
     Self {
       world: World::default(),
-      aircraft: Vec::default(),
+      game: Game::default(),
       engine: Engine::default(),
       points: Points::default(),
 
@@ -116,7 +116,7 @@ impl Runner {
   }
 
   pub fn add_aircraft(&mut self, mut aircraft: Aircraft) {
-    while self.aircraft.iter().any(|a| a.id == aircraft.id) {
+    while self.game.aircraft.iter().any(|a| a.id == aircraft.id) {
       aircraft.id = Intern::from(Aircraft::random_callsign(&mut self.rng));
     }
 
@@ -127,7 +127,7 @@ impl Runner {
       return;
     }
 
-    self.aircraft.push(aircraft);
+    self.game.aircraft.push(aircraft);
   }
 
   pub fn begin_loop(&mut self) {
@@ -165,10 +165,12 @@ impl Runner {
         }
 
         let dt = 1.0 / self.rate as f32;
-        let events =
-          self
-            .engine
-            .tick(&self.world, &mut self.aircraft, &mut self.rng, dt);
+        let events = self.engine.tick(
+          &self.world,
+          &mut self.game.aircraft,
+          &mut self.rng,
+          dt,
+        );
 
         // Run through all callout events and broadcast them
         for event in events.iter().filter_map(|e| match e {
@@ -231,12 +233,13 @@ impl Runner {
       } = event
       {
         let index = self
+          .game
           .aircraft
           .iter()
           .enumerate()
           .find_map(|(i, a)| (a.id == *id).then_some(i));
         if let Some(index) = index {
-          self.aircraft.swap_remove(index);
+          self.game.aircraft.swap_remove(index);
         }
       }
     }
@@ -245,6 +248,7 @@ impl Runner {
   fn execute_command(&mut self, command: CommandWithFreq) {
     let id = Intern::from_ref(&command.id);
     if self
+      .game
       .aircraft
       .iter()
       .any(|a| a.id == id && a.frequency == command.frequency)
@@ -284,7 +288,7 @@ impl Runner {
   fn broadcast_aircraft(&self) {
     let _ = self
       .outgoing_sender
-      .try_broadcast(OutgoingReply::Aircraft(self.aircraft.clone()))
+      .try_broadcast(OutgoingReply::Aircraft(self.game.aircraft.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
   }
 
@@ -298,7 +302,7 @@ impl Runner {
   fn broadcast_funds(&self) {
     let _ = self
       .outgoing_sender
-      .try_broadcast(OutgoingReply::Funds(self.world.funds))
+      .try_broadcast(OutgoingReply::Funds(self.game.funds))
       .inspect_err(|e| tracing::warn!("failed to broadcast funds: {}", e));
   }
 

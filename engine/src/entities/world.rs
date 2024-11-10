@@ -3,7 +3,8 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use super::{
-  airport::Airport, airspace::Airspace, purchaseable::PurchasableAircraft,
+  aircraft::Aircraft, airport::Airport, airspace::Airspace,
+  purchaseable::PurchasableAircraft,
 };
 
 pub fn closest_airport(airspace: &Airspace, point: Vec2) -> Option<&Airport> {
@@ -47,6 +48,11 @@ pub struct Connection {
 pub struct World {
   pub airspace: Airspace,
   pub connections: Vec<Connection>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Game {
+  pub aircraft: Vec<Aircraft>,
   pub funds: usize,
   pub purchases: Vec<PurchasableAircraft>,
 }
