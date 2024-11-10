@@ -21,7 +21,10 @@ use engine::{
   },
   NAUTICALMILES_TO_FEET,
 };
-use server::{airport::new_v_pattern, IncomingUpdate, OutgoingReply, Runner};
+use server::{
+  airport::new_v_pattern,
+  runner::{IncomingUpdate, OutgoingReply, Runner},
+};
 
 const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
 const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
