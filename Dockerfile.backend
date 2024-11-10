@@ -1,3 +1,4 @@
+# Builder
 FROM rust:1.82 as builder
 
 WORKDIR /usr/src/airwave
@@ -9,6 +10,7 @@ COPY Cargo.toml .
 
 RUN cargo build --release --bin server
 
+# Runner
 FROM debian:bookworm-slim
 
 WORKDIR /usr/local
