@@ -1,6 +1,6 @@
-FROM rust:1.81
+FROM rust:1.82 as builder
 
-WORKDIR /usr/src/myapp
+WORKDIR /usr/src/airwave
 
 COPY engine engine
 COPY server server
@@ -9,4 +9,13 @@ COPY Cargo.toml .
 
 RUN cargo build --release --bin server
 
-CMD ["cargo","run","--release","--bin","server","--","--address","0.0.0.0:9001","--world-radius","500","--airport","new_v_pattern"]
+FROM debian:bookworm-slim
+
+WORKDIR /usr/local
+
+COPY --from=builder /usr/src/airwave/target/release/server /usr/local/bin/server
+COPY --from=builder /usr/src/airwave/server/prompts /usr/local/server/prompts
+
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+CMD ["server","--address","0.0.0.0:9001"]
