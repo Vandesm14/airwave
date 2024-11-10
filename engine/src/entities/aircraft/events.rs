@@ -152,7 +152,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       }
       EventKind::NamedFrequency(frq) => {
         if let Some(frequency) =
-          bundle.airspace.frequencies.try_from_string(frq)
+          bundle.world.airspace.frequencies.try_from_string(frq)
         {
           bundle
             .actions
@@ -164,6 +164,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::ResumeOwnNavigation => {
         if let AircraftState::Flying { .. } = aircraft.state {
           let arrival = bundle
+            .world
             .connections
             .iter()
             .find(|a| a.id == aircraft.flight_plan.arriving);
@@ -243,7 +244,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let AircraftState::Taxiing { .. } | AircraftState::Parked(..) =
           aircraft.state
         {
-          if let Some(airport) = closest_airport(bundle.airspace, aircraft.pos)
+          if let Some(airport) =
+            closest_airport(&bundle.world.airspace, aircraft.pos)
           {
             handle_taxi_event(aircraft, bundle, waypoints, &airport.pathfinder);
           }
@@ -312,6 +314,7 @@ pub fn handle_land_event(
 ) {
   if let AircraftState::Flying { .. } = aircraft.state {
     if let Some(runway) = bundle
+      .world
       .airspace
       .airports
       .iter()
@@ -450,6 +453,7 @@ pub fn handle_takeoff_event(
   if let AircraftState::Taxiing { current, .. } = &aircraft.state {
     // If we are at the runway
     if let Some(runway) = bundle
+      .world
       .airspace
       .airports
       .iter()

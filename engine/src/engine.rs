@@ -22,8 +22,7 @@ use crate::{
       events::{AircraftEventHandler, HandleAircraftEvent},
       *,
     },
-    airspace::Airspace,
-    world::{Connection, Game, World},
+    world::{Game, World},
   },
   NAUTICALMILES_TO_FEET,
 };
@@ -35,8 +34,7 @@ pub struct Bundle<'a> {
   pub events: Vec<Event>,
   pub actions: Vec<Action>,
 
-  pub airspace: &'a Airspace,
-  pub connections: &'a Vec<Connection>,
+  pub world: &'a World,
 
   pub rng: &'a mut Rng,
   pub dt: f32,
@@ -48,8 +46,7 @@ impl<'a> Bundle<'a> {
       prev: Aircraft::default(),
       events: Vec::new(),
       actions: Vec::new(),
-      airspace: &world.airspace,
-      connections: &world.connections,
+      world,
       rng,
       dt,
     }
