@@ -15,7 +15,7 @@ use async_openai::{
 };
 use engine::{
   command::{CommandWithFreq, OutgoingCommandReply, Task},
-  engine::{Engine, Event, UICommand},
+  engine::{Engine, Event, UICommand, UIEvent},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
@@ -55,6 +55,7 @@ pub enum OutgoingReply {
   World(World),
   Size(f32),
   Points(Points),
+  Funds(usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -160,7 +161,7 @@ impl Runner {
         }
 
         for ui_command in ui_commands {
-          self.engine.events.push(Event::UiEvent(ui_command));
+          self.engine.events.push(Event::UiEvent(ui_command.into()));
         }
 
         let dt = 1.0 / self.rate as f32;
@@ -197,6 +198,15 @@ impl Runner {
             }
 
             _ => {}
+          }
+        }
+
+        for event in events.iter().filter_map(|e| match e {
+          Event::Aircraft(_) => None,
+          Event::UiEvent(ui_event) => Some(ui_event),
+        }) {
+          if let UIEvent::Funds(_) = &event {
+            self.broadcast_funds();
           }
         }
 
@@ -278,18 +288,25 @@ impl Runner {
       .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
   }
 
-  fn broadcast_world(&self) {
-    let _ = self
-      .outgoing_sender
-      .try_broadcast(OutgoingReply::World(self.world.clone()))
-      .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
-  }
-
   fn broadcast_points(&self) {
     let _ = self
       .outgoing_sender
       .try_broadcast(OutgoingReply::Points(self.points.clone()))
       .inspect_err(|e| tracing::warn!("failed to broadcast points: {}", e));
+  }
+
+  fn broadcast_funds(&self) {
+    let _ = self
+      .outgoing_sender
+      .try_broadcast(OutgoingReply::Funds(self.world.funds))
+      .inspect_err(|e| tracing::warn!("failed to broadcast funds: {}", e));
+  }
+
+  fn broadcast_world(&self) {
+    let _ = self
+      .outgoing_sender
+      .try_broadcast(OutgoingReply::World(self.world.clone()))
+      .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
   }
 
   fn broadcast_for_new_client(&self) {

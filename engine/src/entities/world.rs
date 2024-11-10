@@ -2,7 +2,9 @@ use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 
-use super::{airport::Airport, airspace::Airspace};
+use super::{
+  airport::Airport, airspace::Airspace, purchaseable::PurchasableAircraft,
+};
 
 pub fn closest_airport(airspace: &Airspace, point: Vec2) -> Option<&Airport> {
   let mut closest: Option<&Airport> = None;
@@ -45,4 +47,6 @@ pub struct Connection {
 pub struct World {
   pub airspace: Airspace,
   pub connections: Vec<Connection>,
+  pub funds: usize,
+  pub purchases: Vec<PurchasableAircraft>,
 }

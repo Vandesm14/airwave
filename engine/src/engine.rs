@@ -59,14 +59,33 @@ impl<'a> Bundle<'a> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
+/// UI Commands come from the frontend and are handled within the engine.
 pub enum UICommand {
   Purchase(usize),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// UI Events are sent from the engine to the frontend.
+pub enum UIEvent {
+  // Inbound
+  Purchase(usize),
+
+  // Outbound
+  Funds(usize),
+}
+
+impl From<UICommand> for UIEvent {
+  fn from(value: UICommand) -> Self {
+    match value {
+      UICommand::Purchase(aircraft_id) => Self::Purchase(aircraft_id),
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
   Aircraft(AircraftEvent),
-  UiEvent(UICommand),
+  UiEvent(UIEvent),
 }
 
 impl From<AircraftEvent> for Event {
@@ -81,15 +100,7 @@ pub struct Engine {
 }
 
 impl Engine {
-  pub fn tick(
-    &mut self,
-    world: &World,
-    aircrafts: &mut [Aircraft],
-    rng: &mut Rng,
-    dt: f32,
-  ) -> Vec<Event> {
-    let mut bundle = Bundle::from_world(world, rng, dt);
-
+  pub fn handle_collisions(&mut self, aircrafts: &mut [Aircraft]) {
     let mut collisions: HashSet<Intern<String>> = HashSet::new();
     for pair in aircrafts.iter().combinations(2) {
       let aircraft = pair.first().unwrap();
@@ -118,6 +129,36 @@ impl Engine {
 
       aircraft.is_colliding = is_colliding;
     });
+  }
+
+  pub fn apply_actions(
+    &self,
+    bundle: &mut Bundle,
+    aircraft: &mut Aircraft,
+    name: Option<&str>,
+  ) {
+    if !bundle.actions.is_empty() {
+      if let Some(name) = name {
+        tracing::trace!("{name}: {:?}", &bundle.actions);
+      }
+    }
+    for action in bundle.actions.iter() {
+      if action.id == aircraft.id {
+        AircraftAllActionHandler::run(aircraft, &action.kind);
+      }
+    }
+    bundle.actions.clear();
+  }
+
+  pub fn tick(
+    &mut self,
+    world: &World,
+    aircrafts: &mut [Aircraft],
+    rng: &mut Rng,
+    dt: f32,
+  ) -> Vec<Event> {
+    let mut bundle = Bundle::from_world(world, rng, dt);
+    self.handle_collisions(aircrafts);
 
     if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
@@ -138,12 +179,7 @@ impl Engine {
           if !bundle.actions.is_empty() {
             tracing::trace!("event: {event:?} {:?}", &bundle.actions);
           }
-          for action in bundle.actions.iter() {
-            if action.id == aircraft.id {
-              AircraftAllActionHandler::run(aircraft, &action.kind);
-            }
-          }
-          bundle.actions.clear();
+          self.apply_actions(&mut bundle, aircraft, None);
         }
       }
 
@@ -151,65 +187,14 @@ impl Engine {
       AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
       AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
+      self.apply_actions(&mut bundle, aircraft, Some("state actions"));
 
       // Apply all actions
-      if !bundle.actions.is_empty() {
-        tracing::trace!("state actions: {:?}", &bundle.actions);
-      }
-      for action in bundle.actions.iter() {
-        if action.id == aircraft.id {
-          AircraftAllActionHandler::run(aircraft, &action.kind);
-        }
-      }
-      bundle.actions.clear();
-
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
-
-      // Apply all actions
-      if !bundle.actions.is_empty() {
-        tracing::trace!("target actions: {:?}", &bundle.actions);
-      }
-      for action in bundle.actions.iter() {
-        if action.id == aircraft.id {
-          AircraftAllActionHandler::run(aircraft, &action.kind);
-        }
-      }
-      bundle.actions.clear();
+      self.apply_actions(&mut bundle, aircraft, Some("target actions"));
 
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
-
-      // Apply all actions
-      if !bundle.actions.is_empty() {
-        tracing::trace!("position actions: {:?}", &bundle.actions);
-      }
-      for action in bundle.actions.iter() {
-        if action.id == aircraft.id {
-          AircraftAllActionHandler::run(aircraft, &action.kind);
-        }
-      }
-      bundle.actions.clear();
-
-      // Apply all actions
-      if !bundle.actions.is_empty() {
-        tracing::trace!("airspace actions: {:?}", &bundle.actions);
-      }
-      for action in bundle.actions.iter() {
-        if action.id == aircraft.id {
-          AircraftAllActionHandler::run(aircraft, &action.kind);
-        }
-      }
-      bundle.actions.clear();
-
-      // Apply all actions
-      if !bundle.actions.is_empty() {
-        tracing::trace!("other actions: {:?}", &bundle.actions);
-      }
-      for action in bundle.actions.iter() {
-        if action.id == aircraft.id {
-          AircraftAllActionHandler::run(aircraft, &action.kind);
-        }
-      }
-      bundle.actions.clear();
+      self.apply_actions(&mut bundle, aircraft, Some("position actions"));
     }
 
     // Capture the left over events and actions for next time
