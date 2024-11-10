@@ -57,6 +57,8 @@ impl<'a> Bundle<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
 pub enum UICommand {
   Purchase(usize),
 }

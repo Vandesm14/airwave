@@ -15,7 +15,7 @@ use async_openai::{
 };
 use engine::{
   command::{CommandWithFreq, OutgoingCommandReply, Task},
-  engine::{Engine, Event},
+  engine::{Engine, Event, UICommand},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
@@ -60,6 +60,7 @@ pub enum OutgoingReply {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum IncomingUpdate {
   Command(CommandWithFreq),
+  UICommand(UICommand),
   Connect,
 }
 
@@ -136,6 +137,7 @@ impl Runner {
         self.last_tick = Instant::now();
 
         let mut commands: Vec<CommandWithFreq> = Vec::new();
+        let mut ui_commands: Vec<UICommand> = Vec::new();
 
         loop {
           let incoming = match self.receiver.try_recv() {
@@ -146,12 +148,19 @@ impl Runner {
 
           match incoming {
             IncomingUpdate::Command(command) => commands.push(command),
+            IncomingUpdate::UICommand(ui_command) => {
+              ui_commands.push(ui_command)
+            }
             IncomingUpdate::Connect => self.broadcast_for_new_client(),
           }
         }
 
         for command in commands {
           self.execute_command(command);
+        }
+
+        for ui_command in ui_commands {
+          self.engine.events.push(Event::UiEvent(ui_command));
         }
 
         let dt = 1.0 / self.rate as f32;
@@ -359,6 +368,12 @@ pub async fn receive_commands_from(
           tracing::debug!("Received command message: length {}", text.len());
 
           match req {
+            FrontendRequest::UI(ui_command) => {
+              command_tx
+                .send(IncomingUpdate::UICommand(ui_command))
+                .await
+                .unwrap();
+            }
             FrontendRequest::Voice {
               data: bytes,
               frequency,
@@ -510,6 +525,7 @@ async fn complete_atc_request(
 enum FrontendRequest {
   Voice { data: Vec<u8>, frequency: f32 },
   Text { text: String, frequency: f32 },
+  UI(UICommand),
   Connect,
 }
 
