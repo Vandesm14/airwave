@@ -1,10 +1,11 @@
 use std::{fs, path::PathBuf};
 
 use async_openai::error::OpenAIError;
-use engine::command::{Command, CommandReply, Tasks};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
+
+use engine::command::{Command, CommandReply, Tasks};
 
 use crate::send_chatgpt_request;
 

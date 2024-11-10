@@ -13,17 +13,6 @@ use async_openai::{
     CreateChatCompletionRequest,
   },
 };
-use engine::{
-  command::{CommandWithFreq, OutgoingCommandReply, Task},
-  engine::{Engine, Event, UICommand, UIEvent},
-  entities::{
-    aircraft::{
-      events::{AircraftEvent, EventKind},
-      Aircraft,
-    },
-    world::{Game, World},
-  },
-};
 use futures_util::{
   stream::{SplitSink, SplitStream},
   SinkExt as _, StreamExt as _,
@@ -38,6 +27,18 @@ use tokio_tungstenite::{
   WebSocketStream,
 };
 use turborand::rng::Rng;
+
+use engine::{
+  command::{CommandWithFreq, OutgoingCommandReply, Task},
+  engine::{Engine, Event, UICommand, UIEvent},
+  entities::{
+    aircraft::{
+      events::{AircraftEvent, EventKind},
+      Aircraft,
+    },
+    world::{Game, World},
+  },
+};
 
 pub mod airport;
 pub mod prompter;

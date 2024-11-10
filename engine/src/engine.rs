@@ -1,11 +1,5 @@
 use std::collections::HashSet;
 
-use actions::{Action, AircraftActionHandler};
-use effects::{
-  AircraftUpdateFlyingEffect, AircraftUpdateLandingEffect,
-  AircraftUpdateTaxiingEffect,
-};
-use events::AircraftEvent;
 use internment::Intern;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -14,13 +8,14 @@ use turborand::rng::Rng;
 use crate::{
   entities::{
     aircraft::{
-      actions::AircraftAllActionHandler,
+      actions::{Action, AircraftActionHandler, AircraftAllActionHandler},
       effects::{
-        AircraftEffect, AircraftUpdateFromTargetsEffect,
-        AircraftUpdatePositionEffect,
+        AircraftEffect, AircraftUpdateFlyingEffect,
+        AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
+        AircraftUpdatePositionEffect, AircraftUpdateTaxiingEffect,
       },
-      events::{AircraftEventHandler, HandleAircraftEvent},
-      *,
+      events::{AircraftEvent, AircraftEventHandler, HandleAircraftEvent},
+      Aircraft,
     },
     world::{Game, World},
   },
@@ -42,8 +37,9 @@ pub struct Bundle<'a> {
 
 impl<'a> Bundle<'a> {
   pub fn from_world(world: &'a World, rng: &'a mut Rng, dt: f32) -> Self {
+    let prev = Aircraft::default();
     Self {
-      prev: Aircraft::default(),
+      prev,
       events: Vec::new(),
       actions: Vec::new(),
       world,

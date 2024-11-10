@@ -5,6 +5,12 @@ use core::{
 use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
+use futures_util::StreamExt as _;
+use glam::Vec2;
+use internment::Intern;
+use tokio::net::TcpListener;
+use turborand::{rng::Rng, SeededCore, TurboRand};
+
 use engine::{
   circle_circle_intersection,
   entities::{
@@ -15,12 +21,7 @@ use engine::{
   },
   NAUTICALMILES_TO_FEET,
 };
-use futures_util::StreamExt as _;
-use glam::Vec2;
-use internment::Intern;
 use server::{airport::new_v_pattern, IncomingUpdate, OutgoingReply, Runner};
-use tokio::net::TcpListener;
-use turborand::{rng::Rng, SeededCore, TurboRand};
 
 const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
 const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;

@@ -2,7 +2,6 @@ use std::f32::consts::PI;
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
-// use objects::airport::{Runway, Taxiway, Terminal};
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
