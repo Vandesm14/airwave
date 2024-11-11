@@ -106,7 +106,7 @@ impl From<Gate> for Node<Vec2> {
     Self {
       name: value.id,
       kind: NodeKind::Gate,
-      behavior: NodeBehavior::GoTo,
+      behavior: NodeBehavior::Park,
       value: value.pos,
     }
   }
