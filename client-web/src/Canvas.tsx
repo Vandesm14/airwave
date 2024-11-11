@@ -468,7 +468,14 @@ export default function Canvas({
     if (trail) {
       const dotSize = Math.max(2, scaleFeetToPixels(750));
 
-      ctx.fillStyle = isSelected ? colors.line_yellow : colors.line_green;
+      if (selectedAircraft() == aircraft.id) {
+        ctx.fillStyle = colors.text_yellow;
+      } else if (aircraft.is_colliding) {
+        ctx.fillStyle = colors.text_red;
+      } else if (aircraft.flight_plan.departing === world().airspace.id) {
+        ctx.fillStyle = colors.line_blue;
+      }
+
       for (let point of trail) {
         ctx.fillRect(
           scalePoint(point.pos)[0] - dotSize * 0.5,
