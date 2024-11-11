@@ -474,6 +474,8 @@ export default function Canvas({
         ctx.fillStyle = colors.text_red;
       } else if (aircraft.flight_plan.departing === world().airspace.id) {
         ctx.fillStyle = colors.line_blue;
+      } else {
+        ctx.fillStyle = colors.line_green;
       }
 
       for (let point of trail) {
@@ -581,6 +583,7 @@ export default function Canvas({
     } else if (aircraft.altitude > aircraft.target.altitude) {
       altitudeIcon = '⬊';
     }
+    // TODO: hide target altitude if landing
     ctx.fillText(
       Math.round(aircraft.altitude / 100)
         .toString()
@@ -600,18 +603,15 @@ export default function Canvas({
     }
 
     // Draw heading
-    let targetHeadingInfo =
+    let headingInfo =
       aircraft.state.type === 'landing'
         ? 'ILS'
-        : Math.round(aircraft.target.heading)
+        : Math.round(aircraft.heading)
             .toString()
             .padStart(3, '0')
             .replace('360', '000');
     ctx.fillText(
-      Math.round(aircraft.heading)
-        .toString()
-        .padStart(3, '0')
-        .replace('360', '000'),
+      headingInfo,
       pos[0] + spacing,
       pos[1] - spacing + fontSize() * 2
     );
