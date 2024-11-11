@@ -81,7 +81,7 @@ impl Runner {
       rng,
 
       last_tick: Instant::now(),
-      rate: 10,
+      rate: 15,
     }
   }
 
