@@ -145,13 +145,24 @@ impl Runner {
           Event::Aircraft(aircraft_event) => Some(aircraft_event),
           Event::UiEvent(_) => None,
         }) {
-          if let EventKind::Callout(command) = &event.kind {
-            if let Err(e) = self
-              .outgoing_sender
-              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-            {
-              tracing::error!("error sending outgoing reply: {e}")
+          match &event.kind {
+            EventKind::Callout(command) => {
+              if let Err(e) = self
+                .outgoing_sender
+                .try_broadcast(OutgoingReply::Reply(command.clone().into()))
+              {
+                tracing::error!("error sending outgoing reply: {e}")
+              }
             }
+
+            // Broadcast points when they are updated.
+            EventKind::SuccessfulTakeoff => {
+              self.broadcast_points();
+            }
+            EventKind::SuccessfulLanding => {
+              self.broadcast_points();
+            }
+            _ => {}
           }
         }
 
