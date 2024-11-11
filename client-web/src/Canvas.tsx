@@ -604,9 +604,7 @@ export default function Canvas({
       Math.round(aircraft.heading)
         .toString()
         .padStart(3, '0')
-        .replace('360', '000') +
-        ' ' +
-        targetHeadingInfo,
+        .replace('360', '000'),
       pos[0] + spacing,
       pos[1] - spacing + fontSize() * 2
     );
