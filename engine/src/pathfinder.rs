@@ -112,6 +112,17 @@ impl From<Gate> for Node<Vec2> {
   }
 }
 
+impl From<Gate> for Node<Line> {
+  fn from(value: Gate) -> Self {
+    Self {
+      name: value.id,
+      kind: NodeKind::Gate,
+      behavior: NodeBehavior::Park,
+      value: Line::new(value.pos, value.pos),
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Object {
   Taxiway(Taxiway),
@@ -257,12 +268,7 @@ impl Pathfinder {
 
       if let Object::Terminal(terminal) = current {
         for gate in terminal.gates.iter() {
-          let gate_node = graph.add_node(Node {
-            name: gate.id,
-            kind: NodeKind::Gate,
-            behavior: NodeBehavior::GoTo,
-            value: Line::new(gate.pos, gate.pos),
-          });
+          let gate_node = graph.add_node(gate.clone().into());
           let intersection =
             closest_point_on_line(gate.pos, terminal.apron.0, terminal.apron.1);
 
