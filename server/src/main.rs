@@ -42,7 +42,7 @@ async fn main() {
     .expect("OPENAI_API_KEY must be set")
     .into();
 
-  let Cli { address } = Cli::parse();
+  let Cli { address, seed } = Cli::parse();
   let world_radius = WORLD_RADIUS;
 
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
@@ -51,7 +51,7 @@ async fn main() {
 
   update_tx.set_overflow(true);
 
-  let rng = Rng::with_seed(0);
+  let rng = Rng::with_seed(seed);
   let world_rng = Rng::with_seed(0);
   let mut runner = Runner::new(
     command_rx,
@@ -215,4 +215,8 @@ struct Cli {
   /// The socket address to bind the WebSocket server to.
   #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))]
   address: SocketAddr,
+
+  /// The seed to use for the random number generator.
+  #[arg(short, long, default_value_t = 0)]
+  seed: u64,
 }
