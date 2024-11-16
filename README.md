@@ -6,14 +6,14 @@ Airwave is a gamified airport simulator with airport management and realistic ai
 
 ## Status
 
-Airwave is currently in development. The game is absolutely playable if you're looking for a full-on simulation. However, we don't currently have a nice one-click installation flow, so setting it up requires some technical knowledge.
+Airwave is under active development. However, the simulation system has been finalized, so if you're into a raw simulation, be our guest!
 
-## Documentation
+Here's how you can try it out: [Installation](./docs/src/getting-started/installation.md).
 
-See [docs/](./docs/src/getting-started/installation.md) for our documentation on how to install, set up, and play the game.
+## Contribution and Community
 
-## Contribution and Contact
+We're always excited to welcome new contributors! Here's how you can help:
 
-Ideas, feedback, and bug reports are welcome! Either open an [issue](/issues) or feel free to contact us on [Bluesky](https://bsky.app/profile/airwavegame.bsky.social).
-
-We are also looking for advisors and experts to aid in ensuring that Airwave is as realistic as possible, so please do reach out!
+- **Report Bugs or Suggest Features:** Open an [issue](/issues).
+- **Join the Discussion:** Contact us on [Bluesky](https://bsky.app/profile/airwavegame.bsky.social).
+- **Lend Your Expertise:** If you're an aviation or ATC enthusiast, we'd love your insights to make Airwave more realistic.
