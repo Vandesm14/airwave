@@ -58,6 +58,7 @@ export default function Canvas({
   let [aircraftTrails, setAircraftTrails] = createSignal<
     Map<string, Array<{ pos: Vec2; now: number }>>
   >(new Map());
+  let [mod, setMod] = createSignal(false);
 
   function scaleFeetToPixels(num: number): number {
     const FEET_TO_PIXELS = 0.003;
@@ -141,6 +142,14 @@ export default function Canvas({
             radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
             return { ...radar };
           });
+        } else if (e.key === 'Control') {
+          setMod(true);
+        }
+      });
+
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Control') {
+          setMod(false);
         }
       });
 
@@ -542,6 +551,41 @@ export default function Canvas({
         pos[0],
         pos[1],
         scaleFeetToPixels(nauticalMilesToFeet * 2),
+        0,
+        Math.PI * 2
+      );
+      ctx.stroke();
+    }
+
+    // Draw the turning radius
+    if (isSelected && mod()) {
+      const dps = 2;
+      const timeToCircle = 360 / dps;
+      const circumfrence = aircraft.speed * knotToFeetPerSecond * timeToCircle;
+      const radius = circumfrence / (2 * Math.PI);
+
+      const rightPoint = scalePoint(
+        movePoint(aircraft.pos, radius, aircraft.heading + 90)
+      );
+      const leftPoint = scalePoint(
+        movePoint(aircraft.pos, radius, aircraft.heading - 90)
+      );
+
+      ctx.beginPath();
+      ctx.arc(
+        rightPoint[0],
+        rightPoint[1],
+        scaleFeetToPixels(radius),
+        0,
+        Math.PI * 2
+      );
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(
+        leftPoint[0],
+        leftPoint[1],
+        scaleFeetToPixels(radius),
         0,
         Math.PI * 2
       );
