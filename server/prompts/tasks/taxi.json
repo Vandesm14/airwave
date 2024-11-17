@@ -124,6 +124,11 @@
               "name": "E1",
               "kind": "taxiway",
               "behavior": "goto"
+            },
+            {
+              "name": "17",
+              "kind": "runway",
+              "behavior": "goto"
             }
           ]
         }
