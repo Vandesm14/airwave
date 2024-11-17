@@ -110,6 +110,26 @@
       ]
     },
     {
+      "user": "Taxi to runway 17 via Bravo, Echo 1.",
+      "assistant": [
+        {
+          "type": "taxi",
+          "value": [
+            {
+              "name": "B",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "E1",
+              "kind": "taxiway",
+              "behavior": "goto"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "user": "Hold position.",
       "assistant": [
         {
