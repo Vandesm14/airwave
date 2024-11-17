@@ -5,7 +5,6 @@ import {
   isRecordingAtom,
   messagesAtom,
   pointsAtom,
-  selectedAircraftAtom,
   useTTSAtom,
   worldAtom,
 } from './lib/atoms';
@@ -27,7 +26,6 @@ export default function App() {
   let [, setWorld] = useAtom(worldAtom);
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useStorageAtom(frequencyAtom);
-  let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [points, setPoints] = useAtom(pointsAtom);
 
