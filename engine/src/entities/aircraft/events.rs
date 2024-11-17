@@ -116,11 +116,18 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::Heading(heading) => {
-        if let AircraftState::Flying { .. } = aircraft.state {
+        if let AircraftState::Flying { enroute, .. } = aircraft.state {
           bundle.actions.push(Action::new(
             aircraft.id,
             ActionKind::TargetHeading(*heading),
           ));
+
+          // Cancel waypoints of not enroute
+          if !enroute {
+            bundle
+              .actions
+              .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
+          }
         }
       }
       EventKind::Altitude(altitude) => {
