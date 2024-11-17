@@ -18,13 +18,15 @@ use engine::{
   NAUTICALMILES_TO_FEET,
 };
 use server::{
-  airport::new_v_pattern, runner::{IncomingUpdate, OutgoingReply, Runner}, Cli, CLI
+  airport::new_v_pattern,
+  runner::{IncomingUpdate, OutgoingReply, Runner},
+  Cli, CLI,
 };
 
 const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
 const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 1000.0;
+const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
 
 #[tokio::main]
 async fn main() {
@@ -37,17 +39,21 @@ async fn main() {
     .expect("OPENAI_API_KEY must be set")
     .into();
 
-  let Cli { address, seed, ref audio_path } = *CLI;
+  let Cli {
+    address,
+    seed,
+    ref audio_path,
+  } = *CLI;
 
   if let Some(audio_path) = audio_path {
     if !audio_path.exists() {
-        match std::fs::create_dir_all(audio_path) {
-            Ok(()) => {},
-            Err(e) => {
-                tracing::error!("Unable to create directory: {e}");
-                return;
-            },
+      match std::fs::create_dir_all(audio_path) {
+        Ok(()) => {}
+        Err(e) => {
+          tracing::error!("Unable to create directory: {e}");
+          return;
         }
+      }
     }
   }
 
