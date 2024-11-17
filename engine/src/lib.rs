@@ -24,6 +24,8 @@ pub const RIGHT: f32 = 90.0;
 pub const CLOCKWISE: f32 = 90.0;
 pub const COUNTERCLOCKWISE: f32 = 270.0;
 
+pub const ENROUTE_TIME_MULTIPLIER: f32 = 10.0;
+
 pub fn normalize_angle(angle: f32) -> f32 {
   (360.0 + angle) % 360.0
 }

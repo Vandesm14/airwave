@@ -8,7 +8,10 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::pathfinder::{Node, NodeVORData};
+use crate::{
+  pathfinder::{Node, NodeVORData},
+  ENROUTE_TIME_MULTIPLIER,
+};
 
 use super::{
   airport::{Gate, Runway},
@@ -317,7 +320,7 @@ impl Aircraft {
   pub fn dt_enroute(&self, dt: f32) -> f32 {
     if let AircraftState::Flying { enroute, .. } = &self.state {
       if *enroute {
-        dt * 10.0
+        dt * ENROUTE_TIME_MULTIPLIER
       } else {
         dt
       }
