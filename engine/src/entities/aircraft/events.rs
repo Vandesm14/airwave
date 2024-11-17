@@ -6,7 +6,9 @@ use crate::{
   command::{CommandReply, CommandWithFreq, Task},
   engine::Bundle,
   entities::{airport::Runway, world::closest_airport},
-  pathfinder::{new_vor, Node, NodeBehavior, NodeKind, Pathfinder},
+  pathfinder::{
+    display_node_vec2, new_vor, Node, NodeBehavior, NodeKind, Pathfinder,
+  },
 };
 
 use super::{actions::ActionKind, Action, Aircraft, AircraftState};
@@ -394,8 +396,16 @@ pub fn handle_taxi_event(
   if let AircraftState::Taxiing { current, .. }
   | AircraftState::Parked(current) = &aircraft.state
   {
-    let destinations = waypoint_strings.iter();
+    let mut destinations = waypoint_strings.iter().peekable();
     let mut all_waypoints: Vec<Node<Vec2>> = Vec::new();
+
+    if destinations.peek().map(|d| d.name_and_kind_eq(current)) == Some(true) {
+      tracing::info!(
+        "Skipping {} as we are there.",
+        display_node_vec2(current)
+      );
+      destinations.next();
+    }
 
     let mut pos = aircraft.pos;
     let mut heading = aircraft.heading;

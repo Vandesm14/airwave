@@ -200,6 +200,10 @@ pub fn total_distance_squared(path: &[Node<Vec2>], current_pos: Vec2) -> f32 {
   distance
 }
 
+pub fn display_node_vec2<T>(n: &Node<T>) -> String {
+  format!("{:?}: {}", n.kind, n.name)
+}
+
 pub fn display_vec_node_vec2(path: &[Node<Vec2>]) -> String {
   path
     .iter()
@@ -209,7 +213,7 @@ pub fn display_vec_node_vec2(path: &[Node<Vec2>]) -> String {
         acc.push_str(", ");
       }
 
-      acc.push_str(&format!("{:?}: {}", n.kind, n.name));
+      acc.push_str(&display_node_vec2(n));
 
       acc
     })
@@ -458,7 +462,12 @@ impl Pathfinder {
         p
       });
       if let Some(first_path) = &first_path {
-        println!("chosen path: {:?}", display_vec_node_vec2(&first_path.path));
+        println!(
+          "chosen path from {:?} to {:?}: {:?}",
+          display_node_vec2(&from),
+          display_node_vec2(&to),
+          display_vec_node_vec2(&first_path.path)
+        );
       }
 
       first_path
