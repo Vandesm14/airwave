@@ -254,20 +254,24 @@ function Strip({ strip }: StripProps) {
     const connection = world().connections.find(
       (c) => c.id === strip.flight_plan.arriving
     );
-    const rawAngle = angleBetweenPoints([0, 0], connection.pos);
-    const angle = (360 - Math.round(rawAngle) + 90) % 360;
+    if (connection !== null) {
+      const rawAngle = angleBetweenPoints([0, 0], connection.pos);
+      const angle = (360 - Math.round(rawAngle) + 90) % 360;
 
-    let closestAngle = Infinity;
-    let heading = angle;
-    for (const runway of world().airspace.airports.flatMap((a) => a.runways)) {
-      let diff = Math.abs(runway.heading - angle);
-      if (diff < closestAngle) {
-        closestAngle = diff;
-        heading = runway.heading;
+      let closestAngle = Infinity;
+      let heading = angle;
+      for (const runway of world().airspace.airports.flatMap(
+        (a) => a.runways
+      )) {
+        let diff = Math.abs(runway.heading - angle);
+        if (diff < closestAngle) {
+          closestAngle = diff;
+          heading = runway.heading;
+        }
       }
-    }
 
-    distanceText = `FOR ${heading.toString().slice(0, 2)}`;
+      distanceText = `FOR ${heading.toString().slice(0, 2)}`;
+    }
   }
 
   function handleMouseDown() {
