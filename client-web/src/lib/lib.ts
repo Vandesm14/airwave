@@ -5,6 +5,8 @@ export const timeScale = 1;
 export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
 
+export const ENROUTE_TIME_MULTIPLIER = 10;
+
 export function isSome<T>(value: T): boolean {
   return value !== undefined && value !== null;
 }

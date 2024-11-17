@@ -25,6 +25,7 @@ import {
 } from 'solid-js';
 import {
   calculateSquaredDistance,
+  ENROUTE_TIME_MULTIPLIER,
   headingToDegrees,
   knotToFeetPerSecond,
   midpointBetweenPoints,
@@ -488,6 +489,7 @@ export default function Canvas({
       }
     }
 
+    // Draw waypoints
     let pos = scalePoint(aircraft.pos);
     if (aircraft.state.type === 'flying' && selectedAircraft() == aircraft.id) {
       ctx.strokeStyle = '#ffff0033';
@@ -547,7 +549,11 @@ export default function Canvas({
     }
 
     // Draw the direction
-    const length = aircraft.speed * knotToFeetPerSecond * 60;
+    const mux =
+      aircraft.state.type === 'flying' && aircraft.state.value.enroute
+        ? ENROUTE_TIME_MULTIPLIER
+        : 1;
+    const length = aircraft.speed * knotToFeetPerSecond * 60 * mux;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
     let endPos = scalePoint(end);
 

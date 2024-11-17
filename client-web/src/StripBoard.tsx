@@ -15,6 +15,7 @@ import {
 import {
   angleBetweenPoints,
   calculateDistance,
+  ENROUTE_TIME_MULTIPLIER,
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib/lib';
@@ -160,7 +161,11 @@ function Strip({ strip }: StripProps) {
       });
 
       let distanceInNm = distance / nauticalMilesToFeet;
-      let time = (distanceInNm / (strip.speed * 10)) * 1000 * 60 * 60;
+      let time =
+        (distanceInNm / (strip.speed * ENROUTE_TIME_MULTIPLIER)) *
+        1000 *
+        60 *
+        60;
       sinceCreated = formatTime(time);
     } else if (
       !strip.state.value.enroute &&
