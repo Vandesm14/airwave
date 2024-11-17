@@ -322,10 +322,6 @@ export default function Canvas({
 
   function drawCompass(ctx: Ctx) {
     let diameter = 200;
-    if (canvas.width < canvas.height) {
-      diameter = canvas.width;
-    }
-
     let radius = diameter * 0.5;
     let origin = {
       x: -canvas.width * 0.5 + diameter * 0.5 + 20,
@@ -593,7 +589,11 @@ export default function Canvas({
     }
 
     // Draw the direction
-    const length = aircraft.speed * knotToFeetPerSecond * 60;
+    const mux =
+      aircraft.state.type === 'flying' && aircraft.state.value.enroute
+        ? ENROUTE_TIME_MULTIPLIER
+        : 1;
+    const length = aircraft.speed * knotToFeetPerSecond * 60 * mux;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
     let endPos = scalePoint(end);
 
