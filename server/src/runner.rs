@@ -10,7 +10,7 @@ use turborand::{rng::Rng, TurboRand};
 
 use engine::{
   angle_between_points,
-  command::{CommandWithFreq, OutgoingCommandReply, Task},
+  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, Event, UICommand, UIEvent},
   entities::{
     aircraft::{
@@ -19,10 +19,11 @@ use engine::{
     },
     world::{Game, Points, World},
   },
+  heading_to_direction,
   pathfinder::new_vor,
 };
 
-pub const SPAWN_RATE: Duration = Duration::from_secs(240);
+pub const SPAWN_RATE: Duration = Duration::from_secs(210);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -201,6 +202,33 @@ impl Runner {
             }
             EventKind::SuccessfulLanding => {
               self.broadcast_points();
+            }
+
+            EventKind::EnRoute(false) => {
+              if let Some(aircraft) =
+                self.game.aircraft.iter().find(|a| a.id == event.id)
+              {
+                let direction = heading_to_direction(angle_between_points(
+                  self.world.airspace.pos,
+                  aircraft.pos,
+                ))
+                .to_owned();
+                let command = CommandWithFreq {
+                  id: Intern::to_string(&aircraft.id),
+                  frequency: aircraft.frequency,
+                  reply: CommandReply::ArriveInAirspace {
+                    direction,
+                    altitude: aircraft.altitude,
+                  },
+                  tasks: Vec::new(),
+                };
+                if let Err(e) = self
+                  .outgoing_sender
+                  .try_broadcast(OutgoingReply::Reply(command.clone().into()))
+                {
+                  tracing::error!("error sending outgoing reply: {e}")
+                }
+              }
             }
             _ => {}
           }

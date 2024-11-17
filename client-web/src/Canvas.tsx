@@ -593,11 +593,7 @@ export default function Canvas({
     }
 
     // Draw the direction
-    const mux =
-      aircraft.state.type === 'flying' && aircraft.state.value.enroute
-        ? ENROUTE_TIME_MULTIPLIER
-        : 1;
-    const length = aircraft.speed * knotToFeetPerSecond * 60 * mux;
+    const length = aircraft.speed * knotToFeetPerSecond * 60;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
     let endPos = scalePoint(end);
 

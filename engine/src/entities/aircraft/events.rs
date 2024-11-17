@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   command::{CommandReply, CommandWithFreq, Task},
-  engine::Bundle,
+  engine::{Bundle, Event},
   entities::{airport::Runway, world::closest_airport},
   pathfinder::{
     display_node_vec2, new_vor, Node, NodeBehavior, NodeKind, Pathfinder,
@@ -242,6 +242,15 @@ impl AircraftEventHandler for HandleAircraftEvent {
             id: aircraft.id,
             kind: ActionKind::EnRoute(*bool),
           });
+        }
+
+        // TODO: Automatically tuning them to approach when they enter the
+        // airspace might not be the best UX.
+        if !bool {
+          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            aircraft.id,
+            EventKind::Frequency(bundle.world.airspace.frequencies.approach),
+          )))
         }
       }
       EventKind::FlipFlightPlan => {
