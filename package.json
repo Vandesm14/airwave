@@ -7,6 +7,7 @@
     "client-web:build": "pnpm --dir client-web build",
     "client-web:preview": "pnpm --dir client-web preview",
     "run-all": "zellij --layout zellij.kdl",
+    "run-all:record": "zellij --layout zellij-record.kdl",
     "run-all:debug": "zellij --layout zellij-debug.kdl"
   },
   "devDependencies": {

@@ -22,8 +22,7 @@ use engine::{
   NAUTICALMILES_TO_FEET,
 };
 use server::{
-  airport::new_v_pattern,
-  runner::{IncomingUpdate, OutgoingReply, Runner},
+  airport::new_v_pattern, runner::{IncomingUpdate, OutgoingReply, Runner}, Cli, CLI
 };
 
 const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
@@ -42,8 +41,19 @@ async fn main() {
     .expect("OPENAI_API_KEY must be set")
     .into();
 
-  let Cli { address, seed } = Cli::parse();
-  let world_radius = WORLD_RADIUS;
+  let Cli { address, seed, ref audio_path } = *CLI;
+
+  if let Some(audio_path) = audio_path {
+    if !audio_path.exists() {
+        match std::fs::create_dir_all(audio_path) {
+            Ok(()) => {},
+            Err(e) => {
+                tracing::error!("Unable to create directory: {e}");
+                return;
+            },
+        }
+    }
+  }
 
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
   let (mut update_tx, update_rx) =
@@ -112,8 +122,8 @@ async fn main() {
       i += 1;
 
       let position = Vec2::new(
-        (world_rng.f32() - 0.5) * world_radius,
-        (world_rng.f32() - 0.5) * world_radius,
+        (world_rng.f32() - 0.5) * WORLD_RADIUS,
+        (world_rng.f32() - 0.5) * WORLD_RADIUS,
       );
 
       for airport in runner.world.connections.iter() {
@@ -208,15 +218,4 @@ async fn main() {
       command_tx,
     ));
   }
-}
-
-#[derive(Parser)]
-struct Cli {
-  /// The socket address to bind the WebSocket server to.
-  #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))]
-  address: SocketAddr,
-
-  /// The seed to use for the random number generator.
-  #[arg(short, long, default_value_t = 0)]
-  seed: u64,
 }

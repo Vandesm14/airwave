@@ -1,4 +1,5 @@
-use std::sync::Arc;
+use core::{net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr};
+use std::{path::PathBuf, sync::{Arc, LazyLock}, time::SystemTime};
 
 use async_openai::{
   error::OpenAIError,
@@ -8,6 +9,7 @@ use async_openai::{
     CreateChatCompletionRequest,
   },
 };
+use clap::Parser;
 use futures_util::{
   stream::{SplitSink, SplitStream},
   SinkExt as _, StreamExt as _,
@@ -31,6 +33,23 @@ use runner::{IncomingUpdate, OutgoingReply};
 pub mod airport;
 pub mod prompter;
 pub mod runner;
+
+pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);
+
+#[derive(Parser)]
+pub struct Cli {
+  /// The socket address to bind the WebSocket server to.
+  #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))]
+  pub address: SocketAddr,
+
+  /// The seed to use for the random number generator.
+  #[arg(short, long, default_value_t = 0)]
+  pub seed: u64,
+
+  /// Whether to and where to record incomming audio to.
+  #[arg(long, default_value = None)]
+  pub audio_path: Option<PathBuf>,
+}
 
 pub async fn broadcast_updates_to(
   mut writer: SplitSink<WebSocketStream<TcpStream>, Message>,
@@ -116,6 +135,18 @@ pub async fn receive_commands_from(
                 "Received transcription request: {} bytes",
                 bytes.len()
               );
+
+              if let Some(ref audio_path) = CLI.audio_path {
+                let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+
+                let mut audio_path = audio_path.join(format!("{now:?}"));
+                audio_path.set_extension("wav");
+
+                match std::fs::write(audio_path, bytes.clone()) {
+                    Ok(_) => tracing::debug!("Wrote audio to file"),
+                    Err(e) => tracing::error!("Unable to write path: {e}"),
+                }
+              }
 
               let client = Client::new();
               let form = reqwest::multipart::Form::new();
