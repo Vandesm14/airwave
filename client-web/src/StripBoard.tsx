@@ -12,7 +12,12 @@ import {
   selectedAircraftAtom,
   worldAtom,
 } from './lib/atoms';
-import { calculateDistance, nauticalMilesToFeet, runwayInfo } from './lib/lib';
+import {
+  angleBetweenPoints,
+  calculateDistance,
+  nauticalMilesToFeet,
+  runwayInfo,
+} from './lib/lib';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -172,7 +177,7 @@ function Strip({ strip }: StripProps) {
     } else {
       sinceCreated = `--:--`;
     }
-  } else if (isAircraftTaxiing(strip.state)) {
+  } else if (isAircraftTaxiing(strip.state) && strip.speed > 0) {
     if (strip.state.value.waypoints.length > 0) {
       let current = strip.pos;
       let distance = 0;
@@ -235,6 +240,29 @@ function Strip({ strip }: StripProps) {
     distanceText = `${(distance / nauticalMilesToFeet)
       .toFixed(1)
       .slice(0, 4)} NM`;
+  }
+
+  if (
+    (strip.state.type === 'parked' || strip.state.type === 'taxiing') &&
+    strip.flight_plan.arriving !== airspace()
+  ) {
+    const connection = world().connections.find(
+      (c) => c.id === strip.flight_plan.arriving
+    );
+    const rawAngle = angleBetweenPoints([0, 0], connection.pos);
+    const angle = (360 - Math.round(rawAngle) + 90) % 360;
+
+    let closestAngle = Infinity;
+    let heading = angle;
+    for (const runway of world().airspace.airports.flatMap((a) => a.runways)) {
+      let diff = Math.abs(runway.heading - angle);
+      if (diff < closestAngle) {
+        closestAngle = diff;
+        heading = runway.heading;
+      }
+    }
+
+    distanceText = `FOR ${heading.toString().slice(0, 2)}`;
   }
 
   function handleMouseDown() {

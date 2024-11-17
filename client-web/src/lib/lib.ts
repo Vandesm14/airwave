@@ -33,13 +33,6 @@ export function movePoint(
   return [newX, newY];
 }
 
-export function distanceToDestination(
-  aircraft: Aircraft,
-  world: World
-): number {
-  return distanceToAirspace(aircraft, world, aircraft.flight_plan.arriving);
-}
-
 export function angleBetweenPoints(a: Vec2, b: Vec2): number {
   let dx = b[0] - a[0];
   let dy = b[1] - a[1];
