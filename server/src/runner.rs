@@ -6,19 +6,23 @@ use std::{
 use async_channel::TryRecvError;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
-use turborand::rng::Rng;
+use turborand::{rng::Rng, TurboRand};
 
 use engine::{
+  angle_between_points,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, Event, UICommand, UIEvent},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
-      Aircraft,
+      Aircraft, AircraftState, FlightPlan,
     },
     world::{Game, Points, World},
   },
+  pathfinder::new_vor,
 };
+
+pub const SPAWN_RATE: Duration = Duration::from_secs(240);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -57,6 +61,7 @@ pub struct Runner {
   pub rng: Rng,
 
   last_tick: Instant,
+  last_spawn: Instant,
   rate: usize,
 }
 
@@ -81,6 +86,7 @@ impl Runner {
       rng,
 
       last_tick: Instant::now(),
+      last_spawn: Instant::now() - SPAWN_RATE,
       rate: 15,
     }
   }
@@ -100,8 +106,42 @@ impl Runner {
     self.game.aircraft.push(aircraft);
   }
 
+  pub fn spawn_inbound(&mut self) {
+    let rng = &mut self.rng;
+
+    let departing = rng.sample(&self.world.connections).unwrap();
+    let mut aircraft = Aircraft::random_flying(
+      self.world.airspace.frequencies.center,
+      FlightPlan::new(departing.id, self.world.airspace.id),
+    );
+
+    aircraft.speed = 300.0;
+    aircraft.pos = departing.pos;
+    aircraft.altitude = 13000.0;
+    aircraft.heading =
+      angle_between_points(departing.pos, self.world.airspace.pos);
+    aircraft.sync_targets_to_vals();
+
+    aircraft.state = AircraftState::Flying {
+      enroute: true,
+      waypoints: vec![new_vor(departing.id, departing.transition)
+        .with_name(Intern::from_ref("TRSN"))
+        .with_behavior(vec![
+          EventKind::EnRoute(false),
+          EventKind::SpeedAtOrBelow(250.0),
+        ])],
+    };
+
+    self.game.aircraft.push(aircraft);
+  }
+
   pub fn begin_loop(&mut self) {
     'main_loop: loop {
+      if Instant::now() - self.last_spawn >= SPAWN_RATE {
+        self.last_spawn = Instant::now();
+        self.spawn_inbound();
+      }
+
       if Instant::now() - self.last_tick
         >= Duration::from_secs_f32(1.0 / self.rate as f32)
       {
