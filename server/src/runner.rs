@@ -112,7 +112,7 @@ impl Runner {
 
     let departing = rng.sample(&self.world.connections).unwrap();
     let mut aircraft = Aircraft::random_flying(
-      self.world.airspace.frequencies.center,
+      self.world.airspace.frequencies.approach,
       FlightPlan::new(departing.id, self.world.airspace.id),
     );
 
