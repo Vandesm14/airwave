@@ -251,9 +251,13 @@ impl Aircraft {
     .with_synced_targets()
   }
 
-  pub fn random_flying(frequency: f32, flight_plan: FlightPlan) -> Self {
+  pub fn random_flying(
+    frequency: f32,
+    flight_plan: FlightPlan,
+    rng: &mut Rng,
+  ) -> Self {
     Self {
-      id: Intern::from(Aircraft::random_callsign(&mut Default::default())),
+      id: Intern::from(Aircraft::random_callsign(rng)),
       is_colliding: false,
 
       pos: Vec2::ZERO,

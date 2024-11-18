@@ -120,6 +120,7 @@ impl Runner {
     let mut aircraft = Aircraft::random_flying(
       self.world.airspace.frequencies.approach,
       FlightPlan::new(departing.id, self.world.airspace.id),
+      rng,
     );
 
     aircraft.speed = 300.0;
