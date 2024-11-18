@@ -142,14 +142,14 @@ export default function Canvas({
             return { ...radar };
           });
         } else if (e.key === 'Control') {
-          setMod(true);
+          setMod((mod) => !mod);
         }
       });
 
       document.addEventListener('keyup', (e) => {
-        if (e.key === 'Control') {
-          setMod(false);
-        }
+        // if (e.key === 'Control') {
+        //   setMod((mod) => !mod);
+        // }
       });
 
       canvas.addEventListener('mousedown', (e) => {
