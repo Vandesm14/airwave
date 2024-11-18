@@ -131,6 +131,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .actions
               .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
           }
+        } else if let AircraftState::Landing(..) = &aircraft.state {
+          bundle.actions.push(Action::new(
+            aircraft.id,
+            ActionKind::TargetHeading(*heading),
+          ));
         }
       }
       EventKind::Altitude(altitude) => {

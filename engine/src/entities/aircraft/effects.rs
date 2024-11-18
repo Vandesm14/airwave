@@ -149,6 +149,8 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         return;
       }
 
+      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
+      // anything.
       if !angle_range.contains(&angle_to_runway) {
         return;
       }
@@ -162,12 +164,6 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
           }
           .into(),
         );
-        return;
-      }
-
-      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
-      // anything.
-      if distance_to_runway > start_descent_distance {
         return;
       }
 
@@ -185,6 +181,10 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         aircraft.id,
         ActionKind::TargetHeading(heading_to_point),
       ));
+
+      if distance_to_runway > start_descent_distance {
+        return;
+      }
 
       bundle.actions.push(Action::new(
         aircraft.id,
