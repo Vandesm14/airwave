@@ -947,7 +947,15 @@ export default function Canvas({
       drawConnection(ctx, connection);
     }
 
-    for (let aircraft of aircrafts.filter((a) => a.altitude >= 1000)) {
+    for (let aircraft of aircrafts.filter(
+      (a) => a.altitude >= 1000 && a.id !== selectedAircraft()
+    )) {
+      drawBlip(ctx, aircraft);
+    }
+
+    for (let aircraft of aircrafts.filter(
+      (a) => a.altitude >= 1000 && a.id === selectedAircraft()
+    )) {
       drawBlip(ctx, aircraft);
     }
 
@@ -975,7 +983,15 @@ export default function Canvas({
       }
     }
 
-    for (let aircraft of aircrafts.filter((a) => a.altitude < 1000)) {
+    for (let aircraft of aircrafts.filter(
+      (a) => a.altitude < 1000 && a.id !== selectedAircraft()
+    )) {
+      drawBlipGround(ctx, aircraft);
+    }
+
+    for (let aircraft of aircrafts.filter(
+      (a) => a.altitude < 1000 && a.id === selectedAircraft()
+    )) {
       drawBlipGround(ctx, aircraft);
     }
   }
