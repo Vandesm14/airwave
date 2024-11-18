@@ -244,7 +244,7 @@ function Strip({ strip }: StripProps) {
   if (strip.state.type === 'flying' || strip.state.type === 'landing') {
     distanceText = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
     if (distanceText.endsWith('.')) {
-      distanceText.replace('.', '');
+      distanceText = distanceText.replace('.', ' ');
     }
     distanceText = `${distanceText} NM`;
   }
