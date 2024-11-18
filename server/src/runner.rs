@@ -124,7 +124,7 @@ impl Runner {
 
     aircraft.speed = 300.0;
     aircraft.pos = departing.pos;
-    aircraft.altitude = 13000.0;
+    aircraft.altitude = 7000.0;
     aircraft.heading =
       angle_between_points(departing.pos, self.world.airspace.pos);
     aircraft.sync_targets_to_vals();
