@@ -353,18 +353,24 @@ export default function StripBoard({
       //   b.created.secs - a.created.secs;
       const nameSorter = (a: Aircraft, b: Aircraft) =>
         ('' + a.id).localeCompare(b.id);
-      const distanteToAirportSorter = (a: Aircraft, b: Aircraft) => {
-        let distance_a = calculateDistance(a.pos, world().airspace.pos);
-        let distance_b = calculateDistance(b.pos, world().airspace.pos);
+      const distanteToAirportSorter =
+        (rev: boolean) => (a: Aircraft, b: Aircraft) => {
+          let distance_a = calculateDistance(a.pos, world().airspace.pos);
+          let distance_b = calculateDistance(b.pos, world().airspace.pos);
 
-        return distance_b - distance_a;
-      };
+          if (rev) {
+            return distance_a - distance_b;
+          } else {
+            return distance_b - distance_a;
+          }
+        };
 
       Object.entries(strips).forEach(([key, list]) => {
-        list.sort(distanteToAirportSorter);
+        list.sort(distanteToAirportSorter(false));
         setStrips({ ...strips, [key]: list });
       });
-      // strips.Center.sort(nameSorter);
+      strips.Departure.sort(distanteToAirportSorter(true));
+      strips.Outbound.sort(distanteToAirportSorter(true));
       strips.Parked.sort(nameSorter);
       strips.Ground.sort(nameSorter);
 
