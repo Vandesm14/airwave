@@ -1,9 +1,7 @@
 use glam::Vec2;
 use internment::Intern;
 use petgraph::{
-  algo::simple_paths,
-  visit::{IntoNodeReferences, NodeRef},
-  Graph, Undirected,
+  algo::simple_paths, visit::IntoNodeReferences, Graph, Undirected,
 };
 use serde::{Deserialize, Serialize};
 
@@ -337,19 +335,6 @@ impl Pathfinder {
             ));
 
             first = next;
-          }
-
-          let wp = to_node.weight();
-
-          // If our destination is a gate, set our destination to that gate
-          // (otherwise it will be the enterance on the apron but not the gate)
-          if let Node {
-            kind: NodeKind::Gate,
-            value,
-            ..
-          } = wp
-          {
-            waypoints.push(Node::new(to.name, to.kind, to.behavior, value.0));
           }
 
           waypoints
