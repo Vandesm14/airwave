@@ -145,13 +145,6 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
           }
           .into(),
         );
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::SuccessfulLanding,
-          }
-          .into(),
-        );
 
         return;
       }
