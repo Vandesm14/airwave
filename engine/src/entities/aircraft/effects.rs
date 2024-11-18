@@ -1,8 +1,10 @@
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
-  delta_angle, engine::Bundle, inverse_degrees, move_point, normalize_angle,
-  pathfinder::NodeBehavior, Line, KNOT_TO_FEET_PER_SECOND,
-  NAUTICALMILES_TO_FEET,
+  delta_angle,
+  engine::Bundle,
+  inverse_degrees, move_point, normalize_angle,
+  pathfinder::{NodeBehavior, NodeKind},
+  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
 use super::{
@@ -244,7 +246,7 @@ pub struct AircraftUpdateTaxiingEffect;
 impl AircraftEffect for AircraftUpdateTaxiingEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND;
-    if let AircraftState::Taxiing { waypoints, .. } = &aircraft.state {
+    if let AircraftState::Taxiing { waypoints, current } = &aircraft.state {
       let waypoint = waypoints.last().cloned();
       if let Some(waypoint) = waypoint {
         let heading = angle_between_points(aircraft.pos, waypoint.value);
@@ -276,6 +278,17 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           }
           .into(),
         );
+
+        if let NodeBehavior::Park = current.behavior {
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::Parked(current.clone()),
+          });
+          bundle.actions.push(Action {
+            id: aircraft.id,
+            kind: ActionKind::FlipFlightPlan,
+          });
+        }
       }
     }
 
@@ -286,16 +299,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
 
         match waypoint.behavior {
           NodeBehavior::GoTo => {}
-          NodeBehavior::Park => {
-            bundle.actions.push(Action {
-              id: aircraft.id,
-              kind: ActionKind::Parked(waypoint.clone()),
-            });
-            bundle.actions.push(Action {
-              id: aircraft.id,
-              kind: ActionKind::FlipFlightPlan,
-            });
-          }
+          NodeBehavior::Park => {}
           NodeBehavior::HoldShort => {
             if distance <= 250.0_f32.powf(2.0) {
               bundle.actions.push(Action {
