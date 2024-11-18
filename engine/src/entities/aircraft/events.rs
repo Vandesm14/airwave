@@ -448,6 +448,30 @@ pub fn handle_taxi_event(
       }
     }
 
+    // If our destination is a gate, set our destination to that gate
+    // (otherwise it will be the enterance on the apron but not the gate)
+    if let Some(last) = all_waypoints.last() {
+      if last.kind == NodeKind::Gate {
+        if let Some(airport) =
+          closest_airport(&bundle.world.airspace, aircraft.pos)
+        {
+          if let Some(gate) = airport
+            .terminals
+            .iter()
+            .flat_map(|t| t.gates.iter())
+            .find(|g| g.id == last.name)
+          {
+            all_waypoints.push(Node::new(
+              last.name,
+              last.kind,
+              last.behavior,
+              gate.pos,
+            ));
+          }
+        }
+      }
+    }
+
     all_waypoints.reverse();
     bundle.actions.push(Action {
       id: aircraft.id,
