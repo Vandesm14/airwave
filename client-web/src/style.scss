@@ -22,6 +22,8 @@ $transparent-black: #000a;
   flex-direction: column;
   justify-content: flex-end;
 
+  width: min-content;
+
   gap: 5px;
 
   .points {
