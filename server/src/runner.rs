@@ -24,6 +24,7 @@ use engine::{
 };
 
 pub const SPAWN_RATE: Duration = Duration::from_secs(210);
+pub const SPAWN_LIMIT: usize = 34;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -138,7 +139,9 @@ impl Runner {
 
   pub fn begin_loop(&mut self) {
     'main_loop: loop {
-      if Instant::now() - self.last_spawn >= SPAWN_RATE {
+      if Instant::now() - self.last_spawn >= SPAWN_RATE
+        && self.game.aircraft.len() < SPAWN_LIMIT
+      {
         self.last_spawn = Instant::now();
         self.spawn_inbound();
       }
