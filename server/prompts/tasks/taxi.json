@@ -135,6 +135,36 @@
       ]
     },
     {
+      "user": "Taxi to and hold short of runway 15, then to Whiskey, then to Golf 4, then hold short of runway 27.",
+      "assistant": [
+        {
+          "type": "taxi",
+          "value": [
+            {
+              "name": "15",
+              "kind": "runway",
+              "behavior": "holdshort"
+            },
+            {
+              "name": "W",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "G4",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "27",
+              "kind": "runway",
+              "behavior": "holdshort"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "user": "Hold position.",
       "assistant": [
         {
