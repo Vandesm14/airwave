@@ -199,7 +199,14 @@ pub fn total_distance_squared(path: &[Node<Vec2>], current_pos: Vec2) -> f32 {
 }
 
 pub fn display_node_vec2<T>(n: &Node<T>) -> String {
-  format!("{:?}: {}", n.kind, n.name)
+  let exclamation = if n.behavior == NodeBehavior::Park
+    || n.behavior == NodeBehavior::HoldShort
+  {
+    "!"
+  } else {
+    ""
+  };
+  format!("{:?}: {}{}", n.kind, exclamation, n.name)
 }
 
 pub fn display_vec_node_vec2(path: &[Node<Vec2>]) -> String {

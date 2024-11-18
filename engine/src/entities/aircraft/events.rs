@@ -7,7 +7,8 @@ use crate::{
   engine::{Bundle, Event},
   entities::{airport::Runway, world::closest_airport},
   pathfinder::{
-    display_node_vec2, new_vor, Node, NodeBehavior, NodeKind, Pathfinder,
+    display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
+    NodeKind, Pathfinder,
   },
 };
 
@@ -481,7 +482,7 @@ pub fn handle_taxi_event(
     tracing::info!(
       "Initiating taxi for {}: {:?}",
       aircraft.id,
-      all_waypoints.iter().map(|w| w.name).collect::<Vec<_>>()
+      display_vec_node_vec2(&all_waypoints)
     );
 
     if all_waypoints.is_empty() {
