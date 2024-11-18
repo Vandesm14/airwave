@@ -57,6 +57,8 @@ impl<'a> Bundle<'a> {
 /// UI Commands come from the frontend and are handled within the engine.
 pub enum UICommand {
   Purchase(usize),
+
+  Pause,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -67,12 +69,15 @@ pub enum UIEvent {
 
   // Outbound
   Funds(usize),
+
+  Pause,
 }
 
 impl From<UICommand> for UIEvent {
   fn from(value: UICommand) -> Self {
     match value {
       UICommand::Purchase(aircraft_id) => Self::Purchase(aircraft_id),
+      UICommand::Pause => Self::Pause,
     }
   }
 }

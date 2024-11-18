@@ -100,6 +100,8 @@ export default function App() {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Insert' && !isRecording()) {
         startRecording();
+      } else if (e.key === 'Pause') {
+        sendPause();
       }
     });
 
@@ -176,6 +178,10 @@ export default function App() {
   socket.onerror = function () {
     console.log(`[error]`);
   };
+
+  function sendPause() {
+    socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
+  }
 
   function toggleTTS() {
     setUseTTS((useTTS) => !useTTS);

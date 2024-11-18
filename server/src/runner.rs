@@ -65,6 +65,7 @@ pub struct Runner {
   last_tick: Instant,
   last_spawn: Instant,
   rate: usize,
+  paused: bool,
 }
 
 impl Runner {
@@ -90,6 +91,7 @@ impl Runner {
       last_tick: Instant::now(),
       last_spawn: Instant::now() - SPAWN_RATE,
       rate: 15,
+      paused: false,
     }
   }
 
@@ -139,13 +141,6 @@ impl Runner {
 
   pub fn begin_loop(&mut self) {
     'main_loop: loop {
-      if Instant::now() - self.last_spawn >= SPAWN_RATE
-        && self.game.aircraft.len() < SPAWN_LIMIT
-      {
-        self.last_spawn = Instant::now();
-        self.spawn_inbound();
-      }
-
       if Instant::now() - self.last_tick
         >= Duration::from_secs_f32(1.0 / self.rate as f32)
       {
@@ -164,10 +159,25 @@ impl Runner {
           match incoming {
             IncomingUpdate::Command(command) => commands.push(command),
             IncomingUpdate::UICommand(ui_command) => {
+              if ui_command == UICommand::Pause {
+                self.paused = !self.paused;
+              }
+
               ui_commands.push(ui_command)
             }
             IncomingUpdate::Connect => self.broadcast_for_new_client(),
           }
+        }
+
+        if self.paused {
+          continue;
+        }
+
+        if Instant::now() - self.last_spawn >= SPAWN_RATE
+          && self.game.aircraft.len() < SPAWN_LIMIT
+        {
+          self.last_spawn = Instant::now();
+          self.spawn_inbound();
         }
 
         for command in commands {

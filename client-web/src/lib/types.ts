@@ -224,7 +224,11 @@ export type ServerEvent =
     }
   | { type: 'reply'; value: RadioMessage };
 
-export type UICommand = {
-  type: 'purchase';
-  value: number;
-};
+export type UICommand =
+  | {
+      type: 'purchase';
+      value: number;
+    }
+  | {
+      type: 'pause';
+    };
