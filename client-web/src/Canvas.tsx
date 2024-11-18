@@ -328,7 +328,10 @@ export default function Canvas({
     }
 
     let aircraft = render().aircrafts.find((a) => a.id === selectedAircraft());
-    if (aircraft && aircraft.state.type === 'flying') {
+    if (
+      aircraft &&
+      (aircraft.state.type === 'flying' || aircraft.state.type === 'landing')
+    ) {
       let origin = scalePoint(aircraft.pos);
 
       ctx.fillStyle = '#888';
@@ -558,7 +561,11 @@ export default function Canvas({
     }
 
     // Draw the turning radius
-    if (isSelected && mod() && aircraft.state.type === 'flying') {
+    if (
+      isSelected &&
+      mod() &&
+      (aircraft.state.type === 'flying' || aircraft.state.type === 'landing')
+    ) {
       const dps = 2;
       const timeToCircle = 360 / dps;
       const circumfrence = aircraft.speed * knotToFeetPerSecond * timeToCircle;
