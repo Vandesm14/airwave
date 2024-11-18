@@ -464,7 +464,7 @@ pub fn handle_taxi_event(
             all_waypoints.push(Node::new(
               last.name,
               last.kind,
-              last.behavior,
+              NodeBehavior::Park,
               gate.pos,
             ));
           }
