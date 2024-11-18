@@ -347,7 +347,7 @@ impl Pathfinder {
           let mut first = &Node {
             name: from.name,
             kind: from.kind,
-            behavior: NodeBehavior::GoTo,
+            behavior: from.behavior,
             value: pos,
           };
           for wp in path.iter() {
@@ -372,7 +372,7 @@ impl Pathfinder {
           let mut first = &Node {
             name: from.name,
             kind: from.kind,
-            behavior: NodeBehavior::GoTo,
+            behavior: from.behavior,
             value: pos,
           };
           for wp in path.path.iter() {
