@@ -312,8 +312,8 @@ export default function Canvas({
       if (isGround()) {
         drawGround(ctx, world(), render().aircrafts);
       } else {
-        // drawCompass(ctx);
         drawTower(ctx, world(), render().aircrafts);
+        drawCompass(ctx);
       }
 
       drawCollodingMessage(ctx, aircrafts());
@@ -321,31 +321,36 @@ export default function Canvas({
   }
 
   function drawCompass(ctx: Ctx) {
-    let diameter = 200;
+    let diameter = 250;
     let radius = diameter * 0.5;
-    let origin = {
-      x: -canvas.width * 0.5 + diameter * 0.5 + 20,
-      y: -canvas.height * 0.5 + diameter * 0.5 + 20,
-    };
 
-    ctx.fillStyle = '#888';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    let padding = -10;
-    const increment = 30;
-    const count = 360 / increment;
-    for (let i = 0; i < count; i++) {
-      let text = headingToDegrees(i * increment)
-        .toString()
-        .padStart(3, '0');
-      if (text === '000') {
-        text = '360';
+    if (!mod()) {
+      return;
+    }
+
+    let aircraft = render().aircrafts.find((a) => a.id === selectedAircraft());
+    if (aircraft && aircraft.state.type === 'flying') {
+      let origin = scalePoint(aircraft.pos);
+
+      ctx.fillStyle = '#888';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      let padding = -10;
+      const increment = 30;
+      const count = 360 / increment;
+      for (let i = 0; i < count; i++) {
+        let text = headingToDegrees(i * increment)
+          .toString()
+          .padStart(3, '0');
+        if (text === '000') {
+          text = '360';
+        }
+        ctx.fillText(
+          text,
+          Math.cos(toRadians(i * increment)) * (radius + padding) + origin[0],
+          Math.sin(toRadians(i * increment)) * (radius + padding) + origin[1]
+        );
       }
-      ctx.fillText(
-        text,
-        Math.cos(toRadians(i * increment)) * (radius + padding) + origin.x,
-        Math.sin(toRadians(i * increment)) * (radius + padding) + origin.y
-      );
     }
   }
 
@@ -554,7 +559,7 @@ export default function Canvas({
     }
 
     // Draw the turning radius
-    if (isSelected && mod()) {
+    if (isSelected && mod() && aircraft.state.type === 'flying') {
       const dps = 2;
       const timeToCircle = 360 / dps;
       const circumfrence = aircraft.speed * knotToFeetPerSecond * timeToCircle;
