@@ -245,6 +245,9 @@ function Strip({ strip }: StripProps) {
     distanceText = `${(distance / nauticalMilesToFeet)
       .toFixed(1)
       .slice(0, 4)} NM`;
+    if (distanceText.endsWith('.')) {
+      distanceText.replace('.', '');
+    }
   }
 
   if (
