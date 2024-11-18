@@ -140,7 +140,9 @@ impl AircraftActionHandler for AircraftAllActionHandler {
         }
       }
       ActionKind::Parked(id) => {
-        aircraft.state = AircraftState::Parked(id.clone())
+        aircraft.state = AircraftState::Parked(id.clone());
+        aircraft.speed = 0.0;
+        aircraft.target.speed = 0.0;
       }
     }
   }

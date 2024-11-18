@@ -287,13 +287,6 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         match waypoint.behavior {
           NodeBehavior::GoTo => {}
           NodeBehavior::Park => {
-            bundle.events.push(
-              AircraftEvent {
-                id: aircraft.id,
-                kind: EventKind::TaxiHold,
-              }
-              .into(),
-            );
             bundle.actions.push(Action {
               id: aircraft.id,
               kind: ActionKind::Parked(waypoint.clone()),
