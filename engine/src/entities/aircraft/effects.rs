@@ -165,6 +165,12 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         return;
       }
 
+      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
+      // anything.
+      if distance_to_runway > start_descent_distance {
+        return;
+      }
+
       let landing_point = if distance_to_runway <= start_descent_distance {
         let closest_point =
           closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
@@ -179,12 +185,6 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         aircraft.id,
         ActionKind::TargetHeading(heading_to_point),
       ));
-
-      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
-      // anything.
-      if distance_to_runway > start_descent_distance {
-        return;
-      }
 
       bundle.actions.push(Action::new(
         aircraft.id,
