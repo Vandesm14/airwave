@@ -25,7 +25,6 @@ import {
 } from 'solid-js';
 import {
   calculateSquaredDistance,
-  ENROUTE_TIME_MULTIPLIER,
   headingToDegrees,
   knotToFeetPerSecond,
   midpointBetweenPoints,
