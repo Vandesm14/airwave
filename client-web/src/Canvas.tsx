@@ -816,7 +816,13 @@ export default function Canvas({
       ctx.stroke();
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
+        if (wp.behavior === 'goto') {
+          ctx.fillStyle = colors.line_yellow;
+        } else if (wp.behavior === 'park') {
+          ctx.fillStyle = colors.line_yellow;
+        } else if (wp.behavior === 'holdshort') {
+          ctx.fillStyle = colors.line_red;
+        }
         let pos = scalePoint(wp.value);
         ctx.beginPath();
         ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
