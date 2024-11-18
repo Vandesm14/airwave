@@ -254,7 +254,7 @@ function Strip({ strip }: StripProps) {
     const connection = world().connections.find(
       (c) => c.id === strip.flight_plan.arriving
     );
-    if (connection !== null) {
+    if (connection !== undefined) {
       const rawAngle = angleBetweenPoints([0, 0], connection.pos);
       const angle = (360 - Math.round(rawAngle) + 90) % 360;
 
