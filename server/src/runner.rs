@@ -23,7 +23,10 @@ use engine::{
   pathfinder::new_vor,
 };
 
+use crate::MANUAL_TOWER_AIRSPACE_RADIUS;
+
 pub const SPAWN_RATE: Duration = Duration::from_secs(210);
+pub const PREP_SPAWN_RATE: Duration = Duration::from_secs(120);
 pub const SPAWN_LIMIT: usize = 34;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,129 +142,133 @@ impl Runner {
     self.game.aircraft.push(aircraft);
   }
 
+  pub fn tick(&mut self) {
+    self.last_tick = Instant::now();
+
+    let mut commands: Vec<CommandWithFreq> = Vec::new();
+    let mut ui_commands: Vec<UICommand> = Vec::new();
+
+    loop {
+      let incoming = match self.receiver.try_recv() {
+        Ok(incoming) => incoming,
+        Err(TryRecvError::Closed) => return,
+        Err(TryRecvError::Empty) => break,
+      };
+
+      match incoming {
+        IncomingUpdate::Command(command) => commands.push(command),
+        IncomingUpdate::UICommand(ui_command) => {
+          if ui_command == UICommand::Pause {
+            self.paused = !self.paused;
+          }
+
+          ui_commands.push(ui_command)
+        }
+        IncomingUpdate::Connect => self.broadcast_for_new_client(),
+      }
+    }
+
+    if self.paused {
+      return;
+    }
+
+    if Instant::now() - self.last_spawn >= SPAWN_RATE
+      && self.game.aircraft.len() < SPAWN_LIMIT
+    {
+      self.last_spawn = Instant::now();
+      self.spawn_inbound();
+    }
+
+    for command in commands {
+      self.execute_command(command);
+    }
+
+    for ui_command in ui_commands {
+      self.engine.events.push(Event::UiEvent(ui_command.into()));
+    }
+
+    let dt = 1.0 / self.rate as f32;
+    let events =
+      self
+        .engine
+        .tick(&self.world, &mut self.game, &mut self.rng, dt);
+
+    // Run through all callout events and broadcast them
+    for event in events.iter().filter_map(|e| match e {
+      Event::Aircraft(aircraft_event) => Some(aircraft_event),
+      Event::UiEvent(_) => None,
+    }) {
+      match &event.kind {
+        EventKind::Callout(command) => {
+          if let Err(e) = self
+            .outgoing_sender
+            .try_broadcast(OutgoingReply::Reply(command.clone().into()))
+          {
+            tracing::error!("error sending outgoing reply: {e}")
+          }
+        }
+
+        // Broadcast points when they are updated.
+        EventKind::SuccessfulTakeoff => {
+          self.broadcast_points();
+        }
+        EventKind::SuccessfulLanding => {
+          self.broadcast_points();
+        }
+
+        EventKind::EnRoute(false) => {
+          if let Some(aircraft) =
+            self.game.aircraft.iter().find(|a| a.id == event.id)
+          {
+            let direction = heading_to_direction(angle_between_points(
+              self.world.airspace.pos,
+              aircraft.pos,
+            ))
+            .to_owned();
+            let command = CommandWithFreq {
+              id: Intern::to_string(&aircraft.id),
+              frequency: aircraft.frequency,
+              reply: CommandReply::ArriveInAirspace {
+                direction,
+                altitude: aircraft.altitude,
+              },
+              tasks: Vec::new(),
+            };
+            if let Err(e) = self
+              .outgoing_sender
+              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
+            {
+              tracing::error!("error sending outgoing reply: {e}")
+            }
+          }
+        }
+        _ => {}
+      }
+    }
+
+    for event in events.iter().filter_map(|e| match e {
+      Event::Aircraft(_) => None,
+      Event::UiEvent(ui_event) => Some(ui_event),
+    }) {
+      if let UIEvent::Funds(_) = &event {
+        self.broadcast_funds();
+      }
+    }
+
+    self.cleanup(events.iter().filter_map(|e| match e {
+      Event::Aircraft(aircraft_event) => Some(aircraft_event),
+      Event::UiEvent(_) => None,
+    }));
+    self.broadcast_aircraft();
+    // TODO: self.save_world();
+  }
+
   pub fn begin_loop(&mut self) {
-    'main_loop: loop {
+    loop {
       if Instant::now() - self.last_tick
         >= Duration::from_secs_f32(1.0 / self.rate as f32)
       {
-        self.last_tick = Instant::now();
-
-        let mut commands: Vec<CommandWithFreq> = Vec::new();
-        let mut ui_commands: Vec<UICommand> = Vec::new();
-
-        loop {
-          let incoming = match self.receiver.try_recv() {
-            Ok(incoming) => incoming,
-            Err(TryRecvError::Closed) => break 'main_loop,
-            Err(TryRecvError::Empty) => break,
-          };
-
-          match incoming {
-            IncomingUpdate::Command(command) => commands.push(command),
-            IncomingUpdate::UICommand(ui_command) => {
-              if ui_command == UICommand::Pause {
-                self.paused = !self.paused;
-              }
-
-              ui_commands.push(ui_command)
-            }
-            IncomingUpdate::Connect => self.broadcast_for_new_client(),
-          }
-        }
-
-        if self.paused {
-          continue;
-        }
-
-        if Instant::now() - self.last_spawn >= SPAWN_RATE
-          && self.game.aircraft.len() < SPAWN_LIMIT
-        {
-          self.last_spawn = Instant::now();
-          self.spawn_inbound();
-        }
-
-        for command in commands {
-          self.execute_command(command);
-        }
-
-        for ui_command in ui_commands {
-          self.engine.events.push(Event::UiEvent(ui_command.into()));
-        }
-
-        let dt = 1.0 / self.rate as f32;
-        let events =
-          self
-            .engine
-            .tick(&self.world, &mut self.game, &mut self.rng, dt);
-
-        // Run through all callout events and broadcast them
-        for event in events.iter().filter_map(|e| match e {
-          Event::Aircraft(aircraft_event) => Some(aircraft_event),
-          Event::UiEvent(_) => None,
-        }) {
-          match &event.kind {
-            EventKind::Callout(command) => {
-              if let Err(e) = self
-                .outgoing_sender
-                .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-              {
-                tracing::error!("error sending outgoing reply: {e}")
-              }
-            }
-
-            // Broadcast points when they are updated.
-            EventKind::SuccessfulTakeoff => {
-              self.broadcast_points();
-            }
-            EventKind::SuccessfulLanding => {
-              self.broadcast_points();
-            }
-
-            EventKind::EnRoute(false) => {
-              if let Some(aircraft) =
-                self.game.aircraft.iter().find(|a| a.id == event.id)
-              {
-                let direction = heading_to_direction(angle_between_points(
-                  self.world.airspace.pos,
-                  aircraft.pos,
-                ))
-                .to_owned();
-                let command = CommandWithFreq {
-                  id: Intern::to_string(&aircraft.id),
-                  frequency: aircraft.frequency,
-                  reply: CommandReply::ArriveInAirspace {
-                    direction,
-                    altitude: aircraft.altitude,
-                  },
-                  tasks: Vec::new(),
-                };
-                if let Err(e) = self
-                  .outgoing_sender
-                  .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-                {
-                  tracing::error!("error sending outgoing reply: {e}")
-                }
-              }
-            }
-            _ => {}
-          }
-        }
-
-        for event in events.iter().filter_map(|e| match e {
-          Event::Aircraft(_) => None,
-          Event::UiEvent(ui_event) => Some(ui_event),
-        }) {
-          if let UIEvent::Funds(_) = &event {
-            self.broadcast_funds();
-          }
-        }
-
-        self.cleanup(events.iter().filter_map(|e| match e {
-          Event::Aircraft(aircraft_event) => Some(aircraft_event),
-          Event::UiEvent(_) => None,
-        }));
-        self.broadcast_aircraft();
-        // TODO: self.save_world();
+        self.tick();
       }
     }
   }
@@ -326,6 +333,44 @@ impl Runner {
           .try_broadcast(OutgoingReply::Reply(command.clone().into()))
           .unwrap();
       }
+    }
+  }
+
+  pub fn prepare(&mut self) {
+    self.spawn_inbound();
+
+    let mut i = 0;
+    let mut last_spawn = 0.0;
+    loop {
+      let realtime = i as f32 * 1.0 / self.rate as f32;
+      if Duration::from_secs_f32(realtime - last_spawn) >= PREP_SPAWN_RATE
+        && self.game.aircraft.len() < SPAWN_LIMIT
+      {
+        self.spawn_inbound();
+        last_spawn = realtime;
+      }
+
+      let dt = 1.0 / self.rate as f32;
+      let events =
+        self
+          .engine
+          .tick(&self.world, &mut self.game, &mut self.rng, dt);
+
+      self.cleanup(events.iter().filter_map(|e| match e {
+        Event::Aircraft(aircraft_event) => Some(aircraft_event),
+        Event::UiEvent(_) => None,
+      }));
+
+      if self.game.aircraft.iter().any(|aircraft| {
+        aircraft.altitude != 0.0
+          && aircraft.pos.distance_squared(self.world.airspace.pos)
+            <= MANUAL_TOWER_AIRSPACE_RADIUS.powf(2.0)
+      }) {
+        tracing::info!("Done ({} simulated seconds).", realtime.round());
+        return;
+      }
+
+      i += 1;
     }
   }
 

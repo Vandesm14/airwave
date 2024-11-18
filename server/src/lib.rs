@@ -1,5 +1,9 @@
 use core::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::{path::PathBuf, sync::{Arc, LazyLock}, time::SystemTime};
+use std::{
+  path::PathBuf,
+  sync::{Arc, LazyLock},
+  time::SystemTime,
+};
 
 use async_openai::{
   error::OpenAIError,
@@ -25,10 +29,16 @@ use tokio_tungstenite::{
 use engine::{
   command::{CommandWithFreq, OutgoingCommandReply},
   engine::UICommand,
+  NAUTICALMILES_TO_FEET,
 };
 
 use prompter::Prompter;
 use runner::{IncomingUpdate, OutgoingReply};
+
+pub const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
+pub const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
+pub const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+pub const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
 
 pub mod airport;
 pub mod prompter;
@@ -136,15 +146,17 @@ pub async fn receive_commands_from(
                 bytes.len()
               );
 
-              let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+              let now = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap();
 
               if let Some(ref audio_path) = CLI.audio_path {
                 let mut audio_path = audio_path.join(format!("{now:?}"));
                 audio_path.set_extension("wav");
 
                 match std::fs::write(audio_path, bytes.clone()) {
-                    Ok(_) => tracing::debug!("Wrote audio to file"),
-                    Err(e) => tracing::error!("Unable to write path: {e}"),
+                  Ok(_) => tracing::debug!("Wrote audio to file"),
+                  Err(e) => tracing::error!("Unable to write path: {e}"),
                 }
               }
 
@@ -188,21 +200,28 @@ pub async fn receive_commands_from(
                 if let Some(result) =
                   complete_atc_request(reply.text, frequency).await
                 {
-                    if let Some(ref audio_path) = CLI.audio_path {
-                        let mut audio_path = audio_path.join(format!("{now:?}"));
-                        audio_path.set_extension("json");
+                  if let Some(ref audio_path) = CLI.audio_path {
+                    let mut audio_path = audio_path.join(format!("{now:?}"));
+                    audio_path.set_extension("json");
 
-                        match std::fs::OpenOptions::new()
-                            .create_new(true)
-                            .write(true)
-                            .open(audio_path) {
-                                Ok(file) => match serde_json::to_writer(file, &result) {
-                                    Ok(()) => tracing::debug!("Wrote associated audio command file"),
-                                    Err(e) => tracing::warn!("Unable to write associated audio command file: {e}"),
-                                },
-                                Err(e) => tracing::warn!("Unable to create associated audio command file: {e}"),
-                            }
+                    match std::fs::OpenOptions::new()
+                      .create_new(true)
+                      .write(true)
+                      .open(audio_path)
+                    {
+                      Ok(file) => match serde_json::to_writer(file, &result) {
+                        Ok(()) => {
+                          tracing::debug!("Wrote associated audio command file")
+                        }
+                        Err(e) => tracing::warn!(
+                          "Unable to write associated audio command file: {e}"
+                        ),
+                      },
+                      Err(e) => tracing::warn!(
+                        "Unable to create associated audio command file: {e}"
+                      ),
                     }
+                  }
 
                   command_tx
                     .send(IncomingUpdate::Command(result))

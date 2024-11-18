@@ -15,18 +15,13 @@ use engine::{
     airspace::{Airspace, Frequencies},
     world::{Connection, ConnectionState},
   },
-  NAUTICALMILES_TO_FEET,
 };
 use server::{
   airport::new_v_pattern,
   runner::{IncomingUpdate, OutgoingReply, Runner},
-  Cli, CLI,
+  Cli, AUTO_TOWER_AIRSPACE_RADIUS, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
+  TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
-
-const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
-const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
 
 #[tokio::main]
 async fn main() {
@@ -182,6 +177,9 @@ async fn main() {
   runner.world.airspace = player_airspace;
 
   //
+
+  tracing::info!("Preparing spawn area...");
+  runner.prepare();
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
