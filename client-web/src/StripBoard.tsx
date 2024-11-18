@@ -242,12 +242,11 @@ function Strip({ strip }: StripProps) {
   let distanceText = '';
 
   if (strip.state.type === 'flying' || strip.state.type === 'landing') {
-    distanceText = `${(distance / nauticalMilesToFeet)
-      .toFixed(1)
-      .slice(0, 4)} NM`;
+    distanceText = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
     if (distanceText.endsWith('.')) {
       distanceText.replace('.', '');
     }
+    distanceText = `${distanceText} NM`;
   }
 
   if (
