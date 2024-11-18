@@ -23,7 +23,7 @@ use crate::{
     },
     world::{Game, World},
   },
-  NAUTICALMILES_TO_FEET,
+  ENROUTE_TIME_MULTIPLIER, NAUTICALMILES_TO_FEET,
 };
 
 #[derive(Debug)]
@@ -277,19 +277,21 @@ impl Engine {
 
     reports.sort_by(|a, b| b.distance.partial_cmp(&a.distance).unwrap());
 
-    // Remove the closest one
-    if let Some(first) = reports.pop() {
-      let min_distance = NAUTICALMILES_TO_FEET * 10.0;
+    if let Some(closest) = reports.pop() {
+      let default_speed = 300.0;
+      let minutes_apart = 1.0;
+      let min_distance = NAUTICALMILES_TO_FEET
+        * (((default_speed * ENROUTE_TIME_MULTIPLIER) / 60.0) * minutes_apart);
 
-      let mut first = first;
-      for (i, report) in reports.iter_mut().enumerate().rev() {
-        let diff = report.distance - first.distance;
-        let percent = diff / (min_distance * (i + 1) as f32);
-        let speed = percent * 300.0;
+      let mut last = closest;
+      for report in reports.iter_mut().rev() {
+        let diff = report.distance - last.distance;
+        let percent = diff / min_distance;
+        let speed = percent * default_speed;
 
         report.speed = speed;
 
-        first = *report;
+        last = *report;
       }
 
       for report in reports.iter() {
