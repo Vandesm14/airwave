@@ -828,6 +828,24 @@ export default function Canvas({
         ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Draw the hold short waypoints above the normal waypoints
+      for (let wp of aircraft.state.value.waypoints
+        .slice()
+        .reverse()
+        .filter((wp) => wp.behavior === 'holdshort')) {
+        if (wp.behavior === 'goto') {
+          ctx.fillStyle = colors.line_yellow;
+        } else if (wp.behavior === 'park') {
+          ctx.fillStyle = colors.line_yellow;
+        } else if (wp.behavior === 'holdshort') {
+          ctx.fillStyle = colors.line_red;
+        }
+        let pos = scalePoint(wp.value);
+        ctx.beginPath();
+        ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     resetTransform(ctx);
