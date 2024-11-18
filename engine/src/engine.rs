@@ -8,7 +8,9 @@ use turborand::rng::Rng;
 use crate::{
   entities::{
     aircraft::{
-      actions::{Action, AircraftActionHandler, AircraftAllActionHandler},
+      actions::{
+        Action, ActionKind, AircraftActionHandler, AircraftAllActionHandler,
+      },
       effects::{
         AircraftEffect, AircraftUpdateFlyingEffect,
         AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
@@ -17,7 +19,7 @@ use crate::{
       events::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
       },
-      Aircraft,
+      Aircraft, AircraftState,
     },
     world::{Game, World},
   },
@@ -131,6 +133,20 @@ impl Engine {
     });
   }
 
+  pub fn apply_action(
+    &self,
+    aircraft: &mut Aircraft,
+    action: &Action,
+    name: Option<&str>,
+  ) {
+    if let Some(name) = name {
+      tracing::trace!("{name}: {:?}", action);
+    }
+    if action.id == aircraft.id {
+      AircraftAllActionHandler::run(aircraft, &action.kind);
+    }
+  }
+
   pub fn apply_actions(
     &self,
     bundle: &mut Bundle,
@@ -143,11 +159,24 @@ impl Engine {
       }
     }
     for action in bundle.actions.iter() {
-      if action.id == aircraft.id {
-        AircraftAllActionHandler::run(aircraft, &action.kind);
-      }
+      self.apply_action(aircraft, action, None);
     }
     bundle.actions.clear();
+  }
+
+  pub fn apply_all_actions(
+    &self,
+    bundle: &mut Bundle,
+    game: &mut Game,
+    name: Option<&str>,
+  ) {
+    for action in bundle.actions.drain(..) {
+      if let Some(aircraft) =
+        game.aircraft.iter_mut().find(|a| a.id == action.id)
+      {
+        self.apply_action(aircraft, &action, name);
+      }
+    }
   }
 
   pub fn tick(
@@ -214,6 +243,63 @@ impl Engine {
         _ => {}
       }
     }
+
+    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
+    struct DistanceTime {
+      id: Intern<String>,
+      distance: f32,
+      speed: f32,
+    }
+
+    // Aircraft spacing system
+    let mut reports: Vec<DistanceTime> = game
+      .aircraft
+      .iter()
+      .filter(|a| {
+        if let AircraftState::Flying { enroute, waypoints } = &a.state {
+          // If they are on their way back
+          *enroute && waypoints.len() == 1
+        } else {
+          false
+        }
+      })
+      .map(|a| {
+        let id = a.id;
+        let distance = a.pos.distance(world.airspace.pos);
+        let speed = a.speed;
+        DistanceTime {
+          id,
+          distance,
+          speed,
+        }
+      })
+      .collect();
+
+    reports.sort_by(|a, b| b.distance.partial_cmp(&a.distance).unwrap());
+
+    // Remove the closest one
+    if let Some(first) = reports.pop() {
+      let min_distance = NAUTICALMILES_TO_FEET * 10.0;
+
+      let mut first = first;
+      for (i, report) in reports.iter_mut().enumerate().rev() {
+        let diff = report.distance - first.distance;
+        let percent = diff / (min_distance * (i + 1) as f32);
+        let speed = percent * 300.0;
+
+        report.speed = speed;
+
+        first = *report;
+      }
+
+      for report in reports.iter() {
+        bundle.actions.push(Action::new(
+          report.id,
+          ActionKind::Speed(report.speed.clamp(250.0, 400.0)),
+        ));
+      }
+    }
+    self.apply_all_actions(&mut bundle, game, Some("spacing actions"));
 
     // Capture the left over events and actions for next time
     if !bundle.events.is_empty() {
