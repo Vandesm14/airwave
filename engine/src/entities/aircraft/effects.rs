@@ -144,20 +144,22 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         let delta_ang = delta_angle(aircraft.heading, runway.heading);
         let percent_of = delta_ang.abs() / 180.0;
         let percent_of = (percent_of * PI + PI * 1.5).sin() / 2.0 + 0.5;
-        // let percent_of = delta_ang.abs() / 90.0;
         let turn_distance = turning_radius * percent_of;
+        let turn_distance = turn_distance.powf(2.0);
 
         let closest_point =
           closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
-        let distance_to_point = aircraft.pos.distance(closest_point);
-
-        dbg!(turning_radius, turn_distance, percent_of, delta_ang);
+        let distance_to_point = aircraft.pos.distance_squared(closest_point);
 
         if distance_to_point <= turn_distance {
           bundle.actions.push(Action::new(
             aircraft.id,
             ActionKind::TargetHeading(runway.heading),
           ));
+        }
+
+        if aircraft.heading.round() != runway.heading {
+          return;
         }
       }
 
