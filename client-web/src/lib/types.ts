@@ -36,7 +36,10 @@ export type AircraftStateTaxiing = {
 
 export type AircraftStateParked = {
   type: 'parked';
-  value: NodeVec2;
+  value: {
+    at: NodeVec2;
+    ready_at: Duration;
+  };
 };
 
 export type AircraftState =

@@ -1,8 +1,15 @@
+use std::{
+  ops::Add,
+  time::{Duration, SystemTime},
+};
+
+use turborand::TurboRand;
+
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
   delta_angle, engine::Bundle, inverse_degrees, move_point, normalize_angle,
-  pathfinder::NodeBehavior, Line, KNOT_TO_FEET_PER_SECOND,
-  NAUTICALMILES_TO_FEET,
+  pathfinder::NodeBehavior, Line, DEPARTURE_WAIT_RANGE,
+  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
 use super::{
@@ -280,7 +287,15 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         if let NodeBehavior::Park = current.behavior {
           bundle.actions.push(Action {
             id: aircraft.id,
-            kind: ActionKind::Parked(current.clone()),
+            kind: ActionKind::Parked {
+              at: current.clone(),
+              ready_at: SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .add(Duration::from_secs(
+                  bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+                )),
+            },
           });
           bundle.actions.push(Action {
             id: aircraft.id,

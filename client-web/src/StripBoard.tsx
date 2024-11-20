@@ -207,6 +207,10 @@ function Strip({ strip }: StripProps) {
     let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
 
     sinceCreated = formatTime(time);
+  } else if (strip.state.type === 'parked') {
+    sinceCreated = formatTime(
+      Date.now() - strip.state.value.ready_at.secs * 1000
+    );
   }
 
   let topStatus = '';
@@ -235,7 +239,7 @@ function Strip({ strip }: StripProps) {
     bottomStatus = current.name;
   } else if (strip.state.type === 'parked') {
     topStatus = 'PARK';
-    bottomStatus = strip.state.value.name;
+    bottomStatus = strip.state.value.at.name;
   }
 
   let distance = calculateDistance(strip.pos, world().airspace.pos);
@@ -349,8 +353,13 @@ export default function StripBoard({
         strips[category].push(aircraft);
       }
 
-      // const timeSorter = (a: Aircraft, b: Aircraft) =>
-      //   b.created.secs - a.created.secs;
+      const timeSorter = (a: Aircraft, b: Aircraft) => {
+        if (a.state.type === 'parked' && b.state.type === 'parked') {
+          return b.state.value.ready_at.secs - a.state.value.ready_at.secs;
+        } else {
+          return 0;
+        }
+      };
       const nameSorter = (a: Aircraft, b: Aircraft) =>
         ('' + a.id).localeCompare(b.id);
       const distanteToAirportSorter =
@@ -371,7 +380,7 @@ export default function StripBoard({
       });
       strips.Departure.sort(distanteToAirportSorter(true));
       strips.Outbound.sort(distanteToAirportSorter(true));
-      strips.Parked.sort(nameSorter);
+      strips.Parked.sort(timeSorter);
       strips.Ground.sort(nameSorter);
 
       setStrips(strips);

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use glam::Vec2;
 use internment::Intern;
 
@@ -39,7 +41,10 @@ pub enum ActionKind {
     waypoints: Vec<Node<Vec2>>,
   },
   Flying(Vec<Node<NodeVORData>>),
-  Parked(Node<Vec2>),
+  Parked {
+    at: Node<Vec2>,
+    ready_at: Duration,
+  },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -95,9 +100,9 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::TaxiWaypoints(w) => {
         if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
           *waypoints = w.clone();
-        } else if let AircraftState::Parked(current) = &mut aircraft.state {
+        } else if let AircraftState::Parked { at, .. } = &mut aircraft.state {
           aircraft.state = AircraftState::Taxiing {
-            current: current.clone(),
+            current: at.clone(),
             waypoints: w.clone(),
           };
         }
@@ -139,8 +144,14 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           waypoints: waypoints.clone(),
         }
       }
-      ActionKind::Parked(id) => {
-        aircraft.state = AircraftState::Parked(id.clone());
+      ActionKind::Parked {
+        at,
+        ready_at: ready_in,
+      } => {
+        aircraft.state = AircraftState::Parked {
+          at: at.clone(),
+          ready_at: *ready_in,
+        };
         aircraft.speed = 0.0;
         aircraft.target.speed = 0.0;
       }

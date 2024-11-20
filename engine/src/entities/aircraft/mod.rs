@@ -2,6 +2,11 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
+use std::{
+  ops::Add,
+  time::{Duration, SystemTime},
+};
+
 use actions::Action;
 use glam::Vec2;
 use internment::Intern;
@@ -10,7 +15,7 @@ use turborand::{rng::Rng, TurboRand};
 
 use crate::{
   pathfinder::{Node, NodeVORData},
-  ENROUTE_TIME_MULTIPLIER,
+  DEPARTURE_WAIT_RANGE, ENROUTE_TIME_MULTIPLIER,
 };
 
 use super::{
@@ -38,7 +43,10 @@ pub enum AircraftState {
     current: Node<Vec2>,
     waypoints: Vec<Node<Vec2>>,
   },
-  Parked(Node<Vec2>),
+  Parked {
+    at: Node<Vec2>,
+    ready_at: Duration,
+  },
 }
 
 impl Default for AircraftState {
@@ -239,7 +247,15 @@ impl Aircraft {
       heading: gate.heading,
       altitude: 0.0,
 
-      state: AircraftState::Parked(gate.clone().into()),
+      state: AircraftState::Parked {
+        at: gate.into(),
+        ready_at: SystemTime::now()
+          .duration_since(SystemTime::UNIX_EPOCH)
+          .unwrap()
+          .add(Duration::from_secs(
+            rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+          )),
+      },
       target: AircraftTargets::default(),
       flight_plan: FlightPlan::new(
         Intern::from(String::new()),

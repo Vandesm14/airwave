@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, ops::RangeInclusive};
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
@@ -25,6 +25,7 @@ pub const CLOCKWISE: f32 = 90.0;
 pub const COUNTERCLOCKWISE: f32 = 270.0;
 
 pub const ENROUTE_TIME_MULTIPLIER: f32 = 10.0;
+pub const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 180..=1200;
 
 pub fn normalize_angle(angle: f32) -> f32 {
   (360.0 + angle) % 360.0
