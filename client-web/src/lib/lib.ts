@@ -1,4 +1,4 @@
-import { Aircraft, Runway, Vec2, World } from './types';
+import { Runway, Vec2 } from './types';
 
 export const timeScale = 1;
 
