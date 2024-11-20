@@ -155,6 +155,11 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
             aircraft.id,
             ActionKind::TargetHeading(runway.heading),
           ));
+        } else if aircraft.speed > aircraft.target.speed {
+          bundle.actions.push(Action::new(
+            aircraft.id,
+            ActionKind::TargetHeading(aircraft.heading),
+          ));
         }
 
         if aircraft.heading.round() != runway.heading {
