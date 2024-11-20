@@ -223,6 +223,9 @@ export default function App() {
           <button class="discard-button" onClick={discardRecording}>
             Discard
           </button>
+          <button class="pause-button" onClick={sendPause}>
+            Pause
+          </button>
         </div>
       </div>
     </>

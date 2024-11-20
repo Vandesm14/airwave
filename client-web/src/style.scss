@@ -146,9 +146,7 @@ $transparent-black: #000a;
     background-color: $transparent-black;
     border: 1px solid white;
 
-    .talk-button,
-    .discard-button,
-    .tts-toggle {
+    & > button {
       border: 1px solid white;
       color: white;
       background-color: transparent;
@@ -163,7 +161,7 @@ $transparent-black: #000a;
 
     .talk-button {
       &.recording {
-        font-weight: bold;
+        // font-weight: bold;
         color: rgb(255, 78, 78);
       }
     }
