@@ -103,10 +103,10 @@ async fn main() {
     FlightPlan::new(Intern::from_ref("KCLT"), Intern::from_ref("KSFO")),
     &mut runner.rng,
   );
-  aircraft.heading = 280.0;
+  aircraft.heading = 300.0;
   aircraft.altitude = 4000.0;
   aircraft.pos =
-    Vec2::new(NAUTICALMILES_TO_FEET * 11.0, NAUTICALMILES_TO_FEET * 6.0);
+    Vec2::new(NAUTICALMILES_TO_FEET * 10.0, NAUTICALMILES_TO_FEET * 5.0);
   aircraft.sync_targets_to_vals();
   aircraft.state = AircraftState::Landing(
     airport_ksfo
