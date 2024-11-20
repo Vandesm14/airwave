@@ -1,56 +1,57 @@
 - [ ] **Installation**
-	- [ ] **Client**
-		- [ ] Connecting to a server
-	- [ ] **Client & Server**
+  - [ ] **Client**
+    - [ ] Connecting to a server
+  - [ ] **Client & Server**
 - [ ] **Audience**
-	- [ ] **Doesn't know ATC**
-		- [ ] -> Show them a guide on ATC
-		- [ ] -> Show them a guide on the commands & operations
-	- [ ] **Knows ATC**
-		- [ ] -> Show them how the commands & operations differ from real-world ones
-		- [ ] -> At the bottom of each document, show a `Key Differences` section to highlight the differences between IRL and the game
+  - [ ] **Doesn't know ATC**
+    - [ ] -> Show them a guide on ATC
+    - [ ] -> Show them a guide on the commands & operations
+  - [ ] **Knows ATC**
+    - [ ] -> Show them how the commands & operations differ from real-world ones
+    - [ ] -> At the bottom of each document, show a `Key Differences` section to highlight the differences between IRL and the game
 - [ ] **Gameplay**
-	- [ ] **Getting Started**
-		- [ ] **Interface**
-			- [ ] Radar
-				- [ ] Moving & Zooming
-				- [ ] Zoom to ground
-			- [ ] Airspaces
-				- [ ] Tower/Appr
-					- [ ] Runways
-					- [ ] Waypoints
-				- [ ] Ground
-					- [ ] Terminals and gates
-					- [ ] Taxiways
-			- [ ] Navigation
-				- [ ] Selecting an airport
-				- [ ] Switching frequencies
-		- [ ] **Ground Operations**
-			- [ ] Managing departures
-				- [ ] Identifying departure aircraft
-				- [ ] Issuing taxi commands
-					- [ ] Verify taxi path and readbacks
-				- [ ] Clearing for takeoff
-			- [ ] Managing arrivals (on the ground)
-				- [ ] Guiding aircraft from runway to gates
-		- [ ] **Air Traffic Control**
-			- [ ] Handling Departures
-				- [ ] Monitoring & clearing takeoffs
-				- [ ] Initial climb and departure
-			- [ ] Managing Arrivals
-				- [ ] Approaching aircraft management
-					- [ ] Arrival vs Approach
-				- [ ] Landing
+
+  - [ ] **Getting Started**
+    - [ ] **Interface**
+      - [ ] Radar
+        - [ ] Moving & Zooming
+        - [ ] Zoom to ground
+      - [ ] Airspaces
+        - [ ] Tower/Appr
+          - [ ] Runways
+          - [ ] Waypoints
+        - [ ] Ground
+          - [ ] Terminals and gates
+          - [ ] Taxiways
+      - [ ] Navigation
+        - [ ] Selecting an airport
+        - [ ] Switching frequencies
+    - [ ] **Ground Operations**
+      - [ ] Managing departures
+        - [ ] Identifying departure aircraft
+        - [ ] Issuing taxi commands
+          - [ ] Verify taxi path and readbacks
+        - [ ] Clearing for takeoff
+      - [ ] Managing arrivals (on the ground)
+        - [ ] Guiding aircraft from runway to gates
+    - [ ] **Air Traffic Control**
+      - [ ] Handling Departures
+        - [ ] Monitoring & clearing takeoffs
+        - [ ] Initial climb and departure
+      - [ ] Managing Arrivals
+        - [ ] Approaching aircraft management
+          - [ ] Arrival vs Approach
+        - [ ] Landing
 
 - radar can move and zoom
 - airspaces & objects
-	- runway
-	- waypoints
+  - runway
+  - waypoints
 - zoom to ground
 - objects
-	- terminal & gates
-	- taxiways
-	- runways
+  - terminal & gates
+  - taxiways
+  - runways
 - select airport in dropdown
 - switch to ground frequency
 - aircraft in ground section on stripboard
@@ -58,45 +59,47 @@
 - we have an aircraft that is a departure
 - click him to see him on the radar
 - radar info
-	- callsign
-	- speed
+  - callsign
+  - speed
 - identify the direction of departure
 - pick a runway for the easiest route to depart
-	- or less congested
+  - or less congested
 - taxi command, including the taxiway to hold short at
 - verify path and readback
-	- touch on chatbox
+  - touch on chatbox
 - verify that last waypoint is red (will hold short)
 - stripboard info on taxiway
 - extended taxi information
-	- touch on hold position & hold short
-		- and continue taxi
-	- also touch on giving taxi instructions again to change path
-	- and touch on path only showing for selected aircraft
-	- include taxiing multiple aircraft, telling them to go via different taxiways to keep lock-outs clear and other strategies
-	- plus crossing vs holding short of runways
+  - touch on hold position & hold short
+    - and continue taxi
+  - also touch on giving taxi instructions again to change path
+  - and touch on path only showing for selected aircraft
+  - include taxiing multiple aircraft, telling them to go via different taxiways to keep lock-outs clear and other strategies
+  - plus crossing vs holding short of runways
 - stripboard info for takeoff (and holding short)
 - once the aircraft is holding short, check if the runway is clear for him to line up
 - if it is clear, continue taxi
 - aircraft is lined up on the runway
 - clear him to take off, providing the right runway number
-	- ensure no aircraft are or will block the runway during the takeoff
+  - ensure no aircraft are or will block the runway during the takeoff
 - touch on 1000 feet limit for tower vs ground radar
 - once the aircraft reaches the end of the runway, zoom out and wait for it to pop up on the radar
 - once the aircraft is at 2000 or 3000 feet
-	- direct through a departure
-	- or to an arrival of the other airport
-	- or as filed
+  - direct through a departure
+  - or to an arrival of the other airport
+  - or as filed
 - touch on altitude, speed, and heading management when departing
-- ---
+
+---
+
 - arrivals
 - when on center, they are under your jurisdiction
 - they always fly towards your airspace
 - radar info
-	- callsign
-	- altitude | target
-	- heading | target
-	- speed
+  - callsign
+  - altitude | target
+  - heading | target
+  - speed
 - direct them through and approach or vector them manually
 - pick the runway with the shortest path to them
 - stripboard info on DCT
@@ -106,10 +109,10 @@
 - stripboard info on landing
 - radar info on landing (ILS)
 - touch on manual and auto go-arounds
-	- and on vectoring them to a new runway
+  - and on vectoring them to a new runway
 - zoom into ground after the aircraft is almost under 1000 feet
 - wait for the aircraft to land (should see them on the ground radar)
 - once they have landed, find an available gate
 - taxi them to that gate
-	- touch again on managing aircraft on the ground, including incremental taxi and such
+  - touch again on managing aircraft on the ground, including incremental taxi and such
 - explain turn-around-time

@@ -1,7 +1,5 @@
 {
-  "prompt": [
-    "Heading commands are returned as a heading in degrees."
-  ],
+  "prompt": ["Heading commands are returned as a heading in degrees."],
   "examples": [
     {
       "user": "Turn left heading 200.",

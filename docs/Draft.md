@@ -66,7 +66,7 @@ Once the aircraft replies back to you, it is important to not only ensure that t
 
 When an aircraft on the ground is selected, their taxi path will be highlighted in yellow, allowing you to verify the waypoints. Red waypoints mean that the aircraft will stop before them, waiting for you to issue a `continue taxi` command.
 
-As the aircraft is taxiing, you can see their current position, such as `TXWY A4`,  in the third info block of the stripboard.
+As the aircraft is taxiing, you can see their current position, such as `TXWY A4`, in the third info block of the stripboard.
 
 **Taxi Modification**
 

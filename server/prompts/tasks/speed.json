@@ -1,7 +1,5 @@
 {
-  "prompt": [
-    "Speed commands are returned as a speed in knots."
-  ],
+  "prompt": ["Speed commands are returned as a speed in knots."],
   "examples": [
     {
       "user": "Maintain 200 knots.",

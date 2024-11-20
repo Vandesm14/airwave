@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "format": "pnpm prettier --write .",
+    "format:check": "pnpm prettier --check .",
     "client-web:dev": "pnpm --dir client-web dev",
     "client-web:build": "pnpm --dir client-web build",
     "client-web:preview": "pnpm --dir client-web preview",
@@ -11,6 +13,7 @@
     "run-all:debug": "zellij --layout zellij-debug.kdl"
   },
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "prettier": "^3.0.0"
   }
 }

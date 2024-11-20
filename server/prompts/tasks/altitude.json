@@ -1,7 +1,5 @@
 {
-  "prompt": [
-    "Altitude commands are returned as an altitude in feet."
-  ],
+  "prompt": ["Altitude commands are returned as an altitude in feet."],
   "examples": [
     {
       "user": "Climb and maintain 2000 feet.",
