@@ -4,7 +4,6 @@ use std::{
   time::{Duration, SystemTime},
 };
 
-use glam::FloatExt;
 use turborand::TurboRand;
 
 use crate::{
