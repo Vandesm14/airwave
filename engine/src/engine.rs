@@ -297,7 +297,7 @@ impl Engine {
       for report in reports.iter() {
         bundle.actions.push(Action::new(
           report.id,
-          ActionKind::Speed(report.speed.clamp(250.0, 400.0)),
+          ActionKind::TargetSpeed(report.speed.clamp(250.0, 400.0)),
         ));
       }
     }
