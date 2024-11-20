@@ -10,11 +10,12 @@ use turborand::{rng::Rng, SeededCore, TurboRand};
 use engine::{
   circle_circle_intersection,
   entities::{
-    aircraft::Aircraft,
+    aircraft::{Aircraft, AircraftState, FlightPlan},
     airport::Airport,
     airspace::{Airspace, Frequencies},
     world::{Connection, ConnectionState},
   },
+  NAUTICALMILES_TO_FEET,
 };
 use server::{
   airport::new_v_pattern,
@@ -96,6 +97,26 @@ async fn main() {
   };
 
   new_v_pattern::setup(&mut airport_ksfo);
+
+  let mut aircraft = Aircraft::random_flying(
+    118.6,
+    FlightPlan::new(Intern::from_ref("KCLT"), Intern::from_ref("KSFO")),
+    &mut runner.rng,
+  );
+  aircraft.heading = 280.0;
+  aircraft.altitude = 4000.0;
+  aircraft.pos =
+    Vec2::new(NAUTICALMILES_TO_FEET * 11.0, NAUTICALMILES_TO_FEET * 6.0);
+  aircraft.sync_targets_to_vals();
+  aircraft.state = AircraftState::Landing(
+    airport_ksfo
+      .runways
+      .iter()
+      .find(|r| r.id == Intern::from_ref("22"))
+      .unwrap()
+      .clone(),
+  );
+  runner.game.aircraft.push(aircraft);
 
   airport_ksfo.calculate_waypoints();
   player_airspace.airports.push(airport_ksfo);
@@ -179,7 +200,7 @@ async fn main() {
   //
 
   tracing::info!("Preparing spawn area...");
-  runner.prepare();
+  // runner.prepare();
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());

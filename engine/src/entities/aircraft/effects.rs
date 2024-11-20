@@ -1,8 +1,10 @@
 use std::{
+  f32::consts::PI,
   ops::Add,
   time::{Duration, SystemTime},
 };
 
+use glam::FloatExt;
 use turborand::TurboRand;
 
 use crate::{
@@ -130,6 +132,16 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
       let distance_to_runway = aircraft.pos.distance(runway.start());
       let distance_to_end = aircraft.pos.distance_squared(runway.end());
 
+      let degrees_per_sec = aircraft.dt_turn_speed(dt);
+      let turning_radius = 360.0 / degrees_per_sec;
+      let turning_radius =
+        turning_radius * aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
+      let turning_radius = turning_radius / (2.0 * PI);
+
+      let delta_ang = delta_angle(aircraft.heading, runway.heading);
+      let percent_of = (delta_ang.abs() / 90.0);
+      let turn_distance = 0.0.lerp(turning_radius, percent_of);
+
       let climb_speed = aircraft.dt_climb_speed(dt);
       let seconds_for_descent = aircraft.altitude / (climb_speed / dt);
 
@@ -141,6 +153,22 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
       let angle_to_runway =
         inverse_degrees(angle_between_points(runway.start(), aircraft.pos));
       let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
+
+      let closest_point =
+        closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
+      let distance_to_point = aircraft.pos.distance(closest_point);
+      // let target_heading =
+      //   0.0.lerp(delta_ang, (distance_to_point / turn_distance).max(1.0));
+      // dbg!(target_heading);
+      // dbg!(distance_to_point, turn_distance);
+
+      // let target_heading = runway.heading + target_heading;
+      if distance_to_point <= turn_distance {
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::TargetHeading(runway.heading),
+        ));
+      }
 
       // If we have passed the start of the runway (landed),
       // set our state to taxiing.
@@ -173,21 +201,6 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         );
         return;
       }
-
-      let landing_point = if distance_to_runway <= start_descent_distance {
-        let closest_point =
-          closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
-
-        move_point(closest_point, runway.heading, NAUTICALMILES_TO_FEET * 0.5)
-      } else {
-        ils_line.1
-      };
-
-      let heading_to_point = angle_between_points(aircraft.pos, landing_point);
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::TargetHeading(heading_to_point),
-      ));
 
       if distance_to_runway > start_descent_distance {
         return;
