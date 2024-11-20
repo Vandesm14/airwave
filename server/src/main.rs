@@ -179,7 +179,7 @@ async fn main() {
   //
 
   tracing::info!("Preparing spawn area...");
-  // runner.prepare();
+  runner.prepare();
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
