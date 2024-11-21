@@ -8,9 +8,12 @@ use turborand::TurboRand;
 
 use crate::{
   angle_between_points, calculate_ils_altitude, closest_point_on_line,
-  delta_angle, engine::Bundle, inverse_degrees, move_point, normalize_angle,
-  pathfinder::NodeBehavior, Line, DEPARTURE_WAIT_RANGE,
-  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  command::{CommandReply, CommandWithFreq},
+  delta_angle,
+  engine::Bundle,
+  inverse_degrees, move_point, normalize_angle,
+  pathfinder::NodeBehavior,
+  Line, DEPARTURE_WAIT_RANGE, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
 use super::{
@@ -211,6 +214,20 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
           AircraftEvent {
             id: aircraft.id,
             kind: EventKind::GoAround,
+          }
+          .into(),
+        );
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Callout(CommandWithFreq::new(
+              aircraft.id.to_string(),
+              aircraft.frequency,
+              CommandReply::GoAround {
+                runway: runway.id.to_string(),
+              },
+              vec![],
+            )),
           }
           .into(),
         );
