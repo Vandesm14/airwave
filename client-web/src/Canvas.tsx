@@ -259,10 +259,13 @@ export default function Canvas({
           for (let aircraft of render.aircrafts) {
             const trail = map.get(aircraft.id);
 
-            if (typeof(trail) !== "undefined") {
+            if (typeof trail !== 'undefined') {
               let last = trail.at(-1);
 
-              if (typeof(last) !== "undefined" && now - last.now > 1000 * 4 * 2) {
+              if (
+                typeof last !== 'undefined' &&
+                now - last.now > 1000 * 4 * 2
+              ) {
                 trail.push({ now, pos: aircraft.pos });
               }
 
@@ -574,32 +577,10 @@ export default function Canvas({
       const circumfrence = aircraft.speed * knotToFeetPerSecond * timeToCircle;
       const radius = circumfrence / (2 * Math.PI);
 
-      const rightPoint = scalePoint(
-        movePoint(aircraft.pos, radius, aircraft.heading + 90)
-      );
-      const leftPoint = scalePoint(
-        movePoint(aircraft.pos, radius, aircraft.heading - 90)
-      );
-
+      let point = scalePoint(movePoint(aircraft.pos, radius, aircraft.heading));
       ctx.beginPath();
-      ctx.arc(
-        rightPoint[0],
-        rightPoint[1],
-        scaleFeetToPixels(radius),
-        0,
-        Math.PI * 2
-      );
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(
-        leftPoint[0],
-        leftPoint[1],
-        scaleFeetToPixels(radius),
-        0,
-        Math.PI * 2
-      );
-      ctx.stroke();
+      ctx.arc(point[0], point[1], 3, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Draw the direction
@@ -710,7 +691,7 @@ export default function Canvas({
     for (let i = 0; i < terminal.gates.length; i++) {
       let gate = terminal.gates[i];
 
-      if (typeof (gate) !== "undefined") {
+      if (typeof gate !== 'undefined') {
         drawGate(ctx, gate);
       }
     }
