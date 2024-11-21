@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import { PrimitiveAtom, SetStateAction } from 'jotai';
-import { Accessor, createEffect, createUniqueId } from 'solid-js';
+import { Accessor, createEffect, createUniqueId, Resource } from 'solid-js';
 import { isSome } from './lib';
 
 type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
@@ -21,7 +21,7 @@ function setToLocalStorage<T>(id: string, val: T) {
 
 export function useStorageAtom<T>(
   atom: PrimitiveAtom<T>
-): [Accessor<T>, SetAtom<[SetStateAction<T>], void>] {
+): [Resource<Awaited<T>> | Accessor<Awaited<T>>, SetAtom<[SetStateAction<T>], void>] {
   const name = `storage-${createUniqueId()}`;
   let [theAtom, setTheAtom] = useAtom(atom);
 

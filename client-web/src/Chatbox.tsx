@@ -12,8 +12,8 @@ export default function Chatbox({
 }: {
   sendMessage: (text: string) => void;
 }) {
-  let chatbox;
-  let chatboxInput;
+  let chatbox!: HTMLDivElement;
+  let chatboxInput!: HTMLInputElement;
   let [messages, setMessages] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
@@ -57,8 +57,9 @@ export default function Chatbox({
 
   createEffect(() => {
     if (chatbox instanceof HTMLDivElement) {
-      let _ = [frequency(), showAll()];
       // Subscribe to frequency and showAll signals
+      frequency();
+      showAll();
 
       // Subscribe to messages signal
       if (messages().length > 0) {
@@ -77,7 +78,7 @@ export default function Chatbox({
     }
   }
 
-  function handleSendMessage(text) {
+  function handleSendMessage(text: string) {
     if (text.length === 7 && /\w{3}\d{4}/.test(text)) {
       setSelectedAircraft(text);
     } else {

@@ -63,9 +63,11 @@ function assignAircraftToStrips(
 
   const isTaxiingToRunway = (() => {
     if (isAircraftTaxiing(aircraft.state)) {
+      const firstWaypoint = aircraft.state.value.waypoints[0];
+
       return (
-        (aircraft.state.value.waypoints.length === 1 &&
-          aircraft.state.value.waypoints[0].kind === 'runway') ||
+        (typeof(firstWaypoint) !== "undefined" &&
+          firstWaypoint.kind === 'runway') ||
         aircraft.state.value.current.kind === 'runway'
       );
     } else {
@@ -174,7 +176,10 @@ function Strip({ strip }: StripProps) {
       let current = strip.pos;
       let distance = 0;
       let waypoint = strip.state.value.waypoints.at(-1);
-      distance += calculateDistance(current, waypoint.value.to);
+
+      if (typeof(waypoint) !== "undefined") {
+        distance += calculateDistance(current, waypoint.value.to);
+      }
 
       let distanceInNm = distance / nauticalMilesToFeet;
       let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;

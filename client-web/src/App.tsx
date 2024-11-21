@@ -29,7 +29,7 @@ export default function App() {
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [points, setPoints] = useAtom(pointsAtom);
 
-  async function getMedia(constraints) {
+  async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
   }
 
@@ -124,9 +124,11 @@ export default function App() {
   }
 
   const search = new URLSearchParams(window.location.search);
+  const wsPath = search.get('ws');
   let path = `${window.location.hostname}:9001`;
-  if (search.get('ws') != null) {
-    path = search.get('ws');
+
+  if (wsPath != null) {
+    path = wsPath;
   }
 
   let socket = new WebSocket(`ws://${path}`);

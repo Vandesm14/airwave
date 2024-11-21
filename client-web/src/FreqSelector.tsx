@@ -12,7 +12,7 @@ export default function FreqSelector() {
 
   function updateKeyByFreqChange() {
     let newKey = Object.entries(foundAirspace().frequencies).find(
-      ([k, v]) => v === frequency()
+      ([, v]) => v === frequency()
     ) as [keyof Frequencies, number];
 
     if (newKey) {
@@ -24,7 +24,7 @@ export default function FreqSelector() {
 
   let foundAirspace = createMemo(() => world().airspace);
 
-  function changeViaKey(key: string) {
+  function changeViaKey(key: keyof Frequencies) {
     setKey(key as keyof Frequencies);
 
     if (foundAirspace()?.frequencies && key in foundAirspace()?.frequencies) {
@@ -35,9 +35,10 @@ export default function FreqSelector() {
   function changeViaValue(value: number) {
     setFrequency(value);
     if (foundAirspace()?.frequencies) {
+      // TODO: Remove uses of as keyof Frequencies.
       setKey(
         Object.keys(foundAirspace()?.frequencies).find(
-          (k) => foundAirspace()?.frequencies[k] === value
+          (k) => foundAirspace()?.frequencies[k as keyof Frequencies] === value
         ) as keyof Frequencies
       );
     }
@@ -70,10 +71,11 @@ export default function FreqSelector() {
       <div class="row">
         <select
           name="frequency"
-          onchange={(e) => changeViaKey(e.target.value)}
+          onchange={(e) => changeViaKey(e.target.value as keyof Frequencies)}
           value={key()}
         >
           {foundAirspace().frequencies
+            // TODO: Remove uses of as keyof Frequencies.
             ? Object.entries(foundAirspace().frequencies).map(([k, v]) => (
                 <option value={k}>
                   {k} - {v}

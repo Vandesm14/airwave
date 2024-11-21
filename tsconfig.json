@@ -1,14 +1,27 @@
 {
   "compilerOptions": {
+    "strict": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vite/client"],
-    "noEmit": true,
-    "isolatedModules": true
+    "noEmit": true
   }
 }

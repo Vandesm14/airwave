@@ -7,7 +7,7 @@ export const knotToFeetPerSecond = 1.68781 * timeScale;
 
 export const ENROUTE_TIME_MULTIPLIER = 10;
 
-export function isSome<T>(value: T): boolean {
+export function isSome<T>(value: T): value is NonNullable<T> {
   return value !== undefined && value !== null;
 }
 

@@ -42,7 +42,7 @@ export default function Canvas({
 }: {
   aircrafts: Accessor<Array<Aircraft>>;
 }) {
-  let canvas;
+  let canvas!: HTMLCanvasElement;
 
   type Ctx = CanvasRenderingContext2D;
 
@@ -146,11 +146,11 @@ export default function Canvas({
         }
       });
 
-      document.addEventListener('keyup', (e) => {
-        // if (e.key === 'Control') {
-        //   setMod((mod) => !mod);
-        // }
-      });
+      // document.addEventListener('keyup', (e) => {
+      //   if (e.key === 'Control') {
+      //     setMod((mod) => !mod);
+      //   }
+      // });
 
       canvas.addEventListener('mousedown', (e) => {
         setRadar((radar) => {
@@ -257,14 +257,17 @@ export default function Canvas({
 
         setAircraftTrails((map) => {
           for (let aircraft of render.aircrafts) {
-            if (map.has(aircraft.id)) {
-              let last = map.get(aircraft.id).at(-1);
-              if (now - last.now > 1000 * 4 * 2) {
-                map.get(aircraft.id).push({ now, pos: aircraft.pos });
+            const trail = map.get(aircraft.id);
+
+            if (typeof(trail) !== "undefined") {
+              let last = trail.at(-1);
+
+              if (typeof(last) !== "undefined" && now - last.now > 1000 * 4 * 2) {
+                trail.push({ now, pos: aircraft.pos });
               }
 
-              if (map.get(aircraft.id).length > 10) {
-                map.set(aircraft.id, map.get(aircraft.id).slice(1));
+              if (trail.length > 10) {
+                map.set(aircraft.id, trail.slice(1));
               }
             } else {
               map.set(aircraft.id, [{ now, pos: aircraft.pos }]);
@@ -706,7 +709,10 @@ export default function Canvas({
 
     for (let i = 0; i < terminal.gates.length; i++) {
       let gate = terminal.gates[i];
-      drawGate(ctx, gate);
+
+      if (typeof (gate) !== "undefined") {
+        drawGate(ctx, gate);
+      }
     }
   }
 
