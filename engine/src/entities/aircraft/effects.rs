@@ -164,8 +164,8 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 
         if aircraft.heading.round() != runway.heading {
           return;
-        } else if distance_to_point <= (NAUTICALMILES_TO_FEET * 0.5).powf(2.0)
-          && distance_to_point >= 500.0_f32.powf(2.0)
+        } else if distance_to_point.floor() > 50.0
+          && distance_to_point <= (NAUTICALMILES_TO_FEET * 0.5).powf(2.0)
         {
           // TODO: remove this when we've verified that it works
           dbg!("correcting");
