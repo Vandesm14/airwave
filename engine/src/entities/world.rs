@@ -118,4 +118,8 @@ impl LandingRateData {
 
     self.rate
   }
+
+  pub fn count(&self) -> usize {
+    self.landings.len()
+  }
 }

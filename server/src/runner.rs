@@ -173,7 +173,9 @@ impl Runner {
       return;
     }
 
-    if Instant::now() - self.last_spawn >= SPAWN_RATE
+    if Instant::now() - self.last_spawn
+      >= self.game.points.landing_rate.calc_rate()
+      && self.game.points.landing_rate.count() > 0
       && self.game.aircraft.len() < SPAWN_LIMIT
     {
       self.last_spawn = Instant::now();
