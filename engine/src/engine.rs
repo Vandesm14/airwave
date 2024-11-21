@@ -245,6 +245,7 @@ impl Engine {
     }
 
     self.space_inbounds(world, game, &mut bundle);
+    self.apply_all_actions(&mut bundle, game, Some("spacing actions"));
 
     // Capture the left over events and actions for next time
     if !bundle.events.is_empty() {
@@ -318,6 +319,5 @@ impl Engine {
         ));
       }
     }
-    self.apply_all_actions(bundle, game, Some("spacing actions"));
   }
 }
