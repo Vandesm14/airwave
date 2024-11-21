@@ -68,7 +68,8 @@ function assignAircraftToStrips(
 
       return (
         (typeof firstWaypoint !== 'undefined' &&
-          firstWaypoint.kind === 'runway') ||
+          firstWaypoint.kind === 'runway' &&
+          aircraft.state.value.waypoints.length == 1) ||
         aircraft.state.value.current.kind === 'runway'
       );
     } else {
