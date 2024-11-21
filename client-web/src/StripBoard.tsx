@@ -16,6 +16,7 @@ import {
   angleBetweenPoints,
   calculateDistance,
   ENROUTE_TIME_MULTIPLIER,
+  formatTime,
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib/lib';
@@ -122,22 +123,6 @@ function assignAircraftToStrips(
       return 'None';
     }
   }
-}
-
-function formatTime(duration: number): string {
-  const isNegative = duration < 0;
-  let absDuration = Math.abs(duration);
-  let durationSeconds = Math.floor(absDuration / 1000);
-  let seconds = (durationSeconds % 60).toString().padStart(2, '0');
-  let minutes = Math.floor(durationSeconds / 60)
-    .toString()
-    .padStart(2, '0');
-  let timeString = `${minutes}:${seconds}`;
-  if (isNegative) {
-    timeString = `-${timeString}`;
-  }
-
-  return timeString;
 }
 
 function Strip({ strip }: StripProps) {

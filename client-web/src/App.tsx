@@ -15,6 +15,7 @@ import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
+import { formatTime } from './lib/lib';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -194,7 +195,8 @@ export default function App() {
       <div class="bottom-left">
         <div class="points">
           <p>
-            <b>Landings:</b> {points().landings}
+            <b>Landings:</b> {points().landings} (rate:{' '}
+            {formatTime(points().landing_rate.rate[0])})
           </p>
           <p>
             <b>Takeoffs:</b> {points().takeoffs}

@@ -120,3 +120,19 @@ export function calculateSquaredDistance(a: Vec2, b: Vec2): number {
 export function calculateDistance(a: Vec2, b: Vec2): number {
   return Math.sqrt(Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2));
 }
+
+export function formatTime(duration: number): string {
+  const isNegative = duration < 0;
+  let absDuration = Math.abs(duration);
+  let durationSeconds = Math.floor(absDuration / 1000);
+  let seconds = (durationSeconds % 60).toString().padStart(2, '0');
+  let minutes = Math.floor(durationSeconds / 60)
+    .toString()
+    .padStart(2, '0');
+  let timeString = `${minutes}:${seconds}`;
+  if (isNegative) {
+    timeString = `-${timeString}`;
+  }
+
+  return timeString;
+}
