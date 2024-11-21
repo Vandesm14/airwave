@@ -196,7 +196,7 @@ export default function App() {
         <div class="points">
           <p>
             <b>Landings:</b> {points().landings} (rate:{' '}
-            {formatTime(points().landing_rate.rate[0])})
+            {formatTime(points().landing_rate.rate.secs)})
           </p>
           <p>
             <b>Takeoffs:</b> {points().takeoffs}
