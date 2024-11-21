@@ -1,3 +1,8 @@
+use std::{
+  collections::VecDeque,
+  time::{Duration, SystemTime},
+};
+
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
@@ -53,6 +58,8 @@ pub struct World {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Points {
   pub landings: usize,
+  pub landing_rate: LandingRateData,
+
   pub takeoffs: usize,
 }
 
@@ -62,4 +69,43 @@ pub struct Game {
   pub funds: usize,
   pub purchases: Vec<PurchasableAircraft>,
   pub points: Points,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct LandingRateData {
+  window: Duration,
+  landings: VecDeque<SystemTime>,
+  rate: Duration,
+}
+
+impl LandingRateData {
+  pub fn new() -> Self {
+    Self {
+      window: Duration::from_secs(10 * 60),
+      landings: VecDeque::new(),
+      rate: Duration::from_secs(0),
+    }
+  }
+
+  pub fn mark(&mut self) {
+    self.landings.push_back(SystemTime::now());
+  }
+
+  pub fn trim(&mut self) {
+    while let Some(front) = self.landings.front() {
+      if front.elapsed().unwrap() > self.window {
+        self.landings.pop_front();
+      } else {
+        break;
+      }
+    }
+  }
+
+  pub fn calc_rate(&mut self) -> Duration {
+    let count = self.landings.len();
+    self.rate =
+      Duration::from_secs_f32(self.window.as_secs_f32() / count as f32);
+
+    self.rate
+  }
 }

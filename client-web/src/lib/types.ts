@@ -53,6 +53,10 @@ type Duration = {
   nanos: number;
 };
 
+export function newDuration(secs: number, nanos: number): Duration {
+  return { secs, nanos };
+}
+
 export type Aircraft = {
   id: string;
   is_colliding: boolean;
@@ -211,6 +215,9 @@ export type RadioMessage = {
 
 export type Points = {
   landings: number;
+  landing_rate: {
+    rate: Duration;
+  };
   takeoffs: number;
 };
 

@@ -1,5 +1,12 @@
 import { atom } from 'solid-jotai';
-import { Aircraft, DefaultWorld, Points, RadioMessage, World } from './types';
+import {
+  Aircraft,
+  DefaultWorld,
+  newDuration,
+  Points,
+  RadioMessage,
+  World,
+} from './types';
 
 type RadarConfig = {
   scale: number;
@@ -66,5 +73,6 @@ export let selectedAircraftAtom = atom<string>('');
 
 export let pointsAtom = atom<Points>({
   landings: 0,
+  landing_rate: newDuration(0, 0),
   takeoffs: 0,
 });

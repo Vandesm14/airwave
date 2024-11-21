@@ -71,6 +71,7 @@ pub enum UIEvent {
 
   // Outbound
   Funds(usize),
+  LandingRateChange,
 
   Pause,
 }
@@ -227,6 +228,7 @@ impl Engine {
       self.apply_actions(&mut bundle, aircraft, Some("position actions"));
     }
 
+    let old_rate = game.points.landing_rate.calc_rate();
     for event in bundle.events.iter() {
       match event {
         Event::Aircraft(AircraftEvent {
@@ -239,10 +241,22 @@ impl Engine {
           kind: EventKind::SuccessfulLanding,
           ..
         }) => {
+          game.points.landing_rate.mark();
           game.points.landings += 1;
         }
         _ => {}
       }
+    }
+
+    game.points.landing_rate.trim();
+    let new_rate = game.points.landing_rate.calc_rate();
+    if new_rate != old_rate {
+      tracing::info!(
+        "landing rate changed from {:?} to {:?}",
+        old_rate,
+        new_rate
+      );
+      self.events.push(Event::UiEvent(UIEvent::LandingRateChange));
     }
 
     self.space_inbounds(world, game, &mut bundle);
