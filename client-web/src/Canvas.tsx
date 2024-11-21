@@ -569,7 +569,6 @@ export default function Canvas({
     // Draw the turning radius
     if (
       isSelected &&
-      mod() &&
       (aircraft.state.type === 'flying' || aircraft.state.type === 'landing')
     ) {
       const dps = 2;
