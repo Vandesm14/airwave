@@ -641,13 +641,12 @@ export default function Canvas({
 
     // Draw heading
     let headingInfo =
-      Math.round(aircraft.heading)
-        .toString()
-        .padStart(3, '0')
-        .replace('360', '000') +
-      (aircraft.state.type === 'landing'
-        ? ` ${shortLandingState(aircraft.state.value.state)}`
-        : '');
+      aircraft.state.type === 'landing'
+        ? shortLandingState(aircraft.state.value.state)
+        : Math.round(aircraft.heading)
+            .toString()
+            .padStart(3, '0')
+            .replace('360', '000');
     ctx.fillText(
       headingInfo,
       pos[0] + spacing,

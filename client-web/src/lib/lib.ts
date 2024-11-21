@@ -140,15 +140,15 @@ export function formatTime(duration: number): string {
 export function shortLandingState(state: LandingState): string {
   switch (state) {
     case 'before-turn':
-      return 'WAIT';
+      return 'ILS';
     case 'turning':
-      return 'TURN';
+      return 'TRN';
     case 'correcting':
-      return 'ALGN';
+      return 'ALN';
     case 'localizer':
       return 'LOC';
     case 'glideslope':
-      return 'GLSP';
+      return 'GLS';
 
     default:
       return 'UKN';
