@@ -73,6 +73,8 @@ export let selectedAircraftAtom = atom<string>('');
 
 export let pointsAtom = atom<Points>({
   landings: 0,
-  landing_rate: newDuration(0, 0),
+  landing_rate: {
+    rate: newDuration(0, 0),
+  },
   takeoffs: 0,
 });

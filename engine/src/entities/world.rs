@@ -71,17 +71,23 @@ pub struct Game {
   pub points: Points,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LandingRateData {
   window: Duration,
   landings: VecDeque<SystemTime>,
   rate: Duration,
 }
 
+impl Default for LandingRateData {
+  fn default() -> Self {
+    Self::new(Duration::from_secs(10 * 60))
+  }
+}
+
 impl LandingRateData {
-  pub fn new() -> Self {
+  pub fn new(window: Duration) -> Self {
     Self {
-      window: Duration::from_secs(10 * 60),
+      window,
       landings: VecDeque::new(),
       rate: Duration::from_secs(0),
     }
@@ -102,9 +108,13 @@ impl LandingRateData {
   }
 
   pub fn calc_rate(&mut self) -> Duration {
+    self.trim();
+
     let count = self.landings.len();
-    self.rate =
-      Duration::from_secs_f32(self.window.as_secs_f32() / count as f32);
+    if count > 0 {
+      self.rate =
+        Duration::from_secs_f32(self.window.as_secs_f32() / count as f32);
+    }
 
     self.rate
   }

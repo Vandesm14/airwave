@@ -248,7 +248,6 @@ impl Engine {
       }
     }
 
-    game.points.landing_rate.trim();
     let new_rate = game.points.landing_rate.calc_rate();
     if new_rate != old_rate {
       tracing::info!(
