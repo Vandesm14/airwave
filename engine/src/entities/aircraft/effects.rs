@@ -164,6 +164,14 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 
         if aircraft.heading.round() != runway.heading {
           return;
+        } else if distance_to_point <= (NAUTICALMILES_TO_FEET * 0.5).powf(2.0)
+          && distance_to_point >= 500.0_f32.powf(2.0)
+        {
+          // TODO: remove this when we've verified that it works
+          dbg!("correcting");
+          bundle
+            .actions
+            .push(Action::new(aircraft.id, ActionKind::Pos(closest_point)));
         }
       }
 
@@ -176,7 +184,7 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
       let target_altitude = calculate_ils_altitude(distance_to_runway);
 
       let angle_to_runway =
-        inverse_degrees(angle_between_points(runway.start(), aircraft.pos));
+        inverse_degrees(angle_between_points(runway.end(), aircraft.pos));
       let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
 
       // If we have passed the start of the runway (landed),
