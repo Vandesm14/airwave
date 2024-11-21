@@ -118,7 +118,7 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
 pub struct AircraftUpdateLandingEffect;
 impl AircraftEffect for AircraftUpdateLandingEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Landing(runway) = &aircraft.state {
+    if let AircraftState::Landing { runway, .. } = &aircraft.state {
       let dt = aircraft.dt_enroute(bundle.dt);
 
       let ils_line = Line::new(
