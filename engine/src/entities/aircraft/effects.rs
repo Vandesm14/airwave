@@ -234,6 +234,10 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 pub struct AircraftUpdateFlyingEffect;
 impl AircraftEffect for AircraftUpdateFlyingEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if aircraft.altitude < 2000.0 {
+      return;
+    }
+
     let dt = aircraft.dt_enroute(bundle.dt);
     let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
     if let AircraftState::Flying { waypoints, .. } = &aircraft.state {

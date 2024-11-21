@@ -550,6 +550,13 @@ pub fn handle_takeoff_event(
           }
           .into(),
         );
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::ResumeOwnNavigation,
+          }
+          .into(),
+        );
       }
     }
   }
