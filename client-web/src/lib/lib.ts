@@ -79,7 +79,7 @@ export function runwayInfo(
   let ilsPoints: Vec2[] = [];
   let separate = 6.0 / 4;
   for (let i = 1; i < 4; i += 1) {
-    let point = i * separate + separate;
+    let point = i * separate + 0;
     ilsPoints.push(
       movePoint(
         start,
