@@ -244,6 +244,23 @@ impl Engine {
       }
     }
 
+    self.space_inbounds(world, game, &mut bundle);
+
+    // Capture the left over events and actions for next time
+    if !bundle.events.is_empty() {
+      tracing::info!("new events: {:?}", bundle.events);
+    }
+    self.events = core::mem::take(&mut bundle.events);
+
+    self.events.clone()
+  }
+
+  pub fn space_inbounds(
+    &mut self,
+    world: &World,
+    game: &mut Game,
+    bundle: &mut Bundle,
+  ) {
     #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
     struct DistanceTime {
       id: Intern<String>,
@@ -301,14 +318,6 @@ impl Engine {
         ));
       }
     }
-    self.apply_all_actions(&mut bundle, game, Some("spacing actions"));
-
-    // Capture the left over events and actions for next time
-    if !bundle.events.is_empty() {
-      tracing::info!("new events: {:?}", bundle.events);
-    }
-    self.events = core::mem::take(&mut bundle.events);
-
-    self.events.clone()
+    self.apply_all_actions(bundle, game, Some("spacing actions"));
   }
 }
