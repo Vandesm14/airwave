@@ -67,7 +67,7 @@ function assignAircraftToStrips(
       const firstWaypoint = aircraft.state.value.waypoints[0];
 
       return (
-        (typeof(firstWaypoint) !== "undefined" &&
+        (typeof firstWaypoint !== 'undefined' &&
           firstWaypoint.kind === 'runway') ||
         aircraft.state.value.current.kind === 'runway'
       );
@@ -162,7 +162,7 @@ function Strip({ strip }: StripProps) {
       let distance = 0;
       let waypoint = strip.state.value.waypoints.at(-1);
 
-      if (typeof(waypoint) !== "undefined") {
+      if (typeof waypoint !== 'undefined') {
         distance += calculateDistance(current, waypoint.value.to);
       }
 
@@ -190,7 +190,7 @@ function Strip({ strip }: StripProps) {
   } else if (strip.state.type === 'landing') {
     let distance = calculateDistance(
       strip.pos,
-      runwayInfo(strip.state.value).start
+      runwayInfo(strip.state.value.runway).start
     );
 
     let distanceInNm = distance / nauticalMilesToFeet;
@@ -213,7 +213,7 @@ function Strip({ strip }: StripProps) {
 
   if (strip.state.type === 'landing') {
     topStatus = 'ILS';
-    bottomStatus = strip.state.value.id;
+    bottomStatus = strip.state.value.runway.id;
   } else if (strip.state.type === 'taxiing') {
     let current = strip.state.value.current;
     if (current.kind === 'gate') {

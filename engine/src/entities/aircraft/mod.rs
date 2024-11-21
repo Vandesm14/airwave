@@ -30,6 +30,16 @@ pub struct AircraftTargets {
   pub altitude: f32,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LandingState {
+  #[default]
+  BeforeTurn,
+  Turning,
+  Localizer,
+  Glideslope,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
@@ -38,7 +48,10 @@ pub enum AircraftState {
     waypoints: Vec<Node<NodeVORData>>,
     enroute: bool,
   },
-  Landing(Runway),
+  Landing {
+    runway: Runway,
+    state: LandingState,
+  },
   Taxiing {
     current: Node<Vec2>,
     waypoints: Vec<Node<Vec2>>,

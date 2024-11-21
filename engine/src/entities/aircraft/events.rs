@@ -131,7 +131,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .actions
               .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
           }
-        } else if let AircraftState::Landing(..) = &aircraft.state {
+        } else if let AircraftState::Landing { .. } = &aircraft.state {
           bundle.actions.push(Action::new(
             aircraft.id,
             ActionKind::TargetHeading(*heading),
@@ -223,7 +223,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Transitions
       EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
       EventKind::GoAround => {
-        if let AircraftState::Landing(..) = aircraft.state {
+        if let AircraftState::Landing { .. } = aircraft.state {
           bundle
             .actions
             .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
@@ -248,7 +248,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::Touchdown => {
-        if let AircraftState::Landing(runway) = &aircraft.state {
+        if let AircraftState::Landing { runway, .. } = &aircraft.state {
           handle_touchdown_event(aircraft, bundle, runway);
         }
       }

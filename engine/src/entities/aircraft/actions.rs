@@ -8,7 +8,7 @@ use crate::{
   pathfinder::{Node, NodeBehavior, NodeVORData},
 };
 
-use super::{Aircraft, AircraftState};
+use super::{Aircraft, AircraftState, LandingState};
 
 #[derive(Debug, Clone, PartialEq)]
 
@@ -33,6 +33,7 @@ pub enum ActionKind {
   TaxiLastAsGoto,
   EnRoute(bool),
   FlipFlightPlan,
+  LandingState(LandingState),
 
   // State
   Landing(Runway),
@@ -127,10 +128,18 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::FlipFlightPlan => {
         aircraft.flip_flight_plan();
       }
+      ActionKind::LandingState(s) => {
+        if let AircraftState::Landing { state, .. } = &mut aircraft.state {
+          *state = s.clone();
+        }
+      }
 
       // State
       ActionKind::Landing(runway) => {
-        aircraft.state = AircraftState::Landing(runway.clone())
+        aircraft.state = AircraftState::Landing {
+          runway: runway.clone(),
+          state: LandingState::default(),
+        }
       }
       ActionKind::Flying(waypoints) => {
         aircraft.state = AircraftState::Flying {

@@ -23,7 +23,10 @@ export type AircraftStateFlying = {
 
 export type AircraftStateLanding = {
   type: 'landing';
-  value: Runway;
+  value: {
+    runway: Runway;
+    state: 'unknown' | 'before-turn' | 'turning' | 'localizer' | 'glideslope';
+  };
 };
 
 export type AircraftStateTaxiing = {
