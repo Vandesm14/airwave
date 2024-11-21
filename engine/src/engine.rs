@@ -103,42 +103,6 @@ pub struct Engine {
 }
 
 impl Engine {
-  pub fn handle_collisions(&mut self, aircrafts: &mut [Aircraft]) {
-    let mut collisions: HashSet<Intern<String>> = HashSet::new();
-    for pair in aircrafts.iter().combinations(2) {
-      let aircraft = pair.first().unwrap();
-      let other_aircraft = pair.last().unwrap();
-
-      let distance = aircraft.pos.distance_squared(other_aircraft.pos);
-      let vertical_distance =
-        (aircraft.altitude - other_aircraft.altitude).abs();
-
-      if matches!(aircraft.state, AircraftState::Flying { enroute: false, .. })
-        && matches!(
-          other_aircraft.state,
-          AircraftState::Flying { enroute: false, .. }
-        )
-        && aircraft.altitude > 1000.0
-        && distance <= (NAUTICALMILES_TO_FEET * 4.0).powf(2.0)
-        && vertical_distance < 1000.0
-      {
-        collisions.insert(aircraft.id);
-        collisions.insert(other_aircraft.id);
-      }
-    }
-
-    aircrafts.iter_mut().for_each(|aircraft| {
-      let is_colliding = collisions.contains(&aircraft.id);
-
-      // TODO: Fire collision events
-      // if is_colliding && aircraft.is_colliding != is_colliding {
-      //   self.events.push();
-      // }
-
-      aircraft.is_colliding = is_colliding;
-    });
-  }
-
   pub fn apply_action(
     &self,
     aircraft: &mut Aircraft,
@@ -272,6 +236,42 @@ impl Engine {
     self.events = core::mem::take(&mut bundle.events);
 
     self.events.clone()
+  }
+
+  pub fn handle_collisions(&mut self, aircrafts: &mut [Aircraft]) {
+    let mut collisions: HashSet<Intern<String>> = HashSet::new();
+    for pair in aircrafts.iter().combinations(2) {
+      let aircraft = pair.first().unwrap();
+      let other_aircraft = pair.last().unwrap();
+
+      let distance = aircraft.pos.distance_squared(other_aircraft.pos);
+      let vertical_distance =
+        (aircraft.altitude - other_aircraft.altitude).abs();
+
+      if matches!(aircraft.state, AircraftState::Flying { enroute: false, .. })
+        && matches!(
+          other_aircraft.state,
+          AircraftState::Flying { enroute: false, .. }
+        )
+        && aircraft.altitude > 1000.0
+        && distance <= (NAUTICALMILES_TO_FEET * 4.0).powf(2.0)
+        && vertical_distance < 1000.0
+      {
+        collisions.insert(aircraft.id);
+        collisions.insert(other_aircraft.id);
+      }
+    }
+
+    aircrafts.iter_mut().for_each(|aircraft| {
+      let is_colliding = collisions.contains(&aircraft.id);
+
+      // TODO: Fire collision events
+      // if is_colliding && aircraft.is_colliding != is_colliding {
+      //   self.events.push();
+      // }
+
+      aircraft.is_colliding = is_colliding;
+    });
   }
 
   pub fn space_inbounds(
