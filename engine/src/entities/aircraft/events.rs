@@ -230,6 +230,21 @@ impl AircraftEventHandler for HandleAircraftEvent {
           bundle
             .actions
             .push(Action::new(aircraft.id, ActionKind::SyncTargets));
+
+          bundle.events.push(
+            AircraftEvent {
+              id: aircraft.id,
+              kind: EventKind::AltitudeAtOrAbove(3000.0),
+            }
+            .into(),
+          );
+          bundle.events.push(
+            AircraftEvent {
+              id: aircraft.id,
+              kind: EventKind::SpeedAtOrAbove(210.0),
+            }
+            .into(),
+          );
         }
       }
       EventKind::Touchdown => {
