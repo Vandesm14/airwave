@@ -112,7 +112,8 @@ impl Engine {
       let vertical_distance =
         (aircraft.altitude - other_aircraft.altitude).abs();
 
-      if aircraft.altitude > 1000.0
+      if matches!(aircraft.state, AircraftState::Flying { enroute: false, .. })
+        && aircraft.altitude > 1000.0
         && distance <= (NAUTICALMILES_TO_FEET * 4.0).powf(2.0)
         && vertical_distance < 1000.0
       {
