@@ -1,4 +1,4 @@
-import { Runway, Vec2 } from './types';
+import { LandingState, Runway, Vec2 } from './types';
 
 export const timeScale = 1;
 
@@ -135,4 +135,22 @@ export function formatTime(duration: number): string {
   }
 
   return timeString;
+}
+
+export function shortLandingState(state: LandingState): string {
+  switch (state) {
+    case 'before-turn':
+      return 'WAIT';
+    case 'turning':
+      return 'TURN';
+    case 'correcting':
+      return 'ALGN';
+    case 'localizer':
+      return 'LOC';
+    case 'glideslope':
+      return 'GLSP';
+
+    default:
+      return 'UKN';
+  }
 }

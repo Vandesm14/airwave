@@ -30,14 +30,30 @@ pub struct AircraftTargets {
   pub altitude: f32,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum LandingState {
   #[default]
+  /// Do nothing.
   BeforeTurn,
+
+  /// Turn once we should to line up with the localizer.
   Turning,
+
+  /// Correct our position if we are off of the localizer.
+  Correcting,
+
+  /// Once on the localizer.
   Localizer,
+
+  /// Once established on the glideslope, descend.
   Glideslope,
+
+  /// We have landed.
+  Touchdown,
+
+  /// Go around
+  GoAround,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

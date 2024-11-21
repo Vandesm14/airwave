@@ -31,6 +31,7 @@ import {
   movePoint,
   nauticalMilesToFeet,
   runwayInfo,
+  shortLandingState,
   toRadians,
 } from './lib/lib';
 import colors from './lib/colors';
@@ -640,12 +641,13 @@ export default function Canvas({
 
     // Draw heading
     let headingInfo =
-      aircraft.state.type === 'landing'
-        ? 'ILS'
-        : Math.round(aircraft.heading)
-            .toString()
-            .padStart(3, '0')
-            .replace('360', '000');
+      Math.round(aircraft.heading)
+        .toString()
+        .padStart(3, '0')
+        .replace('360', '000') +
+      (aircraft.state.type === 'landing'
+        ? ` ${shortLandingState(aircraft.state.value.state)}`
+        : '');
     ctx.fillText(
       headingInfo,
       pos[0] + spacing,

@@ -21,11 +21,20 @@ export type AircraftStateFlying = {
   value: { waypoints: Array<NodeVOR>; enroute: boolean };
 };
 
+export type LandingState =
+  | 'before-turn'
+  | 'turning'
+  | 'correcting'
+  | 'localizer'
+  | 'glideslope'
+  | 'touchdown'
+  | 'go-around';
+
 export type AircraftStateLanding = {
   type: 'landing';
   value: {
     runway: Runway;
-    state: 'unknown' | 'before-turn' | 'turning' | 'localizer' | 'glideslope';
+    state: LandingState;
   };
 };
 

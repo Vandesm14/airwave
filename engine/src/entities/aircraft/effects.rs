@@ -7,10 +7,12 @@ use std::{
 use turborand::TurboRand;
 
 use crate::{
-  angle_between_points, calculate_ils_altitude, closest_point_on_line,
+  add_degrees, angle_between_points, calculate_ils_altitude,
+  closest_point_on_line,
   command::{CommandReply, CommandWithFreq},
   delta_angle,
   engine::Bundle,
+  entities::airport::Runway,
   inverse_degrees, move_point, normalize_angle,
   pathfinder::NodeBehavior,
   Line, DEPARTURE_WAIT_RANGE, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
@@ -19,7 +21,7 @@ use crate::{
 use super::{
   actions::ActionKind,
   events::{AircraftEvent, EventKind},
-  Action, Aircraft, AircraftState,
+  Action, Aircraft, AircraftState, LandingState,
 };
 
 pub trait AircraftEffect {
@@ -116,128 +118,185 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
 }
 
 pub struct AircraftUpdateLandingEffect;
-impl AircraftEffect for AircraftUpdateLandingEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Landing { runway, .. } = &aircraft.state {
-      let dt = aircraft.dt_enroute(bundle.dt);
+impl AircraftUpdateLandingEffect {
+  fn state_before_turn(
+    aircraft: &Aircraft,
+    bundle: &mut Bundle,
+    dt: f32,
+    runway: &Runway,
+    ils_line: Line,
+    mut state: LandingState,
+  ) -> LandingState {
+    let degrees_per_sec = aircraft.dt_turn_speed(dt);
+    let turning_radius = 360.0 / degrees_per_sec;
+    let turning_radius =
+      turning_radius * aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
+    let turning_radius = turning_radius / (2.0 * PI);
+    let turning_radius = turning_radius * 2.0;
 
-      let ils_line = Line::new(
-        move_point(runway.end(), runway.heading, 500.0),
-        move_point(
-          runway.end(),
-          inverse_degrees(runway.heading),
-          NAUTICALMILES_TO_FEET * 10.0 + runway.length,
-        ),
+    let delta_ang = delta_angle(aircraft.heading, runway.heading);
+    let percent_of = delta_ang.abs() / 180.0;
+    let percent_of = (percent_of * PI + PI * 1.5).sin() / 2.0 + 0.5;
+    let turn_distance = turning_radius * percent_of;
+    let turn_distance = turn_distance.powf(2.0);
+
+    let closest_point =
+      closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
+    let distance_to_point = aircraft.pos.distance_squared(closest_point);
+
+    if distance_to_point <= turn_distance {
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::TargetHeading(runway.heading),
+      ));
+
+      state = LandingState::Turning;
+    } else if aircraft.speed > aircraft.target.speed {
+      bundle.actions.push(Action::new(
+        aircraft.id,
+        ActionKind::TargetHeading(aircraft.heading),
+      ));
+
+      state = LandingState::BeforeTurn;
+    }
+
+    let angle_to_runway =
+      inverse_degrees(angle_between_points(runway.end(), aircraft.pos));
+
+    if aircraft.heading.round() == runway.heading
+      && (angle_to_runway.round() != runway.heading
+        || distance_to_point.round() != 0.0)
+    {
+      if angle_to_runway > runway.heading {
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::TargetHeading(add_degrees(runway.heading, 20.0)),
+        ));
+      }
+
+      if angle_to_runway < runway.heading {
+        bundle.actions.push(Action::new(
+          aircraft.id,
+          ActionKind::TargetHeading(add_degrees(runway.heading, -20.0)),
+        ));
+      }
+
+      state = LandingState::Correcting;
+    }
+
+    if distance_to_point <= 50_f32.powf(2.0)
+      && aircraft.heading.round() == runway.heading
+    {
+      state = LandingState::Localizer;
+    }
+
+    state
+  }
+
+  fn state_touchdown(
+    aircraft: &Aircraft,
+    bundle: &mut Bundle,
+    runway: &Runway,
+    mut state: LandingState,
+  ) -> LandingState {
+    if state != LandingState::Glideslope {
+      return state;
+    }
+
+    let distance_to_end = aircraft.pos.distance_squared(runway.end());
+
+    // If we have passed the start of the runway (landed),
+    // set our state to taxiing.
+    if distance_to_end <= runway.length.powf(2.0) {
+      bundle.events.push(
+        AircraftEvent {
+          id: aircraft.id,
+          kind: EventKind::Touchdown,
+        }
+        .into(),
       );
 
-      let start_descent_distance = NAUTICALMILES_TO_FEET * 10.0;
-      let distance_to_runway = aircraft.pos.distance(runway.start());
-      let distance_to_end = aircraft.pos.distance_squared(runway.end());
+      state = LandingState::Touchdown
+    }
 
-      // Turning & Heading (Localizer)
-      {
-        let degrees_per_sec = aircraft.dt_turn_speed(dt);
-        let turning_radius = 360.0 / degrees_per_sec;
-        let turning_radius =
-          turning_radius * aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
-        let turning_radius = turning_radius / (2.0 * PI);
-        let turning_radius = turning_radius * 2.0;
+    state
+  }
 
-        let delta_ang = delta_angle(aircraft.heading, runway.heading);
-        let percent_of = delta_ang.abs() / 180.0;
-        let percent_of = (percent_of * PI + PI * 1.5).sin() / 2.0 + 0.5;
-        let turn_distance = turning_radius * percent_of;
-        let turn_distance = turn_distance.powf(2.0);
+  fn state_go_around(
+    aircraft: &Aircraft,
+    bundle: &mut Bundle,
+    runway: &Runway,
+    mut state: LandingState,
+  ) -> LandingState {
+    if state != LandingState::Glideslope {
+      return state;
+    }
 
-        let closest_point =
-          closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
-        let distance_to_point = aircraft.pos.distance_squared(closest_point);
+    let distance_to_runway = aircraft.pos.distance(runway.start());
+    let target_altitude = calculate_ils_altitude(distance_to_runway);
 
-        if distance_to_point <= turn_distance {
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TargetHeading(runway.heading),
-          ));
-        } else if aircraft.speed > aircraft.target.speed {
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TargetHeading(aircraft.heading),
-          ));
+    // If we are too high, go around.
+    if aircraft.altitude - target_altitude > 100.0 {
+      bundle.events.push(
+        AircraftEvent {
+          id: aircraft.id,
+          kind: EventKind::GoAround,
         }
-
-        if aircraft.heading.round() != runway.heading {
-          return;
-        } else if distance_to_point.floor() > 50.0
-          && distance_to_point <= (NAUTICALMILES_TO_FEET * 0.5).powf(2.0)
-        {
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::Pos(closest_point)));
+        .into(),
+      );
+      bundle.events.push(
+        AircraftEvent {
+          id: aircraft.id,
+          kind: EventKind::Callout(CommandWithFreq::new(
+            aircraft.id.to_string(),
+            aircraft.frequency,
+            CommandReply::GoAround {
+              runway: runway.id.to_string(),
+            },
+            vec![],
+          )),
         }
-      }
+        .into(),
+      );
 
-      let climb_speed = aircraft.dt_climb_speed(dt);
-      let seconds_for_descent = aircraft.altitude / (climb_speed / dt);
+      state = LandingState::GoAround;
+    }
 
-      let target_speed_ft_s = distance_to_runway / seconds_for_descent;
-      let target_knots = target_speed_ft_s / KNOT_TO_FEET_PER_SECOND;
+    state
+  }
 
-      let target_altitude = calculate_ils_altitude(distance_to_runway);
+  fn state_glideslope(
+    aircraft: &Aircraft,
+    bundle: &mut Bundle,
+    dt: f32,
+    runway: &Runway,
+    mut state: LandingState,
+  ) -> LandingState {
+    if !(state == LandingState::Localizer || state == LandingState::Glideslope)
+    {
+      return state;
+    }
 
-      let angle_to_runway =
-        inverse_degrees(angle_between_points(runway.end(), aircraft.pos));
-      let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
+    let start_descent_distance = NAUTICALMILES_TO_FEET * 10.0;
+    let distance_to_runway = aircraft.pos.distance(runway.start());
 
-      // If we have passed the start of the runway (landed),
-      // set our state to taxiing.
-      if distance_to_end <= runway.length.powf(2.0) {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Touchdown,
-          }
-          .into(),
-        );
+    let angle_to_runway =
+      inverse_degrees(angle_between_points(runway.end(), aircraft.pos));
+    let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
 
-        return;
-      }
+    let climb_speed = aircraft.dt_climb_speed(dt);
+    let seconds_for_descent = aircraft.altitude / (climb_speed / dt);
 
-      // If we aren't within the localizer beacon (+/- 5 degrees), don't do
-      // anything.
-      if !angle_range.contains(&angle_to_runway) {
-        return;
-      }
+    let target_speed_ft_s = distance_to_runway / seconds_for_descent;
+    let target_knots = target_speed_ft_s / KNOT_TO_FEET_PER_SECOND;
 
-      // If we are too high, go around.
-      if aircraft.altitude - target_altitude > 100.0 {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::GoAround,
-          }
-          .into(),
-        );
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Callout(CommandWithFreq::new(
-              aircraft.id.to_string(),
-              aircraft.frequency,
-              CommandReply::GoAround {
-                runway: runway.id.to_string(),
-              },
-              vec![],
-            )),
-          }
-          .into(),
-        );
-        return;
-      }
+    let target_altitude = calculate_ils_altitude(distance_to_runway);
 
-      if distance_to_runway > start_descent_distance {
-        return;
-      }
-
+    // If we aren't within the localizer beacon (+/- 5 degrees), don't do
+    // anything.
+    if dbg!(angle_range.contains(&angle_to_runway))
+      && dbg!(distance_to_runway <= start_descent_distance)
+    {
       bundle.actions.push(Action::new(
         aircraft.id,
         ActionKind::TargetSpeed(target_knots.min(180.0)),
@@ -250,6 +309,37 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
           ActionKind::TargetAltitude(target_altitude),
         ));
       }
+
+      state = LandingState::Glideslope;
+    }
+
+    state
+  }
+}
+
+impl AircraftEffect for AircraftUpdateLandingEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    if let AircraftState::Landing { runway, state } = &aircraft.state {
+      let dt = aircraft.dt_enroute(bundle.dt);
+
+      let ils_line = Line::new(
+        move_point(runway.end(), runway.heading, 500.0),
+        move_point(
+          runway.end(),
+          inverse_degrees(runway.heading),
+          NAUTICALMILES_TO_FEET * 10.0 + runway.length,
+        ),
+      );
+
+      let s = &Self::state_touchdown(aircraft, bundle, runway, *state);
+      let s = &Self::state_go_around(aircraft, bundle, runway, *s);
+      let s =
+        &Self::state_before_turn(aircraft, bundle, dt, runway, ils_line, *s);
+      let s = &Self::state_glideslope(aircraft, bundle, dt, runway, *s);
+
+      bundle
+        .actions
+        .push(Action::new(aircraft.id, ActionKind::LandingState(*s)));
     }
   }
 }
