@@ -548,12 +548,12 @@ export default function Canvas({
     );
 
     // Draw the collision circle
-    if (aircraft.is_colliding) {
+    if (aircraft.state.type === 'flying' && aircraft.is_colliding) {
       ctx.beginPath();
       ctx.arc(
         pos[0],
         pos[1],
-        scaleFeetToPixels(nauticalMilesToFeet * 2),
+        scaleFeetToPixels(nauticalMilesToFeet * 4),
         0,
         Math.PI * 2
       );
