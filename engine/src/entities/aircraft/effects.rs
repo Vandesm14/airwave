@@ -294,8 +294,8 @@ impl AircraftUpdateLandingEffect {
 
     // If we aren't within the localizer beacon (+/- 5 degrees), don't do
     // anything.
-    if dbg!(angle_range.contains(&angle_to_runway))
-      && dbg!(distance_to_runway <= start_descent_distance)
+    if angle_range.contains(&angle_to_runway)
+      && distance_to_runway <= start_descent_distance
     {
       bundle.actions.push(Action::new(
         aircraft.id,
@@ -308,9 +308,9 @@ impl AircraftUpdateLandingEffect {
           aircraft.id,
           ActionKind::TargetAltitude(target_altitude),
         ));
-      }
 
-      state = LandingState::Glideslope;
+        state = LandingState::Glideslope;
+      }
     }
 
     state
