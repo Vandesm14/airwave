@@ -98,69 +98,6 @@ async fn main() {
 
   new_v_pattern::setup(&mut airport_ksfo);
 
-  let mut aircraft = Aircraft::random_flying(
-    118.6,
-    FlightPlan::new(Intern::from_ref("KCLT"), Intern::from_ref("KSFO")),
-    &mut runner.rng,
-  );
-  aircraft.heading = 270.0;
-  aircraft.altitude = 4000.0;
-  aircraft.pos =
-    Vec2::new(NAUTICALMILES_TO_FEET * 9.0, NAUTICALMILES_TO_FEET * 6.0);
-  aircraft.sync_targets_to_vals();
-
-  aircraft.state = AircraftState::Landing(
-    airport_ksfo
-      .runways
-      .iter()
-      .find(|r| r.id == Intern::from_ref("22"))
-      .unwrap()
-      .clone(),
-  );
-  runner.game.aircraft.push(aircraft);
-
-  let mut aircraft = Aircraft::random_flying(
-    118.6,
-    FlightPlan::new(Intern::from_ref("KCLT"), Intern::from_ref("KSFO")),
-    &mut runner.rng,
-  );
-  aircraft.heading = 270.0;
-  aircraft.altitude = 4000.0;
-  aircraft.pos =
-    Vec2::new(NAUTICALMILES_TO_FEET * 13.0, NAUTICALMILES_TO_FEET * 6.0);
-  aircraft.sync_targets_to_vals();
-
-  aircraft.state = AircraftState::Landing(
-    airport_ksfo
-      .runways
-      .iter()
-      .find(|r| r.id == Intern::from_ref("22"))
-      .unwrap()
-      .clone(),
-  );
-  runner.game.aircraft.push(aircraft);
-
-  let mut aircraft = Aircraft::random_flying(
-    118.6,
-    FlightPlan::new(Intern::from_ref("KCLT"), Intern::from_ref("KSFO")),
-    &mut runner.rng,
-  );
-  aircraft.heading = 270.0;
-  aircraft.altitude = 4000.0;
-  aircraft.pos =
-    Vec2::new(NAUTICALMILES_TO_FEET * 17.0, NAUTICALMILES_TO_FEET * 6.0);
-  aircraft.sync_targets_to_vals();
-
-  aircraft.state = AircraftState::Landing(
-    airport_ksfo
-      .runways
-      .iter()
-      .find(|r| r.id == Intern::from_ref("22"))
-      .unwrap()
-      .clone(),
-  );
-  runner.game.aircraft.push(aircraft);
-
   airport_ksfo.calculate_waypoints();
   player_airspace.airports.push(airport_ksfo);
 
