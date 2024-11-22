@@ -61,6 +61,7 @@ pub struct Points {
   pub landing_rate: Marker,
 
   pub takeoffs: usize,
+  pub takeoff_rate: Marker,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

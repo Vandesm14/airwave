@@ -232,8 +232,13 @@ export type Points = {
   landings: number;
   landing_rate: {
     rate: Duration;
+    marks: Duration[];
   };
   takeoffs: number;
+  takeoff_rate: {
+    rate: Duration;
+    marks: Duration[];
+  };
 };
 
 export type ServerEvent =

@@ -195,11 +195,12 @@ export default function App() {
       <div class="bottom-left">
         <div class="points">
           <p>
-            <b>Landings:</b> {points().landings} (rate:{' '}
-            {formatTime(points().landing_rate.rate.secs * 1000)})
+            <b>Landings:</b> {points().landings} (rate: once every{' '}
+            {formatTime(points().landing_rate.rate.secs * 1000)} mins)
           </p>
           <p>
-            <b>Takeoffs:</b> {points().takeoffs}
+            <b>Takeoffs:</b> {points().takeoffs} (rate: once every{' '}
+            {formatTime(points().takeoff_rate.rate.secs * 1000)} mins)
           </p>
         </div>
         <Chatbox sendMessage={sendTextMessage}></Chatbox>
