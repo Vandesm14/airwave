@@ -21,7 +21,7 @@ use crate::{
 use super::{
   actions::ActionKind,
   events::{AircraftEvent, EventKind},
-  Action, Aircraft, AircraftState, LandingState,
+  Action, Aircraft, AircraftState, LandingState, TaxiingState,
 };
 
 pub trait AircraftEffect {
@@ -390,7 +390,10 @@ pub struct AircraftUpdateTaxiingEffect;
 impl AircraftEffect for AircraftUpdateTaxiingEffect {
   fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
     let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND;
-    if let AircraftState::Taxiing { waypoints, current } = &aircraft.state {
+    if let AircraftState::Taxiing {
+      waypoints, current, ..
+    } = &aircraft.state
+    {
       let waypoint = waypoints.last().cloned();
       if let Some(waypoint) = waypoint {
         let heading = angle_between_points(aircraft.pos, waypoint.value);
@@ -457,6 +460,10 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
               bundle.actions.push(Action {
                 id: aircraft.id,
                 kind: ActionKind::TaxiLastAsGoto,
+              });
+              bundle.actions.push(Action {
+                id: aircraft.id,
+                kind: ActionKind::TaxiingState(TaxiingState::Holding),
               });
               bundle.events.push(
                 AircraftEvent {

@@ -30,6 +30,8 @@ export type LandingState =
   | 'touchdown'
   | 'go-around';
 
+export type TaxiingState = 'armed' | 'stopped' | 'override';
+
 export type AircraftStateLanding = {
   type: 'landing';
   value: {
@@ -43,6 +45,7 @@ export type AircraftStateTaxiing = {
   value: {
     current: NodeVec2;
     waypoints: Array<NodeVec2>;
+    state: TaxiingState;
   };
 };
 

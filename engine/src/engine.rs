@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use turborand::rng::Rng;
 
 use crate::{
+  angle_between_points, delta_angle,
   entities::{
     aircraft::{
       actions::{
@@ -19,7 +20,7 @@ use crate::{
       events::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
       },
-      Aircraft, AircraftState,
+      Aircraft, AircraftState, TaxiingState,
     },
     world::{Game, World},
   },
@@ -229,6 +230,9 @@ impl Engine {
     self.space_inbounds(world, game, &mut bundle);
     self.apply_all_actions(&mut bundle, game, Some("spacing actions"));
 
+    self.taxi_collisions(&game.aircraft, &mut bundle);
+    self.apply_all_actions(&mut bundle, game, Some("taxi collision actions"));
+
     // Capture the left over events and actions for next time
     if !bundle.events.is_empty() {
       tracing::info!("new events: {:?}", bundle.events);
@@ -335,6 +339,74 @@ impl Engine {
           report.id,
           ActionKind::TargetSpeed(report.speed.clamp(250.0, 400.0)),
         ));
+      }
+    }
+  }
+
+  pub fn taxi_collisions(
+    &mut self,
+    aircrafts: &[Aircraft],
+    bundle: &mut Bundle,
+  ) {
+    let mut collisions: HashSet<Intern<String>> = HashSet::new();
+    for pair in aircrafts
+      .iter()
+      .filter(|a| matches!(a.state, AircraftState::Taxiing { .. }))
+      .combinations(2)
+    {
+      let aircraft = pair.first().unwrap();
+      let other_aircraft = pair.last().unwrap();
+      let distance = aircraft.pos.distance_squared(other_aircraft.pos);
+
+      if distance <= 250.0_f32.powf(2.0) * 2.0 {
+        if delta_angle(
+          aircraft.heading,
+          angle_between_points(aircraft.pos, other_aircraft.pos),
+        )
+        .abs()
+          <= 45.0
+        {
+          collisions.insert(aircraft.id);
+        }
+
+        if delta_angle(
+          other_aircraft.heading,
+          angle_between_points(other_aircraft.pos, aircraft.pos),
+        )
+        .abs()
+          <= 45.0
+        {
+          collisions.insert(other_aircraft.id);
+        }
+      }
+    }
+
+    for aircraft in aircrafts.iter() {
+      if let AircraftState::Taxiing { state, .. } = &aircraft.state {
+        if collisions.contains(&aircraft.id) && state == &TaxiingState::Armed {
+          bundle.actions.push(Action::new(
+            aircraft.id,
+            ActionKind::TaxiingState(TaxiingState::Stopped),
+          ));
+          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            aircraft.id,
+            EventKind::TaxiHold,
+          )));
+        } else if !collisions.contains(&aircraft.id)
+          && matches!(state, &TaxiingState::Override | &TaxiingState::Stopped)
+        {
+          if matches!(state, &TaxiingState::Stopped) {
+            bundle.events.push(Event::Aircraft(AircraftEvent::new(
+              aircraft.id,
+              EventKind::TaxiContinue,
+            )));
+          }
+
+          bundle.actions.push(Action::new(
+            aircraft.id,
+            ActionKind::TaxiingState(TaxiingState::Armed),
+          ));
+        }
       }
     }
   }

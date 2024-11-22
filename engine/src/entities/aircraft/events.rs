@@ -12,7 +12,9 @@ use crate::{
   },
 };
 
-use super::{actions::ActionKind, Action, Aircraft, AircraftState};
+use super::{
+  actions::ActionKind, Action, Aircraft, AircraftState, TaxiingState,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventKind {
@@ -294,7 +296,23 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::TaxiContinue => {
-        if let AircraftState::Taxiing { .. } = aircraft.state {
+        if let AircraftState::Taxiing { state, .. } = aircraft.state {
+          match state {
+            TaxiingState::Armed | TaxiingState::Override => {}
+            TaxiingState::Holding => {
+              bundle.actions.push(Action {
+                id: aircraft.id,
+                kind: ActionKind::TaxiingState(TaxiingState::Armed),
+              });
+            }
+            TaxiingState::Stopped => {
+              bundle.actions.push(Action {
+                id: aircraft.id,
+                kind: ActionKind::TaxiingState(TaxiingState::Override),
+              });
+            }
+          }
+
           bundle.actions.push(Action {
             id: aircraft.id,
             kind: ActionKind::TargetSpeed(20.0),

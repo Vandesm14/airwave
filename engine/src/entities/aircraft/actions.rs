@@ -8,7 +8,7 @@ use crate::{
   pathfinder::{Node, NodeBehavior, NodeVORData},
 };
 
-use super::{Aircraft, AircraftState, LandingState};
+use super::{Aircraft, AircraftState, LandingState, TaxiingState};
 
 #[derive(Debug, Clone, PartialEq)]
 
@@ -34,6 +34,7 @@ pub enum ActionKind {
   EnRoute(bool),
   FlipFlightPlan,
   LandingState(LandingState),
+  TaxiingState(TaxiingState),
 
   // State
   Landing(Runway),
@@ -89,8 +90,9 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       ActionKind::PopWaypoint => {
         if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
           waypoints.pop();
-        } else if let AircraftState::Taxiing { current, waypoints } =
-          &mut aircraft.state
+        } else if let AircraftState::Taxiing {
+          current, waypoints, ..
+        } = &mut aircraft.state
         {
           if let Some(last) = waypoints.pop() {
             aircraft.pos = last.value;
@@ -105,6 +107,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           aircraft.state = AircraftState::Taxiing {
             current: at.clone(),
             waypoints: w.clone(),
+            state: TaxiingState::default(),
           };
         }
       }
@@ -133,6 +136,11 @@ impl AircraftActionHandler for AircraftAllActionHandler {
           *state = *s;
         }
       }
+      ActionKind::TaxiingState(s) => {
+        if let AircraftState::Taxiing { state, .. } = &mut aircraft.state {
+          *state = *s;
+        }
+      }
 
       // State
       ActionKind::Landing(runway) => {
@@ -151,6 +159,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
         aircraft.state = AircraftState::Taxiing {
           current: current.clone(),
           waypoints: waypoints.clone(),
+          state: TaxiingState::default(),
         }
       }
       ActionKind::Parked {

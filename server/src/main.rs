@@ -9,12 +9,17 @@ use turborand::{rng::Rng, SeededCore, TurboRand};
 
 use engine::{
   circle_circle_intersection,
+  engine::Event,
   entities::{
-    aircraft::Aircraft,
+    aircraft::{
+      events::{AircraftEvent, EventKind},
+      Aircraft,
+    },
     airport::Airport,
     airspace::{Airspace, Frequencies},
     world::{Connection, ConnectionState},
   },
+  pathfinder::{Node, NodeBehavior, NodeKind},
 };
 use server::{
   airport::new_v_pattern,
@@ -152,7 +157,7 @@ async fn main() {
   let mut aircrafts: Vec<Aircraft> = Vec::new();
   for airport in player_airspace.airports.iter() {
     for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-      if runner.rng.f32() < 0.3 {
+      if runner.rng.f32() < 0.9 {
         let mut aircraft = Aircraft::random_parked(
           gate.clone(),
           &mut runner.rng,
@@ -180,6 +185,55 @@ async fn main() {
 
   tracing::info!("Preparing spawn area...");
   runner.prepare();
+
+  runner
+    .engine
+    .events
+    .push(Event::Aircraft(AircraftEvent::new(
+      Intern::from_ref("AAL9914"),
+      EventKind::Taxi(vec![Node::new(
+        Intern::from_ref("B"),
+        NodeKind::Taxiway,
+        NodeBehavior::GoTo,
+        (),
+      )]),
+    )));
+  runner
+    .engine
+    .events
+    .push(Event::Aircraft(AircraftEvent::new(
+      Intern::from_ref("SKW7904"),
+      EventKind::Taxi(vec![Node::new(
+        Intern::from_ref("B"),
+        NodeKind::Taxiway,
+        NodeBehavior::HoldShort,
+        (),
+      )]),
+    )));
+  runner
+    .engine
+    .events
+    .push(Event::Aircraft(AircraftEvent::new(
+      Intern::from_ref("SKW3282"),
+      EventKind::Taxi(vec![Node::new(
+        Intern::from_ref("B"),
+        NodeKind::Taxiway,
+        NodeBehavior::GoTo,
+        (),
+      )]),
+    )));
+  runner
+    .engine
+    .events
+    .push(Event::Aircraft(AircraftEvent::new(
+      Intern::from_ref("AAL7589"),
+      EventKind::Taxi(vec![Node::new(
+        Intern::from_ref("B"),
+        NodeKind::Taxiway,
+        NodeBehavior::GoTo,
+        (),
+      )]),
+    )));
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());

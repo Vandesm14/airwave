@@ -56,6 +56,23 @@ pub enum LandingState {
   GoAround,
 }
 
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TaxiingState {
+  /// Will stop if a collision is detected.
+  #[default]
+  Armed,
+
+  /// Stopped, collision detected.
+  Stopped,
+
+  /// Palyer override. Will reset after collision is no longer detected.
+  Override,
+
+  /// Player ovveride. Won't move unless a continue is given.
+  Holding,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
@@ -71,6 +88,7 @@ pub enum AircraftState {
   Taxiing {
     current: Node<Vec2>,
     waypoints: Vec<Node<Vec2>>,
+    state: TaxiingState,
   },
   Parked {
     at: Node<Vec2>,
