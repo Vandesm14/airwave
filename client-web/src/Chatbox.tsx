@@ -46,11 +46,7 @@ export default function Chatbox({
   }
 
   createEffect(() => {
-    if (
-      selectedAircraft() &&
-      chatboxInput instanceof HTMLInputElement &&
-      document.activeElement !== chatboxInput
-    ) {
+    if (selectedAircraft()) {
       resetText();
     }
   });
