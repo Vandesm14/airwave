@@ -198,21 +198,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
             bundle.actions.push(Action {
               id: aircraft.id,
               kind: ActionKind::Flying(vec![
-                new_vor(arrival.id, arrival.transition)
-                  .with_name(Intern::from_ref("TRSN"))
-                  .with_behavior(vec![
-                    EventKind::EnRoute(false),
-                    EventKind::SpeedAtOrBelow(250.0),
-                  ]),
-                // TODO: Add a waypoint between APRT and TRSN that decreases
-                // their altitude and speed so they use cruise rules until
-                // transition to airspace.
                 new_vor(arrival.id, arrival.pos)
                   .with_name(Intern::from_ref("APRT"))
-                  .with_behavior(vec![
-                    EventKind::AltitudeAtOrBelow(7000.0),
-                    EventKind::FlipFlightPlan,
-                  ]),
+                  .with_behavior(vec![EventKind::Delete]),
                 new_vor(arrival.id, arrival.transition)
                   .with_name(Intern::from_ref("TRSN"))
                   .with_behavior(vec![EventKind::EnRoute(true)]),
