@@ -32,6 +32,7 @@ import {
   nauticalMilesToFeet,
   runwayInfo,
   shortLandingState,
+  shortTaxiingState,
   toRadians,
 } from './lib/lib';
 import colors from './lib/colors';
@@ -792,6 +793,8 @@ export default function Canvas({
   }
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
+    const isSelected = selectedAircraft() === aircraft.id;
+
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
@@ -912,6 +915,18 @@ export default function Canvas({
         pos[0] + spacing,
         pos[1] - spacing + fontSize()
       );
+    } else if (aircraft.state.type === 'taxiing' && isSelected && mod()) {
+      let text = shortTaxiingState(aircraft.state.value.state);
+      let textWidth = ctx.measureText(text).width + 10;
+      ctx.fillStyle = colors.text_background;
+      ctx.fillRect(
+        pos[0] + spacing * 0.5,
+        pos[1] - spacing - fontSize() * 0.5 + fontSize(),
+        textWidth,
+        fontSize()
+      );
+      ctx.fillStyle = taxi_color;
+      ctx.fillText(text, pos[0] + spacing, pos[1] - spacing + fontSize());
     }
 
     // // Draw speed

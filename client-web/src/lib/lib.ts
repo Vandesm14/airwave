@@ -1,4 +1,4 @@
-import { LandingState, Runway, Vec2 } from './types';
+import { LandingState, Runway, TaxiingState, Vec2 } from './types';
 
 export const timeScale = 1;
 
@@ -149,6 +149,22 @@ export function shortLandingState(state: LandingState): string {
       return 'LOC';
     case 'glideslope':
       return 'GLS';
+
+    default:
+      return 'UKN';
+  }
+}
+
+export function shortTaxiingState(state: TaxiingState): string {
+  switch (state) {
+    case 'armed':
+      return 'ARM';
+    case 'stopped':
+      return 'STP';
+    case 'holding':
+      return 'HLD';
+    case 'override':
+      return 'OVR';
 
     default:
       return 'UKN';

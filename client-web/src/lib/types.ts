@@ -30,7 +30,7 @@ export type LandingState =
   | 'touchdown'
   | 'go-around';
 
-export type TaxiingState = 'armed' | 'stopped' | 'override';
+export type TaxiingState = 'armed' | 'stopped' | 'override' | 'holding';
 
 export type AircraftStateLanding = {
   type: 'landing';
