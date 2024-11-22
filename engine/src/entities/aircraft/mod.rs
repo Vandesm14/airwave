@@ -258,6 +258,14 @@ pub struct Aircraft {
 
 // Helper methods
 impl Aircraft {
+  pub fn set_parked_now(&mut self) {
+    if let AircraftState::Parked { ready_at, .. } = &mut self.state {
+      *ready_at = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
+    }
+  }
+
   pub fn sync_targets_to_vals(&mut self) {
     self.target.heading = self.heading;
     self.target.speed = self.speed;
