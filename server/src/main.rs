@@ -10,12 +10,11 @@ use turborand::{rng::Rng, SeededCore, TurboRand};
 use engine::{
   circle_circle_intersection,
   entities::{
-    aircraft::{Aircraft, AircraftState, FlightPlan},
+    aircraft::Aircraft,
     airport::Airport,
     airspace::{Airspace, Frequencies},
     world::{Connection, ConnectionState},
   },
-  NAUTICALMILES_TO_FEET,
 };
 use server::{
   airport::new_v_pattern,
