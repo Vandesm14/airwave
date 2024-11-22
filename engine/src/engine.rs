@@ -72,7 +72,6 @@ pub enum UIEvent {
 
   // Outbound
   Funds(usize),
-  LandingRateChange,
 
   Pause,
 }
@@ -224,7 +223,15 @@ impl Engine {
         old_rate,
         new_rate
       );
-      self.events.push(Event::UiEvent(UIEvent::LandingRateChange));
+    }
+
+    let new_rate = game.points.takeoff_rate.calc_rate();
+    if new_rate != old_rate {
+      tracing::info!(
+        "takeoff rate changed from {:?} to {:?}",
+        old_rate,
+        new_rate
+      );
     }
 
     self.space_inbounds(world, game, &mut bundle);
