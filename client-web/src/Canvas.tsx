@@ -130,29 +130,20 @@ export default function Canvas({
       doRender(canvas);
 
       document.addEventListener('keydown', (e) => {
-        let zoomAmount = 2.0;
         if (e.key === 'PageUp') {
           setRadar((radar) => {
-            radar.scale = radar.scale * zoomAmount;
-            radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
+            radar.scale = 1;
             return { ...radar };
           });
         } else if (e.key === 'PageDown') {
           setRadar((radar) => {
-            radar.scale = (radar.scale * 1) / zoomAmount;
-            radar.scale = Math.max(Math.min(radar.scale, maxScale), minScale);
+            radar.scale = groundScale * 6;
             return { ...radar };
           });
         } else if (e.key === 'Control') {
           setMod((mod) => !mod);
         }
       });
-
-      // document.addEventListener('keyup', (e) => {
-      //   if (e.key === 'Control') {
-      //     setMod((mod) => !mod);
-      //   }
-      // });
 
       canvas.addEventListener('mousedown', (e) => {
         setRadar((radar) => {
