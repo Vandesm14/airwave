@@ -75,6 +75,11 @@ export let pointsAtom = atom<Points>({
   landings: 0,
   landing_rate: {
     rate: newDuration(0, 0),
+    marks: [],
   },
   takeoffs: 0,
+  takeoff_rate: {
+    rate: newDuration(0, 0),
+    marks: [],
+  },
 });
