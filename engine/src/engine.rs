@@ -196,13 +196,13 @@ impl Engine {
       self.apply_actions(&mut bundle, aircraft, Some("position actions"));
     }
 
-    let old_rate = game.points.landing_rate.calc_rate();
     for event in bundle.events.iter() {
       match event {
         Event::Aircraft(AircraftEvent {
           kind: EventKind::SuccessfulTakeoff,
           ..
         }) => {
+          game.points.takeoff_rate.mark();
           game.points.takeoffs += 1;
         }
         Event::Aircraft(AircraftEvent {
@@ -216,23 +216,8 @@ impl Engine {
       }
     }
 
-    let new_rate = game.points.landing_rate.calc_rate();
-    if new_rate != old_rate {
-      tracing::info!(
-        "landing rate changed from {:?} to {:?}",
-        old_rate,
-        new_rate
-      );
-    }
-
-    let new_rate = game.points.takeoff_rate.calc_rate();
-    if new_rate != old_rate {
-      tracing::info!(
-        "takeoff rate changed from {:?} to {:?}",
-        old_rate,
-        new_rate
-      );
-    }
+    game.points.landing_rate.calc_rate();
+    game.points.takeoff_rate.calc_rate();
 
     self.space_inbounds(world, game, &mut bundle);
     self.apply_all_actions(&mut bundle, game, Some("spacing actions"));
