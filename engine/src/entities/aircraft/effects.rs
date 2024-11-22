@@ -425,6 +425,10 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           }
           .into(),
         );
+        bundle.actions.push(Action {
+          id: aircraft.id,
+          kind: ActionKind::TaxiingState(TaxiingState::Holding),
+        });
 
         if let NodeBehavior::Park = current.behavior {
           bundle.actions.push(Action {
