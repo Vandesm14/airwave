@@ -59,17 +59,18 @@ pub enum LandingState {
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TaxiingState {
-  /// Will stop if a collision is detected.
+  /// Normal operation, will stop if a collision is detected.
   #[default]
   Armed,
 
-  /// Stopped, collision detected.
+  /// Stopped, collision detected. Won't move until collision is cleared.
   Stopped,
 
-  /// Palyer override. Will reset after collision is no longer detected.
+  /// Palyer override. Will move despite a collision. Reset after collision is
+  /// no longer detected.
   Override,
 
-  /// Player ovveride. Won't move unless a continue is given.
+  /// Player or waypoint ovveride. Won't move unless a continue is given.
   Holding,
 }
 
