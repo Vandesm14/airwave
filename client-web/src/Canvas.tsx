@@ -133,11 +133,13 @@ export default function Canvas({
         if (e.key === 'PageUp') {
           setRadar((radar) => {
             radar.scale = 1;
+            radar.shiftPoint = { x: 0, y: 0 };
             return { ...radar };
           });
         } else if (e.key === 'PageDown') {
           setRadar((radar) => {
             radar.scale = groundScale * 6;
+            radar.shiftPoint = { x: 0, y: 0 };
             return { ...radar };
           });
         } else if (e.key === 'Control') {
