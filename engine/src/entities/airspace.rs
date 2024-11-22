@@ -5,7 +5,7 @@ use turborand::{rng::Rng, TurboRand};
 
 use super::airport::Airport;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Frequencies {
   pub approach: f32,
   pub departure: f32,

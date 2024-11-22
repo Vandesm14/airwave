@@ -30,6 +30,7 @@ internment.workspace = true
 
 thiserror.workspace = true
 
+toml = "0.8.19"
 dotenv = "0.15.0"
 tracing.workspace = true
 tracing-subscriber.workspace = true

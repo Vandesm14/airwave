@@ -41,6 +41,7 @@ pub const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 pub const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
 
 pub mod airport;
+pub mod config;
 pub mod prompter;
 pub mod runner;
 
@@ -53,12 +54,16 @@ pub struct Cli {
   pub address: SocketAddr,
 
   /// The seed to use for the random number generator.
-  #[arg(short, long, default_value_t = 0)]
-  pub seed: u64,
+  #[arg(short, long)]
+  pub seed: Option<u64>,
 
   /// Whether to and where to record incomming audio to.
   #[arg(long, default_value = None)]
   pub audio_path: Option<PathBuf>,
+
+  /// The path to the config file.
+  #[arg(short, long, default_value = None)]
+  pub config_path: Option<PathBuf>,
 }
 
 pub async fn broadcast_updates_to(

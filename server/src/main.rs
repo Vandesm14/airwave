@@ -1,5 +1,5 @@
 use core::str::FromStr;
-use std::{path::PathBuf, sync::Arc};
+use std::{fs, path::PathBuf, sync::Arc, time::SystemTime};
 
 use futures_util::StreamExt as _;
 use glam::Vec2;
@@ -12,12 +12,13 @@ use engine::{
   entities::{
     aircraft::Aircraft,
     airport::Airport,
-    airspace::{Airspace, Frequencies},
+    airspace::Airspace,
     world::{Connection, ConnectionState},
   },
 };
 use server::{
   airport::new_v_pattern,
+  config::Config,
   runner::{IncomingUpdate, OutgoingReply, Runner},
   Cli, AUTO_TOWER_AIRSPACE_RADIUS, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
   TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
@@ -38,6 +39,7 @@ async fn main() {
     address,
     seed,
     ref audio_path,
+    ref config_path,
   } = *CLI;
 
   if let Some(audio_path) = audio_path {
@@ -52,12 +54,29 @@ async fn main() {
     }
   }
 
+  let default_path = PathBuf::from_str("config.toml").unwrap();
+  let path = config_path.clone().unwrap_or(default_path);
+
+  let config: Config = if fs::exists(&path).ok() == Some(true) {
+    tracing::info!("Reading config at {}.", path.to_string_lossy());
+    Config::from_path(path).unwrap()
+  } else {
+    tracing::info!("Using default config.");
+    Config::default()
+  };
+
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
   let (mut update_tx, update_rx) =
     async_broadcast::broadcast::<OutgoingReply>(16);
 
   update_tx.set_overflow(true);
 
+  let seed = seed.unwrap_or(
+    config
+      .world
+      .and_then(|w| w.seed)
+      .unwrap_or(SystemTime::now().elapsed().unwrap().as_secs()),
+  );
   let rng = Rng::with_seed(seed);
   let world_rng = Rng::with_seed(0);
   let mut runner = Runner::new(
@@ -67,14 +86,6 @@ async fn main() {
     Some(PathBuf::from_str("assets/world.json").unwrap()),
     rng,
   );
-
-  let player_one_frequencies = Frequencies {
-    approach: 118.6,
-    departure: 118.6,
-    tower: 118.5,
-    ground: 118.5,
-    center: 118.7,
-  };
 
   let airspace_names = [
     "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
@@ -86,7 +97,7 @@ async fn main() {
     pos: Vec2::ZERO,
     radius: MANUAL_TOWER_AIRSPACE_RADIUS,
     airports: vec![],
-    frequencies: player_one_frequencies.clone(),
+    frequencies: config.frequencies.unwrap_or_default(),
   };
 
   let mut airport_ksfo = Airport {
