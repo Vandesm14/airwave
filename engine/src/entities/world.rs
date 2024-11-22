@@ -58,7 +58,7 @@ pub struct World {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Points {
   pub landings: usize,
-  pub landing_rate: LandingRateData,
+  pub landing_rate: Marker,
 
   pub takeoffs: usize,
 }
@@ -72,35 +72,35 @@ pub struct Game {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LandingRateData {
+pub struct Marker {
   window: Duration,
-  landings: VecDeque<SystemTime>,
+  marks: VecDeque<SystemTime>,
   rate: Duration,
 }
 
-impl Default for LandingRateData {
+impl Default for Marker {
   fn default() -> Self {
     Self::new(Duration::from_secs(10 * 60))
   }
 }
 
-impl LandingRateData {
+impl Marker {
   pub fn new(window: Duration) -> Self {
     Self {
       window,
-      landings: VecDeque::new(),
+      marks: VecDeque::new(),
       rate: Duration::from_secs(0),
     }
   }
 
   pub fn mark(&mut self) {
-    self.landings.push_back(SystemTime::now());
+    self.marks.push_back(SystemTime::now());
   }
 
   pub fn trim(&mut self) {
-    while let Some(front) = self.landings.front() {
+    while let Some(front) = self.marks.front() {
       if front.elapsed().unwrap() > self.window {
-        self.landings.pop_front();
+        self.marks.pop_front();
       } else {
         break;
       }
@@ -110,7 +110,7 @@ impl LandingRateData {
   pub fn calc_rate(&mut self) -> Duration {
     self.trim();
 
-    let count = self.landings.len();
+    let count = self.marks.len();
     if count > 0 {
       self.rate =
         Duration::from_secs_f32(self.window.as_secs_f32() / count as f32);
@@ -120,6 +120,6 @@ impl LandingRateData {
   }
 
   pub fn count(&self) -> usize {
-    self.landings.len()
+    self.marks.len()
   }
 }
