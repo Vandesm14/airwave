@@ -1,5 +1,11 @@
 use core::str::FromStr;
-use std::{fs, path::PathBuf, sync::Arc, time::SystemTime};
+use std::{
+  fs,
+  net::{IpAddr, Ipv4Addr, SocketAddr},
+  path::PathBuf,
+  sync::Arc,
+  time::SystemTime,
+};
 
 use futures_util::StreamExt as _;
 use glam::Vec2;
@@ -64,6 +70,10 @@ async fn main() {
     tracing::info!("Using default config.");
     Config::default()
   };
+
+  let address = address
+    .or_else(|| config.server.and_then(|s| s.address))
+    .unwrap_or(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001));
 
   let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
   let (mut update_tx, update_rx) =

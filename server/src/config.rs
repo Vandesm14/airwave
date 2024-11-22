@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{net::SocketAddr, path::Path};
 
 use engine::entities::airspace::Frequencies;
 use serde::{Deserialize, Serialize};
@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
   pub frequencies: Option<Frequencies>,
   pub world: Option<WorldConfig>,
+  pub server: Option<ServerConfig>,
 }
 
 impl Config {
@@ -29,4 +30,9 @@ impl Config {
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct WorldConfig {
   pub seed: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+pub struct ServerConfig {
+  pub address: Option<SocketAddr>,
 }

@@ -1,4 +1,4 @@
-use core::net::{IpAddr, Ipv4Addr, SocketAddr};
+use core::net::SocketAddr;
 use std::{
   path::PathBuf,
   sync::{Arc, LazyLock},
@@ -50,8 +50,8 @@ pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);
 #[derive(Parser)]
 pub struct Cli {
   /// The socket address to bind the WebSocket server to.
-  #[arg(short, long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))]
-  pub address: SocketAddr,
+  #[arg(short, long, default_value = None)]
+  pub address: Option<SocketAddr>,
 
   /// The seed to use for the random number generator.
   #[arg(short, long)]
