@@ -151,29 +151,29 @@ async fn main() {
 
   let mut aircrafts: Vec<Aircraft> = Vec::new();
   for airport in player_airspace.airports.iter() {
-    for (i, gate) in airport
-      .terminals
-      .iter()
-      .flat_map(|t| t.gates.iter().enumerate())
-    {
-      if runner.rng.f32() < 0.3 {
-        let mut aircraft = Aircraft::random_parked(
-          gate.clone(),
-          &mut runner.rng,
-          &player_airspace,
-        );
-        aircraft.flight_plan.departing = player_airspace.id;
-        aircraft.flight_plan.arriving = runner
-          .rng
-          .sample(&runner.world.connections)
-          .map(|c| c.id)
-          .unwrap_or_default();
+    for terminal in airport.terminals.iter() {
+      let mut first = true;
+      for gate in terminal.gates.iter() {
+        if runner.rng.f32() < 0.3 {
+          let mut aircraft = Aircraft::random_parked(
+            gate.clone(),
+            &mut runner.rng,
+            &player_airspace,
+          );
+          aircraft.flight_plan.departing = player_airspace.id;
+          aircraft.flight_plan.arriving = runner
+            .rng
+            .sample(&runner.world.connections)
+            .map(|c| c.id)
+            .unwrap_or_default();
 
-        if i == 0 {
-          aircraft.set_parked_now();
+          if first {
+            aircraft.set_parked_now();
+            first = false;
+          }
+
+          aircrafts.push(aircraft);
         }
-
-        aircrafts.push(aircraft);
       }
     }
   }
