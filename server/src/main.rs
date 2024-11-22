@@ -152,7 +152,7 @@ async fn main() {
   let mut aircrafts: Vec<Aircraft> = Vec::new();
   for airport in player_airspace.airports.iter() {
     for gate in airport.terminals.iter().flat_map(|t| t.gates.iter()) {
-      if runner.rng.f32() < 0.9 {
+      if runner.rng.f32() < 0.3 {
         let mut aircraft = Aircraft::random_parked(
           gate.clone(),
           &mut runner.rng,
