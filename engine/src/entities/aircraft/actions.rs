@@ -130,7 +130,7 @@ impl AircraftActionHandler for AircraftAllActionHandler {
       }
       ActionKind::LandingState(s) => {
         if let AircraftState::Landing { state, .. } = &mut aircraft.state {
-          *state = s.clone();
+          *state = *s;
         }
       }
 
