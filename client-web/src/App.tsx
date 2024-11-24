@@ -192,7 +192,6 @@ export default function App() {
   }
 
   function tryReconnect() {
-    setConnected(false);
     console.log('Trying to reconnect');
 
     socket = new WebSocket(wsUrl);
