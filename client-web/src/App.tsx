@@ -30,6 +30,9 @@ export default function App() {
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [points, setPoints] = useAtom(pointsAtom);
   let [connected, setConnected] = createSignal(false);
+  let [reconnectInterval, setReconnectInterval] = createSignal<number | null>(
+    null
+  );
 
   async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
@@ -137,11 +140,11 @@ export default function App() {
   let socket = new WebSocket(wsUrl);
 
   function onOpen() {
+    setConnected(true);
     console.log('[open] Connection established');
     console.log('Sending to server');
 
     socket.send(JSON.stringify({ type: 'connect' }));
-    setConnected(true);
   }
 
   function onMessage(event: MessageEvent) {
@@ -182,7 +185,6 @@ export default function App() {
     }
 
     setConnected(false);
-    setTimeout(tryReconnect, 1000);
   }
 
   function onError() {
@@ -190,6 +192,7 @@ export default function App() {
   }
 
   function tryReconnect() {
+    setConnected(false);
     console.log('Trying to reconnect');
 
     socket = new WebSocket(wsUrl);
@@ -199,7 +202,15 @@ export default function App() {
     socket.onerror = onError;
   }
 
-  tryReconnect();
+  createEffect(() => {
+    if (!connected() && reconnectInterval() === null) {
+      tryReconnect();
+      setReconnectInterval(setInterval(tryReconnect, 1000));
+    } else if (connected() && reconnectInterval() !== null) {
+      clearInterval(reconnectInterval()!);
+      setReconnectInterval(null);
+    }
+  });
 
   function sendPause() {
     socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
