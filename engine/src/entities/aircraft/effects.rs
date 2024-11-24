@@ -327,7 +327,7 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
         move_point(
           runway.end(),
           inverse_degrees(runway.heading),
-          NAUTICALMILES_TO_FEET * 10.0 + runway.length,
+          NAUTICALMILES_TO_FEET * 18.0 + runway.length,
         ),
       );
 
