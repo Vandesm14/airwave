@@ -75,7 +75,7 @@ export function runwayInfo(
   let start = movePoint(pos, length * 0.5, inverseDegrees(runway.heading));
   let end = movePoint(pos, length * 0.5, runway.heading);
 
-  let maxIlsRangeMiles = 10;
+  let maxIlsRangeMiles = 18;
   let ilsPoints: Vec2[] = [];
   let separate = 6.0 / 4;
   for (let i = 1; i < 4; i += 1) {
@@ -91,7 +91,7 @@ export function runwayInfo(
 
   let ilsStart = movePoint(
     start,
-    length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
+    length / 2 + nauticalMilesToFeet * 20,
     inverseDegrees(runway.heading)
   );
 
