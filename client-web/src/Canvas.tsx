@@ -1,5 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import {
+  frequencyAtom,
   radarAtom,
   renderAtom,
   selectedAircraftAtom,
@@ -53,6 +54,7 @@ export default function Canvas({
   let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
+  let [frequency] = useAtom(frequencyAtom);
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
   let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
@@ -476,6 +478,7 @@ export default function Canvas({
     const isSelected = selectedAircraft() === aircraft.id;
     const isEnroute =
       aircraft.state.type === 'flying' && aircraft.state.value.enroute;
+    const isLanding = aircraft.state.type === 'landing';
 
     // Draw trail
     let trail = aircraftTrails().get(aircraft.id);
@@ -592,7 +595,9 @@ export default function Canvas({
     ctx.textAlign = 'left';
     ctx.fillStyle = colors.text_green;
 
-    if (selectedAircraft() == aircraft.id) {
+    if (aircraft.frequency !== frequency()) {
+      ctx.fillStyle = colors.text_grey;
+    } else if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = colors.text_yellow;
     } else if (aircraft.is_colliding) {
       ctx.fillStyle = colors.text_red;
@@ -603,7 +608,7 @@ export default function Canvas({
     // Draw callsign
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
-    if ((isAboveAirspace || isEnroute) && !isSelected) {
+    if ((isAboveAirspace || isEnroute || isLanding) && !isSelected) {
       return;
     }
 
@@ -614,6 +619,7 @@ export default function Canvas({
     } else if (aircraft.altitude > aircraft.target.altitude) {
       altitudeIcon = '⬊';
     }
+
     // TODO: hide target altitude if landing
     ctx.fillText(
       Math.round(aircraft.altitude / 100)
