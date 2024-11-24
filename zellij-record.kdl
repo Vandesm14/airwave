@@ -21,7 +21,7 @@ layout {
       }
       pane split_direction="vertical" {
         pane name="engine server" command="cargo" {
-          args "run" "--bin" "server" "--release" "--" "--address" "0.0.0.0:9001" "--audio-path" "./recordings" "--seed" "2"
+          args "run" "--bin" "server" "--release"
         }
       }
       pane size=2 borderless=true {
