@@ -13,6 +13,18 @@ main {
 
 $transparent-black: #000a;
 
+.connection-message {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  h1 {
+    font-size: 24px;
+    color: white;
+  }
+}
+
 .bottom-left {
   position: absolute;
   bottom: 0;

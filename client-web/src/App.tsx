@@ -10,7 +10,7 @@ import {
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
-import { createEffect, createSignal, onMount } from 'solid-js';
+import { createEffect, createSignal, onMount, Show } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
@@ -29,6 +29,7 @@ export default function App() {
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [points, setPoints] = useAtom(pointsAtom);
+  let [connected, setConnected] = createSignal(false);
 
   async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
@@ -132,15 +133,18 @@ export default function App() {
     path = wsPath;
   }
 
-  let socket = new WebSocket(`ws://${path}`);
-  socket.onopen = function (_) {
+  const wsUrl = `ws://${path}`;
+  let socket = new WebSocket(wsUrl);
+
+  function onOpen() {
     console.log('[open] Connection established');
     console.log('Sending to server');
 
     socket.send(JSON.stringify({ type: 'connect' }));
-  };
+    setConnected(true);
+  }
 
-  socket.onmessage = function (event) {
+  function onMessage(event: MessageEvent) {
     // console.log(`[message] Data received from server: ${event.data}`);
 
     let json: ServerEvent = JSON.parse(event.data);
@@ -164,9 +168,9 @@ export default function App() {
         if (json.value.reply != '') speakAsAircraft(json.value);
         break;
     }
-  };
+  }
 
-  socket.onclose = function (event: { wasClean: any; code: any; reason: any }) {
+  function onClose(event: { wasClean: any; code: any; reason: any }) {
     if (event.wasClean) {
       console.log(
         `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`
@@ -176,11 +180,26 @@ export default function App() {
       // event.code is usually 1006 in this case
       console.log('[close] Connection died');
     }
-  };
 
-  socket.onerror = function () {
+    setConnected(false);
+    setTimeout(tryReconnect, 1000);
+  }
+
+  function onError() {
     console.log(`[error]`);
-  };
+  }
+
+  function tryReconnect() {
+    console.log('Trying to reconnect');
+
+    socket = new WebSocket(wsUrl);
+    socket.onopen = onOpen;
+    socket.onmessage = onMessage;
+    socket.onclose = onClose;
+    socket.onerror = onError;
+  }
+
+  tryReconnect();
 
   function sendPause() {
     socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
@@ -190,49 +209,60 @@ export default function App() {
     setUseTTS((useTTS) => !useTTS);
   }
 
+  createEffect(() => {
+    console.log('connected?', connected());
+  });
+
   return (
     <>
-      <div class="bottom-left">
-        <div class="points">
-          <p>
-            <b>Landings:</b> {points().landings} (rate: once every{' '}
-            {formatTime(points().landing_rate.rate.secs * 1000)} mins)
-          </p>
-          <p>
-            <b>Takeoffs:</b> {points().takeoffs} (rate: once every{' '}
-            {formatTime(points().takeoff_rate.rate.secs * 1000)} mins)
-          </p>
+      <Show when={connected()}>
+        <div class="bottom-left">
+          <div class="points">
+            <p>
+              <b>Landings:</b> {points().landings} (rate: once every{' '}
+              {formatTime(points().landing_rate.rate.secs * 1000)} mins)
+            </p>
+            <p>
+              <b>Takeoffs:</b> {points().takeoffs} (rate: once every{' '}
+              {formatTime(points().takeoff_rate.rate.secs * 1000)} mins)
+            </p>
+          </div>
+          <Chatbox sendMessage={sendTextMessage}></Chatbox>
         </div>
-        <Chatbox sendMessage={sendTextMessage}></Chatbox>
-      </div>
-      <div id="radar">
-        <Canvas aircrafts={aircrafts}></Canvas>
-        <div class="top-right">
-          <StripBoard aircrafts={aircrafts}></StripBoard>
-          <FreqSelector></FreqSelector>
+        <div id="radar">
+          <Canvas aircrafts={aircrafts}></Canvas>
+          <div class="top-right">
+            <StripBoard aircrafts={aircrafts}></StripBoard>
+            <FreqSelector></FreqSelector>
+          </div>
+          <div class="bottom-right-buttons">
+            <button
+              classList={{ 'tts-toggle': true, enabled: useTTS() }}
+              onClick={toggleTTS}
+            >
+              {useTTS() ? 'Disable TTS' : 'Enable TTS'}
+            </button>
+            <button
+              class={`talk-button ${isRecording() ? 'recording' : ''}`}
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+            >
+              {isRecording() ? 'Recording...' : 'Talk'}
+            </button>
+            <button class="discard-button" onClick={discardRecording}>
+              Discard
+            </button>
+            <button class="pause-button" onClick={sendPause}>
+              Pause
+            </button>
+          </div>
         </div>
-        <div class="bottom-right-buttons">
-          <button
-            classList={{ 'tts-toggle': true, enabled: useTTS() }}
-            onClick={toggleTTS}
-          >
-            {useTTS() ? 'Disable TTS' : 'Enable TTS'}
-          </button>
-          <button
-            class={`talk-button ${isRecording() ? 'recording' : ''}`}
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-          >
-            {isRecording() ? 'Recording...' : 'Talk'}
-          </button>
-          <button class="discard-button" onClick={discardRecording}>
-            Discard
-          </button>
-          <button class="pause-button" onClick={sendPause}>
-            Pause
-          </button>
+      </Show>
+      <Show when={!connected()}>
+        <div class="connection-message">
+          <h1>Connecting...</h1>
         </div>
-      </div>
+      </Show>
     </>
   );
 }
