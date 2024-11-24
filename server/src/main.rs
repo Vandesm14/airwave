@@ -175,26 +175,24 @@ async fn main() {
     for terminal in airport.terminals.iter() {
       let mut first = true;
       for gate in terminal.gates.iter() {
-        if runner.rng.f32() < 0.3 {
-          let mut aircraft = Aircraft::random_parked(
-            gate.clone(),
-            &mut runner.rng,
-            &player_airspace,
-          );
-          aircraft.flight_plan.departing = player_airspace.id;
-          aircraft.flight_plan.arriving = runner
-            .rng
-            .sample(&runner.world.connections)
-            .map(|c| c.id)
-            .unwrap_or_default();
+        let mut aircraft = Aircraft::random_parked(
+          gate.clone(),
+          &mut runner.rng,
+          &player_airspace,
+        );
+        aircraft.flight_plan.departing = player_airspace.id;
+        aircraft.flight_plan.arriving = runner
+          .rng
+          .sample(&runner.world.connections)
+          .map(|c| c.id)
+          .unwrap_or_default();
 
-          if first {
-            aircraft.set_parked_now();
-            first = false;
-          }
-
-          aircrafts.push(aircraft);
+        if first {
+          aircraft.set_parked_now();
+          first = false;
         }
+
+        aircrafts.push(aircraft);
       }
     }
   }
@@ -207,8 +205,8 @@ async fn main() {
 
   //
 
-  tracing::info!("Preparing spawn area...");
-  runner.prepare();
+  // tracing::info!("Preparing spawn area...");
+  // runner.prepare();
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());

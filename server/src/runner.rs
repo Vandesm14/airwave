@@ -66,7 +66,6 @@ pub struct Runner {
   pub rng: Rng,
 
   last_tick: Instant,
-  last_spawn: Instant,
   rate: usize,
   paused: bool,
 }
@@ -92,7 +91,6 @@ impl Runner {
       rng,
 
       last_tick: Instant::now(),
-      last_spawn: Instant::now() - SPAWN_RATE,
       rate: 15,
       paused: false,
     }
@@ -173,14 +171,14 @@ impl Runner {
       return;
     }
 
-    if Instant::now() - self.last_spawn
-      >= self.game.points.takeoff_rate.calc_rate()
-      && self.game.points.takeoff_rate.count() > 0
-      && self.game.aircraft.len() < SPAWN_LIMIT
-    {
-      self.last_spawn = Instant::now();
-      self.spawn_inbound();
-    }
+    // if Instant::now() - self.last_spawn
+    //   >= self.game.points.takeoff_rate.calc_rate()
+    //   && self.game.points.takeoff_rate.count() > 0
+    //   && self.game.aircraft.len() < SPAWN_LIMIT
+    // {
+    //   self.last_spawn = Instant::now();
+    //   self.spawn_inbound();
+    // }
 
     for command in commands {
       self.execute_command(command);
