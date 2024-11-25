@@ -18,7 +18,6 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftState, FlightPlan,
     },
-    airspace::Airspace,
     world::{Connection, ConnectionState, Game, Points, World},
   },
   heading_to_direction,

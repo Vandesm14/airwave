@@ -18,6 +18,7 @@ use server::{
   airport::new_v_pattern,
   config::Config,
   runner::{IncomingUpdate, OutgoingReply, Runner},
+  server::{broadcast_updates_to, receive_commands_from},
   Cli, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
 };
 
@@ -145,8 +146,8 @@ async fn main() {
 
     command_tx.send(IncomingUpdate::Connect).await.unwrap();
 
-    tokio::spawn(server::broadcast_updates_to(writer, update_rx));
-    tokio::spawn(server::receive_commands_from(
+    tokio::spawn(broadcast_updates_to(writer, update_rx));
+    tokio::spawn(receive_commands_from(
       openai_api_key,
       reader,
       update_tx.clone(),
