@@ -4,12 +4,13 @@ use std::{
 };
 
 use async_channel::TryRecvError;
+use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use engine::{
-  angle_between_points,
+  angle_between_points, circle_circle_intersection,
   command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, Event, UICommand, UIEvent},
   entities::{
@@ -17,13 +18,17 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftState, FlightPlan,
     },
-    world::{Game, Points, World},
+    airspace::Airspace,
+    world::{Connection, ConnectionState, Game, Points, World},
   },
   heading_to_direction,
   pathfinder::new_vor,
 };
 
-use crate::MANUAL_TOWER_AIRSPACE_RADIUS;
+use crate::{
+  AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
+  TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
+};
 
 pub const SPAWN_RATE: Duration = Duration::from_secs(210);
 pub const PREP_SPAWN_RATE: Duration = Duration::from_secs(120);
@@ -139,6 +144,97 @@ impl Runner {
     };
 
     self.game.aircraft.push(aircraft);
+  }
+
+  pub fn generate_airspaces(&mut self, world_rng: &mut Rng) {
+    let airspace_names = [
+      "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
+      "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
+    ];
+
+    // Generate randomly positioned uncontrolled airspaces.
+    for airspace_name in airspace_names {
+      // TODO: This is a brute-force approach. A better solution would be to use
+      //       some form of jitter or other, potentially, less infinite-loop-prone
+      //       solution.
+
+      let mut i = 0;
+
+      let airspace_position = 'outer: loop {
+        if i >= 1000 {
+          tracing::error!(
+            "Unable to find a place for airspace '{airspace_name}'"
+          );
+          std::process::exit(1);
+        }
+
+        i += 1;
+
+        let position = Vec2::new(
+          (world_rng.f32() - 0.5) * WORLD_RADIUS,
+          (world_rng.f32() - 0.5) * WORLD_RADIUS,
+        );
+
+        for airport in self.world.connections.iter() {
+          if circle_circle_intersection(
+            position,
+            airport.pos,
+            AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
+            AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
+          ) {
+            continue 'outer;
+          }
+        }
+
+        break position;
+      };
+
+      let connection = Connection {
+        id: Intern::from_ref(airspace_name),
+        state: ConnectionState::Active,
+        pos: airspace_position,
+        transition: self
+          .world
+          .airspace
+          .pos
+          .move_towards(airspace_position, MANUAL_TOWER_AIRSPACE_RADIUS),
+      };
+
+      self.world.connections.push(connection);
+    }
+  }
+
+  pub fn fill_gates(&mut self) {
+    let mut aircrafts: Vec<Aircraft> = Vec::new();
+    for airport in self.world.airspace.airports.iter() {
+      for terminal in airport.terminals.iter() {
+        let mut first = true;
+        for gate in terminal.gates.iter() {
+          let mut aircraft = Aircraft::random_parked(
+            gate.clone(),
+            &mut self.rng,
+            &self.world.airspace,
+          );
+          aircraft.flight_plan.departing = self.world.airspace.id;
+          aircraft.flight_plan.arriving = self
+            .rng
+            .sample(&self.world.connections)
+            .map(|c| c.id)
+            .unwrap_or_default();
+
+          if first {
+            aircraft.set_parked_now();
+            first = false;
+          }
+
+          aircrafts.push(aircraft);
+        }
+      }
+    }
+
+    for aircraft in aircrafts.drain(..) {
+      self.add_aircraft(aircraft);
+    }
   }
 
   pub fn tick(&mut self) {
