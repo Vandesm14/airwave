@@ -5,6 +5,7 @@ import {
   isRecordingAtom,
   messagesAtom,
   pointsAtom,
+  selectedAircraftAtom,
   useTTSAtom,
   worldAtom,
 } from './lib/atoms';
@@ -33,6 +34,7 @@ export default function App() {
   let [reconnectInterval, setReconnectInterval] = createSignal<number | null>(
     null
   );
+  let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
   async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
@@ -157,8 +159,6 @@ export default function App() {
   }
 
   function onMessage(event: MessageEvent) {
-    // console.log(`[message] Data received from server: ${event.data}`);
-
     let json: ServerEvent = JSON.parse(event.data);
     switch (json.type) {
       case 'aircraft':
@@ -174,8 +174,8 @@ export default function App() {
         speakAsATC(json.value);
         break;
       case 'reply':
-        if (json.value.frequency == frequency()) {
-          // setSelectedAircraft(json.value.id);
+        if (json.value.frequency == frequency() && json.value.reply === '') {
+          setSelectedAircraft(json.value.id);
         }
         if (json.value.reply != '') speakAsAircraft(json.value);
         break;
