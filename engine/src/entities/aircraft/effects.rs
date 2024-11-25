@@ -421,14 +421,10 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         bundle.events.push(
           AircraftEvent {
             id: aircraft.id,
-            kind: EventKind::TaxiHold,
+            kind: EventKind::TaxiHold { and_state: true },
           }
           .into(),
         );
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::TaxiingState(TaxiingState::Holding),
-        });
 
         if let NodeBehavior::Park = current.behavior {
           bundle.actions.push(Action {
@@ -465,14 +461,10 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
                 id: aircraft.id,
                 kind: ActionKind::TaxiLastAsGoto,
               });
-              bundle.actions.push(Action {
-                id: aircraft.id,
-                kind: ActionKind::TaxiingState(TaxiingState::Holding),
-              });
               bundle.events.push(
                 AircraftEvent {
                   id: aircraft.id,
-                  kind: EventKind::TaxiHold,
+                  kind: EventKind::TaxiHold { and_state: true },
                 }
                 .into(),
               );

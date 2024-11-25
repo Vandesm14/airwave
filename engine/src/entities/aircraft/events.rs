@@ -43,7 +43,7 @@ pub enum EventKind {
   // Taxiing
   Taxi(Vec<Node<()>>),
   TaxiContinue,
-  TaxiHold,
+  TaxiHold { and_state: bool },
 
   // Requests
   Ident,
@@ -74,7 +74,7 @@ impl From<Task> for EventKind {
       Task::Takeoff(x) => EventKind::Takeoff(x),
       Task::Taxi(x) => EventKind::Taxi(x),
       Task::TaxiContinue => EventKind::TaxiContinue,
-      Task::TaxiHold => EventKind::TaxiHold,
+      Task::TaxiHold => EventKind::TaxiHold { and_state: true },
       Task::Delete => EventKind::Delete,
     }
   }
@@ -319,7 +319,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
           });
         }
       }
-      EventKind::TaxiHold => {
+      EventKind::TaxiHold { and_state: force } => {
         if let AircraftState::Taxiing { .. } = aircraft.state {
           bundle.actions.push(Action {
             id: aircraft.id,
@@ -329,6 +329,13 @@ impl AircraftEventHandler for HandleAircraftEvent {
             id: aircraft.id,
             kind: ActionKind::TargetSpeed(0.0),
           });
+
+          if *force {
+            bundle.actions.push(Action {
+              id: aircraft.id,
+              kind: ActionKind::TaxiingState(TaxiingState::Holding),
+            });
+          }
         }
       }
 

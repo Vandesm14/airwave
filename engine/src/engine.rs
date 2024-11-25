@@ -382,7 +382,7 @@ impl Engine {
           ));
           bundle.events.push(Event::Aircraft(AircraftEvent::new(
             aircraft.id,
-            EventKind::TaxiHold,
+            EventKind::TaxiHold { and_state: false },
           )));
         } else if !collisions.contains(&aircraft.id)
           && matches!(state, &TaxiingState::Override | &TaxiingState::Stopped)
