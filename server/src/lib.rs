@@ -12,9 +12,9 @@ pub const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
 
 pub mod airport;
 pub mod config;
+pub mod http;
 pub mod prompter;
 pub mod runner;
-pub mod server;
 
 pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);
 

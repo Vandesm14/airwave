@@ -7,18 +7,16 @@ use std::{
   time::SystemTime,
 };
 
-use futures_util::StreamExt as _;
 use glam::Vec2;
 use internment::Intern;
-use tokio::net::TcpListener;
 use turborand::{rng::Rng, SeededCore};
 
 use engine::entities::{airport::Airport, airspace::Airspace};
 use server::{
   airport::new_v_pattern,
   config::Config,
+  http,
   runner::{IncomingUpdate, OutgoingReply, Runner},
-  server::{broadcast_updates_to, receive_commands_from},
   Cli, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
 };
 
@@ -118,40 +116,42 @@ async fn main() {
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
-  let listener = TcpListener::bind(address).await.unwrap();
-  tracing::info!("Listening on {address}");
+  let _ = tokio::spawn(http::run(address)).await;
 
-  loop {
-    let openai_api_key = openai_api_key.clone();
-    let command_tx = command_tx.clone();
-    let update_rx = update_rx.clone();
+  // let listener = TcpListener::bind(address).await.unwrap();
+  // tracing::info!("Listening on {address}");
 
-    let (stream, _) = match listener.accept().await {
-      Ok(stream) => stream,
-      Err(e) => {
-        tracing::error!("Unable to accept TCP stream: {e}");
-        continue;
-      }
-    };
+  // loop {
+  //   let openai_api_key = openai_api_key.clone();
+  //   let command_tx = command_tx.clone();
+  //   let update_rx = update_rx.clone();
 
-    let stream = match tokio_tungstenite::accept_async(stream).await {
-      Ok(stream) => stream,
-      Err(e) => {
-        tracing::error!("Unable to accept WebSocket stream: {e}");
-        continue;
-      }
-    };
+  //   let (stream, _) = match listener.accept().await {
+  //     Ok(stream) => stream,
+  //     Err(e) => {
+  //       tracing::error!("Unable to accept TCP stream: {e}");
+  //       continue;
+  //     }
+  //   };
 
-    let (writer, reader) = stream.split();
+  //   let stream = match tokio_tungstenite::accept_async(stream).await {
+  //     Ok(stream) => stream,
+  //     Err(e) => {
+  //       tracing::error!("Unable to accept WebSocket stream: {e}");
+  //       continue;
+  //     }
+  //   };
 
-    command_tx.send(IncomingUpdate::Connect).await.unwrap();
+  //   let (writer, reader) = stream.split();
 
-    tokio::spawn(broadcast_updates_to(writer, update_rx));
-    tokio::spawn(receive_commands_from(
-      openai_api_key,
-      reader,
-      update_tx.clone(),
-      command_tx,
-    ));
-  }
+  //   command_tx.send(IncomingUpdate::Connect).await.unwrap();
+
+  //   tokio::spawn(broadcast_updates_to(writer, update_rx));
+  //   tokio::spawn(receive_commands_from(
+  //     openai_api_key,
+  //     reader,
+  //     update_tx.clone(),
+  //     command_tx,
+  //   ));
+  // }
 }

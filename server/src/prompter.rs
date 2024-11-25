@@ -7,7 +7,7 @@ use thiserror::Error;
 
 use engine::command::{Command, CommandReply, Tasks};
 
-use crate::server::send_chatgpt_request;
+use crate::http::send_chatgpt_request;
 
 fn deserialize_string_or_any<'de, D>(
   deserializer: D,
