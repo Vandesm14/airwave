@@ -70,15 +70,17 @@ export default function App() {
     whisper.stopRecording((blob) => {
       blob.arrayBuffer().then((value) => {
         console.log('send voice request');
-        socket.send(
-          JSON.stringify({
-            type: 'voice',
-            value: {
-              data: [...new Uint8Array(value)],
-              frequency: frequency(),
-            },
-          })
-        );
+        if (socket !== null) {
+          socket.send(
+            JSON.stringify({
+              type: 'voice',
+              value: {
+                data: [...new Uint8Array(value)],
+                frequency: frequency(),
+              },
+            })
+          );
+        }
         console.log('sent voice request');
       });
     });
@@ -94,9 +96,14 @@ export default function App() {
   });
 
   function sendTextMessage(text: string) {
-    socket.send(
-      JSON.stringify({ type: 'text', value: { text, frequency: frequency() } })
-    );
+    if (socket !== null) {
+      socket.send(
+        JSON.stringify({
+          type: 'text',
+          value: { text, frequency: frequency() },
+        })
+      );
+    }
   }
 
   onMount(async () => {
@@ -137,14 +144,16 @@ export default function App() {
   }
 
   const wsUrl = `ws://${path}`;
-  let socket = new WebSocket(wsUrl);
+  let socket: WebSocket | null = null;
 
   function onOpen() {
     setConnected(true);
     console.log('[open] Connection established');
     console.log('Sending to server');
 
-    socket.send(JSON.stringify({ type: 'connect' }));
+    if (socket !== null) {
+      socket.send(JSON.stringify({ type: 'connect' }));
+    }
   }
 
   function onMessage(event: MessageEvent) {
@@ -194,6 +203,10 @@ export default function App() {
   function tryReconnect() {
     console.log('Trying to reconnect');
 
+    if (socket !== null) {
+      socket.close();
+    }
+
     socket = new WebSocket(wsUrl);
     socket.onopen = onOpen;
     socket.onmessage = onMessage;
@@ -204,7 +217,7 @@ export default function App() {
   createEffect(() => {
     if (!connected() && reconnectInterval() === null) {
       tryReconnect();
-      setReconnectInterval(setInterval(tryReconnect, 1000));
+      setReconnectInterval(setInterval(tryReconnect, 2000));
     } else if (connected() && reconnectInterval() !== null) {
       clearInterval(reconnectInterval()!);
       setReconnectInterval(null);
@@ -212,7 +225,9 @@ export default function App() {
   });
 
   function sendPause() {
-    socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
+    if (socket !== null) {
+      socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
+    }
   }
 
   function toggleTTS() {
