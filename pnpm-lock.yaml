@@ -7,6 +7,9 @@ settings:
 importers:
   .:
     devDependencies:
+      '@tsconfig/strictest':
+        specifier: ^2.0.5
+        version: 2.0.5
       prettier:
         specifier: ^3.0.0
         version: 3.3.3
@@ -731,6 +734,12 @@ packages:
       }
     peerDependencies:
       solid-js: ^1.6.12
+
+  '@tsconfig/strictest@2.0.5':
+    resolution:
+      {
+        integrity: sha512-ec4tjL2Rr0pkZ5hww65c+EEPYwxOi4Ryv+0MtjeaSQRJyq322Q27eOQiFbuNgw2hpL4hB1/W/HBGk3VKS43osg==,
+      }
 
   '@types/babel__core@7.20.5':
     resolution:
@@ -1685,6 +1694,8 @@ snapshots:
   '@solid-primitives/utils@6.2.3(solid-js@1.8.21)':
     dependencies:
       solid-js: 1.8.21
+
+  '@tsconfig/strictest@2.0.5': {}
 
   '@types/babel__core@7.20.5':
     dependencies:

@@ -11,7 +11,8 @@
     "run-all": "zellij --layout zellij.kdl"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
-    "prettier": "^3.0.0"
+    "@tsconfig/strictest": "^2.0.5",
+    "prettier": "^3.0.0",
+    "typescript": "^5.5.4"
   }
 }
