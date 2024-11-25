@@ -202,11 +202,6 @@ export default function App() {
 
   function tryReconnect() {
     console.log('Trying to reconnect');
-
-    if (socket !== null) {
-      socket.close();
-    }
-
     socket = new WebSocket(wsUrl);
     socket.onopen = onOpen;
     socket.onmessage = onMessage;
