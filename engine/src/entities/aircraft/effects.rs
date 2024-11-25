@@ -21,7 +21,7 @@ use crate::{
 use super::{
   actions::ActionKind,
   events::{AircraftEvent, EventKind},
-  Action, Aircraft, AircraftState, LandingState, TaxiingState,
+  Action, Aircraft, AircraftState, LandingState,
 };
 
 pub trait AircraftEffect {
