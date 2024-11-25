@@ -21,7 +21,10 @@ function setToLocalStorage<T>(id: string, val: T) {
 
 export function useStorageAtom<T>(
   atom: PrimitiveAtom<T>
-): [Resource<Awaited<T>> | Accessor<Awaited<T>>, SetAtom<[SetStateAction<T>], void>] {
+): [
+  Resource<Awaited<T>> | Accessor<Awaited<T>>,
+  SetAtom<[SetStateAction<T>], void>,
+] {
   const name = `storage-${createUniqueId()}`;
   let [theAtom, setTheAtom] = useAtom(atom);
 

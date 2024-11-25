@@ -75,8 +75,8 @@ export default function FreqSelector() {
           value={key()}
         >
           {foundAirspace().frequencies
-            // TODO: Remove uses of as keyof Frequencies.
-            ? Object.entries(foundAirspace().frequencies).map(([k, v]) => (
+            ? // TODO: Remove uses of as keyof Frequencies.
+              Object.entries(foundAirspace().frequencies).map(([k, v]) => (
                 <option value={k}>
                   {k} - {v}
                 </option>
