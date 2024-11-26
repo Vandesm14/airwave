@@ -3,6 +3,7 @@ name = "serve"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 rust-embed = "8"
