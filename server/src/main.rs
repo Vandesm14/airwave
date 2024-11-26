@@ -75,6 +75,9 @@ async fn main() {
       .and_then(|w| w.seed)
       .unwrap_or(SystemTime::now().elapsed().unwrap().as_secs()),
   );
+
+  tracing::info!("Seed: {seed}");
+
   let rng = Rng::with_seed(seed);
   let mut world_rng = Rng::with_seed(0);
   let mut runner = Runner::new(
