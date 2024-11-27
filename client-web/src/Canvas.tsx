@@ -78,6 +78,7 @@ export default function Canvas() {
       if (!result.ok) return null;
       return result.json();
     },
+    refetchOnReconnect: 'always',
     throwOnError: true, // Throw an error if the query fails
   }));
 
