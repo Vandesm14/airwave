@@ -46,16 +46,16 @@ async fn comms_text(
   State(mut state): State<AppState>,
   Json(payload): Json<CommsText>,
 ) -> Result<(), String> {
-  let command = complete_atc_request(payload.text, payload.frequency).await;
-  if let Some(command) = command {
-    let x = JobReq::send(JobReqKind::Command(command), &mut state.sender)
-      .recv()
-      .await;
+  tokio::spawn(async move {
+    let command = complete_atc_request(payload.text, payload.frequency).await;
+    if let Some(command) = command {
+      let _ = JobReq::send(JobReqKind::Command(command), &mut state.sender)
+        .recv()
+        .await;
+    }
+  });
 
-    Ok(())
-  } else {
-    Err("Failed to parse ATC message.".to_string())
-  }
+  Ok(())
 }
 
 async fn get_messages(State(mut state): State<AppState>) -> String {
@@ -74,17 +74,32 @@ async fn get_messages(State(mut state): State<AppState>) -> String {
 }
 
 async fn get_world(State(mut state): State<AppState>) -> String {
-  let res = JobReq::send(JobReqKind::Messages, &mut state.sender)
+  let res = JobReq::send(JobReqKind::World, &mut state.sender)
     .recv()
     .await;
-  if let Ok(JobResKind::Messages(messages)) = res {
-    if let Ok(string) = serde_json::to_string(&messages) {
+  if let Ok(JobResKind::World(world)) = res {
+    if let Ok(string) = serde_json::to_string(&world) {
       string
     } else {
       todo!("failed to serialize")
     }
   } else {
-    todo!("failed to get messages: {res:?}")
+    todo!("failed to get world: {res:?}")
+  }
+}
+
+async fn get_game(State(mut state): State<AppState>) -> String {
+  let res = JobReq::send(JobReqKind::Game, &mut state.sender)
+    .recv()
+    .await;
+  if let Ok(JobResKind::Game(game)) = res {
+    if let Ok(string) = serde_json::to_string(&game) {
+      string
+    } else {
+      todo!("failed to serialize")
+    }
+  } else {
+    todo!("failed to get game: {res:?}")
   }
 }
 
@@ -108,6 +123,8 @@ pub async fn run(
     .route("/", get(|| async { "Hello, World!" }))
     .route("/comms/text", post(comms_text))
     .route("/messages", get(get_messages))
+    .route("/world", get(get_world))
+    .route("/game", get(get_game))
     .route("/ping", get(ping_pong))
     .with_state(AppState::new(sender));
 

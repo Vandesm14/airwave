@@ -50,13 +50,14 @@ pub enum OutgoingReply {
   Funds(usize),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum JobReqKind {
   Ping,
 
   // GET
   Messages,
   World,
+  Game,
 
   // POST
   Command(CommandWithFreq),
@@ -69,6 +70,7 @@ pub enum JobResKind {
   // GET
   Messages(Vec<CommandWithFreq>),
   World(World),
+  Game(Game),
 }
 
 #[derive(Debug)]
@@ -269,7 +271,12 @@ impl Runner {
         JobReqKind::Messages => {
           incoming.reply(JobResKind::Messages(self.messages.clone()))
         }
-        JobReqKind::World => todo!(),
+        JobReqKind::World => {
+          incoming.reply(JobResKind::World(self.world.clone()))
+        }
+        JobReqKind::Game => {
+          incoming.reply(JobResKind::Game(self.game.clone()));
+        }
 
         // POST
         JobReqKind::Command(command) => commands.push(command.clone()),
