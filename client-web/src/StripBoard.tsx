@@ -1,4 +1,4 @@
-import { Accessor, createEffect, createMemo, createSignal } from 'solid-js';
+import { createEffect, createMemo, createSignal } from 'solid-js';
 import {
   Aircraft,
   Frequencies,

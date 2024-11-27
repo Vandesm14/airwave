@@ -16,13 +16,7 @@ import {
   Vec2,
   World,
 } from './lib/types';
-import {
-  Accessor,
-  createEffect,
-  createMemo,
-  createSignal,
-  onMount,
-} from 'solid-js';
+import { createEffect, createMemo, createSignal, onMount } from 'solid-js';
 import {
   calculateSquaredDistance,
   headingToDegrees,
