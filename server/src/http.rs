@@ -119,14 +119,17 @@ pub async fn run(
   address: SocketAddr,
   sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
 ) {
-  let app = Router::new()
-    .route("/", get(|| async { "Airwave API is active." }))
-    .route("/comms/text", post(comms_text))
-    .route("/messages", get(get_messages))
-    .route("/world", get(get_world))
-    .route("/game", get(get_game))
-    .route("/ping", get(ping_pong))
-    .with_state(AppState::new(sender));
+  let app = Router::new().nest(
+    "/api",
+    Router::new()
+      .route("/", get(|| async { "Airwave API is active." }))
+      .route("/comms/text", post(comms_text))
+      .route("/messages", get(get_messages))
+      .route("/world", get(get_world))
+      .route("/game", get(get_game))
+      .route("/ping", get(ping_pong))
+      .with_state(AppState::new(sender)),
+  );
 
   let listener = tokio::net::TcpListener::bind(address).await.unwrap();
   tracing::info!("Listening on {address}");
