@@ -12,7 +12,7 @@ use turborand::{rng::Rng, TurboRand};
 use engine::{
   angle_between_points, circle_circle_intersection,
   command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
-  engine::{Engine, Event, UICommand, UIEvent},
+  engine::{Engine, Event, UICommand},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
