@@ -120,7 +120,7 @@ pub async fn run(
   sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
 ) {
   let app = Router::new()
-    .route("/", get(|| async { "Hello, World!" }))
+    .route("/", get(|| async { "Airwave API is active." }))
     .route("/comms/text", post(comms_text))
     .route("/messages", get(get_messages))
     .route("/world", get(get_world))
