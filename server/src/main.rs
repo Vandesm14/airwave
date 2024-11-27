@@ -9,14 +9,12 @@ use std::{
 
 use glam::Vec2;
 use internment::Intern;
+use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
 use engine::entities::{airport::Airport, airspace::Airspace};
 use server::{
-  airport::new_v_pattern,
-  config::Config,
-  http,
-  runner::{IncomingUpdate, OutgoingReply, Runner},
+  airport::new_v_pattern, config::Config, http, job::JobReq, runner::Runner,
   Cli, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
 };
 
@@ -65,11 +63,7 @@ async fn main() {
     .or_else(|| config.server.and_then(|s| s.address))
     .unwrap_or(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001));
 
-  let (command_tx, command_rx) = async_channel::unbounded::<IncomingUpdate>();
-  let (mut update_tx, update_rx) =
-    async_broadcast::broadcast::<OutgoingReply>(16);
-
-  update_tx.set_overflow(true);
+  let (job_tx, job_rx) = mpsc::unbounded_channel::<JobReq>();
 
   let seed = seed.unwrap_or(
     config
@@ -80,9 +74,7 @@ async fn main() {
   let rng = Rng::with_seed(seed);
   let mut world_rng = Rng::with_seed(0);
   let mut runner = Runner::new(
-    command_rx,
-    update_tx.clone(),
-    command_tx.clone(),
+    job_rx,
     Some(PathBuf::from_str("assets/world.json").unwrap()),
     rng,
   );
@@ -116,7 +108,7 @@ async fn main() {
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
-  let _ = tokio::spawn(http::run(address)).await;
+  let _ = tokio::spawn(http::run(address, job_tx)).await;
 
   // let listener = TcpListener::bind(address).await.unwrap();
   // tracing::info!("Listening on {address}");

@@ -10,7 +10,6 @@ pub mod pathfinder;
 
 pub mod command;
 pub mod entities;
-pub mod job;
 
 pub const TIME_SCALE: f32 = 1.0;
 

@@ -8,15 +8,87 @@ use async_openai::{
     CreateChatCompletionRequest,
   },
 };
-use axum::{routing::get, Router};
+use axum::{
+  extract::State,
+  routing::{get, post},
+  Json, Router,
+};
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
 
 use engine::{command::CommandWithFreq, engine::UICommand};
 
-use crate::prompter::Prompter;
+use crate::{
+  job::{JobReq, JobReqKind, JobResKind},
+  prompter::Prompter,
+};
 
-pub async fn run(address: SocketAddr) {
-  let app = Router::new().route("/", get(|| async { "Hello, World!" }));
+#[derive(Debug, Clone)]
+pub struct AppState {
+  pub sender: mpsc::UnboundedSender<JobReq>,
+}
+
+impl AppState {
+  pub fn new(sender: mpsc::UnboundedSender<JobReq>) -> Self {
+    Self { sender }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct CommsText {
+  text: String,
+  frequency: f32,
+}
+async fn comms_text(
+  State(mut state): State<AppState>,
+  Json(payload): Json<CommsText>,
+) -> Result<(), String> {
+  let command = complete_atc_request(payload.text, payload.frequency).await;
+  if let Some(command) = command {
+    let x = JobReq::send(JobReqKind::Command(command), &mut state.sender)
+      .try_recv()
+      .await;
+
+    Ok(())
+  } else {
+    Err("Failed to parse ATC message.".to_string())
+  }
+}
+
+async fn get_messages(State(mut state): State<AppState>) -> String {
+  let res = JobReq::send(JobReqKind::Messages, &mut state.sender)
+    .try_recv()
+    .await;
+  if let Ok(JobResKind::Messages(messages)) = res {
+    if let Ok(string) = serde_json::to_string(&messages) {
+      string
+    } else {
+      todo!("failed to serialize")
+    }
+  } else {
+    todo!("failed to get messages: {res:?}")
+  }
+}
+
+async fn ping_pong(State(mut state): State<AppState>) -> String {
+  let res = JobReq::send(JobReqKind::Ping, &mut state.sender)
+    .try_recv()
+    .await;
+
+  if let Ok(JobResKind::Pong) = res {
+    "Pong".to_string()
+  } else {
+    todo!("failed to ping: {res:?}")
+  }
+}
+
+pub async fn run(address: SocketAddr, sender: mpsc::UnboundedSender<JobReq>) {
+  let app = Router::new()
+    .route("/", get(|| async { "Hello, World!" }))
+    .route("/comms/text", post(comms_text))
+    .route("/messages", get(get_messages))
+    .route("/ping", get(ping_pong))
+    .with_state(AppState::new(sender));
 
   let listener = tokio::net::TcpListener::bind(address).await.unwrap();
   tracing::info!("Listening on {address}");

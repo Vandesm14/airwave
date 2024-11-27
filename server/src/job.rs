@@ -1,3 +1,4 @@
+use engine::command::CommandWithFreq;
 use tokio::sync::{mpsc, oneshot};
 
 #[derive(Debug)]
@@ -10,14 +11,20 @@ impl JobQueue {
     Self { job_in }
   }
 
-  pub fn try_recv(&mut self) -> Option<JobReq> {
-    self.job_in.try_recv().ok()
+  pub fn try_recv(&mut self) -> Result<JobReq, mpsc::error::TryRecvError> {
+    self.job_in.try_recv()
   }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum JobReqKind {
   Ping,
+
+  // GET
+  Messages,
+
+  // POST
+  Command(CommandWithFreq),
 }
 
 #[derive(Debug)]
@@ -43,13 +50,20 @@ impl JobReq {
   }
 
   pub fn reply(self, res: JobResKind) {
-    self.callback.send(res).unwrap();
+    dbg!(self.callback.send(res)).unwrap();
+  }
+
+  pub fn req(&self) -> &JobReqKind {
+    &self.req
   }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum JobResKind {
   Pong,
+
+  // GET
+  Messages(Vec<CommandWithFreq>),
 }
 
 #[derive(Debug)]
@@ -59,11 +73,10 @@ pub struct JobRes {
 }
 
 impl JobRes {
-  pub async fn try_recv(self) -> Result<JobResKind, oneshot::error::RecvError> {
-    match self.receiver.await {
-      Ok(res) => Ok(res),
-      Err(e) => Err(e),
-    }
+  pub async fn try_recv(
+    mut self,
+  ) -> Result<JobResKind, oneshot::error::TryRecvError> {
+    self.receiver.try_recv()
   }
 }
 
@@ -72,9 +85,10 @@ mod test {
   use super::*;
 
   async fn respond(queue: &mut JobQueue) {
-    while let Some(job_req) = queue.try_recv() {
+    while let Ok(job_req) = queue.try_recv() {
       match job_req.req {
-        JobReqKind::Ping => job_req.callback.send(JobResKind::Pong).unwrap(),
+        JobReqKind::Ping => job_req.reply(JobResKind::Pong),
+        _ => {}
       }
     }
   }

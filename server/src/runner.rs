@@ -3,10 +3,10 @@ use std::{
   time::{Duration, Instant},
 };
 
-use async_channel::TryRecvError;
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::error::TryRecvError;
 use turborand::{rng::Rng, TurboRand};
 
 use engine::{
@@ -25,6 +25,7 @@ use engine::{
 };
 
 use crate::{
+  job::{JobQueue, JobReq, JobReqKind, JobResKind},
   AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
   TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
@@ -49,22 +50,14 @@ pub enum OutgoingReply {
   Funds(usize),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum IncomingUpdate {
-  Command(CommandWithFreq),
-  UICommand(UICommand),
-  Connect,
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Runner {
   pub world: World,
   pub game: Game,
   pub engine: Engine,
+  pub messages: Vec<CommandWithFreq>,
 
-  pub receiver: async_channel::Receiver<IncomingUpdate>,
-  pub outgoing_sender: async_broadcast::Sender<OutgoingReply>,
-  pub incoming_sender: async_channel::Sender<IncomingUpdate>,
+  pub job_queue: JobQueue,
 
   pub save_to: Option<PathBuf>,
   pub rng: Rng,
@@ -76,9 +69,7 @@ pub struct Runner {
 
 impl Runner {
   pub fn new(
-    receiver: async_channel::Receiver<IncomingUpdate>,
-    outgoing_sender: async_broadcast::Sender<OutgoingReply>,
-    incoming_sender: async_channel::Sender<IncomingUpdate>,
+    receiver: tokio::sync::mpsc::UnboundedReceiver<JobReq>,
     save_to: Option<PathBuf>,
     rng: Rng,
   ) -> Self {
@@ -86,10 +77,9 @@ impl Runner {
       world: World::default(),
       game: Game::default(),
       engine: Engine::default(),
+      messages: Vec::new(),
 
-      receiver,
-      outgoing_sender,
-      incoming_sender,
+      job_queue: JobQueue::new(receiver),
 
       save_to,
       rng,
@@ -243,22 +233,22 @@ impl Runner {
     let mut ui_commands: Vec<UICommand> = Vec::new();
 
     loop {
-      let incoming = match self.receiver.try_recv() {
+      let incoming = match self.job_queue.try_recv() {
         Ok(incoming) => incoming,
-        Err(TryRecvError::Closed) => return,
+        Err(TryRecvError::Disconnected) => return,
         Err(TryRecvError::Empty) => break,
       };
 
-      match incoming {
-        IncomingUpdate::Command(command) => commands.push(command),
-        IncomingUpdate::UICommand(ui_command) => {
-          if ui_command == UICommand::Pause {
-            self.paused = !self.paused;
-          }
+      match incoming.req() {
+        JobReqKind::Ping => incoming.reply(JobResKind::Pong),
 
-          ui_commands.push(ui_command)
+        // GET
+        JobReqKind::Messages => {
+          incoming.reply(JobResKind::Messages(self.messages.clone()))
         }
-        IncomingUpdate::Connect => self.broadcast_for_new_client(),
+
+        // POST
+        JobReqKind::Command(command) => commands.push(command.clone()),
       }
     }
 
@@ -296,20 +286,7 @@ impl Runner {
     }) {
       match &event.kind {
         EventKind::Callout(command) => {
-          if let Err(e) = self
-            .outgoing_sender
-            .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-          {
-            tracing::error!("error sending outgoing reply: {e}")
-          }
-        }
-
-        // Broadcast points when they are updated.
-        EventKind::SuccessfulTakeoff => {
-          self.broadcast_points();
-        }
-        EventKind::SuccessfulLanding => {
-          self.broadcast_points();
+          self.messages.push(command.clone());
         }
 
         EventKind::EnRoute(false) => {
@@ -330,24 +307,11 @@ impl Runner {
               },
               tasks: Vec::new(),
             };
-            if let Err(e) = self
-              .outgoing_sender
-              .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-            {
-              tracing::error!("error sending outgoing reply: {e}")
-            }
+
+            self.messages.push(command.clone());
           }
         }
         _ => {}
-      }
-    }
-
-    for event in events.iter().filter_map(|e| match e {
-      Event::Aircraft(_) => None,
-      Event::UiEvent(ui_event) => Some(ui_event),
-    }) {
-      if let UIEvent::Funds(_) = &event {
-        self.broadcast_funds();
       }
     }
 
@@ -355,7 +319,6 @@ impl Runner {
       Event::Aircraft(aircraft_event) => Some(aircraft_event),
       Event::UiEvent(_) => None,
     }));
-    self.broadcast_aircraft();
     // TODO: self.save_world();
   }
 
@@ -424,10 +387,7 @@ impl Runner {
       }
 
       if callout {
-        self
-          .outgoing_sender
-          .try_broadcast(OutgoingReply::Reply(command.clone().into()))
-          .unwrap();
+        self.messages.push(command.clone());
       }
     }
   }
@@ -468,38 +428,5 @@ impl Runner {
 
       i += 1;
     }
-  }
-
-  fn broadcast_aircraft(&self) {
-    let _ = self
-      .outgoing_sender
-      .try_broadcast(OutgoingReply::Aircraft(self.game.aircraft.clone()))
-      .inspect_err(|e| tracing::warn!("failed to broadcast aircraft: {}", e));
-  }
-
-  fn broadcast_points(&self) {
-    let _ = self
-      .outgoing_sender
-      .try_broadcast(OutgoingReply::Points(self.game.points.clone()))
-      .inspect_err(|e| tracing::warn!("failed to broadcast points: {}", e));
-  }
-
-  fn broadcast_funds(&self) {
-    let _ = self
-      .outgoing_sender
-      .try_broadcast(OutgoingReply::Funds(self.game.funds))
-      .inspect_err(|e| tracing::warn!("failed to broadcast funds: {}", e));
-  }
-
-  fn broadcast_world(&self) {
-    let _ = self
-      .outgoing_sender
-      .try_broadcast(OutgoingReply::World(self.world.clone()))
-      .inspect_err(|e| tracing::warn!("failed to broadcast world: {}", e));
-  }
-
-  fn broadcast_for_new_client(&self) {
-    self.broadcast_world();
-    self.broadcast_points();
   }
 }
