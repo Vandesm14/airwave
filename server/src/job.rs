@@ -31,10 +31,7 @@ where
     let job_req = Self { req, callback };
     let _ = sender.send(job_req);
 
-    JobRes {
-      res: None,
-      receiver,
-    }
+    JobRes { receiver }
   }
 
   pub fn reply(self, res: A) {
@@ -48,7 +45,6 @@ where
 
 #[derive(Debug)]
 pub struct JobRes<A> {
-  res: Option<A>,
   receiver: oneshot::Receiver<A>,
 }
 
