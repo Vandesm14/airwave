@@ -28,10 +28,7 @@ async fn main() {
   if let Err(e) = dotenv::dotenv() {
     tracing::warn!(".env file was not provided: {}", e);
   }
-
-  let openai_api_key: Arc<str> = std::env::var("OPENAI_API_KEY")
-    .expect("OPENAI_API_KEY must be set")
-    .into();
+  std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
 
   let Cli {
     address,
