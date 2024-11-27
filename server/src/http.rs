@@ -46,7 +46,7 @@ async fn comms_text(
   let command = complete_atc_request(payload.text, payload.frequency).await;
   if let Some(command) = command {
     let x = JobReq::send(JobReqKind::Command(command), &mut state.sender)
-      .try_recv()
+      .recv()
       .await;
 
     Ok(())
@@ -57,7 +57,7 @@ async fn comms_text(
 
 async fn get_messages(State(mut state): State<AppState>) -> String {
   let res = JobReq::send(JobReqKind::Messages, &mut state.sender)
-    .try_recv()
+    .recv()
     .await;
   if let Ok(JobResKind::Messages(messages)) = res {
     if let Ok(string) = serde_json::to_string(&messages) {
@@ -72,7 +72,7 @@ async fn get_messages(State(mut state): State<AppState>) -> String {
 
 async fn ping_pong(State(mut state): State<AppState>) -> String {
   let res = JobReq::send(JobReqKind::Ping, &mut state.sender)
-    .try_recv()
+    .recv()
     .await;
 
   if let Ok(JobResKind::Pong) = res {

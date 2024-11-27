@@ -11,7 +11,7 @@ impl JobQueue {
     Self { job_in }
   }
 
-  pub fn try_recv(&mut self) -> Result<JobReq, mpsc::error::TryRecvError> {
+  pub fn recv(&mut self) -> Result<JobReq, mpsc::error::TryRecvError> {
     self.job_in.try_recv()
   }
 }
@@ -50,7 +50,7 @@ impl JobReq {
   }
 
   pub fn reply(self, res: JobResKind) {
-    dbg!(self.callback.send(res)).unwrap();
+    self.callback.send(res).unwrap();
   }
 
   pub fn req(&self) -> &JobReqKind {
@@ -73,10 +73,8 @@ pub struct JobRes {
 }
 
 impl JobRes {
-  pub async fn try_recv(
-    mut self,
-  ) -> Result<JobResKind, oneshot::error::TryRecvError> {
-    self.receiver.try_recv()
+  pub async fn recv(self) -> Result<JobResKind, oneshot::error::RecvError> {
+    self.receiver.await
   }
 }
 
@@ -85,7 +83,7 @@ mod test {
   use super::*;
 
   async fn respond(queue: &mut JobQueue) {
-    while let Ok(job_req) = queue.try_recv() {
+    while let Ok(job_req) = queue.recv() {
       match job_req.req {
         JobReqKind::Ping => job_req.reply(JobResKind::Pong),
         _ => {}
@@ -101,7 +99,7 @@ mod test {
     let res = JobReq::send(JobReqKind::Ping, &mut sender);
     respond(&mut job_queue).await;
 
-    assert_eq!(res.try_recv().await, Ok(JobResKind::Pong));
+    assert_eq!(res.recv().await, Ok(JobResKind::Pong));
   }
 
   #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -114,7 +112,7 @@ mod test {
     respond(&mut job_queue).await;
     respond(&mut job_queue).await;
 
-    assert_eq!(res.try_recv().await, Ok(JobResKind::Pong));
-    assert_eq!(res2.try_recv().await, Ok(JobResKind::Pong));
+    assert_eq!(res.recv().await, Ok(JobResKind::Pong));
+    assert_eq!(res2.recv().await, Ok(JobResKind::Pong));
   }
 }

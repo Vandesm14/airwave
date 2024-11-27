@@ -233,7 +233,7 @@ impl Runner {
     let mut ui_commands: Vec<UICommand> = Vec::new();
 
     loop {
-      let incoming = match self.job_queue.try_recv() {
+      let incoming = match self.job_queue.recv() {
         Ok(incoming) => incoming,
         Err(TryRecvError::Disconnected) => return,
         Err(TryRecvError::Empty) => break,
