@@ -249,13 +249,11 @@ export default function Canvas() {
   function doRender(canvas: HTMLCanvasElement) {
     doDraw(canvas);
 
-    setRender((render) => {
-      let now = Date.now();
-      let duration = isGround() ? 1000 * 0.5 : 1000 * 4;
+    let now = Date.now();
+    let duration = isGround() ? 1000 * 0.5 : 1000 * 4;
 
-      if (now - render.lastDraw > duration || render.doInitialDraw) {
-        render.lastDraw = now;
-
+    if (now - render().lastDraw > duration || render().doInitialDraw) {
+      setRender((render) => {
         setAircraftTrails((map) => {
           for (let aircraft of aircrafts.data) {
             const trail = map.get(aircraft.id);
@@ -282,10 +280,10 @@ export default function Canvas() {
         });
 
         render.doInitialDraw = false;
-      }
 
-      return { ...render };
-    });
+        return { ...render };
+      });
+    }
   }
 
   function resetTransform(ctx: CanvasRenderingContext2D) {
