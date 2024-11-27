@@ -109,7 +109,7 @@ async fn ping_pong(State(mut state): State<AppState>) -> String {
     .await;
 
   if let Ok(JobResKind::Pong) = res {
-    "Pong".to_string()
+    "pong".to_string()
   } else {
     todo!("failed to ping: {res:?}")
   }
