@@ -1,6 +1,5 @@
 import { atom } from 'solid-jotai';
 import {
-  Aircraft,
   DefaultWorld,
   newDuration,
   Points,

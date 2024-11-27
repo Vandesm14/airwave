@@ -20,6 +20,7 @@ import {
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib/lib';
+import { createQuery } from '@tanstack/solid-query';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -306,11 +307,7 @@ function Strip({ strip }: StripProps) {
   );
 }
 
-export default function StripBoard({
-  aircrafts,
-}: {
-  aircrafts: Accessor<Array<Aircraft>>;
-}) {
+export default function StripBoard() {
   let [strips, setStrips] = createSignal<Strips>(newStrips(), {
     equals: false,
   });
@@ -324,6 +321,11 @@ export default function StripBoard({
   let [airspace] = useAtom(control().airspace);
   let [_, setFrequency] = useAtom(frequencyAtom);
 
+  const aircrafts = createQuery<Aircraft[]>(() => ({
+    queryKey: ['/api/game/aircraft'],
+    initialData: [],
+  }));
+
   let foundAirspace = createMemo(() => world().airspace);
 
   createEffect(() => {
@@ -332,10 +334,10 @@ export default function StripBoard({
     // When we first load, aircrafts() will be blank, since they havent been
     // loaded from the server yet. So, when we run the purge function to clean
     // up nonexistent callsigns from the strips, all are cleaned up.
-    if (aircrafts().length > 0) {
+    if (aircrafts.data.length > 0) {
       let strips: Strips = newStrips();
 
-      for (let aircraft of aircrafts()) {
+      for (let aircraft of aircrafts.data) {
         let category = assignAircraftToStrips(
           aircraft,
           airspace(),
@@ -392,8 +394,8 @@ export default function StripBoard({
   return (
     <div id="stripboard">
       <div class="header">
-        Yours: {aircrafts().length - strips().None.length} (All:{' '}
-        {aircrafts().length})
+        Yours: {aircrafts.data.length - strips().None.length} (All:{' '}
+        {aircrafts.data.length})
       </div>
       {strips().Colliding.length > 0 ? (
         <>

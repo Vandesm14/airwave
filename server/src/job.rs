@@ -38,7 +38,7 @@ where
   }
 
   pub fn reply(self, res: A) {
-    self.callback.send(res).unwrap();
+    self.callback.send(res).expect("failed to send reply");
   }
 
   pub fn req(&self) -> &Q {

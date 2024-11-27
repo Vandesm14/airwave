@@ -56,6 +56,8 @@ export default function Canvas() {
     Map<string, Array<{ pos: Vec2; now: number }>>
   >(new Map());
   let [mod, setMod] = createSignal(false);
+  let renderRate = createMemo(() => (isGround() ? 1000 * 0.5 : 1000 * 4));
+
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: ['/api/game/aircraft'],
     queryFn: async () => {
@@ -64,8 +66,9 @@ export default function Canvas() {
       return result.json();
     },
     initialData: [],
-    staleTime: 500,
-    refetchInterval: 500,
+    staleTime: renderRate(),
+    refetchInterval: renderRate(),
+    refetchOnMount: 'always',
     throwOnError: true, // Throw an error if the query fails
   }));
   const world = createQuery<World>(() => ({
@@ -250,9 +253,7 @@ export default function Canvas() {
     doDraw(canvas);
 
     let now = Date.now();
-    let duration = isGround() ? 1000 * 0.5 : 1000 * 4;
-
-    if (now - render().lastDraw > duration || render().doInitialDraw) {
+    if (now - render().lastDraw > renderRate() || render().doInitialDraw) {
       setRender((render) => {
         setAircraftTrails((map) => {
           for (let aircraft of aircrafts.data) {

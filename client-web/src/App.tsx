@@ -29,17 +29,11 @@ export default function App() {
   const whisper = new WhisperSTT();
 
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
-  let [aircrafts, setAircrafts] = createSignal<Array<Aircraft>>([], {
-    equals: false,
-  });
   let [, setWorld] = useAtom(worldAtom);
   let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [points, setPoints] = useAtom(pointsAtom);
-  let [reconnectInterval, setReconnectInterval] = createSignal<number | null>(
-    null
-  );
   let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   const query = createQuery<boolean>(() => ({
     queryKey: ['/api/ping'],
@@ -186,7 +180,7 @@ export default function App() {
         <div id="radar">
           <Canvas></Canvas>
           <div class="top-right">
-            <StripBoard aircrafts={aircrafts}></StripBoard>
+            <StripBoard></StripBoard>
             <FreqSelector></FreqSelector>
           </div>
           <div class="bottom-right-buttons">
