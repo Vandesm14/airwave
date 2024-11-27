@@ -3,7 +3,6 @@ use std::{
   fs,
   net::{IpAddr, Ipv4Addr, SocketAddr},
   path::PathBuf,
-  sync::Arc,
   time::SystemTime,
 };
 
