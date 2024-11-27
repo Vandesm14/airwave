@@ -16,7 +16,10 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 
-use engine::{command::CommandWithFreq, engine::UICommand};
+use engine::{
+  command::{CommandReply, CommandWithFreq},
+  engine::UICommand,
+};
 
 use crate::{
   job::JobReq,
@@ -47,11 +50,23 @@ async fn comms_text(
   Json(payload): Json<CommsText>,
 ) -> Result<(), String> {
   tokio::spawn(async move {
-    let command = complete_atc_request(payload.text, payload.frequency).await;
+    let command =
+      complete_atc_request(payload.text.clone(), payload.frequency).await;
     if let Some(command) = command {
-      let _ = JobReq::send(JobReqKind::Command(command), &mut state.sender)
-        .recv()
-        .await;
+      let _ = JobReq::send(
+        JobReqKind::Command {
+          atc: CommandWithFreq::new(
+            "ATC".to_string(),
+            command.frequency,
+            CommandReply::WithoutCallsign { text: payload.text },
+            Vec::new(),
+          ),
+          reply: command.clone(),
+        },
+        &mut state.sender,
+      )
+      .recv()
+      .await;
     }
   });
 

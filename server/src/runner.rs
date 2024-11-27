@@ -61,7 +61,10 @@ pub enum JobReqKind {
   Aircraft,
 
   // POST
-  Command(CommandWithFreq),
+  Command {
+    atc: CommandWithFreq,
+    reply: CommandWithFreq,
+  },
 }
 
 #[derive(Debug, Clone)]
@@ -284,7 +287,10 @@ impl Runner {
         }
 
         // POST
-        JobReqKind::Command(command) => commands.push(command.clone()),
+        JobReqKind::Command { atc, reply } => {
+          self.messages.push(atc.clone());
+          commands.push(reply.clone());
+        }
       }
     }
 
