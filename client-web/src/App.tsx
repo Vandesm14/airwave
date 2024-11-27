@@ -11,12 +11,19 @@ import {
 } from './lib/atoms';
 import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
-import { createEffect, createSignal, onMount, Show } from 'solid-js';
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  onMount,
+  Show,
+} from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
 import { formatTime } from './lib/lib';
+import { createQuery } from '@tanstack/solid-query';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -30,11 +37,20 @@ export default function App() {
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [points, setPoints] = useAtom(pointsAtom);
-  let [connected, setConnected] = createSignal(false);
   let [reconnectInterval, setReconnectInterval] = createSignal<number | null>(
     null
   );
   let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
+  const query = createQuery<boolean>(() => ({
+    queryKey: ['/api/ping'],
+    queryFn: async () => {
+      const result = await fetch('http://localhost:9001/api/ping');
+      if (!result.ok) return false;
+      return (await result.text()) === 'pong';
+    },
+    staleTime: 1000,
+    throwOnError: true, // Throw an error if the query fails
+  }));
 
   async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
@@ -68,24 +84,24 @@ export default function App() {
   }
 
   function stopRecording() {
-    setIsRecording(false);
-    whisper.stopRecording((blob) => {
-      blob.arrayBuffer().then((value) => {
-        console.log('send voice request');
-        if (socket !== null) {
-          socket.send(
-            JSON.stringify({
-              type: 'voice',
-              value: {
-                data: [...new Uint8Array(value)],
-                frequency: frequency(),
-              },
-            })
-          );
-        }
-        console.log('sent voice request');
-      });
-    });
+    // setIsRecording(false);
+    // whisper.stopRecording((blob) => {
+    //   blob.arrayBuffer().then((value) => {
+    //     console.log('send voice request');
+    //     if (socket !== null) {
+    //       socket.send(
+    //         JSON.stringify({
+    //           type: 'voice',
+    //           value: {
+    //             data: [...new Uint8Array(value)],
+    //             frequency: frequency(),
+    //           },
+    //         })
+    //       );
+    //     }
+    //     console.log('sent voice request');
+    //   });
+    // });
   }
 
   function discardRecording() {
@@ -98,14 +114,14 @@ export default function App() {
   });
 
   function sendTextMessage(text: string) {
-    if (socket !== null) {
-      socket.send(
-        JSON.stringify({
-          type: 'text',
-          value: { text, frequency: frequency() },
-        })
-      );
-    }
+    // if (socket !== null) {
+    //   socket.send(
+    //     JSON.stringify({
+    //       type: 'text',
+    //       value: { text, frequency: frequency() },
+    //     })
+    //   );
+    // }
   }
 
   onMount(async () => {
@@ -137,92 +153,10 @@ export default function App() {
     setMessages((messages) => [...messages, message]);
   }
 
-  const search = new URLSearchParams(window.location.search);
-  const wsPath = search.get('ws');
-  let path = `${window.location.hostname}:9001`;
-
-  if (wsPath != null) {
-    path = wsPath;
-  }
-
-  const wsUrl = `ws://${path}`;
-  let socket: WebSocket | null = null;
-
-  function onOpen() {
-    setConnected(true);
-    console.log('[open] Connection established');
-    console.log('Sending to server');
-
-    if (socket !== null) {
-      socket.send(JSON.stringify({ type: 'connect' }));
-    }
-  }
-
-  function onMessage(event: MessageEvent) {
-    let json: ServerEvent = JSON.parse(event.data);
-    switch (json.type) {
-      case 'aircraft':
-        setAircrafts(json.value);
-        break;
-      case 'world':
-        setWorld(json.value);
-        break;
-      case 'points':
-        setPoints(json.value);
-        break;
-      case 'atcreply':
-        speakAsATC(json.value);
-        break;
-      case 'reply':
-        if (json.value.frequency == frequency() && json.value.reply === '') {
-          setSelectedAircraft(json.value.id);
-        }
-        if (json.value.reply != '') speakAsAircraft(json.value);
-        break;
-    }
-  }
-
-  function onClose(event: { wasClean: any; code: any; reason: any }) {
-    if (event.wasClean) {
-      console.log(
-        `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`
-      );
-    } else {
-      // e.g. server process killed or network down
-      // event.code is usually 1006 in this case
-      console.log('[close] Connection died');
-    }
-
-    setConnected(false);
-  }
-
-  function onError() {
-    console.log(`[error]`);
-  }
-
-  function tryReconnect() {
-    console.log('Trying to reconnect');
-    socket = new WebSocket(wsUrl);
-    socket.onopen = onOpen;
-    socket.onmessage = onMessage;
-    socket.onclose = onClose;
-    socket.onerror = onError;
-  }
-
-  createEffect(() => {
-    if (!connected() && reconnectInterval() === null) {
-      tryReconnect();
-      setReconnectInterval(setInterval(tryReconnect, 2000));
-    } else if (connected() && reconnectInterval() !== null) {
-      clearInterval(reconnectInterval()!);
-      setReconnectInterval(null);
-    }
-  });
-
   function sendPause() {
-    if (socket !== null) {
-      socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
-    }
+    // if (socket !== null) {
+    //   socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
+    // }
   }
 
   function toggleTTS() {
@@ -230,12 +164,12 @@ export default function App() {
   }
 
   createEffect(() => {
-    console.log('connected?', connected());
+    console.log('connected?', query.data);
   });
 
   return (
     <>
-      <Show when={connected()}>
+      <Show when={query.data}>
         <div class="bottom-left">
           <div class="points">
             <p>
@@ -250,7 +184,7 @@ export default function App() {
           <Chatbox sendMessage={sendTextMessage}></Chatbox>
         </div>
         <div id="radar">
-          <Canvas aircrafts={aircrafts}></Canvas>
+          <Canvas></Canvas>
           <div class="top-right">
             <StripBoard aircrafts={aircrafts}></StripBoard>
             <FreqSelector></FreqSelector>
@@ -278,7 +212,7 @@ export default function App() {
           </div>
         </div>
       </Show>
-      <Show when={!connected()}>
+      <Show when={!query.data}>
         <div class="connection-message">
           <h1>Connecting...</h1>
         </div>

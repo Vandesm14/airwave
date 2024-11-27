@@ -58,6 +58,7 @@ pub enum JobReqKind {
   Messages,
   World,
   Game,
+  Aircraft,
 
   // POST
   Command(CommandWithFreq),
@@ -71,6 +72,7 @@ pub enum JobResKind {
   Messages(Vec<CommandWithFreq>),
   World(World),
   Game(Game),
+  Aircraft(Vec<Aircraft>),
 }
 
 #[derive(Debug)]
@@ -276,6 +278,9 @@ impl Runner {
         }
         JobReqKind::Game => {
           incoming.reply(JobResKind::Game(self.game.clone()));
+        }
+        JobReqKind::Aircraft => {
+          incoming.reply(JobResKind::Aircraft(self.game.aircraft.clone()));
         }
 
         // POST

@@ -103,6 +103,21 @@ async fn get_game(State(mut state): State<AppState>) -> String {
   }
 }
 
+async fn get_aircraft(State(mut state): State<AppState>) -> String {
+  let res = JobReq::send(JobReqKind::Aircraft, &mut state.sender)
+    .recv()
+    .await;
+  if let Ok(JobResKind::Aircraft(aircraft)) = res {
+    if let Ok(string) = serde_json::to_string(&aircraft) {
+      string
+    } else {
+      todo!("failed to serialize")
+    }
+  } else {
+    todo!("failed to get aircraft: {res:?}")
+  }
+}
+
 async fn ping_pong(State(mut state): State<AppState>) -> String {
   let res = JobReq::send(JobReqKind::Ping, &mut state.sender)
     .recv()
@@ -127,6 +142,7 @@ pub async fn run(
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
       .route("/game", get(get_game))
+      .route("/game/aircraft", get(get_aircraft))
       .route("/ping", get(ping_pong))
       .with_state(AppState::new(sender)),
   );

@@ -4,7 +4,6 @@ import {
   radarAtom,
   renderAtom,
   selectedAircraftAtom,
-  worldAtom,
 } from './lib/atoms';
 import {
   Aircraft,
@@ -37,31 +36,47 @@ import {
   toRadians,
 } from './lib/lib';
 import colors from './lib/colors';
+import { createQuery } from '@tanstack/solid-query';
 
 const groundScale = 5.0;
 
-export default function Canvas({
-  aircrafts,
-}: {
-  aircrafts: Accessor<Array<Aircraft>>;
-}) {
+export default function Canvas() {
   let canvas!: HTMLCanvasElement;
 
   type Ctx = CanvasRenderingContext2D;
 
   let [radar, setRadar] = useAtom(radarAtom);
 
-  let [world] = useAtom(worldAtom);
   let [render, setRender] = useAtom(renderAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   let [frequency] = useAtom(frequencyAtom);
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
-  let [waitingForAircraft, setWaitingForAircraft] = createSignal(true);
   let [aircraftTrails, setAircraftTrails] = createSignal<
     Map<string, Array<{ pos: Vec2; now: number }>>
   >(new Map());
   let [mod, setMod] = createSignal(false);
+  const aircrafts = createQuery<Aircraft[]>(() => ({
+    queryKey: ['/api/game/aircraft'],
+    queryFn: async () => {
+      const result = await fetch('http://localhost:9001/api/game/aircraft');
+      if (!result.ok) return [];
+      return result.json();
+    },
+    initialData: [],
+    staleTime: 500,
+    refetchInterval: 500,
+    throwOnError: true, // Throw an error if the query fails
+  }));
+  const world = createQuery<World>(() => ({
+    queryKey: ['/api/world'],
+    queryFn: async () => {
+      const result = await fetch('http://localhost:9001/api/world');
+      if (!result.ok) return null;
+      return result.json();
+    },
+    throwOnError: true, // Throw an error if the query fails
+  }));
 
   function scaleFeetToPixels(num: number): number {
     const FEET_TO_PIXELS = 0.003;
@@ -102,16 +117,6 @@ export default function Canvas({
 
       return { ...radar };
     });
-  });
-
-  createEffect(() => {
-    if (waitingForAircraft() && aircrafts().length > 0) {
-      setRender((render) => {
-        render.doInitialDraw = true;
-        return { ...render };
-      });
-      setWaitingForAircraft(false);
-    }
   });
 
   onMount(() => {
@@ -177,7 +182,7 @@ export default function Canvas({
         const maxDistanceSquared = Math.pow(scalePixelsToFeet(100), 2);
 
         // Iterate through all aircraft to find the closest one within the criteria
-        for (const aircraft of render().aircrafts) {
+        for (const aircraft of aircrafts.data) {
           // Calculate the squared distance between the cursor and the aircraft
           const distanceSquared = calculateSquaredDistance(
             coords,
@@ -250,10 +255,9 @@ export default function Canvas({
 
       if (now - render.lastDraw > duration || render.doInitialDraw) {
         render.lastDraw = now;
-        render.aircrafts = aircrafts();
 
         setAircraftTrails((map) => {
-          for (let aircraft of render.aircrafts) {
+          for (let aircraft of aircrafts.data) {
             const trail = map.get(aircraft.id);
 
             if (typeof trail !== 'undefined') {
@@ -311,14 +315,17 @@ export default function Canvas({
       ctx.fillRect(0, 0, width, height);
       resetTransform(ctx);
 
+      if (world.data === undefined) {
+        return;
+      }
       if (isGround()) {
-        drawGround(ctx, world(), render().aircrafts);
+        drawGround(ctx, world.data, aircrafts.data);
       } else {
-        drawTower(ctx, world(), render().aircrafts);
+        drawTower(ctx, world.data, aircrafts.data);
         drawCompass(ctx);
       }
 
-      drawCollodingMessage(ctx, aircrafts());
+      drawCollodingMessage(ctx, aircrafts.data);
     }
   }
 
@@ -330,7 +337,7 @@ export default function Canvas({
       return;
     }
 
-    let aircraft = render().aircrafts.find((a) => a.id === selectedAircraft());
+    let aircraft = aircrafts.data.find((a) => a.id === selectedAircraft());
     if (
       aircraft &&
       (aircraft.state.type === 'flying' || aircraft.state.type === 'landing')
@@ -459,7 +466,7 @@ export default function Canvas({
 
     let color = connection.state === 'active' ? activeColor : inactiveColor;
 
-    let aircraft = aircrafts().find((a) => a.id === selectedAircraft());
+    let aircraft = aircrafts.data.find((a) => a.id === selectedAircraft());
     if (aircraft) {
       if (aircraft.flight_plan.arriving === connection.id) {
         color = selectedColor;
@@ -489,7 +496,7 @@ export default function Canvas({
         ctx.fillStyle = colors.text_yellow;
       } else if (aircraft.is_colliding) {
         ctx.fillStyle = colors.text_red;
-      } else if (aircraft.flight_plan.departing === world().airspace.id) {
+      } else if (aircraft.flight_plan.departing === world.data?.airspace.id) {
         ctx.fillStyle = colors.line_blue;
       } else {
         ctx.fillStyle = colors.line_green;
@@ -601,7 +608,7 @@ export default function Canvas({
       ctx.fillStyle = colors.text_yellow;
     } else if (aircraft.is_colliding) {
       ctx.fillStyle = colors.text_red;
-    } else if (aircraft.flight_plan.departing === world().airspace.id) {
+    } else if (aircraft.flight_plan.departing === world.data?.airspace.id) {
       ctx.fillStyle = colors.line_blue;
     }
 

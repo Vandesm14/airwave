@@ -53,11 +53,9 @@ export let controlAtom = atom({
 export let renderAtom = atom<{
   doInitialDraw: boolean;
   lastDraw: number;
-  aircrafts: Array<Aircraft>;
 }>({
   doInitialDraw: true,
   lastDraw: 0,
-  aircrafts: [],
 });
 
 function initMessages(): Array<RadioMessage> {
