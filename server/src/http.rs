@@ -19,17 +19,20 @@ use tokio::sync::mpsc;
 use engine::{command::CommandWithFreq, engine::UICommand};
 
 use crate::{
-  job::{JobReq, JobReqKind, JobResKind},
+  job::JobReq,
   prompter::Prompter,
+  runner::{JobReqKind, JobResKind},
 };
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-  pub sender: mpsc::UnboundedSender<JobReq>,
+  pub sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
 }
 
 impl AppState {
-  pub fn new(sender: mpsc::UnboundedSender<JobReq>) -> Self {
+  pub fn new(
+    sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
+  ) -> Self {
     Self { sender }
   }
 }
@@ -70,6 +73,21 @@ async fn get_messages(State(mut state): State<AppState>) -> String {
   }
 }
 
+async fn get_world(State(mut state): State<AppState>) -> String {
+  let res = JobReq::send(JobReqKind::Messages, &mut state.sender)
+    .recv()
+    .await;
+  if let Ok(JobResKind::Messages(messages)) = res {
+    if let Ok(string) = serde_json::to_string(&messages) {
+      string
+    } else {
+      todo!("failed to serialize")
+    }
+  } else {
+    todo!("failed to get messages: {res:?}")
+  }
+}
+
 async fn ping_pong(State(mut state): State<AppState>) -> String {
   let res = JobReq::send(JobReqKind::Ping, &mut state.sender)
     .recv()
@@ -82,7 +100,10 @@ async fn ping_pong(State(mut state): State<AppState>) -> String {
   }
 }
 
-pub async fn run(address: SocketAddr, sender: mpsc::UnboundedSender<JobReq>) {
+pub async fn run(
+  address: SocketAddr,
+  sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
+) {
   let app = Router::new()
     .route("/", get(|| async { "Hello, World!" }))
     .route("/comms/text", post(comms_text))

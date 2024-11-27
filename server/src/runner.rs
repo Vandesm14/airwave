@@ -25,7 +25,7 @@ use engine::{
 };
 
 use crate::{
-  job::{JobQueue, JobReq, JobReqKind, JobResKind},
+  job::{JobQueue, JobReq},
   AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
   TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
@@ -50,6 +50,27 @@ pub enum OutgoingReply {
   Funds(usize),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum JobReqKind {
+  Ping,
+
+  // GET
+  Messages,
+  World,
+
+  // POST
+  Command(CommandWithFreq),
+}
+
+#[derive(Debug, Clone)]
+pub enum JobResKind {
+  Pong,
+
+  // GET
+  Messages(Vec<CommandWithFreq>),
+  World(World),
+}
+
 #[derive(Debug)]
 pub struct Runner {
   pub world: World,
@@ -57,7 +78,7 @@ pub struct Runner {
   pub engine: Engine,
   pub messages: Vec<CommandWithFreq>,
 
-  pub job_queue: JobQueue,
+  pub job_queue: JobQueue<JobReqKind, JobResKind>,
 
   pub save_to: Option<PathBuf>,
   pub rng: Rng,
@@ -69,7 +90,9 @@ pub struct Runner {
 
 impl Runner {
   pub fn new(
-    receiver: tokio::sync::mpsc::UnboundedReceiver<JobReq>,
+    receiver: tokio::sync::mpsc::UnboundedReceiver<
+      JobReq<JobReqKind, JobResKind>,
+    >,
     save_to: Option<PathBuf>,
     rng: Rng,
   ) -> Self {
@@ -246,6 +269,7 @@ impl Runner {
         JobReqKind::Messages => {
           incoming.reply(JobResKind::Messages(self.messages.clone()))
         }
+        JobReqKind::World => todo!(),
 
         // POST
         JobReqKind::Command(command) => commands.push(command.clone()),
