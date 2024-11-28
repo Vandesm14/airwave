@@ -16,7 +16,7 @@ impl<T> RingBuffer<T> {
 
   pub fn push(&mut self, value: T) {
     if self.vec.len() == self.capacity {
-      self.vec.pop_back();
+      self.vec.pop_front();
     }
 
     self.vec.push_back(value);

@@ -108,7 +108,7 @@ impl Runner {
       world: World::default(),
       game: Game::default(),
       engine: Engine::default(),
-      messages: RingBuffer::new(3),
+      messages: RingBuffer::new(30),
 
       job_queue: JobQueue::new(receiver),
 
