@@ -10,6 +10,7 @@ use async_openai::{
 };
 use axum::{
   extract::{Query, State},
+  http,
   routing::{get, post},
   Router,
 };
@@ -72,75 +73,85 @@ async fn comms_text(
   Ok(())
 }
 
-async fn get_messages(State(mut state): State<AppState>) -> String {
+async fn get_messages(
+  State(mut state): State<AppState>,
+) -> Result<String, http::StatusCode> {
   let res = JobReq::send(JobReqKind::Messages, &mut state.sender)
     .recv()
     .await;
   if let Ok(JobResKind::Messages(messages)) = res {
     if let Ok(string) = serde_json::to_string(&messages) {
-      string
+      Ok(string)
     } else {
-      todo!("failed to serialize")
+      Err(http::StatusCode::BAD_REQUEST)
     }
   } else {
-    todo!("failed to get messages: {res:?}")
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }
 
-async fn get_world(State(mut state): State<AppState>) -> String {
+async fn get_world(
+  State(mut state): State<AppState>,
+) -> Result<String, http::StatusCode> {
   let res = JobReq::send(JobReqKind::World, &mut state.sender)
     .recv()
     .await;
   if let Ok(JobResKind::World(world)) = res {
     if let Ok(string) = serde_json::to_string(&world) {
-      string
+      Ok(string)
     } else {
-      todo!("failed to serialize")
+      Err(http::StatusCode::BAD_REQUEST)
     }
   } else {
-    todo!("failed to get world: {res:?}")
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }
 
-async fn get_game(State(mut state): State<AppState>) -> String {
+async fn get_game(
+  State(mut state): State<AppState>,
+) -> Result<String, http::StatusCode> {
   let res = JobReq::send(JobReqKind::Game, &mut state.sender)
     .recv()
     .await;
   if let Ok(JobResKind::Game(game)) = res {
     if let Ok(string) = serde_json::to_string(&game) {
-      string
+      Ok(string)
     } else {
-      todo!("failed to serialize")
+      Err(http::StatusCode::BAD_REQUEST)
     }
   } else {
-    todo!("failed to get game: {res:?}")
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }
 
-async fn get_aircraft(State(mut state): State<AppState>) -> String {
+async fn get_aircraft(
+  State(mut state): State<AppState>,
+) -> Result<String, http::StatusCode> {
   let res = JobReq::send(JobReqKind::Aircraft, &mut state.sender)
     .recv()
     .await;
   if let Ok(JobResKind::Aircraft(aircraft)) = res {
     if let Ok(string) = serde_json::to_string(&aircraft) {
-      string
+      Ok(string)
     } else {
-      todo!("failed to serialize")
+      Err(http::StatusCode::BAD_REQUEST)
     }
   } else {
-    todo!("failed to get aircraft: {res:?}")
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }
 
-async fn ping_pong(State(mut state): State<AppState>) -> String {
+async fn ping_pong(
+  State(mut state): State<AppState>,
+) -> Result<String, http::StatusCode> {
   let res = JobReq::send(JobReqKind::Ping, &mut state.sender)
     .recv()
     .await;
 
   if let Ok(JobResKind::Pong) = res {
-    "pong".to_string()
+    Ok("pong".to_string())
   } else {
-    todo!("failed to ping: {res:?}")
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }
 

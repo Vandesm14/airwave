@@ -35,7 +35,10 @@ where
   }
 
   pub fn reply(self, res: A) {
-    self.callback.send(res).expect("failed to send reply");
+    let r = self.callback.send(res);
+    if r.is_err() {
+      tracing::error!("failed to send callback reply");
+    }
   }
 
   pub fn req(&self) -> &Q {
