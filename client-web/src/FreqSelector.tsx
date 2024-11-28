@@ -1,5 +1,5 @@
 import { useAtom } from 'solid-jotai';
-import { frequencyAtom } from './lib/atoms';
+import { baseAPIPath, frequencyAtom } from './lib/atoms';
 import { createEffect, createSignal, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { Frequencies, World } from './lib/types';
@@ -12,7 +12,7 @@ export default function FreqSelector() {
   const query = createQuery<World>(() => ({
     queryKey: ['/api/world'],
     queryFn: async () => {
-      const result = await fetch('http://localhost:9001/api/world');
+      const result = await fetch(`${baseAPIPath}/world`);
       if (!result.ok) return undefined;
       return result.json();
     },

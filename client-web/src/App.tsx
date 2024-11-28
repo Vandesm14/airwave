@@ -1,6 +1,11 @@
 import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from './whisper/WhisperSTT';
-import { frequencyAtom, isRecordingAtom, useTTSAtom } from './lib/atoms';
+import {
+  baseAPIPath,
+  frequencyAtom,
+  isRecordingAtom,
+  useTTSAtom,
+} from './lib/atoms';
 import Chatbox from './Chatbox';
 import { createEffect, onMount, Show } from 'solid-js';
 import Canvas from './Canvas';
@@ -19,7 +24,7 @@ export default function App() {
     queryKey: ['/api/ping'],
     queryFn: async () => {
       try {
-        const result = await fetch('http://localhost:9001/api/ping');
+        const result = await fetch(`${baseAPIPath}/ping`);
         if (!result.ok) return false;
         return (await result.text()) === 'pong';
       } catch {
@@ -44,13 +49,10 @@ export default function App() {
     setIsRecording(false);
     whisper.stopRecording((blob) => {
       blob.arrayBuffer().then((value) => {
-        fetch(
-          `http://localhost:9001/api/comms/voice?frequency=${frequency()}`,
-          {
-            body: value,
-            method: 'POST',
-          }
-        );
+        fetch(`${baseAPIPath}/comms/voice?frequency=${frequency()}`, {
+          body: value,
+          method: 'POST',
+        });
       });
     });
   }
@@ -61,13 +63,10 @@ export default function App() {
   }
 
   async function sendTextMessage(text: string) {
-    await fetch(
-      `http://localhost:9001/api/comms/text?frequency=${frequency()}`,
-      {
-        body: text,
-        method: 'POST',
-      }
-    );
+    await fetch(`${baseAPIPath}/comms/text?frequency=${frequency()}`, {
+      body: text,
+      method: 'POST',
+    });
   }
 
   onMount(async () => {

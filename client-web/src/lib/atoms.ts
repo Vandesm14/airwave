@@ -1,12 +1,4 @@
 import { atom } from 'solid-jotai';
-import {
-  DefaultWorld,
-  newDuration,
-  Points,
-  RadioMessage,
-  World,
-} from './types';
-
 type RadarConfig = {
   scale: number;
   isDragging: boolean;
@@ -57,3 +49,7 @@ export let renderAtom = atom<{
 });
 
 export let selectedAircraftAtom = atom<string>('');
+
+const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001/api`;
+const search = new URLSearchParams(window.location.search);
+export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;

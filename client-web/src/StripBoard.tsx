@@ -7,7 +7,12 @@ import {
   World,
 } from './lib/types';
 import { useAtom } from 'solid-jotai';
-import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
+import {
+  baseAPIPath,
+  controlAtom,
+  frequencyAtom,
+  selectedAircraftAtom,
+} from './lib/atoms';
 import {
   angleBetweenPoints,
   calculateDistance,
@@ -133,7 +138,7 @@ function Strip({ strip }: StripProps) {
   const query = createQuery<World>(() => ({
     queryKey: ['/api/world'],
     queryFn: async () => {
-      const result = await fetch('http://localhost:9001/api/world');
+      const result = await fetch(`${baseAPIPath}/world`);
       if (!result.ok) return undefined;
       return result.json();
     },
@@ -337,7 +342,7 @@ export default function StripBoard() {
   const query = createQuery<World>(() => ({
     queryKey: ['/api/world'],
     queryFn: async () => {
-      const result = await fetch('http://localhost:9001/api/world');
+      const result = await fetch(`${baseAPIPath}/world`);
       if (!result.ok) return undefined;
       return result.json();
     },

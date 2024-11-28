@@ -1,5 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import {
+  baseAPIPath,
   frequencyAtom,
   radarAtom,
   renderAtom,
@@ -55,7 +56,7 @@ export default function Canvas() {
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: ['/api/game/aircraft'],
     queryFn: async () => {
-      const result = await fetch('http://localhost:9001/api/game/aircraft');
+      const result = await fetch(`${baseAPIPath}/game/aircraft`);
       if (!result.ok) return [];
       return result.json();
     },
@@ -68,7 +69,7 @@ export default function Canvas() {
   const world = createQuery<World>(() => ({
     queryKey: ['/api/world'],
     queryFn: async () => {
-      const result = await fetch('http://localhost:9001/api/world');
+      const result = await fetch(`${baseAPIPath}/world`);
       if (!result.ok) return null;
       return result.json();
     },

@@ -1,5 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import {
+  baseAPIPath,
   frequencyAtom,
   isRecordingAtom,
   selectedAircraftAtom,
@@ -27,7 +28,7 @@ export default function Chatbox({
   const messages = createQuery<Array<RadioMessage>>(() => ({
     queryKey: ['/api/messages'],
     queryFn: async () => {
-      const result = await fetch('http://localhost:9001/api/messages');
+      const result = await fetch(`${baseAPIPath}/messages`);
       if (!result.ok) return [];
       return result.json();
     },
