@@ -24,7 +24,7 @@ export default function Chatbox({
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
-  let [lastRead, setLastRead] = createSignal(0);
+  let [lastRead, setLastRead] = createSignal(Date.now() / 1000);
   const messages = createQuery<Array<RadioMessage>>(() => ({
     queryKey: ['/api/messages'],
     queryFn: async () => {

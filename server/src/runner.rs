@@ -26,6 +26,7 @@ use engine::{
 
 use crate::{
   job::{JobQueue, JobReq},
+  ring::RingBuffer,
   AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
   TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
@@ -83,7 +84,7 @@ pub struct Runner {
   pub world: World,
   pub game: Game,
   pub engine: Engine,
-  pub messages: Vec<CommandWithFreq>,
+  pub messages: RingBuffer<CommandWithFreq>,
 
   pub job_queue: JobQueue<JobReqKind, JobResKind>,
 
@@ -107,7 +108,7 @@ impl Runner {
       world: World::default(),
       game: Game::default(),
       engine: Engine::default(),
-      messages: Vec::new(),
+      messages: RingBuffer::new(3),
 
       job_queue: JobQueue::new(receiver),
 

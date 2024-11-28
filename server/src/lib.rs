@@ -15,6 +15,7 @@ pub mod config;
 pub mod http;
 pub mod job;
 pub mod prompter;
+pub mod ring;
 pub mod runner;
 
 pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);
