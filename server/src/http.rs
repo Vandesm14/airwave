@@ -9,7 +9,8 @@ use async_openai::{
   },
 };
 use axum::{
-  extract::State,
+  body::Body,
+  extract::{Query, Request, State},
   routing::{get, post},
   Json, Router,
 };
@@ -41,24 +42,23 @@ impl AppState {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct CommsText {
-  text: String,
+struct CommsTextQuery {
   frequency: f32,
 }
 async fn comms_text(
   State(mut state): State<AppState>,
-  Json(payload): Json<CommsText>,
+  Query(query): Query<CommsTextQuery>,
+  text: String,
 ) -> Result<(), String> {
   tokio::spawn(async move {
-    let command =
-      complete_atc_request(payload.text.clone(), payload.frequency).await;
+    let command = complete_atc_request(text.clone(), query.frequency).await;
     if let Some(command) = command {
       let _ = JobReq::send(
         JobReqKind::Command {
           atc: CommandWithFreq::new(
             "ATC".to_string(),
             command.frequency,
-            CommandReply::WithoutCallsign { text: payload.text },
+            CommandReply::WithoutCallsign { text },
             Vec::new(),
           ),
           reply: command.clone(),

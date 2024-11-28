@@ -38,11 +38,16 @@ export default function App() {
   const query = createQuery<boolean>(() => ({
     queryKey: ['/api/ping'],
     queryFn: async () => {
-      const result = await fetch('http://localhost:9001/api/ping');
-      if (!result.ok) return false;
-      return (await result.text()) === 'pong';
+      try {
+        const result = await fetch('http://localhost:9001/api/ping');
+        if (!result.ok) return false;
+        return (await result.text()) === 'pong';
+      } catch {
+        return false;
+      }
     },
-    staleTime: 1000,
+    staleTime: 2000,
+    refetchInterval: 2000,
     throwOnError: true, // Throw an error if the query fails
   }));
 
@@ -77,20 +82,20 @@ export default function App() {
     setIsRecording(true);
   }
 
-  function stopRecording() {
+  async function stopRecording() {
     // setIsRecording(false);
     // whisper.stopRecording((blob) => {
     //   blob.arrayBuffer().then((value) => {
     //     console.log('send voice request');
     //     if (socket !== null) {
     //       socket.send(
-    //         JSON.stringify({
-    //           type: 'voice',
-    //           value: {
-    //             data: [...new Uint8Array(value)],
-    //             frequency: frequency(),
-    //           },
-    //         })
+    //     JSON.stringify({
+    //       type: 'voice',
+    //       value: {
+    //         data: [...new Uint8Array(value)],
+    //         frequency: frequency(),
+    //       },
+    //     });
     //       );
     //     }
     //     console.log('sent voice request');
@@ -107,15 +112,14 @@ export default function App() {
     localStorage.setItem('messages', JSON.stringify(messages()));
   });
 
-  function sendTextMessage(text: string) {
-    // if (socket !== null) {
-    //   socket.send(
-    //     JSON.stringify({
-    //       type: 'text',
-    //       value: { text, frequency: frequency() },
-    //     })
-    //   );
-    // }
+  async function sendTextMessage(text: string) {
+    await fetch(
+      `http://localhost:9001/api/comms/text?frequency=${frequency()}`,
+      {
+        body: text,
+        method: 'POST',
+      }
+    );
   }
 
   onMount(async () => {
