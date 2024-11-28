@@ -83,24 +83,12 @@ export default function App() {
   }
 
   async function stopRecording() {
-    // setIsRecording(false);
-    // whisper.stopRecording((blob) => {
-    //   blob.arrayBuffer().then((value) => {
-    //     console.log('send voice request');
-    //     if (socket !== null) {
-    //       socket.send(
-    //     JSON.stringify({
-    //       type: 'voice',
-    //       value: {
-    //         data: [...new Uint8Array(value)],
-    //         frequency: frequency(),
-    //       },
-    //     });
-    //       );
-    //     }
-    //     console.log('sent voice request');
-    //   });
-    // });
+    setIsRecording(false);
+    whisper.stopRecording((blob) => {
+      blob.arrayBuffer().then((value) => {
+        const data = [...new Uint8Array(value)];
+      });
+    });
   }
 
   function discardRecording() {

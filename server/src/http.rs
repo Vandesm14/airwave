@@ -9,10 +9,9 @@ use async_openai::{
   },
 };
 use axum::{
-  body::Body,
-  extract::{Query, Request, State},
+  extract::{Query, State},
   routing::{get, post},
-  Json, Router,
+  Router,
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
@@ -412,12 +411,12 @@ async fn complete_atc_request(
   let prompter = Prompter::new(message);
   let result = prompter.execute().await;
   match result {
-    Ok(command) => Some(CommandWithFreq {
-      id: command.id,
+    Ok(command) => Some(CommandWithFreq::new(
+      command.id,
       frequency,
-      reply: command.reply,
-      tasks: command.tasks,
-    }),
+      command.reply,
+      command.tasks,
+    )),
     Err(err) => {
       tracing::error!("Unable to parse command: {}", err);
       None

@@ -1,8 +1,4 @@
-use std::{
-  f32::consts::PI,
-  ops::Add,
-  time::{Duration, SystemTime},
-};
+use std::{f32::consts::PI, ops::Add, time::Duration};
 
 use turborand::TurboRand;
 
@@ -10,7 +6,7 @@ use crate::{
   add_degrees, angle_between_points, calculate_ils_altitude,
   closest_point_on_line,
   command::{CommandReply, CommandWithFreq},
-  delta_angle,
+  delta_angle, duration_now,
   engine::Bundle,
   entities::airport::Runway,
   inverse_degrees, move_point, normalize_angle,
@@ -431,12 +427,9 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             id: aircraft.id,
             kind: ActionKind::Parked {
               at: current.clone(),
-              ready_at: SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .add(Duration::from_secs(
-                  bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-                )),
+              ready_at: duration_now().add(Duration::from_secs(
+                bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+              )),
             },
           });
           bundle.actions.push(Action {

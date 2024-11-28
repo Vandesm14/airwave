@@ -1,4 +1,8 @@
-use std::{f32::consts::PI, ops::RangeInclusive};
+use std::{
+  f32::consts::PI,
+  ops::RangeInclusive,
+  time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
@@ -26,6 +30,10 @@ pub const COUNTERCLOCKWISE: f32 = 270.0;
 
 pub const ENROUTE_TIME_MULTIPLIER: f32 = 10.0;
 pub const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 180..=900;
+
+pub fn duration_now() -> Duration {
+  SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
+}
 
 pub fn normalize_angle(angle: f32) -> f32 {
   (360.0 + angle) % 360.0

@@ -2,10 +2,7 @@ pub mod actions;
 pub mod effects;
 pub mod events;
 
-use std::{
-  ops::Add,
-  time::{Duration, SystemTime},
-};
+use std::{ops::Add, time::Duration};
 
 use actions::Action;
 use glam::Vec2;
@@ -14,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
+  duration_now,
   pathfinder::{Node, NodeVORData},
   DEPARTURE_WAIT_RANGE, ENROUTE_TIME_MULTIPLIER,
 };
@@ -260,9 +258,7 @@ pub struct Aircraft {
 impl Aircraft {
   pub fn set_parked_now(&mut self) {
     if let AircraftState::Parked { ready_at, .. } = &mut self.state {
-      *ready_at = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
+      *ready_at = duration_now();
     }
   }
 
@@ -305,12 +301,9 @@ impl Aircraft {
 
       state: AircraftState::Parked {
         at: gate.into(),
-        ready_at: SystemTime::now()
-          .duration_since(SystemTime::UNIX_EPOCH)
-          .unwrap()
-          .add(Duration::from_secs(
-            rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-          )),
+        ready_at: duration_now().add(Duration::from_secs(
+          rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+        )),
       },
       target: AircraftTargets::default(),
       flight_plan: FlightPlan::new(

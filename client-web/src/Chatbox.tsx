@@ -6,6 +6,8 @@ import {
   selectedAircraftAtom,
 } from './lib/atoms';
 import { createEffect, createSignal, onMount } from 'solid-js';
+import { createQuery } from '@tanstack/solid-query';
+import { RadioMessage } from './lib/types';
 
 export default function Chatbox({
   sendMessage,
@@ -14,12 +16,24 @@ export default function Chatbox({
 }) {
   let chatbox!: HTMLDivElement;
   let chatboxInput!: HTMLInputElement;
-  let [messages, setMessages] = useAtom(messagesAtom);
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
+  const messages = createQuery<Array<RadioMessage>>(() => ({
+    queryKey: ['/api/messages'],
+    queryFn: async () => {
+      const result = await fetch('http://localhost:9001/api/messages');
+      if (!result.ok) return [];
+      return result.json();
+    },
+    initialData: [],
+    staleTime: 1000,
+    refetchInterval: 1000,
+    refetchOnMount: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
 
   onMount(() => {
     document.addEventListener('keydown', (e) => {
@@ -58,7 +72,7 @@ export default function Chatbox({
       showAll();
 
       // Subscribe to messages signal
-      if (messages().length > 0) {
+      if (messages.data.length > 0) {
         chatbox.scrollTo(0, chatbox.scrollHeight);
       }
     }
@@ -66,12 +80,6 @@ export default function Chatbox({
 
   function toggleAll() {
     setShowAll((b) => !b);
-  }
-
-  function clearAll() {
-    if (confirm('Clear all messages?')) {
-      setMessages([]);
-    }
   }
 
   function handleSendMessage(text: string) {
@@ -89,18 +97,12 @@ export default function Chatbox({
       <div class="controls">
         <input
           type="button"
-          value="Clear All"
-          onclick={clearAll}
-          class="danger"
-        />
-        <input
-          type="button"
           value={showAll() ? 'Show Yours' : 'Show All'}
           onclick={toggleAll}
         />
       </div>
       <div class="messages" ref={chatbox}>
-        {messages()
+        {messages.data
           .filter((m) => showAll() || m.frequency === frequency())
           .map((m) => (
             <div

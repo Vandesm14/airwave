@@ -72,7 +72,7 @@ pub enum JobResKind {
   Pong,
 
   // GET
-  Messages(Vec<CommandWithFreq>),
+  Messages(Vec<OutgoingCommandReply>),
   World(World),
   Game(Game),
   Aircraft(Vec<Aircraft>),
@@ -273,9 +273,9 @@ impl Runner {
         JobReqKind::Ping => incoming.reply(JobResKind::Pong),
 
         // GET
-        JobReqKind::Messages => {
-          incoming.reply(JobResKind::Messages(self.messages.clone()))
-        }
+        JobReqKind::Messages => incoming.reply(JobResKind::Messages(
+          self.messages.iter().cloned().map(|m| m.into()).collect(),
+        )),
         JobReqKind::World => {
           incoming.reply(JobResKind::World(self.world.clone()))
         }
@@ -340,15 +340,15 @@ impl Runner {
               aircraft.pos,
             ))
             .to_owned();
-            let command = CommandWithFreq {
-              id: Intern::to_string(&aircraft.id),
-              frequency: aircraft.frequency,
-              reply: CommandReply::ArriveInAirspace {
+            let command = CommandWithFreq::new(
+              Intern::to_string(&aircraft.id),
+              aircraft.frequency,
+              CommandReply::ArriveInAirspace {
                 direction,
                 altitude: aircraft.altitude,
               },
-              tasks: Vec::new(),
-            };
+              Vec::new(),
+            );
 
             self.messages.push(command.clone());
           }

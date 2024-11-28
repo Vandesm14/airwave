@@ -1,9 +1,10 @@
 use core::fmt;
+use std::time::Duration;
 
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 
-use crate::{abbreviate_altitude, pathfinder::Node};
+use crate::{abbreviate_altitude, duration_now, pathfinder::Node};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -53,6 +54,7 @@ pub struct CommandWithFreq {
   pub frequency: f32,
   pub reply: CommandReply,
   pub tasks: Tasks,
+  pub created: Duration,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -60,6 +62,7 @@ pub struct OutgoingCommandReply {
   pub id: String,
   pub frequency: f32,
   pub reply: String,
+  pub created: Duration,
 }
 
 impl From<CommandWithFreq> for OutgoingCommandReply {
@@ -68,6 +71,7 @@ impl From<CommandWithFreq> for OutgoingCommandReply {
       id: value.id.clone(),
       frequency: value.frequency,
       reply: value.to_string(),
+      created: value.created,
     }
   }
 }
@@ -84,15 +88,7 @@ impl CommandWithFreq {
       frequency,
       reply,
       tasks,
-    }
-  }
-
-  pub fn new_reply(id: String, frequency: f32, reply: CommandReply) -> Self {
-    Self {
-      id,
-      frequency,
-      reply,
-      tasks: Vec::new(),
+      created: duration_now(),
     }
   }
 }

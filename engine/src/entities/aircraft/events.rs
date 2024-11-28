@@ -344,12 +344,12 @@ impl AircraftEventHandler for HandleAircraftEvent {
         bundle.events.push(
           AircraftEvent::new(
             aircraft.id,
-            EventKind::Callout(CommandWithFreq {
-              id: aircraft.id.to_string(),
-              frequency: aircraft.frequency,
-              reply: CommandReply::Empty,
-              tasks: Vec::new(),
-            }),
+            EventKind::Callout(CommandWithFreq::new(
+              aircraft.id.to_string(),
+              aircraft.frequency,
+              CommandReply::Empty,
+              Vec::new(),
+            )),
           )
           .into(),
         );

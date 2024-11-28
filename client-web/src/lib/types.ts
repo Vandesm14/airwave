@@ -226,6 +226,7 @@ export type RadioMessage = {
   id: string;
   frequency: number;
   reply: string;
+  created: Duration;
 };
 
 export type Points = {
