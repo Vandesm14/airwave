@@ -1,18 +1,12 @@
 import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from './whisper/WhisperSTT';
-import {
-  frequencyAtom,
-  isRecordingAtom,
-  selectedAircraftAtom,
-  useTTSAtom,
-} from './lib/atoms';
+import { frequencyAtom, isRecordingAtom, useTTSAtom } from './lib/atoms';
 import Chatbox from './Chatbox';
 import { createEffect, onMount, Show } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
-import { formatTime } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
 
 export default function App() {
@@ -21,7 +15,6 @@ export default function App() {
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
-  let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   const query = createQuery<boolean>(() => ({
     queryKey: ['/api/ping'],
     queryFn: async () => {
@@ -51,7 +44,6 @@ export default function App() {
     setIsRecording(false);
     whisper.stopRecording((blob) => {
       blob.arrayBuffer().then((value) => {
-        const data = [...new Uint8Array(value)];
         fetch(
           `http://localhost:9001/api/comms/voice?frequency=${frequency()}`,
           {

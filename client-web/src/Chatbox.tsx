@@ -20,7 +20,7 @@ export default function Chatbox({
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
-  let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
+  let [useTTS] = useStorageAtom(useTTSAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
   let [lastRead, setLastRead] = createSignal(Date.now() / 1000);
@@ -63,7 +63,11 @@ export default function Chatbox({
   createEffect(() => {
     for (const message of messages.data) {
       if (message.created.secs > lastRead() && message.id !== 'ATC') {
-        speak(message);
+        if (message.reply !== '') {
+          speak(message);
+        } else {
+          setSelectedAircraft(message.id);
+        }
         setLastRead(message.created.secs);
       }
     }
@@ -137,7 +141,9 @@ export default function Chatbox({
       </div>
       <div class="messages" ref={chatbox}>
         {messages.data
-          .filter((m) => showAll() || m.frequency === frequency())
+          .filter(
+            (m) => (showAll() || m.frequency === frequency()) && m.reply !== ''
+          )
           .map((m) => (
             <div
               classList={{

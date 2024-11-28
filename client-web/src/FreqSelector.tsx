@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom } from './lib/atoms';
-import { createEffect, createMemo, createSignal, onMount } from 'solid-js';
+import { createEffect, createSignal, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { Frequencies, World } from './lib/types';
 import { createQuery } from '@tanstack/solid-query';
