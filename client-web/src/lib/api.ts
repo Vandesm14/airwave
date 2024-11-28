@@ -1,6 +1,6 @@
 import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
-import { Aircraft, Game, RadioMessage, World } from './types';
+import { Aircraft, Points, RadioMessage, World } from './types';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001/api`;
 const search = new URLSearchParams(window.location.search);
@@ -37,11 +37,11 @@ export function useWorld() {
   }));
 }
 
-export function useGame() {
-  return createQuery<Game>(() => ({
-    queryKey: ['/api/game'],
+export function usePoints() {
+  return createQuery<Points>(() => ({
+    queryKey: ['/api/game/points'],
     queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/game`);
+      const result = await fetch(`${baseAPIPath}/game/points`);
       if (!result.ok) return null;
       return result.json();
     },

@@ -56,7 +56,7 @@ pub enum GetReqKind {
   Ping,
   Messages,
   World,
-  Game,
+  Points,
   Aircraft,
 }
 
@@ -75,7 +75,7 @@ pub enum ResKind {
   // GET
   Messages(Vec<OutgoingCommandReply>),
   World(World),
-  Game(Game),
+  Points(Points),
   Aircraft(Vec<Aircraft>),
 }
 
@@ -280,8 +280,8 @@ impl Runner {
           self.messages.iter().cloned().map(|m| m.into()).collect(),
         )),
         GetReqKind::World => incoming.reply(ResKind::World(self.world.clone())),
-        GetReqKind::Game => {
-          incoming.reply(ResKind::Game(self.game.clone()));
+        GetReqKind::Points => {
+          incoming.reply(ResKind::Points(self.game.points.clone()));
         }
         GetReqKind::Aircraft => {
           incoming.reply(ResKind::Aircraft(self.game.aircraft.clone()));

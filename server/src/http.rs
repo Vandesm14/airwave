@@ -212,14 +212,14 @@ async fn get_world(
   }
 }
 
-async fn get_game(
+async fn get_points(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(GetReqKind::Game, &mut state.get_sender)
+  let res = JobReq::send(GetReqKind::Points, &mut state.get_sender)
     .recv()
     .await;
-  if let Ok(ResKind::Game(game)) = res {
-    if let Ok(string) = serde_json::to_string(&game) {
+  if let Ok(ResKind::Points(points)) = res {
+    if let Ok(string) = serde_json::to_string(&points) {
       Ok(string)
     } else {
       Err(http::StatusCode::BAD_REQUEST)
@@ -274,7 +274,7 @@ pub async fn run(
       .route("/comms/voice", post(comms_voice))
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
-      .route("/game", get(get_game))
+      .route("/game/points", get(get_points))
       .route("/game/aircraft", get(get_aircraft))
       .route("/ping", get(ping_pong))
       .with_state(AppState::new(get_sender, post_sender, openai_api_key)),
