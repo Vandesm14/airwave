@@ -55,28 +55,6 @@ export default function App() {
     await navigator.mediaDevices.getUserMedia(constraints);
   }
 
-  function speak(message: RadioMessage) {
-    if (
-      useTTS() &&
-      'speechSynthesis' in window &&
-      frequency() === message.frequency
-    ) {
-      if (window.speechSynthesis.speaking || isRecording()) {
-        setTimeout(() => speak(message), 500);
-      } else {
-        const utterance = new SpeechSynthesisUtterance(
-          message.reply.replace(/[0-9]/g, '$& ')
-        );
-        utterance.volume = 0.01;
-        utterance.rate = 1.0;
-        utterance.pitch = 1.3;
-        window.speechSynthesis.speak(utterance);
-      }
-    } else {
-      console.log("Sorry, your browser doesn't support text to speech!");
-    }
-  }
-
   function startRecording() {
     whisper.startRecording();
     setIsRecording(true);
@@ -129,15 +107,6 @@ export default function App() {
       }
     });
   });
-
-  function speakAsAircraft(message: RadioMessage) {
-    setMessages((messages) => [...messages, message]);
-    speak(message);
-  }
-
-  function speakAsATC(message: RadioMessage) {
-    setMessages((messages) => [...messages, message]);
-  }
 
   function sendPause() {
     // if (socket !== null) {

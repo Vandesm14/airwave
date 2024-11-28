@@ -4,10 +4,12 @@ import {
   isRecordingAtom,
   messagesAtom,
   selectedAircraftAtom,
+  useTTSAtom,
 } from './lib/atoms';
 import { createEffect, createSignal, onMount } from 'solid-js';
 import { createQuery } from '@tanstack/solid-query';
 import { RadioMessage } from './lib/types';
+import { useStorageAtom } from './lib/hooks';
 
 export default function Chatbox({
   sendMessage,
@@ -19,8 +21,10 @@ export default function Chatbox({
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
+  let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
+  let [lastRead, setLastRead] = createSignal(0);
   const messages = createQuery<Array<RadioMessage>>(() => ({
     queryKey: ['/api/messages'],
     queryFn: async () => {
@@ -34,6 +38,37 @@ export default function Chatbox({
     refetchOnMount: 'always',
     throwOnError: true, // Throw an error if the query fails
   }));
+
+  function speak(message: RadioMessage) {
+    if (
+      useTTS() &&
+      'speechSynthesis' in window &&
+      frequency() === message.frequency
+    ) {
+      if (window.speechSynthesis.speaking || isRecording()) {
+        setTimeout(() => speak(message), 500);
+      } else {
+        const utterance = new SpeechSynthesisUtterance(
+          message.reply.replace(/[0-9]/g, '$& ')
+        );
+        utterance.volume = 0.01;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.3;
+        window.speechSynthesis.speak(utterance);
+      }
+    } else {
+      console.log("Sorry, your browser doesn't support text to speech!");
+    }
+  }
+
+  createEffect(() => {
+    for (const message of messages.data) {
+      if (message.created.secs > lastRead() && message.id !== 'ATC') {
+        speak(message);
+        setLastRead(message.created.secs);
+      }
+    }
+  });
 
   onMount(() => {
     document.addEventListener('keydown', (e) => {
