@@ -4,14 +4,10 @@ import {
   Frequencies,
   isAircraftFlying,
   isAircraftTaxiing,
+  World,
 } from './lib/types';
 import { useAtom } from 'solid-jotai';
-import {
-  controlAtom,
-  frequencyAtom,
-  selectedAircraftAtom,
-  worldAtom,
-} from './lib/atoms';
+import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
   angleBetweenPoints,
   calculateDistance,
@@ -131,10 +127,24 @@ function Strip({ strip }: StripProps) {
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
-  let [world] = useAtom(worldAtom);
-
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
+
+  const query = createQuery<World>(() => ({
+    queryKey: ['/api/world'],
+    queryFn: async () => {
+      const result = await fetch('http://localhost:9001/api/world');
+      if (!result.ok) return undefined;
+      return result.json();
+    },
+    staleTime: Infinity,
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
+
+  if (!query.data) {
+    return null;
+  }
 
   let sinceCreated = `--:--`;
 
@@ -234,7 +244,7 @@ function Strip({ strip }: StripProps) {
     bottomStatus = strip.state.value.at.name;
   }
 
-  let distance = calculateDistance(strip.pos, world().airspace.pos);
+  let distance = calculateDistance(strip.pos, query.data.airspace.pos);
   let distanceText = '';
 
   if (strip.state.type === 'flying' || strip.state.type === 'landing') {
@@ -249,7 +259,7 @@ function Strip({ strip }: StripProps) {
     (strip.state.type === 'parked' || strip.state.type === 'taxiing') &&
     strip.flight_plan.arriving !== airspace()
   ) {
-    const connection = world().connections.find(
+    const connection = query.data.connections.find(
       (c) => c.id === strip.flight_plan.arriving
     );
     if (connection !== undefined) {
@@ -258,7 +268,7 @@ function Strip({ strip }: StripProps) {
 
       let closestAngle = Infinity;
       let heading = angle;
-      for (const runway of world().airspace.airports.flatMap(
+      for (const runway of query.data.airspace.airports.flatMap(
         (a) => a.runways
       )) {
         let diff = Math.abs(runway.heading - angle);
@@ -315,8 +325,6 @@ export default function StripBoard() {
   let stripEntries = createMemo(() => Object.entries(strips()));
   let [selectedAircraft] = useAtom(selectedAircraftAtom);
 
-  let [world] = useAtom(worldAtom);
-
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
   let [_, setFrequency] = useAtom(frequencyAtom);
@@ -326,9 +334,24 @@ export default function StripBoard() {
     initialData: [],
   }));
 
-  let foundAirspace = createMemo(() => world().airspace);
+  const query = createQuery<World>(() => ({
+    queryKey: ['/api/world'],
+    queryFn: async () => {
+      const result = await fetch('http://localhost:9001/api/world');
+      if (!result.ok) return undefined;
+      return result.json();
+    },
+    staleTime: Infinity,
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
 
   createEffect(() => {
+    const found = query.data?.airspace;
+    if (!found) {
+      return;
+    }
+
     // This is to prevent initial loading state from removing saved strips.
     //
     // When we first load, aircrafts() will be blank, since they havent been
@@ -357,8 +380,8 @@ export default function StripBoard() {
         ('' + a.id).localeCompare(b.id);
       const distanteToAirportSorter =
         (rev: boolean) => (a: Aircraft, b: Aircraft) => {
-          let distance_a = calculateDistance(a.pos, world().airspace.pos);
-          let distance_b = calculateDistance(b.pos, world().airspace.pos);
+          let distance_a = calculateDistance(a.pos, found.pos);
+          let distance_b = calculateDistance(b.pos, found.pos);
 
           if (rev) {
             return distance_a - distance_b;
@@ -381,6 +404,11 @@ export default function StripBoard() {
   });
 
   function onClickHeader(name: keyof Strips) {
+    const found = query.data?.airspace;
+    if (!found) {
+      return;
+    }
+
     let key = name.toLowerCase() as keyof Frequencies;
     if (name === 'Landing' || name === 'Takeoff') {
       key = 'tower';
@@ -388,7 +416,7 @@ export default function StripBoard() {
       key = 'ground';
     }
 
-    setFrequency(foundAirspace().frequencies[key]);
+    setFrequency(found.frequencies[key]);
   }
 
   return (

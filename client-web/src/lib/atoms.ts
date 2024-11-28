@@ -42,7 +42,6 @@ export let radarAtom = atom<RadarConfig>({
 
 export let isRecordingAtom = atom(false);
 export let useTTSAtom = atom(false);
-export let worldAtom = atom<World>(DefaultWorld());
 export let frequencyAtom = atom(118.5);
 export let controlAtom = atom({
   airspace: atom('KSFO'),
@@ -57,26 +56,4 @@ export let renderAtom = atom<{
   lastDraw: 0,
 });
 
-function initMessages(): Array<RadioMessage> {
-  let json = localStorage.getItem('messages');
-  if (json) {
-    return JSON.parse(json);
-  } else {
-    return [];
-  }
-}
-export let messagesAtom = atom<Array<RadioMessage>>(initMessages());
 export let selectedAircraftAtom = atom<string>('');
-
-export let pointsAtom = atom<Points>({
-  landings: 0,
-  landing_rate: {
-    rate: newDuration(0, 0),
-    marks: [],
-  },
-  takeoffs: 0,
-  takeoff_rate: {
-    rate: newDuration(0, 0),
-    marks: [],
-  },
-});

@@ -2,7 +2,6 @@ import { useAtom } from 'solid-jotai';
 import {
   frequencyAtom,
   isRecordingAtom,
-  messagesAtom,
   selectedAircraftAtom,
   useTTSAtom,
 } from './lib/atoms';

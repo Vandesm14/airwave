@@ -3,21 +3,11 @@ import { WhisperSTT } from './whisper/WhisperSTT';
 import {
   frequencyAtom,
   isRecordingAtom,
-  messagesAtom,
-  pointsAtom,
   selectedAircraftAtom,
   useTTSAtom,
-  worldAtom,
 } from './lib/atoms';
-import { Aircraft, RadioMessage, ServerEvent } from './lib/types';
 import Chatbox from './Chatbox';
-import {
-  createEffect,
-  createMemo,
-  createSignal,
-  onMount,
-  Show,
-} from 'solid-js';
+import { createEffect, onMount, Show } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
@@ -29,11 +19,8 @@ export default function App() {
   const whisper = new WhisperSTT();
 
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
-  let [, setWorld] = useAtom(worldAtom);
-  let [messages, setMessages] = useAtom(messagesAtom);
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
-  let [points, setPoints] = useAtom(pointsAtom);
   let [_, setSelectedAircraft] = useAtom(selectedAircraftAtom);
   const query = createQuery<boolean>(() => ({
     queryKey: ['/api/ping'],
@@ -80,10 +67,6 @@ export default function App() {
     whisper.abortRecording();
     setIsRecording(false);
   }
-
-  createEffect(() => {
-    localStorage.setItem('messages', JSON.stringify(messages()));
-  });
 
   async function sendTextMessage(text: string) {
     await fetch(
@@ -133,7 +116,7 @@ export default function App() {
     <>
       <Show when={query.data}>
         <div class="bottom-left">
-          <div class="points">
+          {/* <div class="points">
             <p>
               <b>Landings:</b> {points().landings} (rate: once every{' '}
               {formatTime(points().landing_rate.rate.secs * 1000)} mins)
@@ -142,7 +125,7 @@ export default function App() {
               <b>Takeoffs:</b> {points().takeoffs} (rate: once every{' '}
               {formatTime(points().takeoff_rate.rate.secs * 1000)} mins)
             </p>
-          </div>
+          </div> */}
           <Chatbox sendMessage={sendTextMessage}></Chatbox>
         </div>
         <div id="radar">

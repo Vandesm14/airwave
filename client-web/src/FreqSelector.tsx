@@ -1,17 +1,33 @@
 import { useAtom } from 'solid-jotai';
-import { frequencyAtom, worldAtom } from './lib/atoms';
+import { frequencyAtom } from './lib/atoms';
 import { createEffect, createMemo, createSignal, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
-import { Frequencies } from './lib/types';
+import { Frequencies, World } from './lib/types';
+import { createQuery } from '@tanstack/solid-query';
 
 export default function FreqSelector() {
   let [frequency, setFrequency] = useAtom(frequencyAtom);
-  let [world] = useAtom(worldAtom);
   let [secondary, setSecondary] = makePersisted(createSignal(frequency()));
   let [key, setKey] = createSignal<keyof Frequencies>('approach');
+  const query = createQuery<World>(() => ({
+    queryKey: ['/api/world'],
+    queryFn: async () => {
+      const result = await fetch('http://localhost:9001/api/world');
+      if (!result.ok) return undefined;
+      return result.json();
+    },
+    staleTime: Infinity,
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
 
   function updateKeyByFreqChange() {
-    let newKey = Object.entries(foundAirspace().frequencies).find(
+    const found = query.data?.airspace;
+    if (!found) {
+      return;
+    }
+
+    let newKey = Object.entries(found.frequencies).find(
       ([, v]) => v === frequency()
     ) as [keyof Frequencies, number];
 
@@ -22,23 +38,32 @@ export default function FreqSelector() {
 
   createEffect(() => updateKeyByFreqChange());
 
-  let foundAirspace = createMemo(() => world().airspace);
-
   function changeViaKey(key: keyof Frequencies) {
     setKey(key as keyof Frequencies);
 
-    if (foundAirspace()?.frequencies && key in foundAirspace()?.frequencies) {
-      setFrequency(foundAirspace()?.frequencies[key]);
+    const found = query.data?.airspace;
+    if (!found) {
+      return;
+    }
+
+    if (found?.frequencies && key in found?.frequencies) {
+      setFrequency(found?.frequencies[key]);
     }
   }
 
   function changeViaValue(value: number) {
     setFrequency(value);
-    if (foundAirspace()?.frequencies) {
+
+    const found = query.data?.airspace;
+    if (!found) {
+      return;
+    }
+
+    if (found.frequencies) {
       // TODO: Remove uses of as keyof Frequencies.
       setKey(
-        Object.keys(foundAirspace()?.frequencies).find(
-          (k) => foundAirspace()?.frequencies[k as keyof Frequencies] === value
+        Object.keys(found.frequencies).find(
+          (k) => found.frequencies[k as keyof Frequencies] === value
         ) as keyof Frequencies
       );
     }
@@ -74,13 +99,15 @@ export default function FreqSelector() {
           onchange={(e) => changeViaKey(e.target.value as keyof Frequencies)}
           value={key()}
         >
-          {foundAirspace().frequencies
+          {query.data?.airspace?.frequencies
             ? // TODO: Remove uses of as keyof Frequencies.
-              Object.entries(foundAirspace().frequencies).map(([k, v]) => (
-                <option value={k}>
-                  {k} - {v}
-                </option>
-              ))
+              Object.entries(query.data?.airspace!.frequencies).map(
+                ([k, v]) => (
+                  <option value={k}>
+                    {k} - {v}
+                  </option>
+                )
+              )
             : null}
         </select>
         <input
