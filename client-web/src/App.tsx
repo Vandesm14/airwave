@@ -8,6 +8,7 @@ import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
 import { baseAPIPath, usePing } from './lib/api';
+import Points from './Points';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -88,16 +89,7 @@ export default function App() {
     <>
       <Show when={query.data}>
         <div class="bottom-left">
-          {/* <div class="points">
-            <p>
-              <b>Landings:</b> {points().landings} (rate: once every{' '}
-              {formatTime(points().landing_rate.rate.secs * 1000)} mins)
-            </p>
-            <p>
-              <b>Takeoffs:</b> {points().takeoffs} (rate: once every{' '}
-              {formatTime(points().takeoff_rate.rate.secs * 1000)} mins)
-            </p>
-          </div> */}
+          <Points />
           <Chatbox sendMessage={sendTextMessage}></Chatbox>
         </div>
         <div id="radar">

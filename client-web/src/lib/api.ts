@@ -1,20 +1,10 @@
 import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
-import { Aircraft, RadioMessage, World } from './types';
+import { Aircraft, Game, RadioMessage, World } from './types';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001/api`;
 const search = new URLSearchParams(window.location.search);
 export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;
-
-// export const queries = {
-//   state: {
-//     aircraft: '/game/aircraft',
-//   },
-// };
-
-// export function asURL(s: string): string {
-//   return `${baseAPIPath}/${s}`;
-// }
 
 export function useAircraft(renderRate: Accessor<number>) {
   return createQuery<Array<Aircraft>>(() => ({
@@ -42,6 +32,21 @@ export function useWorld() {
       return result.json();
     },
     staleTime: Infinity,
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
+}
+
+export function useGame() {
+  return createQuery<Game>(() => ({
+    queryKey: ['/api/game'],
+    queryFn: async () => {
+      const result = await fetch(`${baseAPIPath}/game`);
+      if (!result.ok) return null;
+      return result.json();
+    },
+    staleTime: 1000,
+    refetchInterval: 1000,
     refetchOnReconnect: 'always',
     throwOnError: true, // Throw an error if the query fails
   }));

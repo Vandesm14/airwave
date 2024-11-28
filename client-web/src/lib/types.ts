@@ -229,6 +229,10 @@ export type RadioMessage = {
   created: Duration;
 };
 
+export type Game = {
+  points: Points;
+};
+
 export type Points = {
   landings: number;
   landing_rate: {
@@ -241,25 +245,3 @@ export type Points = {
     marks: Duration[];
   };
 };
-
-export type ServerEvent =
-  | {
-      type: 'aircraft';
-      value: Aircraft[];
-    }
-  | { type: 'world'; value: World }
-  | { type: 'points'; value: Points }
-  | {
-      type: 'atcreply';
-      value: { id: string; frequency: number; reply: string };
-    }
-  | { type: 'reply'; value: RadioMessage };
-
-export type UICommand =
-  | {
-      type: 'purchase';
-      value: number;
-    }
-  | {
-      type: 'pause';
-    };
