@@ -17,7 +17,7 @@ use server::{
   config::Config,
   http,
   job::JobReq,
-  runner::{JobReqKind, JobResKind, Runner},
+  runner::{GetReqKind, PostReqKind, ResKind, Runner},
   Cli, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
 };
 
@@ -64,8 +64,10 @@ async fn main() {
     .or_else(|| config.server.and_then(|s| s.address))
     .unwrap_or(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001));
 
-  let (job_tx, job_rx) =
-    mpsc::unbounded_channel::<JobReq<JobReqKind, JobResKind>>();
+  let (get_tx, get_rx) =
+    mpsc::unbounded_channel::<JobReq<GetReqKind, ResKind>>();
+  let (post_tx, post_rx) =
+    mpsc::unbounded_channel::<JobReq<PostReqKind, ResKind>>();
 
   let seed = seed.unwrap_or(
     config
@@ -76,7 +78,8 @@ async fn main() {
   let rng = Rng::with_seed(seed);
   let mut world_rng = Rng::with_seed(0);
   let mut runner = Runner::new(
-    job_rx,
+    get_rx,
+    post_rx,
     Some(PathBuf::from_str("assets/world.json").unwrap()),
     rng,
   );
@@ -110,7 +113,9 @@ async fn main() {
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
-  let _ = tokio::spawn(http::run(address, job_tx, openai_api_key.into())).await;
+  let _ =
+    tokio::spawn(http::run(address, get_tx, post_tx, openai_api_key.into()))
+      .await;
 
   // let listener = TcpListener::bind(address).await.unwrap();
   // tracing::info!("Listening on {address}");

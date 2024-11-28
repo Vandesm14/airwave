@@ -52,16 +52,16 @@ pub enum OutgoingReply {
 }
 
 #[derive(Debug, Clone)]
-pub enum JobReqKind {
+pub enum GetReqKind {
   Ping,
-
-  // GET
   Messages,
   World,
   Game,
   Aircraft,
+}
 
-  // POST
+#[derive(Debug, Clone)]
+pub enum PostReqKind {
   Command {
     atc: CommandWithFreq,
     reply: CommandWithFreq,
@@ -69,7 +69,7 @@ pub enum JobReqKind {
 }
 
 #[derive(Debug, Clone)]
-pub enum JobResKind {
+pub enum ResKind {
   Pong,
 
   // GET
@@ -86,7 +86,8 @@ pub struct Runner {
   pub engine: Engine,
   pub messages: RingBuffer<CommandWithFreq>,
 
-  pub job_queue: JobQueue<JobReqKind, JobResKind>,
+  pub get_queue: JobQueue<GetReqKind, ResKind>,
+  pub post_queue: JobQueue<PostReqKind, ResKind>,
 
   pub save_to: Option<PathBuf>,
   pub rng: Rng,
@@ -98,8 +99,9 @@ pub struct Runner {
 
 impl Runner {
   pub fn new(
-    receiver: tokio::sync::mpsc::UnboundedReceiver<
-      JobReq<JobReqKind, JobResKind>,
+    get_rcv: tokio::sync::mpsc::UnboundedReceiver<JobReq<GetReqKind, ResKind>>,
+    post_rcv: tokio::sync::mpsc::UnboundedReceiver<
+      JobReq<PostReqKind, ResKind>,
     >,
     save_to: Option<PathBuf>,
     rng: Rng,
@@ -110,7 +112,8 @@ impl Runner {
       engine: Engine::default(),
       messages: RingBuffer::new(30),
 
-      job_queue: JobQueue::new(receiver),
+      get_queue: JobQueue::new(get_rcv),
+      post_queue: JobQueue::new(post_rcv),
 
       save_to,
       rng,
@@ -263,32 +266,39 @@ impl Runner {
     let mut commands: Vec<CommandWithFreq> = Vec::new();
     let mut ui_commands: Vec<UICommand> = Vec::new();
 
+    // GET
     loop {
-      let incoming = match self.job_queue.recv() {
+      let incoming = match self.get_queue.recv() {
         Ok(incoming) => incoming,
         Err(TryRecvError::Disconnected) => return,
         Err(TryRecvError::Empty) => break,
       };
 
       match incoming.req() {
-        JobReqKind::Ping => incoming.reply(JobResKind::Pong),
-
-        // GET
-        JobReqKind::Messages => incoming.reply(JobResKind::Messages(
+        GetReqKind::Ping => incoming.reply(ResKind::Pong),
+        GetReqKind::Messages => incoming.reply(ResKind::Messages(
           self.messages.iter().cloned().map(|m| m.into()).collect(),
         )),
-        JobReqKind::World => {
-          incoming.reply(JobResKind::World(self.world.clone()))
+        GetReqKind::World => incoming.reply(ResKind::World(self.world.clone())),
+        GetReqKind::Game => {
+          incoming.reply(ResKind::Game(self.game.clone()));
         }
-        JobReqKind::Game => {
-          incoming.reply(JobResKind::Game(self.game.clone()));
+        GetReqKind::Aircraft => {
+          incoming.reply(ResKind::Aircraft(self.game.aircraft.clone()));
         }
-        JobReqKind::Aircraft => {
-          incoming.reply(JobResKind::Aircraft(self.game.aircraft.clone()));
-        }
+      }
+    }
 
-        // POST
-        JobReqKind::Command { atc, reply } => {
+    // POST
+    loop {
+      let incoming = match self.post_queue.recv() {
+        Ok(incoming) => incoming,
+        Err(TryRecvError::Disconnected) => return,
+        Err(TryRecvError::Empty) => break,
+      };
+
+      match incoming.req() {
+        PostReqKind::Command { atc, reply } => {
           self.messages.push(atc.clone());
           commands.push(reply.clone());
         }

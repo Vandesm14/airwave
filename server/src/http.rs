@@ -28,23 +28,29 @@ use engine::{
 use crate::{
   job::JobReq,
   prompter::Prompter,
-  runner::{JobReqKind, JobResKind},
+  runner::{GetReqKind, PostReqKind, ResKind},
   CLI,
 };
 
+type GetSender = mpsc::UnboundedSender<JobReq<GetReqKind, ResKind>>;
+type PostSender = mpsc::UnboundedSender<JobReq<PostReqKind, ResKind>>;
+
 #[derive(Debug, Clone)]
 pub struct AppState {
-  pub sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
+  pub get_sender: GetSender,
+  pub post_sender: PostSender,
   pub openai_api_key: Arc<str>,
 }
 
 impl AppState {
   pub fn new(
-    sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
+    get_sender: GetSender,
+    post_sender: PostSender,
     openai_api_key: Arc<str>,
   ) -> Self {
     Self {
-      sender,
+      get_sender,
+      post_sender,
       openai_api_key,
     }
   }
@@ -63,7 +69,7 @@ async fn comms_text(
     let command = complete_atc_request(text.clone(), query.frequency).await;
     if let Some(command) = command {
       let _ = JobReq::send(
-        JobReqKind::Command {
+        PostReqKind::Command {
           atc: CommandWithFreq::new(
             "ATC".to_string(),
             command.frequency,
@@ -72,7 +78,7 @@ async fn comms_text(
           ),
           reply: command.clone(),
         },
-        &mut state.sender,
+        &mut state.post_sender,
       )
       .recv()
       .await;
@@ -154,7 +160,7 @@ async fn comms_voice(
         }
 
         let _ = JobReq::send(
-          JobReqKind::Command {
+          PostReqKind::Command {
             atc: CommandWithFreq::new(
               "ATC".to_string(),
               command.frequency,
@@ -163,7 +169,7 @@ async fn comms_voice(
             ),
             reply: command.clone(),
           },
-          &mut state.sender,
+          &mut state.post_sender,
         )
         .recv()
         .await;
@@ -175,10 +181,10 @@ async fn comms_voice(
 async fn get_messages(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(JobReqKind::Messages, &mut state.sender)
+  let res = JobReq::send(GetReqKind::Messages, &mut state.get_sender)
     .recv()
     .await;
-  if let Ok(JobResKind::Messages(messages)) = res {
+  if let Ok(ResKind::Messages(messages)) = res {
     if let Ok(string) = serde_json::to_string(&messages) {
       Ok(string)
     } else {
@@ -192,10 +198,10 @@ async fn get_messages(
 async fn get_world(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(JobReqKind::World, &mut state.sender)
+  let res = JobReq::send(GetReqKind::World, &mut state.get_sender)
     .recv()
     .await;
-  if let Ok(JobResKind::World(world)) = res {
+  if let Ok(ResKind::World(world)) = res {
     if let Ok(string) = serde_json::to_string(&world) {
       Ok(string)
     } else {
@@ -209,10 +215,10 @@ async fn get_world(
 async fn get_game(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(JobReqKind::Game, &mut state.sender)
+  let res = JobReq::send(GetReqKind::Game, &mut state.get_sender)
     .recv()
     .await;
-  if let Ok(JobResKind::Game(game)) = res {
+  if let Ok(ResKind::Game(game)) = res {
     if let Ok(string) = serde_json::to_string(&game) {
       Ok(string)
     } else {
@@ -226,10 +232,10 @@ async fn get_game(
 async fn get_aircraft(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(JobReqKind::Aircraft, &mut state.sender)
+  let res = JobReq::send(GetReqKind::Aircraft, &mut state.get_sender)
     .recv()
     .await;
-  if let Ok(JobResKind::Aircraft(aircraft)) = res {
+  if let Ok(ResKind::Aircraft(aircraft)) = res {
     if let Ok(string) = serde_json::to_string(&aircraft) {
       Ok(string)
     } else {
@@ -243,11 +249,11 @@ async fn get_aircraft(
 async fn ping_pong(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(JobReqKind::Ping, &mut state.sender)
+  let res = JobReq::send(GetReqKind::Ping, &mut state.get_sender)
     .recv()
     .await;
 
-  if let Ok(JobResKind::Pong) = res {
+  if let Ok(ResKind::Pong) = res {
     Ok("pong".to_string())
   } else {
     Err(http::StatusCode::INTERNAL_SERVER_ERROR)
@@ -256,7 +262,8 @@ async fn ping_pong(
 
 pub async fn run(
   address: SocketAddr,
-  sender: mpsc::UnboundedSender<JobReq<JobReqKind, JobResKind>>,
+  get_sender: GetSender,
+  post_sender: PostSender,
   openai_api_key: Arc<str>,
 ) {
   let app = Router::new().nest(
@@ -270,7 +277,7 @@ pub async fn run(
       .route("/game", get(get_game))
       .route("/game/aircraft", get(get_aircraft))
       .route("/ping", get(ping_pong))
-      .with_state(AppState::new(sender, openai_api_key)),
+      .with_state(AppState::new(get_sender, post_sender, openai_api_key)),
   );
 
   let listener = tokio::net::TcpListener::bind(address).await.unwrap();
