@@ -4,15 +4,9 @@ import {
   Frequencies,
   isAircraftFlying,
   isAircraftTaxiing,
-  World,
 } from './lib/types';
 import { useAtom } from 'solid-jotai';
-import {
-  baseAPIPath,
-  controlAtom,
-  frequencyAtom,
-  selectedAircraftAtom,
-} from './lib/atoms';
+import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
   angleBetweenPoints,
   calculateDistance,
@@ -22,6 +16,7 @@ import {
   runwayInfo,
 } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
+import { useWorld } from './lib/api';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -135,17 +130,7 @@ function Strip({ strip }: StripProps) {
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
 
-  const query = createQuery<World>(() => ({
-    queryKey: ['/api/world'],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/world`);
-      if (!result.ok) return undefined;
-      return result.json();
-    },
-    staleTime: Infinity,
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
+  const query = useWorld();
 
   if (!query.data) {
     return null;
@@ -339,17 +324,7 @@ export default function StripBoard() {
     initialData: [],
   }));
 
-  const query = createQuery<World>(() => ({
-    queryKey: ['/api/world'],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/world`);
-      if (!result.ok) return undefined;
-      return result.json();
-    },
-    staleTime: Infinity,
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
+  const query = useWorld();
 
   createEffect(() => {
     const found = query.data?.airspace;

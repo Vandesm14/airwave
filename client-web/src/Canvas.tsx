@@ -1,6 +1,5 @@
 import { useAtom } from 'solid-jotai';
 import {
-  baseAPIPath,
   frequencyAtom,
   radarAtom,
   renderAtom,
@@ -31,7 +30,7 @@ import {
   toRadians,
 } from './lib/lib';
 import colors from './lib/colors';
-import { createQuery } from '@tanstack/solid-query';
+import { useAircraft, useWorld } from './lib/api';
 
 const groundScale = 5.0;
 
@@ -53,30 +52,8 @@ export default function Canvas() {
   let [mod, setMod] = createSignal(false);
   let renderRate = createMemo(() => (isGround() ? 1000 * 0.5 : 1000 * 4));
 
-  const aircrafts = createQuery<Aircraft[]>(() => ({
-    queryKey: ['/api/game/aircraft'],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/game/aircraft`);
-      if (!result.ok) return [];
-      return result.json();
-    },
-    initialData: [],
-    staleTime: renderRate(),
-    refetchInterval: renderRate(),
-    refetchOnMount: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
-  const world = createQuery<World>(() => ({
-    queryKey: ['/api/world'],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/world`);
-      if (!result.ok) return null;
-      return result.json();
-    },
-    staleTime: Infinity,
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
+  const aircrafts = useAircraft(renderRate);
+  const world = useWorld();
 
   function scaleFeetToPixels(num: number): number {
     const FEET_TO_PIXELS = 0.003;

@@ -1,18 +1,13 @@
 import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from './whisper/WhisperSTT';
-import {
-  baseAPIPath,
-  frequencyAtom,
-  isRecordingAtom,
-  useTTSAtom,
-} from './lib/atoms';
+import { frequencyAtom, isRecordingAtom, useTTSAtom } from './lib/atoms';
 import Chatbox from './Chatbox';
 import { createEffect, onMount, Show } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
-import { createQuery } from '@tanstack/solid-query';
+import { baseAPIPath, usePing } from './lib/api';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -20,21 +15,7 @@ export default function App() {
   let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
-  const query = createQuery<boolean>(() => ({
-    queryKey: ['/api/ping'],
-    queryFn: async () => {
-      try {
-        const result = await fetch(`${baseAPIPath}/ping`);
-        if (!result.ok) return false;
-        return (await result.text()) === 'pong';
-      } catch {
-        return false;
-      }
-    },
-    staleTime: 2000,
-    refetchInterval: 2000,
-    throwOnError: true, // Throw an error if the query fails
-  }));
+  const query = usePing();
 
   async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);

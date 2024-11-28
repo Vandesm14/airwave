@@ -1,15 +1,14 @@
 import { useAtom } from 'solid-jotai';
 import {
-  baseAPIPath,
   frequencyAtom,
   isRecordingAtom,
   selectedAircraftAtom,
   useTTSAtom,
 } from './lib/atoms';
 import { createEffect, createSignal, onMount } from 'solid-js';
-import { createQuery } from '@tanstack/solid-query';
 import { RadioMessage } from './lib/types';
 import { useStorageAtom } from './lib/hooks';
+import { useMessages } from './lib/api';
 
 export default function Chatbox({
   sendMessage,
@@ -25,19 +24,7 @@ export default function Chatbox({
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
   let [lastRead, setLastRead] = createSignal(Date.now() / 1000);
-  const messages = createQuery<Array<RadioMessage>>(() => ({
-    queryKey: ['/api/messages'],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/messages`);
-      if (!result.ok) return [];
-      return result.json();
-    },
-    initialData: [],
-    staleTime: 500,
-    refetchInterval: 500,
-    refetchOnMount: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
+  const messages = useMessages();
 
   function speak(message: RadioMessage) {
     if (

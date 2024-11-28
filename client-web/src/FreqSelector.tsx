@@ -1,25 +1,15 @@
 import { useAtom } from 'solid-jotai';
-import { baseAPIPath, frequencyAtom } from './lib/atoms';
+import { frequencyAtom } from './lib/atoms';
 import { createEffect, createSignal, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
-import { Frequencies, World } from './lib/types';
-import { createQuery } from '@tanstack/solid-query';
+import { Frequencies } from './lib/types';
+import { useWorld } from './lib/api';
 
 export default function FreqSelector() {
   let [frequency, setFrequency] = useAtom(frequencyAtom);
   let [secondary, setSecondary] = makePersisted(createSignal(frequency()));
   let [key, setKey] = createSignal<keyof Frequencies>('approach');
-  const query = createQuery<World>(() => ({
-    queryKey: ['/api/world'],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/world`);
-      if (!result.ok) return undefined;
-      return result.json();
-    },
-    staleTime: Infinity,
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
+  const query = useWorld();
 
   function updateKeyByFreqChange() {
     const found = query.data?.airspace;
