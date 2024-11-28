@@ -65,6 +65,13 @@ export default function App() {
     whisper.stopRecording((blob) => {
       blob.arrayBuffer().then((value) => {
         const data = [...new Uint8Array(value)];
+        fetch(
+          `http://localhost:9001/api/comms/voice?frequency=${frequency()}`,
+          {
+            body: value,
+            method: 'POST',
+          }
+        );
       });
     });
   }

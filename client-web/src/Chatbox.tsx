@@ -33,8 +33,8 @@ export default function Chatbox({
       return result.json();
     },
     initialData: [],
-    staleTime: 1000,
-    refetchInterval: 1000,
+    staleTime: 500,
+    refetchInterval: 500,
     refetchOnMount: 'always',
     throwOnError: true, // Throw an error if the query fails
   }));
