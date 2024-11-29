@@ -270,7 +270,12 @@ impl Engine {
     let mut collisions: HashSet<Intern<String>> = HashSet::new();
     for pair in aircrafts
       .iter()
-      .filter(|a| matches!(a.state, AircraftState::Taxiing { .. }))
+      .filter(|a| {
+        matches!(
+          a.state,
+          AircraftState::Taxiing { .. } | AircraftState::Parked { .. }
+        )
+      })
       .combinations(2)
     {
       let aircraft = pair.first().unwrap();
