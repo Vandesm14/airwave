@@ -16,7 +16,13 @@ import {
   Vec2,
   World,
 } from './lib/types';
-import { createEffect, createMemo, createSignal, onMount } from 'solid-js';
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+} from 'solid-js';
 import {
   calculateSquaredDistance,
   headingToDegrees,
@@ -96,40 +102,43 @@ export default function Canvas() {
     });
   });
 
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'PageUp') {
+      setRadar((radar) => {
+        radar.scale = 1;
+        radar.shiftPoint = { x: 0, y: 0 };
+        return { ...radar };
+      });
+    } else if (e.key === 'PageDown') {
+      setRadar((radar) => {
+        radar.scale = groundScale * 6;
+        radar.shiftPoint = { x: 0, y: 0 };
+        return { ...radar };
+      });
+    } else if (e.key === 'Control') {
+      setMod((mod) => !mod);
+    }
+  }
+
+  function onResize() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+  }
+
   onMount(() => {
     const maxScale = 50.0;
     const minScale = 0.07;
 
-    if (canvas instanceof HTMLCanvasElement && canvas !== null) {
-      window.addEventListener('resize', () => {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-      });
+    window.addEventListener('resize', onResize);
+    document.addEventListener('keydown', onKeydown);
 
+    if (canvas instanceof HTMLCanvasElement && canvas !== null) {
       setInterval(() => doRender(canvas), 1000 / 30);
 
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
 
       doRender(canvas);
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'PageUp') {
-          setRadar((radar) => {
-            radar.scale = 1;
-            radar.shiftPoint = { x: 0, y: 0 };
-            return { ...radar };
-          });
-        } else if (e.key === 'PageDown') {
-          setRadar((radar) => {
-            radar.scale = groundScale * 6;
-            radar.shiftPoint = { x: 0, y: 0 };
-            return { ...radar };
-          });
-        } else if (e.key === 'Control') {
-          setMod((mod) => !mod);
-        }
-      });
 
       canvas.addEventListener('mousedown', (e) => {
         setRadar((radar) => {
@@ -221,6 +230,11 @@ export default function Canvas() {
         });
       });
     }
+  });
+
+  onCleanup(() => {
+    document.removeEventListener('keydown', onKeydown);
+    window.removeEventListener('resize', onResize);
   });
 
   function doRender(canvas: HTMLCanvasElement) {

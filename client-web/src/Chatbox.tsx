@@ -5,7 +5,7 @@ import {
   selectedAircraftAtom,
   useTTSAtom,
 } from './lib/atoms';
-import { createEffect, createSignal, onMount } from 'solid-js';
+import { createEffect, createSignal, onMount, onCleanup } from 'solid-js';
 import { RadioMessage } from './lib/types';
 import { useStorageAtom } from './lib/hooks';
 import { useMessages } from './lib/api';
@@ -61,20 +61,26 @@ export default function Chatbox({
     }
   });
 
+  function onKeydown(e: KeyboardEvent) {
+    if (
+      e.key === 't' &&
+      chatboxInput instanceof HTMLInputElement &&
+      document.activeElement !== chatboxInput
+    ) {
+      chatboxInput.focus();
+      e.preventDefault();
+    } else if (e.key === 'Escape') {
+      chatboxInput.blur();
+      e.preventDefault();
+    }
+  }
+
   onMount(() => {
-    document.addEventListener('keydown', (e) => {
-      if (
-        e.key === 't' &&
-        chatboxInput instanceof HTMLInputElement &&
-        document.activeElement !== chatboxInput
-      ) {
-        chatboxInput.focus();
-        e.preventDefault();
-      } else if (e.key === 'Escape') {
-        chatboxInput.blur();
-        e.preventDefault();
-      }
-    });
+    document.addEventListener('keydown', onKeydown);
+  });
+
+  onCleanup(() => {
+    document.removeEventListener('keydown', onKeydown);
   });
 
   function resetText() {

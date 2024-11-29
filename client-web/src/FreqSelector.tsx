@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom } from './lib/atoms';
-import { createEffect, createSignal, onMount } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { Frequencies } from './lib/types';
 import { useWorld } from './lib/api';
@@ -79,6 +79,10 @@ export default function FreqSelector() {
 
   onMount(() => {
     document.addEventListener('keydown', onBackslash);
+  });
+
+  onCleanup(() => {
+    document.removeEventListener('keydown', onBackslash);
   });
 
   return (
