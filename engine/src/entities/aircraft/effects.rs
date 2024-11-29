@@ -9,8 +9,7 @@ use crate::{
   command::{CommandReply, CommandWithFreq},
   delta_angle, duration_now,
   engine::{Bundle, Event},
-  entities::airport::Runway,
-  heading_to_direction, inverse_degrees, move_point, normalize_angle,
+  heading_to_direction, inverse_degrees, move_point,
   pathfinder::NodeBehavior,
   Line, DEPARTURE_WAIT_RANGE, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
@@ -106,7 +105,7 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
 
 pub struct AircraftUpdateLandingEffect;
 impl AircraftUpdateLandingEffect {
-  fn state_before_turn(aircraft: &mut Aircraft, bundle: &mut Bundle, dt: f32) {
+  fn state_before_turn(aircraft: &mut Aircraft, _: &mut Bundle, dt: f32) {
     let degrees_per_sec = aircraft.dt_turn_speed(dt);
     let AircraftState::Landing { runway, state } = &mut aircraft.state else {
       unreachable!("outer function asserts that aircraft is landing")
@@ -238,16 +237,17 @@ impl AircraftUpdateLandingEffect {
     }
   }
 
-  fn state_glideslope(
-    aircraft: &mut Aircraft,
-    bundle: &mut Bundle,
-    dt: f32,
-    runway: &Runway,
-    mut state: LandingState,
-  ) -> LandingState {
-    if !(state == LandingState::Localizer || state == LandingState::Glideslope)
+  fn state_glideslope(aircraft: &mut Aircraft, dt: f32) {
+    let climb_speed = aircraft.dt_climb_speed(dt);
+
+    let AircraftState::Landing { runway, state } = &mut aircraft.state else {
+      unreachable!("outer function asserts that aircraft is landing")
+    };
+
+    if !(*state == LandingState::Localizer
+      || *state == LandingState::Glideslope)
     {
-      return state;
+      return;
     }
 
     let start_descent_distance = NAUTICALMILES_TO_FEET * 10.0;
@@ -257,7 +257,6 @@ impl AircraftUpdateLandingEffect {
       inverse_degrees(angle_between_points(runway.end(), aircraft.pos));
     let angle_range = (runway.heading - 5.0)..=(runway.heading + 5.0);
 
-    let climb_speed = aircraft.dt_climb_speed(dt);
     let seconds_for_descent = aircraft.altitude / (climb_speed / dt);
 
     let target_speed_ft_s = distance_to_runway / seconds_for_descent;
@@ -276,11 +275,9 @@ impl AircraftUpdateLandingEffect {
       if aircraft.altitude > target_altitude {
         aircraft.target.altitude = target_altitude;
 
-        state = LandingState::Glideslope;
+        *state = LandingState::Glideslope;
       }
     }
-
-    state
   }
 }
 
@@ -288,11 +285,11 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
   fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     let dt = aircraft.dt_enroute(bundle.dt);
 
-    if let AircraftState::Landing { runway, state } = &mut aircraft.state {
+    if let AircraftState::Landing { .. } = &aircraft.state {
       Self::state_touchdown(aircraft, bundle);
       Self::state_go_around(aircraft, bundle);
       Self::state_before_turn(aircraft, bundle, dt);
-      // Self::state_glideslope(aircraft, bundle, dt);
+      Self::state_glideslope(aircraft, dt);
     }
   }
 }

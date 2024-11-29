@@ -5,16 +5,14 @@ use serde::{Deserialize, Serialize};
 use crate::{
   command::{CommandReply, CommandWithFreq, Task},
   engine::{Bundle, Event},
-  entities::{airport::Runway, world::closest_airport},
+  entities::world::closest_airport,
   pathfinder::{
     display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
     NodeKind, Pathfinder,
   },
 };
 
-use super::{
-  actions::ActionKind, Action, Aircraft, AircraftState, TaxiingState,
-};
+use super::{Aircraft, AircraftState, LandingState, TaxiingState};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventKind {
@@ -93,93 +91,69 @@ impl AircraftEvent {
 }
 
 pub trait AircraftEventHandler {
-  fn run(aircraft: &Aircraft, event: &EventKind, bundle: &mut Bundle);
+  fn run(aircraft: &mut Aircraft, event: &EventKind, bundle: &mut Bundle);
 }
 
 pub struct HandleAircraftEvent;
 impl AircraftEventHandler for HandleAircraftEvent {
-  fn run(aircraft: &Aircraft, event: &EventKind, bundle: &mut Bundle) {
+  fn run(aircraft: &mut Aircraft, event: &EventKind, bundle: &mut Bundle) {
     match event {
       // Any
       EventKind::Speed(speed) => {
-        bundle
-          .actions
-          .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
+        aircraft.target.speed = *speed;
       }
       EventKind::SpeedAtOrBelow(speed) => {
         if aircraft.target.speed > *speed {
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
+          aircraft.target.speed = *speed;
         }
       }
       EventKind::SpeedAtOrAbove(speed) => {
         if aircraft.target.speed < *speed {
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::TargetSpeed(*speed)));
+          aircraft.target.speed = *speed;
         }
       }
       EventKind::Heading(heading) => {
         if let AircraftState::Flying { enroute, .. } = aircraft.state {
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TargetHeading(*heading),
-          ));
+          aircraft.target.heading = *heading;
 
           // Cancel waypoints of not enroute
           if !enroute {
-            bundle
-              .actions
-              .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
+            aircraft.state = AircraftState::Flying {
+              enroute: false,
+              waypoints: Vec::new(),
+            };
           }
         } else if let AircraftState::Landing { .. } = &aircraft.state {
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TargetHeading(*heading),
-          ));
+          aircraft.target.heading = *heading;
         }
       }
       EventKind::Altitude(altitude) => {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::TargetAltitude(*altitude),
-        ));
+        aircraft.target.altitude = *altitude;
       }
       EventKind::AltitudeAtOrBelow(altitude) => {
         if aircraft.target.altitude > *altitude {
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TargetAltitude(*altitude),
-          ));
+          aircraft.target.altitude = *altitude;
         }
       }
       EventKind::AltitudeAtOrAbove(altitude) => {
         if aircraft.target.altitude < *altitude {
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TargetAltitude(*altitude),
-          ));
+          aircraft.target.altitude = *altitude;
         }
       }
       EventKind::Frequency(frequency) => {
-        bundle
-          .actions
-          .push(Action::new(aircraft.id, ActionKind::Frequency(*frequency)));
+        aircraft.frequency = *frequency;
       }
       EventKind::NamedFrequency(frq) => {
         if let Some(frequency) =
           bundle.world.airspace.frequencies.try_from_string(frq)
         {
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::Frequency(frequency)));
+          aircraft.frequency = frequency;
         }
       }
 
       // Flying
       EventKind::ResumeOwnNavigation => {
-        if let AircraftState::Flying { .. } = aircraft.state {
+        if let AircraftState::Flying { enroute, .. } = aircraft.state {
           let arrival = bundle
             .world
             .connections
@@ -187,17 +161,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
             .find(|a| a.id == aircraft.flight_plan.arriving);
 
           if let Some(arrival) = arrival {
-            bundle.actions.push(Action {
-              id: aircraft.id,
-              kind: ActionKind::TargetSpeed(300.0),
-            });
-            bundle.actions.push(Action {
-              id: aircraft.id,
-              kind: ActionKind::TargetAltitude(13000.0),
-            });
-            bundle.actions.push(Action {
-              id: aircraft.id,
-              kind: ActionKind::Flying(vec![
+            aircraft.target.speed = 300.0;
+            aircraft.target.altitude = 13000.0;
+            aircraft.state = AircraftState::Flying {
+              enroute,
+              waypoints: vec![
                 new_vor(arrival.id, arrival.transition)
                   .with_name(Intern::from_ref("TRSN"))
                   .with_behavior(vec![
@@ -216,8 +184,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 new_vor(arrival.id, arrival.transition)
                   .with_name(Intern::from_ref("TRSN"))
                   .with_behavior(vec![EventKind::EnRoute(true)]),
-              ]),
-            });
+              ],
+            }
           }
         }
       }
@@ -226,12 +194,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
       EventKind::GoAround => {
         if let AircraftState::Landing { .. } = aircraft.state {
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::Flying(Vec::new())));
-          bundle
-            .actions
-            .push(Action::new(aircraft.id, ActionKind::SyncTargets));
+          aircraft.state = AircraftState::Flying {
+            waypoints: Vec::new(),
+            enroute: false,
+          };
+          aircraft.sync_targets_to_vals();
 
           bundle.events.push(
             AircraftEvent {
@@ -250,8 +217,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::Touchdown => {
-        if let AircraftState::Landing { runway, .. } = &aircraft.state {
-          handle_touchdown_event(aircraft, bundle, runway);
+        if let AircraftState::Landing { .. } = aircraft.state {
+          handle_touchdown_event(aircraft, bundle);
         }
       }
       EventKind::Takeoff(runway) => {
@@ -260,11 +227,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::EnRoute(bool) => {
-        if let AircraftState::Flying { .. } = &aircraft.state {
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::EnRoute(*bool),
-          });
+        if let AircraftState::Flying { enroute, .. } = &mut aircraft.state {
+          *enroute = *bool;
         }
 
         // TODO: Automatically tuning them to approach when they enter the
@@ -277,10 +241,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::FlipFlightPlan => {
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::FlipFlightPlan,
-        });
+        aircraft.flip_flight_plan();
       }
 
       // Taxiing
@@ -296,45 +257,27 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::TaxiContinue => {
-        if let AircraftState::Taxiing { state, .. } = aircraft.state {
+        if let AircraftState::Taxiing { state, .. } = &mut aircraft.state {
           match state {
             TaxiingState::Armed | TaxiingState::Override => {}
             TaxiingState::Holding => {
-              bundle.actions.push(Action {
-                id: aircraft.id,
-                kind: ActionKind::TaxiingState(TaxiingState::Armed),
-              });
+              *state = TaxiingState::Armed;
             }
             TaxiingState::Stopped => {
-              bundle.actions.push(Action {
-                id: aircraft.id,
-                kind: ActionKind::TaxiingState(TaxiingState::Override),
-              });
+              *state = TaxiingState::Override;
             }
           }
 
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::TargetSpeed(20.0),
-          });
+          aircraft.target.speed = 20.0;
         }
       }
       EventKind::TaxiHold { and_state: force } => {
-        if let AircraftState::Taxiing { .. } = aircraft.state {
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::Speed(0.0),
-          });
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::TargetSpeed(0.0),
-          });
+        if let AircraftState::Taxiing { state, .. } = &mut aircraft.state {
+          aircraft.target.speed = 0.0;
+          aircraft.speed = 0.0;
 
           if *force {
-            bundle.actions.push(Action {
-              id: aircraft.id,
-              kind: ActionKind::TaxiingState(TaxiingState::Holding),
-            });
+            *state = TaxiingState::Holding;
           }
         }
       }
@@ -375,7 +318,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
 }
 
 pub fn handle_land_event(
-  aircraft: &Aircraft,
+  aircraft: &mut Aircraft,
   bundle: &mut Bundle,
   runway_id: Intern<String>,
 ) {
@@ -388,50 +331,36 @@ pub fn handle_land_event(
       .flat_map(|a| a.runways.iter())
       .find(|r| r.id == runway_id)
     {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::Landing(runway.clone()),
-      ));
+      aircraft.state = AircraftState::Landing {
+        runway: runway.clone(),
+        state: LandingState::default(),
+      };
     }
   }
 }
 
-pub fn handle_touchdown_event(
-  aircraft: &Aircraft,
-  bundle: &mut Bundle,
-  runway: &Runway,
-) {
-  bundle
-    .actions
-    .push(Action::new(aircraft.id, ActionKind::TargetAltitude(0.0)));
-  bundle
-    .actions
-    .push(Action::new(aircraft.id, ActionKind::Altitude(0.0)));
-  bundle.actions.push(Action::new(
-    aircraft.id,
-    ActionKind::TargetHeading(runway.heading),
-  ));
-  bundle.actions.push(Action::new(
-    aircraft.id,
-    ActionKind::Heading(runway.heading),
-  ));
+pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+  let AircraftState::Landing { runway, .. } = &mut aircraft.state else {
+    unreachable!("outer function asserts that aircraft is landing")
+  };
 
-  bundle
-    .actions
-    .push(Action::new(aircraft.id, ActionKind::TargetSpeed(0.0)));
+  aircraft.target.altitude = 0.0;
+  aircraft.altitude = 0.0;
+  aircraft.target.heading = runway.heading;
+  aircraft.heading = runway.heading;
 
-  bundle.actions.push(Action::new(
-    aircraft.id,
-    ActionKind::Taxi {
-      current: Node {
-        name: runway.id,
-        kind: NodeKind::Runway,
-        behavior: NodeBehavior::GoTo,
-        value: aircraft.pos,
-      },
-      waypoints: Vec::new(),
+  aircraft.target.speed = 0.0;
+
+  aircraft.state = AircraftState::Taxiing {
+    current: Node {
+      name: runway.id,
+      kind: NodeKind::Runway,
+      behavior: NodeBehavior::GoTo,
+      value: aircraft.pos,
     },
-  ));
+    waypoints: Vec::new(),
+    state: TaxiingState::default(),
+  };
 
   bundle.events.push(
     AircraftEvent {
@@ -443,7 +372,7 @@ pub fn handle_touchdown_event(
 }
 
 pub fn handle_taxi_event(
-  aircraft: &Aircraft,
+  aircraft: &mut Aircraft,
   bundle: &mut Bundle,
   waypoint_strings: &[Node<()>],
   pathfinder: &Pathfinder,
@@ -519,19 +448,23 @@ pub fn handle_taxi_event(
     }
 
     all_waypoints.reverse();
-    bundle.actions.push(Action {
-      id: aircraft.id,
-      kind: ActionKind::TaxiWaypoints(all_waypoints.clone()),
-    });
+    // bundle.actions.push(Action {
+    //   id: aircraft.id,
+    //   kind: ActionKind::TaxiWaypoints(all_waypoints.clone()),
+    // });
 
-    tracing::info!(
-      "Initiating taxi for {}: {:?}",
-      aircraft.id,
-      display_vec_node_vec2(&all_waypoints)
-    );
+    if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
+      if all_waypoints.is_empty() {
+        return;
+      }
 
-    if all_waypoints.is_empty() {
-      return;
+      tracing::info!(
+        "Initiating taxi for {}: {:?}",
+        aircraft.id,
+        display_vec_node_vec2(&all_waypoints)
+      );
+
+      *waypoints = all_waypoints;
     }
   }
 
@@ -545,7 +478,7 @@ pub fn handle_taxi_event(
 }
 
 pub fn handle_takeoff_event(
-  aircraft: &Aircraft,
+  aircraft: &mut Aircraft,
   bundle: &mut Bundle,
   runway_id: Intern<String>,
 ) {
@@ -560,28 +493,15 @@ pub fn handle_takeoff_event(
       .find(|r| r.id == runway_id)
     {
       if NodeKind::Runway == current.kind && current.name == runway_id {
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::TargetSpeed(aircraft.flight_plan.speed),
-        });
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::TargetAltitude(aircraft.flight_plan.altitude),
-        });
+        aircraft.target.speed = aircraft.flight_plan.speed;
+        aircraft.target.altitude = aircraft.flight_plan.altitude;
+        aircraft.heading = runway.heading;
+        aircraft.target.heading = runway.heading;
 
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::Heading(runway.heading),
-        });
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::TargetHeading(runway.heading),
-        });
-
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::Flying(vec![]),
-        });
+        aircraft.state = AircraftState::Flying {
+          enroute: false,
+          waypoints: Vec::new(),
+        };
 
         bundle.events.push(
           AircraftEvent {

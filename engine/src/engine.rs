@@ -122,11 +122,6 @@ impl Engine {
       }) {
         if event.id == aircraft.id {
           HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
-
-          // Apply all actions
-          if !bundle.actions.is_empty() {
-            tracing::trace!("event: {event:?} {:?}", &bundle.actions);
-          }
         }
       }
 
@@ -162,8 +157,8 @@ impl Engine {
     game.points.landing_rate.calc_rate();
     game.points.takeoff_rate.calc_rate();
 
-    self.space_inbounds(world, game, &mut bundle);
-    self.taxi_collisions(&game.aircraft, &mut bundle);
+    self.space_inbounds(world, game);
+    self.taxi_collisions(&mut game.aircraft, &mut bundle);
 
     // Capture the left over events and actions for next time
     if !bundle.events.is_empty() {
@@ -210,12 +205,7 @@ impl Engine {
     });
   }
 
-  pub fn space_inbounds(
-    &mut self,
-    world: &World,
-    game: &mut Game,
-    bundle: &mut Bundle,
-  ) {
+  pub fn space_inbounds(&mut self, world: &World, game: &mut Game) {
     #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
     struct DistanceTime {
       id: Intern<String>,
@@ -278,7 +268,7 @@ impl Engine {
 
   pub fn taxi_collisions(
     &mut self,
-    aircrafts: &[Aircraft],
+    aircrafts: &mut [Aircraft],
     bundle: &mut Bundle,
   ) {
     let mut collisions: HashSet<Intern<String>> = HashSet::new();
@@ -314,31 +304,25 @@ impl Engine {
       }
     }
 
-    for aircraft in aircrafts.iter() {
-      if let AircraftState::Taxiing { state, .. } = &aircraft.state {
+    for aircraft in aircrafts.iter_mut() {
+      if let AircraftState::Taxiing { state, .. } = &mut aircraft.state {
         if collisions.contains(&aircraft.id) && state == &TaxiingState::Armed {
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TaxiingState(TaxiingState::Stopped),
-          ));
+          *state = TaxiingState::Stopped;
           bundle.events.push(Event::Aircraft(AircraftEvent::new(
             aircraft.id,
             EventKind::TaxiHold { and_state: false },
           )));
         } else if !collisions.contains(&aircraft.id)
-          && matches!(state, &TaxiingState::Override | &TaxiingState::Stopped)
+          && matches!(state, TaxiingState::Override | TaxiingState::Stopped)
         {
-          if matches!(state, &TaxiingState::Stopped) {
+          if matches!(state, TaxiingState::Stopped) {
             bundle.events.push(Event::Aircraft(AircraftEvent::new(
               aircraft.id,
               EventKind::TaxiContinue,
             )));
           }
 
-          bundle.actions.push(Action::new(
-            aircraft.id,
-            ActionKind::TaxiingState(TaxiingState::Armed),
-          ));
+          *state = TaxiingState::Armed;
         }
       }
     }
