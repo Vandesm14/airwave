@@ -180,6 +180,19 @@ async fn comms_voice(
   tracing::info!("Replied to voice request");
 }
 
+async fn post_pause(
+  State(mut state): State<AppState>,
+) -> Result<(), http::StatusCode> {
+  let res = JobReq::send(PostReqKind::Pause, &mut state.post_sender)
+    .recv()
+    .await;
+  if let Ok(ResKind::Any) = res {
+    Ok(())
+  } else {
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+  }
+}
+
 async fn get_messages(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
@@ -278,6 +291,7 @@ pub async fn run(
       .route("/world", get(get_world))
       .route("/game/points", get(get_points))
       .route("/game/aircraft", get(get_aircraft))
+      .route("/pause", post(post_pause))
       .route("/ping", get(ping_pong))
       .with_state(AppState::new(get_sender, post_sender, openai_api_key)),
   );

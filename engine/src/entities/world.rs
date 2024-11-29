@@ -70,6 +70,7 @@ pub struct Game {
   pub funds: usize,
   pub purchases: Vec<PurchasableAircraft>,
   pub points: Points,
+  pub paused: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

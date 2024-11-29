@@ -65,13 +65,16 @@ pub enum PostReqKind {
     atc: CommandWithFreq,
     reply: CommandWithFreq,
   },
+  Pause,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum ResKind {
-  Pong,
+  #[default]
+  Any,
 
   // GET
+  Pong,
   Messages(Vec<OutgoingCommandReply>),
   World(World),
   Points(Points),
@@ -93,7 +96,6 @@ pub struct Runner {
 
   last_tick: Instant,
   rate: usize,
-  paused: bool,
 }
 
 impl Runner {
@@ -119,7 +121,6 @@ impl Runner {
 
       last_tick: Instant::now(),
       rate: 15,
-      paused: false,
     }
   }
 
@@ -263,7 +264,6 @@ impl Runner {
     self.last_tick = Instant::now();
 
     let mut commands: Vec<CommandWithFreq> = Vec::new();
-    let mut ui_commands: Vec<UICommand> = Vec::new();
 
     // GET
     loop {
@@ -301,10 +301,13 @@ impl Runner {
           self.messages.push(atc.clone());
           commands.push(reply.clone());
         }
+        PostReqKind::Pause => {
+          self.game.paused = !self.game.paused;
+        }
       }
     }
 
-    if self.paused {
+    if self.game.paused {
       return;
     }
 
@@ -321,9 +324,9 @@ impl Runner {
       self.execute_command(command);
     }
 
-    for ui_command in ui_commands {
-      self.engine.events.push(Event::UiEvent(ui_command.into()));
-    }
+    // for ui_command in ui_commands {
+    //   self.engine.events.push(Event::UiEvent(ui_command.into()));
+    // }
 
     let dt = 1.0 / self.rate as f32;
     let events =

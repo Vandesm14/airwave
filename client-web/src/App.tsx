@@ -92,10 +92,10 @@ export default function App() {
     });
   });
 
-  function sendPause() {
-    // if (socket !== null) {
-    //   socket.send(JSON.stringify({ type: 'ui', value: { type: 'pause' } }));
-    // }
+  async function sendPause() {
+    await fetch(`${baseAPIPath}/api/pause`, {
+      method: 'POST',
+    });
   }
 
   function toggleTTS() {
