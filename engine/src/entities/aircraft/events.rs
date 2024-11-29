@@ -418,13 +418,13 @@ pub fn handle_taxi_event(
 
     let mut pos = aircraft.pos;
     let mut heading = aircraft.heading;
-    let mut current: Node<Vec2> = current.clone();
+    let mut curr: Node<Vec2> = current.clone();
     for destination in destinations {
       let path = pathfinder.path_to(
         Node {
-          name: current.name,
-          kind: current.kind,
-          behavior: current.behavior,
+          name: curr.name,
+          kind: curr.kind,
+          behavior: curr.behavior,
           value: (),
         },
         destination.clone(),
@@ -435,14 +435,14 @@ pub fn handle_taxi_event(
       if let Some(path) = path {
         pos = path.final_pos;
         heading = path.final_heading;
-        current = path.path.last().unwrap().clone();
+        curr = path.path.last().unwrap().clone();
 
         all_waypoints.extend(path.path);
       } else {
         tracing::error!(
           "Failed to find path for destination: {:?}, from: {:?}",
           destination,
-          current
+          curr
         );
         return;
       }
@@ -472,22 +472,24 @@ pub fn handle_taxi_event(
       }
     }
 
-    all_waypoints.reverse();
-
     if all_waypoints.is_empty() {
       return;
     }
+
+    all_waypoints.reverse();
 
     tracing::info!(
       "Initiating taxi for {}: {:?}",
       aircraft.id,
       display_vec_node_vec2(&all_waypoints)
     );
+
+    let current = current.clone();
     if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
       *waypoints = all_waypoints;
     } else {
       aircraft.state = AircraftState::Taxiing {
-        current,
+        current: current.clone(),
         waypoints: all_waypoints,
         state: TaxiingState::default(),
       };

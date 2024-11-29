@@ -346,7 +346,9 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         let movement_speed = speed_in_feet.powf(2.0);
 
         if movement_speed >= distance {
-          waypoints.pop();
+          if let Some(wp) = waypoints.pop() {
+            *current = wp;
+          }
         }
         // Only hold if we are not stopped and we are at or below taxi speed.
       } else if aircraft.speed > 0.0 && aircraft.speed <= 20.0 {
@@ -380,13 +382,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           NodeBehavior::Park => {}
           NodeBehavior::HoldShort => {
             if distance <= 250.0_f32.powf(2.0) {
-              if let AircraftState::Taxiing { waypoints, .. } =
-                &mut aircraft.state
-              {
-                if let Some(last) = waypoints.last_mut() {
-                  last.behavior = NodeBehavior::GoTo;
-                }
-              }
+              tracing::info!("Short hold");
               bundle.events.push(
                 AircraftEvent {
                   id: aircraft.id,
@@ -394,6 +390,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
                 }
                 .into(),
               );
+              if let AircraftState::Taxiing { waypoints, .. } =
+                &mut aircraft.state
+              {
+                if let Some(last) = waypoints.last_mut() {
+                  last.behavior = NodeBehavior::GoTo;
+                }
+              }
             }
           }
         }
