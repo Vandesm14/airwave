@@ -7,8 +7,9 @@ import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
-import { baseAPIPath, usePing } from './lib/api';
+import { baseAPIPath, getMessages, usePing } from './lib/api';
 import Points from './Points';
+import { QueryClient } from '@tanstack/solid-query';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -17,6 +18,7 @@ export default function App() {
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   const query = usePing();
+  const client = new QueryClient();
 
   async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
@@ -29,12 +31,21 @@ export default function App() {
 
   async function stopRecording() {
     setIsRecording(false);
-    whisper.stopRecording((blob) => {
-      blob.arrayBuffer().then((value) => {
-        fetch(`${baseAPIPath}/comms/voice?frequency=${frequency()}`, {
-          body: value,
-          method: 'POST',
-        });
+    whisper.stopRecording(async (blob) => {
+      const value = await blob.arrayBuffer();
+      await fetch(`${baseAPIPath}/api/comms/voice?frequency=${frequency()}`, {
+        body: value,
+        method: 'POST',
+      });
+      await client.invalidateQueries({
+        queryKey: [getMessages],
+        type: 'all',
+        exact: true,
+      });
+      await client.refetchQueries({
+        queryKey: [getMessages],
+        type: 'all',
+        exact: true,
       });
     });
   }
@@ -45,9 +56,19 @@ export default function App() {
   }
 
   async function sendTextMessage(text: string) {
-    await fetch(`${baseAPIPath}/comms/text?frequency=${frequency()}`, {
+    await fetch(`${baseAPIPath}/api/comms/text?frequency=${frequency()}`, {
       body: text,
       method: 'POST',
+    });
+    await client.invalidateQueries({
+      queryKey: [getMessages],
+      type: 'all',
+      exact: true,
+    });
+    await client.refetchQueries({
+      queryKey: [getMessages],
+      type: 'all',
+      exact: true,
     });
   }
 

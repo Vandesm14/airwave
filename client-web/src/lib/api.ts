@@ -2,15 +2,16 @@ import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
 import { Aircraft, Points, RadioMessage, World } from './types';
 
-const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001/api`;
+const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
 export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;
 
+export const getAircraft = '/api/game/aircraft';
 export function useAircraft(renderRate: Accessor<number>) {
   return createQuery<Array<Aircraft>>(() => ({
-    queryKey: ['/api/game/aircraft'],
+    queryKey: [getAircraft],
     queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/game/aircraft`);
+      const result = await fetch(`${baseAPIPath}${getAircraft}`);
       if (!result.ok) return [];
       return result.json();
     },
@@ -23,11 +24,12 @@ export function useAircraft(renderRate: Accessor<number>) {
   }));
 }
 
+export const getWorld = '/api/world';
 export function useWorld() {
   return createQuery<World>(() => ({
-    queryKey: ['/api/world'],
+    queryKey: [getWorld],
     queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/world`);
+      const result = await fetch(`${baseAPIPath}${getWorld}`);
       if (!result.ok) return null;
       return result.json();
     },
@@ -37,11 +39,12 @@ export function useWorld() {
   }));
 }
 
+export const getPoints = '/api/game/points';
 export function usePoints() {
   return createQuery<Points>(() => ({
-    queryKey: ['/api/game/points'],
+    queryKey: [getPoints],
     queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/game/points`);
+      const result = await fetch(`${baseAPIPath}${getPoints}`);
       if (!result.ok) return null;
       return result.json();
     },
@@ -52,11 +55,12 @@ export function usePoints() {
   }));
 }
 
+export const getMessages = '/api/messages';
 export function useMessages() {
   return createQuery<Array<RadioMessage>>(() => ({
-    queryKey: ['/api/messages'],
+    queryKey: [getMessages],
     queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}/messages`);
+      const result = await fetch(`${baseAPIPath}${getMessages}`);
       if (!result.ok) return [];
       return result.json();
     },
@@ -69,12 +73,13 @@ export function useMessages() {
   }));
 }
 
+export const getPing = '/api/ping';
 export function usePing() {
   return createQuery<boolean>(() => ({
-    queryKey: ['/api/ping'],
+    queryKey: [getPing],
     queryFn: async () => {
       try {
-        const result = await fetch(`${baseAPIPath}/ping`);
+        const result = await fetch(`${baseAPIPath}${getPing}`);
         if (!result.ok) return false;
         return (await result.text()) === 'pong';
       } catch {
