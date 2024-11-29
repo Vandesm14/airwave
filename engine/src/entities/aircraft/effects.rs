@@ -1,5 +1,6 @@
 use std::{f32::consts::PI, ops::Add, time::Duration};
 
+use internment::Intern;
 use turborand::TurboRand;
 
 use crate::{
@@ -7,9 +8,9 @@ use crate::{
   closest_point_on_line,
   command::{CommandReply, CommandWithFreq},
   delta_angle, duration_now,
-  engine::Bundle,
+  engine::{Bundle, Event},
   entities::airport::Runway,
-  inverse_degrees, move_point, normalize_angle,
+  heading_to_direction, inverse_degrees, move_point, normalize_angle,
   pathfinder::NodeBehavior,
   Line, DEPARTURE_WAIT_RANGE, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
@@ -466,5 +467,30 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         }
       }
     }
+  }
+}
+
+pub struct AircraftCalloutWhenEnterAirspaceEffect;
+impl AircraftEffect for AircraftCalloutWhenEnterAirspaceEffect {
+  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+    let direction = heading_to_direction(angle_between_points(
+      bundle.world.airspace.pos,
+      aircraft.pos,
+    ))
+    .to_owned();
+    let command = CommandWithFreq::new(
+      Intern::to_string(&aircraft.id),
+      aircraft.frequency,
+      CommandReply::ArriveInAirspace {
+        direction,
+        altitude: aircraft.altitude,
+      },
+      Vec::new(),
+    );
+
+    bundle.events.push(Event::Aircraft(AircraftEvent::new(
+      aircraft.id,
+      EventKind::Callout(command),
+    )));
   }
 }

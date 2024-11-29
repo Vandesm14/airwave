@@ -13,9 +13,10 @@ use crate::{
         Action, ActionKind, AircraftActionHandler, AircraftAllActionHandler,
       },
       effects::{
-        AircraftEffect, AircraftUpdateFlyingEffect,
-        AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
-        AircraftUpdatePositionEffect, AircraftUpdateTaxiingEffect,
+        AircraftCalloutWhenEnterAirspaceEffect, AircraftEffect,
+        AircraftUpdateFlyingEffect, AircraftUpdateFromTargetsEffect,
+        AircraftUpdateLandingEffect, AircraftUpdatePositionEffect,
+        AircraftUpdateTaxiingEffect,
       },
       events::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
@@ -186,6 +187,7 @@ impl Engine {
       AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
       AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
+      AircraftCalloutWhenEnterAirspaceEffect::run(aircraft, &mut bundle);
       self.apply_actions(&mut bundle, aircraft, Some("state actions"));
 
       // Apply all actions

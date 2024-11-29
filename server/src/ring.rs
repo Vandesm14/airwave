@@ -6,6 +6,12 @@ pub struct RingBuffer<T> {
   vec: VecDeque<T>,
 }
 
+impl<T> Extend<T> for RingBuffer<T> {
+  fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+    self.vec.extend(iter);
+  }
+}
+
 impl<T> RingBuffer<T> {
   pub fn new(capacity: usize) -> Self {
     Self {

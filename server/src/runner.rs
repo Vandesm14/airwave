@@ -11,7 +11,7 @@ use turborand::{rng::Rng, TurboRand};
 
 use engine::{
   angle_between_points, circle_circle_intersection,
-  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
+  command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, Event, UICommand},
   entities::{
     aircraft::{
@@ -20,7 +20,6 @@ use engine::{
     },
     world::{Connection, ConnectionState, Game, Points, World},
   },
-  heading_to_direction,
   pathfinder::new_vor,
 };
 
@@ -333,45 +332,20 @@ impl Runner {
         .tick(&self.world, &mut self.game, &mut self.rng, dt);
 
     // Run through all callout events and broadcast them
-    for event in events.iter().filter_map(|e| match e {
-      Event::Aircraft(aircraft_event) => Some(aircraft_event),
-      Event::UiEvent(_) => None,
-    }) {
-      match &event.kind {
-        EventKind::Callout(command) => {
-          self.messages.push(command.clone());
-        }
+    self.messages.extend(
+      events
+        .iter()
+        .filter_map(|e| match e {
+          Event::Aircraft(AircraftEvent {
+            kind: EventKind::Callout(command),
+            ..
+          }) => Some(command),
+          _ => None,
+        })
+        .cloned(),
+    );
 
-        EventKind::EnRoute(false) => {
-          if let Some(aircraft) =
-            self.game.aircraft.iter().find(|a| a.id == event.id)
-          {
-            let direction = heading_to_direction(angle_between_points(
-              self.world.airspace.pos,
-              aircraft.pos,
-            ))
-            .to_owned();
-            let command = CommandWithFreq::new(
-              Intern::to_string(&aircraft.id),
-              aircraft.frequency,
-              CommandReply::ArriveInAirspace {
-                direction,
-                altitude: aircraft.altitude,
-              },
-              Vec::new(),
-            );
-
-            self.messages.push(command.clone());
-          }
-        }
-        _ => {}
-      }
-    }
-
-    self.cleanup(events.iter().filter_map(|e| match e {
-      Event::Aircraft(aircraft_event) => Some(aircraft_event),
-      Event::UiEvent(_) => None,
-    }));
+    self.cleanup(events.iter());
     // TODO: self.save_world();
   }
 
@@ -387,9 +361,12 @@ impl Runner {
 
   fn cleanup<'a, T>(&mut self, events: T)
   where
-    T: Iterator<Item = &'a AircraftEvent>,
+    T: Iterator<Item = &'a Event>,
   {
-    for event in events {
+    for event in events.filter_map(|e| match e {
+      Event::Aircraft(aircraft_event) => Some(aircraft_event),
+      Event::UiEvent(_) => None,
+    }) {
       if let AircraftEvent {
         id,
         kind: EventKind::Delete,
@@ -465,10 +442,7 @@ impl Runner {
           .engine
           .tick(&self.world, &mut self.game, &mut self.rng, dt);
 
-      self.cleanup(events.iter().filter_map(|e| match e {
-        Event::Aircraft(aircraft_event) => Some(aircraft_event),
-        Event::UiEvent(_) => None,
-      }));
+      self.cleanup(events.iter());
 
       if self.game.aircraft.iter().any(|aircraft| {
         aircraft.altitude != 0.0
