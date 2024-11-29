@@ -3,9 +3,11 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+  angle_between_points,
   command::{CommandReply, CommandWithFreq, Task},
   engine::{Bundle, Event},
   entities::world::closest_airport,
+  heading_to_direction,
   pathfinder::{
     display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
     NodeKind, Pathfinder,
@@ -48,6 +50,7 @@ pub enum EventKind {
 
   // Callouts
   Callout(CommandWithFreq),
+  CalloutInAirspace,
 
   // Internal
   Delete,
@@ -170,6 +173,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
                   .with_name(Intern::from_ref("TRSN"))
                   .with_behavior(vec![
                     EventKind::EnRoute(false),
+                    EventKind::CalloutInAirspace,
                     EventKind::SpeedAtOrBelow(250.0),
                   ]),
                 // TODO: Add a waypoint between APRT and TRSN that decreases
@@ -300,6 +304,27 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Callouts are handled outside of the engine.
       EventKind::Callout(..) => {}
+      EventKind::CalloutInAirspace => {
+        let direction = heading_to_direction(angle_between_points(
+          bundle.world.airspace.pos,
+          aircraft.pos,
+        ))
+        .to_owned();
+        let command = CommandWithFreq::new(
+          Intern::to_string(&aircraft.id),
+          aircraft.frequency,
+          CommandReply::ArriveInAirspace {
+            direction,
+            altitude: aircraft.altitude,
+          },
+          Vec::new(),
+        );
+
+        bundle.events.push(Event::Aircraft(AircraftEvent::new(
+          aircraft.id,
+          EventKind::Callout(command),
+        )));
+      }
 
       // Internal
       EventKind::Delete => {

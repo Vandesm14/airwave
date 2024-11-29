@@ -10,10 +10,9 @@ use crate::{
   entities::{
     aircraft::{
       effects::{
-        AircraftCalloutWhenEnterAirspaceEffect, AircraftEffect,
-        AircraftUpdateFlyingEffect, AircraftUpdateFromTargetsEffect,
-        AircraftUpdateLandingEffect, AircraftUpdatePositionEffect,
-        AircraftUpdateTaxiingEffect,
+        AircraftEffect, AircraftUpdateFlyingEffect,
+        AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
+        AircraftUpdatePositionEffect, AircraftUpdateTaxiingEffect,
       },
       events::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
@@ -129,7 +128,6 @@ impl Engine {
       AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
       AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
-      AircraftCalloutWhenEnterAirspaceEffect::run(aircraft, &mut bundle);
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
     }
