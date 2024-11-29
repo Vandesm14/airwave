@@ -208,7 +208,7 @@ impl Engine {
   pub fn space_inbounds(&mut self, world: &World, game: &mut Game) {
     #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
     struct DistanceTime {
-      id: Intern<String>,
+      index: usize,
       distance: f32,
       speed: f32,
     }
@@ -217,7 +217,8 @@ impl Engine {
     let mut reports: Vec<DistanceTime> = game
       .aircraft
       .iter()
-      .filter(|a| {
+      .enumerate()
+      .filter(|(_, a)| {
         if let AircraftState::Flying { enroute, waypoints } = &a.state {
           // If they are on their way back
           *enroute && waypoints.len() == 1
@@ -225,12 +226,11 @@ impl Engine {
           false
         }
       })
-      .map(|a| {
-        let id = a.id;
+      .map(|(index, a)| {
         let distance = a.pos.distance(world.airspace.pos);
         let speed = a.speed;
         DistanceTime {
-          id,
+          index,
           distance,
           speed,
         }
@@ -257,11 +257,9 @@ impl Engine {
       }
 
       for report in reports.iter() {
-        // TODO: fix
-        // bundle.actions.push(Action::new(
-        //   report.id,
-        //   ActionKind::TargetSpeed(report.speed.clamp(250.0, 400.0)),
-        // ));
+        if let Some(aircraft) = game.aircraft.get_mut(report.index) {
+          aircraft.target.speed = report.speed.clamp(250.0, 400.0);
+        }
       }
     }
   }
