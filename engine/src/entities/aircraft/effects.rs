@@ -16,18 +16,17 @@ use crate::{
 };
 
 use super::{
-  actions::ActionKind,
   events::{AircraftEvent, EventKind},
-  Action, Aircraft, AircraftState, LandingState,
+  Aircraft, AircraftState, LandingState,
 };
 
 pub trait AircraftEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle);
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle);
 }
 
 pub struct AircraftUpdateFromTargetsEffect;
 impl AircraftEffect for AircraftUpdateFromTargetsEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     let dt = aircraft.dt_enroute(bundle.dt);
 
     // In feet per second
@@ -77,27 +76,20 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     }
 
     if altitude != aircraft.altitude {
-      bundle
-        .actions
-        .push(Action::new(aircraft.id, ActionKind::Altitude(altitude)));
+      aircraft.altitude = altitude;
     }
     if heading != aircraft.heading {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::Heading(normalize_angle(heading)),
-      ));
+      aircraft.heading = heading;
     }
     if speed != aircraft.speed {
-      bundle
-        .actions
-        .push(Action::new(aircraft.id, ActionKind::Speed(speed)));
+      aircraft.speed = speed;
     }
   }
 }
 
 pub struct AircraftUpdatePositionEffect;
 impl AircraftEffect for AircraftUpdatePositionEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     let dt = aircraft.dt_enroute(bundle.dt);
 
     let pos = move_point(
@@ -107,24 +99,28 @@ impl AircraftEffect for AircraftUpdatePositionEffect {
     );
 
     if pos != aircraft.pos {
-      bundle
-        .actions
-        .push(Action::new(aircraft.id, ActionKind::Pos(pos)));
+      aircraft.pos = pos;
     }
   }
 }
 
 pub struct AircraftUpdateLandingEffect;
 impl AircraftUpdateLandingEffect {
-  fn state_before_turn(
-    aircraft: &Aircraft,
-    bundle: &mut Bundle,
-    dt: f32,
-    runway: &Runway,
-    ils_line: Line,
-    mut state: LandingState,
-  ) -> LandingState {
+  fn state_before_turn(aircraft: &mut Aircraft, bundle: &mut Bundle, dt: f32) {
     let degrees_per_sec = aircraft.dt_turn_speed(dt);
+    let AircraftState::Landing { runway, state } = &mut aircraft.state else {
+      unreachable!("outer function asserts that aircraft is landing")
+    };
+
+    let ils_line = Line::new(
+      move_point(runway.end(), runway.heading, 500.0),
+      move_point(
+        runway.end(),
+        inverse_degrees(runway.heading),
+        NAUTICALMILES_TO_FEET * 18.0 + runway.length,
+      ),
+    );
+
     let turning_radius = 360.0 / degrees_per_sec;
     let turning_radius =
       turning_radius * aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
@@ -142,19 +138,13 @@ impl AircraftUpdateLandingEffect {
     let distance_to_point = aircraft.pos.distance_squared(closest_point);
 
     if distance_to_point <= turn_distance {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::TargetHeading(runway.heading),
-      ));
+      aircraft.target.heading = runway.heading;
 
-      state = LandingState::Turning;
+      *state = LandingState::Turning;
     } else if aircraft.speed > aircraft.target.speed {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::TargetHeading(aircraft.heading),
-      ));
+      aircraft.target.heading = aircraft.heading;
 
-      state = LandingState::BeforeTurn;
+      *state = LandingState::BeforeTurn;
     }
 
     let angle_to_runway =
@@ -165,39 +155,30 @@ impl AircraftUpdateLandingEffect {
         || distance_to_point.round() != 0.0)
     {
       if angle_to_runway > runway.heading {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::TargetHeading(add_degrees(runway.heading, 20.0)),
-        ));
+        aircraft.target.heading = add_degrees(runway.heading, 20.0);
       }
 
       if angle_to_runway < runway.heading {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::TargetHeading(add_degrees(runway.heading, -20.0)),
-        ));
+        aircraft.target.heading = add_degrees(runway.heading, -20.0);
       }
 
-      state = LandingState::Correcting;
+      *state = LandingState::Correcting;
     }
 
     if distance_to_point <= 50_f32.powf(2.0)
       && aircraft.heading.round() == runway.heading
     {
-      state = LandingState::Localizer;
+      *state = LandingState::Localizer;
     }
-
-    state
   }
 
-  fn state_touchdown(
-    aircraft: &Aircraft,
-    bundle: &mut Bundle,
-    runway: &Runway,
-    mut state: LandingState,
-  ) -> LandingState {
-    if state != LandingState::Glideslope {
-      return state;
+  fn state_touchdown(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+    let AircraftState::Landing { runway, state } = &mut aircraft.state else {
+      unreachable!("outer function asserts that aircraft is landing")
+    };
+
+    if *state != LandingState::Glideslope {
+      return;
     }
 
     let distance_to_end = aircraft.pos.distance_squared(runway.end());
@@ -213,20 +194,17 @@ impl AircraftUpdateLandingEffect {
         .into(),
       );
 
-      state = LandingState::Touchdown
+      *state = LandingState::Touchdown
     }
-
-    state
   }
 
-  fn state_go_around(
-    aircraft: &Aircraft,
-    bundle: &mut Bundle,
-    runway: &Runway,
-    mut state: LandingState,
-  ) -> LandingState {
-    if state != LandingState::Glideslope {
-      return state;
+  fn state_go_around(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+    let AircraftState::Landing { runway, state } = &mut aircraft.state else {
+      unreachable!("outer function asserts that aircraft is landing")
+    };
+
+    if *state != LandingState::Glideslope {
+      return;
     }
 
     let distance_to_runway = aircraft.pos.distance(runway.start());
@@ -256,14 +234,12 @@ impl AircraftUpdateLandingEffect {
         .into(),
       );
 
-      state = LandingState::GoAround;
+      *state = LandingState::GoAround;
     }
-
-    state
   }
 
   fn state_glideslope(
-    aircraft: &Aircraft,
+    aircraft: &mut Aircraft,
     bundle: &mut Bundle,
     dt: f32,
     runway: &Runway,
@@ -294,17 +270,11 @@ impl AircraftUpdateLandingEffect {
     if angle_range.contains(&angle_to_runway)
       && distance_to_runway <= start_descent_distance
     {
-      bundle.actions.push(Action::new(
-        aircraft.id,
-        ActionKind::TargetSpeed(target_knots.min(180.0)),
-      ));
+      aircraft.target.speed = target_knots.min(180.0);
 
       // If we are too high, descend.
       if aircraft.altitude > target_altitude {
-        bundle.actions.push(Action::new(
-          aircraft.id,
-          ActionKind::TargetAltitude(target_altitude),
-        ));
+        aircraft.target.altitude = target_altitude;
 
         state = LandingState::Glideslope;
       }
@@ -315,68 +285,46 @@ impl AircraftUpdateLandingEffect {
 }
 
 impl AircraftEffect for AircraftUpdateLandingEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
-    if let AircraftState::Landing { runway, state } = &aircraft.state {
-      let dt = aircraft.dt_enroute(bundle.dt);
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+    let dt = aircraft.dt_enroute(bundle.dt);
 
-      let ils_line = Line::new(
-        move_point(runway.end(), runway.heading, 500.0),
-        move_point(
-          runway.end(),
-          inverse_degrees(runway.heading),
-          NAUTICALMILES_TO_FEET * 18.0 + runway.length,
-        ),
-      );
-
-      let s = &Self::state_touchdown(aircraft, bundle, runway, *state);
-      let s = &Self::state_go_around(aircraft, bundle, runway, *s);
-      let s =
-        &Self::state_before_turn(aircraft, bundle, dt, runway, ils_line, *s);
-      let s = &Self::state_glideslope(aircraft, bundle, dt, runway, *s);
-
-      bundle
-        .actions
-        .push(Action::new(aircraft.id, ActionKind::LandingState(*s)));
+    if let AircraftState::Landing { runway, state } = &mut aircraft.state {
+      Self::state_touchdown(aircraft, bundle);
+      Self::state_go_around(aircraft, bundle);
+      Self::state_before_turn(aircraft, bundle, dt);
+      // Self::state_glideslope(aircraft, bundle, dt);
     }
   }
 }
 
 pub struct AircraftUpdateFlyingEffect;
 impl AircraftEffect for AircraftUpdateFlyingEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     if aircraft.altitude < 2000.0 {
       return;
     }
 
     let dt = aircraft.dt_enroute(bundle.dt);
     let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
-    if let AircraftState::Flying { waypoints, .. } = &aircraft.state {
+    if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
       if let Some(current) = waypoints.last() {
         let heading = angle_between_points(aircraft.pos, current.value.to);
 
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::TargetHeading(heading),
-        });
+        aircraft.target.heading = heading;
 
         let distance = aircraft.pos.distance_squared(current.value.to);
         let movement_speed = speed_in_feet.powf(2.0);
 
         if movement_speed >= distance {
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::Pos(current.value.to),
-          });
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::PopWaypoint,
-          });
+          aircraft.pos = current.value.to;
 
           for e in current.value.then.iter() {
             bundle
               .events
               .push(AircraftEvent::new(aircraft.id, e.clone()).into());
           }
+
+          waypoints.pop();
         }
       }
     }
@@ -385,33 +333,24 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
 
 pub struct AircraftUpdateTaxiingEffect;
 impl AircraftEffect for AircraftUpdateTaxiingEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND;
     if let AircraftState::Taxiing {
       waypoints, current, ..
-    } = &aircraft.state
+    } = &mut aircraft.state
     {
       let waypoint = waypoints.last().cloned();
       if let Some(waypoint) = waypoint {
         let heading = angle_between_points(aircraft.pos, waypoint.value);
 
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::Heading(heading),
-        });
-        bundle.actions.push(Action {
-          id: aircraft.id,
-          kind: ActionKind::TargetHeading(heading),
-        });
+        aircraft.heading = heading;
+        aircraft.target.heading = heading;
 
         let distance = aircraft.pos.distance_squared(waypoint.value);
         let movement_speed = speed_in_feet.powf(2.0);
 
         if movement_speed >= distance {
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::PopWaypoint,
-          });
+          waypoints.pop();
         }
         // Only hold if we are not stopped and we are at or below taxi speed.
       } else if aircraft.speed > 0.0 && aircraft.speed <= 20.0 {
@@ -424,19 +363,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         );
 
         if let NodeBehavior::Park = current.behavior {
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::Parked {
-              at: current.clone(),
-              ready_at: duration_now().add(Duration::from_secs(
-                bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-              )),
-            },
-          });
-          bundle.actions.push(Action {
-            id: aircraft.id,
-            kind: ActionKind::FlipFlightPlan,
-          });
+          aircraft.state = AircraftState::Parked {
+            at: current.clone(),
+            ready_at: duration_now().add(Duration::from_secs(
+              bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
+            )),
+          };
+          aircraft.flip_flight_plan();
         }
       }
     }
@@ -451,10 +384,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           NodeBehavior::Park => {}
           NodeBehavior::HoldShort => {
             if distance <= 250.0_f32.powf(2.0) {
-              bundle.actions.push(Action {
-                id: aircraft.id,
-                kind: ActionKind::TaxiLastAsGoto,
-              });
+              if let AircraftState::Taxiing { waypoints, .. } =
+                &mut aircraft.state
+              {
+                if let Some(last) = waypoints.last_mut() {
+                  last.behavior = NodeBehavior::GoTo;
+                }
+              }
               bundle.events.push(
                 AircraftEvent {
                   id: aircraft.id,
@@ -472,7 +408,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
 
 pub struct AircraftCalloutWhenEnterAirspaceEffect;
 impl AircraftEffect for AircraftCalloutWhenEnterAirspaceEffect {
-  fn run(aircraft: &Aircraft, bundle: &mut Bundle) {
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     let direction = heading_to_direction(angle_between_points(
       bundle.world.airspace.pos,
       aircraft.pos,

@@ -9,9 +9,6 @@ use crate::{
   angle_between_points, delta_angle,
   entities::{
     aircraft::{
-      actions::{
-        Action, ActionKind, AircraftActionHandler, AircraftAllActionHandler,
-      },
       effects::{
         AircraftCalloutWhenEnterAirspaceEffect, AircraftEffect,
         AircraftUpdateFlyingEffect, AircraftUpdateFromTargetsEffect,
@@ -33,8 +30,6 @@ pub struct Bundle<'a> {
   pub prev: Aircraft,
 
   pub events: Vec<Event>,
-  pub actions: Vec<Action>,
-
   pub world: &'a World,
 
   pub rng: &'a mut Rng,
@@ -47,7 +42,6 @@ impl<'a> Bundle<'a> {
     Self {
       prev,
       events: Vec::new(),
-      actions: Vec::new(),
       world,
       rng,
       dt,
@@ -104,52 +98,6 @@ pub struct Engine {
 }
 
 impl Engine {
-  pub fn apply_action(
-    &self,
-    aircraft: &mut Aircraft,
-    action: &Action,
-    name: Option<&str>,
-  ) {
-    if let Some(name) = name {
-      tracing::trace!("{name}: {:?}", action);
-    }
-    if action.id == aircraft.id {
-      AircraftAllActionHandler::run(aircraft, &action.kind);
-    }
-  }
-
-  pub fn apply_actions(
-    &self,
-    bundle: &mut Bundle,
-    aircraft: &mut Aircraft,
-    name: Option<&str>,
-  ) {
-    if !bundle.actions.is_empty() {
-      if let Some(name) = name {
-        tracing::trace!("{name}: {:?}", &bundle.actions);
-      }
-    }
-    for action in bundle.actions.iter() {
-      self.apply_action(aircraft, action, None);
-    }
-    bundle.actions.clear();
-  }
-
-  pub fn apply_all_actions(
-    &self,
-    bundle: &mut Bundle,
-    game: &mut Game,
-    name: Option<&str>,
-  ) {
-    for action in bundle.actions.drain(..) {
-      if let Some(aircraft) =
-        game.aircraft.iter_mut().find(|a| a.id == action.id)
-      {
-        self.apply_action(aircraft, &action, name);
-      }
-    }
-  }
-
   pub fn tick(
     &mut self,
     world: &World,
@@ -179,7 +127,6 @@ impl Engine {
           if !bundle.actions.is_empty() {
             tracing::trace!("event: {event:?} {:?}", &bundle.actions);
           }
-          self.apply_actions(&mut bundle, aircraft, None);
         }
       }
 
@@ -188,14 +135,8 @@ impl Engine {
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
       AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
       AircraftCalloutWhenEnterAirspaceEffect::run(aircraft, &mut bundle);
-      self.apply_actions(&mut bundle, aircraft, Some("state actions"));
-
-      // Apply all actions
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
-      self.apply_actions(&mut bundle, aircraft, Some("target actions"));
-
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
-      self.apply_actions(&mut bundle, aircraft, Some("position actions"));
     }
 
     for event in bundle.events.iter() {
@@ -222,10 +163,7 @@ impl Engine {
     game.points.takeoff_rate.calc_rate();
 
     self.space_inbounds(world, game, &mut bundle);
-    self.apply_all_actions(&mut bundle, game, Some("spacing actions"));
-
     self.taxi_collisions(&game.aircraft, &mut bundle);
-    self.apply_all_actions(&mut bundle, game, Some("taxi collision actions"));
 
     // Capture the left over events and actions for next time
     if !bundle.events.is_empty() {
@@ -329,10 +267,11 @@ impl Engine {
       }
 
       for report in reports.iter() {
-        bundle.actions.push(Action::new(
-          report.id,
-          ActionKind::TargetSpeed(report.speed.clamp(250.0, 400.0)),
-        ));
+        // TODO: fix
+        // bundle.actions.push(Action::new(
+        //   report.id,
+        //   ActionKind::TargetSpeed(report.speed.clamp(250.0, 400.0)),
+        // ));
       }
     }
   }
