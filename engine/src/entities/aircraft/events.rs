@@ -387,7 +387,7 @@ pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
       value: aircraft.pos,
     },
     waypoints: Vec::new(),
-    state: TaxiingState::default(),
+    state: TaxiingState::Override,
   };
 
   bundle.events.push(
