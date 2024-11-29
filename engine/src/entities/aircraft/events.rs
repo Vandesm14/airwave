@@ -473,23 +473,24 @@ pub fn handle_taxi_event(
     }
 
     all_waypoints.reverse();
-    // bundle.actions.push(Action {
-    //   id: aircraft.id,
-    //   kind: ActionKind::TaxiWaypoints(all_waypoints.clone()),
-    // });
 
+    if all_waypoints.is_empty() {
+      return;
+    }
+
+    tracing::info!(
+      "Initiating taxi for {}: {:?}",
+      aircraft.id,
+      display_vec_node_vec2(&all_waypoints)
+    );
     if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
-      if all_waypoints.is_empty() {
-        return;
-      }
-
-      tracing::info!(
-        "Initiating taxi for {}: {:?}",
-        aircraft.id,
-        display_vec_node_vec2(&all_waypoints)
-      );
-
       *waypoints = all_waypoints;
+    } else {
+      aircraft.state = AircraftState::Taxiing {
+        current,
+        waypoints: all_waypoints,
+        state: TaxiingState::default(),
+      };
     }
   }
 
