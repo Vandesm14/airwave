@@ -330,7 +330,7 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
 pub struct AircraftUpdateTaxiingEffect;
 impl AircraftEffect for AircraftUpdateTaxiingEffect {
   fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND;
+    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND * bundle.dt;
     if let AircraftState::Taxiing {
       waypoints, current, ..
     } = &mut aircraft.state
@@ -382,7 +382,6 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           NodeBehavior::Park => {}
           NodeBehavior::HoldShort => {
             if distance <= 250.0_f32.powf(2.0) {
-              tracing::info!("Short hold");
               bundle.events.push(
                 AircraftEvent {
                   id: aircraft.id,
