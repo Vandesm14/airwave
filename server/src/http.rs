@@ -66,6 +66,8 @@ async fn comms_text(
   text: String,
 ) {
   tokio::spawn(async move {
+    tracing::info!("Received comms text request: {} chars", text.len());
+
     let command = complete_atc_request(text.clone(), query.frequency).await;
     if let Some(command) = command {
       let _ = JobReq::send(
@@ -92,7 +94,7 @@ async fn comms_voice(
   bytes: Bytes,
 ) {
   tokio::spawn(async move {
-    tracing::info!("Received transcription request: {} bytes", bytes.len());
+    tracing::info!("Received comms voice request: {} bytes", bytes.len());
     let now = duration_now();
 
     if let Some(ref audio_path) = CLI.audio_path {
