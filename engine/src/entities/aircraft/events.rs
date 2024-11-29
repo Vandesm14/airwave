@@ -283,6 +283,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
           if *force {
             *state = TaxiingState::Holding;
           }
+        } else if let AircraftState::Parked { .. } = aircraft.state {
+          aircraft.target.speed = 0.0;
+          aircraft.speed = 0.0;
         }
       }
 
