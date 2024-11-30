@@ -1,0 +1,12 @@
+[frequencies]
+approach = 118.6
+departure = 118.6
+tower = 118.5
+ground = 118.5
+center = 118.7
+
+[world]
+seed = 202411292011
+
+[server]
+address = "0.0.0.0:9001"
