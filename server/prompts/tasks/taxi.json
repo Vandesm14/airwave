@@ -1,11 +1,12 @@
 {
   "prompt": [
     "Taxi commands are returned as a list of waypoints. Waypoints are implicitly taxiways unless they are explicitly mentioned as a runway or a gate. Only hold short of a waypoint if it is preceted with \"hold short of\" or \"hold at\". Always use capital letters and numbers when creating gate or taxiway names.",
+    "When the word \"via\" is used, append the waypoints before the \"via\" to the end of the list of waypoints. For example, \"Taxi to and hold short of runway 18 left via Alpha then Bravo\" would be returned as [\"A\", \"B\", \"18L\"]. Using \"via\" means: \"Go to this destination *via* these waypoints\" wheras the destination should be put last.",
     "IMPORTANT: \"then\" can be interchangable with \",\": \"Alpha then Bravo\" is the same as \"Alpha, Bravo\""
   ],
   "examples": [
     {
-      "user": "Taxi to and hold short of runway 18 left via Alpha then Bravo.",
+      "user": "Taxi to runway 18 left via Alpha then Bravo.",
       "assistant": [
         {
           "type": "taxi",
@@ -22,6 +23,31 @@
             },
             {
               "name": "18L",
+              "kind": "runway",
+              "behavior": "goto"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Taxi to Golf, Victor, Charlie 5, and hold short of runway 20.",
+      "assistant": [
+        {
+          "type": "taxi",
+          "value": [
+            {
+              "name": "A",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "B",
+              "kind": "taxiway",
+              "behavior": "goto"
+            },
+            {
+              "name": "20",
               "kind": "runway",
               "behavior": "holdshort"
             }
@@ -30,32 +56,7 @@
       ]
     },
     {
-      "user": "Taxi to Alpha, Bravo, and cross runway 18 left.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "A",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "B",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "18L",
-              "kind": "runway",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "user": "Taxi to gate Alpha 1 via Bravo then Charlie.",
+      "user": "Taxi to gate Alpha 1 via Bravo, Charlie.",
       "assistant": [
         {
           "type": "taxi",
@@ -110,23 +111,23 @@
       ]
     },
     {
-      "user": "Taxi to runway 17 via Bravo, Echo 1.",
+      "user": "Taxi to runway 14 via Delta, Juliet.",
       "assistant": [
         {
           "type": "taxi",
           "value": [
             {
-              "name": "B",
+              "name": "D",
               "kind": "taxiway",
               "behavior": "goto"
             },
             {
-              "name": "E1",
+              "name": "J",
               "kind": "taxiway",
               "behavior": "goto"
             },
             {
-              "name": "17",
+              "name": "14",
               "kind": "runway",
               "behavior": "goto"
             }
@@ -135,55 +136,25 @@
       ]
     },
     {
-      "user": "Taxi to Charlie via Bravo, Echo 1.",
+      "user": "Taxi to Wiskey via Uniform, Foxtrot 7.",
       "assistant": [
         {
           "type": "taxi",
           "value": [
-            {
-              "name": "B",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "E1",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "C",
-              "kind": "taxiway",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "user": "Taxi to and hold short of runway 15, then to Whiskey, then to Golf 4, then hold short of runway 27.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "15",
-              "kind": "runway",
-              "behavior": "holdshort"
-            },
             {
               "name": "W",
               "kind": "taxiway",
               "behavior": "goto"
             },
             {
-              "name": "G4",
+              "name": "U",
               "kind": "taxiway",
               "behavior": "goto"
             },
             {
-              "name": "27",
-              "kind": "runway",
-              "behavior": "holdshort"
+              "name": "F7",
+              "kind": "taxiway",
+              "behavior": "goto"
             }
           ]
         }
