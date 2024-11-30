@@ -17,7 +17,7 @@ use server::{
   config::Config,
   http,
   job::JobReq,
-  runner::{GetReqKind, PostReqKind, ResKind, Runner},
+  runner::{ArgReqKind, ResKind, Runner, TinyReqKind},
   Cli, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
 };
 
@@ -65,9 +65,9 @@ async fn main() {
     .unwrap_or(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001));
 
   let (get_tx, get_rx) =
-    mpsc::unbounded_channel::<JobReq<GetReqKind, ResKind>>();
+    mpsc::unbounded_channel::<JobReq<TinyReqKind, ResKind>>();
   let (post_tx, post_rx) =
-    mpsc::unbounded_channel::<JobReq<PostReqKind, ResKind>>();
+    mpsc::unbounded_channel::<JobReq<ArgReqKind, ResKind>>();
 
   let seed = seed.unwrap_or(
     config
