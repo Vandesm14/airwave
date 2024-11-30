@@ -1,6 +1,7 @@
 import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
 import { Aircraft, Points, RadioMessage, World } from './types';
+import fastDeepEqual from 'fast-deep-equal';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
@@ -63,6 +64,19 @@ export function useMessages() {
       const result = await fetch(`${baseAPIPath}${getMessages}`);
       if (!result.ok) return [];
       return result.json();
+    },
+    reconcile: (oldData, newData) => {
+      // Prevent rerenders if the data hasn't changed.
+      if (oldData) {
+        const isEqual = fastDeepEqual(oldData, newData);
+        if (isEqual) {
+          return oldData;
+        } else {
+          return newData;
+        }
+      } else {
+        return newData;
+      }
     },
     initialData: [],
     staleTime: 500,
