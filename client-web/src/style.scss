@@ -233,7 +233,7 @@ $transparent-black: #000a;
     right: 10px;
     font-size: 18px;
 
-    height: 100%;
+    height: calc(100% - 10px);
 
     gap: 5px;
 
@@ -252,7 +252,8 @@ $transparent-black: #000a;
       max-width: 20%;
 
       min-height: 200px;
-      max-height: 79%;
+      // TODO: Just flexbox this already, right panel (no top vs bottom).
+      max-height: 79.7%;
 
       overflow-y: auto;
 
