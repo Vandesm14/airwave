@@ -18,6 +18,7 @@ $transparent-black: #000a;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  height: 100%;
 
   color: white;
 
@@ -232,6 +233,8 @@ $transparent-black: #000a;
     right: 10px;
     font-size: 18px;
 
+    height: 100%;
+
     gap: 5px;
 
     #stripboard {
@@ -249,7 +252,7 @@ $transparent-black: #000a;
       max-width: 20%;
 
       min-height: 200px;
-      max-height: 80vh;
+      max-height: 79%;
 
       overflow-y: auto;
 
