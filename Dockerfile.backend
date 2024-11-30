@@ -7,6 +7,7 @@ COPY engine engine
 COPY server server
 COPY serve serve
 COPY Cargo.toml .
+COPY config.toml .
 
 RUN cargo build --release --bin server
 
@@ -17,7 +18,8 @@ WORKDIR /usr/local
 
 COPY --from=builder /usr/src/airwave/target/release/server /usr/local/bin/server
 COPY --from=builder /usr/src/airwave/server/prompts /usr/local/server/prompts
+COPY --from=builder /usr/src/airwave/config.toml /usr/local/config.toml
 
 RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-CMD ["server","--address","0.0.0.0:9001"]
+CMD ["server"]
