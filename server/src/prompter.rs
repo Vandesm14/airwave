@@ -5,7 +5,10 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
-use engine::command::{Command, CommandReply, Tasks};
+use engine::{
+  command::{Command, CommandReply, Tasks},
+  entities::aircraft::{Aircraft, AircraftState},
+};
 
 use crate::http::send_chatgpt_request;
 
@@ -100,10 +103,7 @@ pub struct TypeValue {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct Prompter {
-  pub message: String,
-  pub tasks: Tasks,
-}
+pub struct Prompter;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -116,13 +116,6 @@ pub enum Error {
 }
 
 impl Prompter {
-  pub fn new(message: String) -> Self {
-    Self {
-      message,
-      ..Default::default()
-    }
-  }
-
   fn load_prompt(path: PathBuf) -> Result<Vec<String>, LoadPromptError> {
     let prompt = fs::read_to_string(path.clone())
       .map_err(|_| LoadPromptError::FS(path.to_str().unwrap().into()))?;
@@ -146,11 +139,12 @@ impl Prompter {
     Ok(lines.join("\n"))
   }
 
-  async fn split_message(&self) -> Result<CallsignAndRequest, Error> {
+  pub async fn split_request(
+    message: String,
+  ) -> Result<CallsignAndRequest, Error> {
     let prompt =
       Self::load_prompt_as_string("server/prompts/splitter.json".into())?;
-    let result =
-      send_chatgpt_request(prompt.clone(), self.message.clone()).await?;
+    let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
       let json: CallsignAndRequest = serde_json::from_str(&result)
         .map_err(|e| LoadPromptError::Deserialize(e, result))?;
@@ -161,40 +155,48 @@ impl Prompter {
     }
   }
 
-  async fn parse_tasks(string: String) -> Result<Tasks, Error> {
-    let prompt =
-      Self::load_prompt_as_string("server/prompts/main.json".into())?;
-    let result = send_chatgpt_request(prompt.clone(), string).await?;
+  pub async fn parse_into_command(
+    split: CallsignAndRequest,
+    aircraft: &Aircraft,
+  ) -> Result<Command, Error> {
+    let mode = if matches!(
+      aircraft.state,
+      AircraftState::Flying { .. } | AircraftState::Landing { .. }
+    ) {
+      "air"
+    } else if matches!(
+      aircraft.state,
+      AircraftState::Taxiing { .. } | AircraftState::Parked { .. }
+    ) {
+      "ground"
+    } else {
+      return Err(Error::NoResult("Unknown aircraft state".into()));
+    };
+
+    let path = format!("server/prompts/{mode}.json");
+    let prompt = Self::load_prompt_as_string(path.clone().into())?;
+
+    tracing::info!("using prompt: {} for {}", path, aircraft.id);
+
+    let result =
+      send_chatgpt_request(prompt.clone(), split.request.clone()).await?;
     if let Some(result) = result {
       let json: Tasks = serde_json::from_str(&result)
         .map_err(|e| LoadPromptError::Deserialize(e, result))?;
+      let command = Command {
+        id: split.callsign.clone(),
+        reply: CommandReply::WithCallsign {
+          text: split.request,
+        },
+        tasks: json.clone(),
+      };
 
-      Ok(json)
+      tracing::info!("prompt result ({}): {:?}", aircraft.id, command);
+
+      Ok(command)
     } else {
+      tracing::error!("no prompt result for: {}", aircraft.id);
       Err(Error::NoResult(prompt))
     }
-  }
-
-  async fn execute_hidden(&self) -> Result<Command, Error> {
-    let split = self.split_message().await?;
-    let tasks = Self::parse_tasks(split.request.clone()).await?;
-
-    let command = Command {
-      id: split.callsign.clone(),
-      reply: CommandReply::WithCallsign {
-        text: split.request,
-      },
-      tasks,
-    };
-
-    Ok(command)
-  }
-
-  pub async fn execute(&self) -> Result<Command, Error> {
-    let command = self.execute_hidden().await?;
-
-    tracing::info!("prompt result: {:?}", command);
-
-    Ok(command)
   }
 }

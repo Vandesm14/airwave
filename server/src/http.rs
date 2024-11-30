@@ -15,6 +15,7 @@ use axum::{
   routing::{get, post},
   Router,
 };
+use internment::Intern;
 use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
@@ -68,14 +69,16 @@ async fn comms_text(
 ) {
   tracing::info!("Received comms text request: {} chars", text.len());
 
-  let command = complete_atc_request(text.clone(), query.frequency).await;
+  let command =
+    complete_atc_request(&mut state.tiny_sender, text.clone(), query.frequency)
+      .await;
   if let Some(command) = command {
     let _ = JobReq::send(
       ArgReqKind::Command {
         atc: CommandWithFreq::new(
           "ATC".to_string(),
           command.frequency,
-          CommandReply::WithoutCallsign { text },
+          CommandReply::Blank { text },
           Vec::new(),
         ),
         reply: command.clone(),
@@ -89,15 +92,9 @@ async fn comms_text(
   tracing::info!("Replied to text request");
 }
 
-async fn comms_voice(
-  State(mut state): State<AppState>,
-  Query(query): Query<CommsFrequencyQuery>,
-  bytes: Bytes,
-) {
-  tracing::info!("Received comms voice request: {} bytes", bytes.len());
-  let now = duration_now();
-
+fn write_wav_data(bytes: &Bytes) {
   if let Some(ref audio_path) = CLI.audio_path {
+    let now = duration_now();
     let mut audio_path = audio_path.join(format!("{now:?}"));
     audio_path.set_extension("wav");
 
@@ -106,76 +103,102 @@ async fn comms_voice(
       Err(e) => tracing::error!("Unable to write path: {e}"),
     }
   }
+}
+
+async fn transcribe_voice(
+  bytes: Bytes,
+  openai_api_key: Arc<str>,
+) -> Result<String, OpenAIError> {
+  write_wav_data(&bytes);
 
   let client = Client::new();
-  let form = reqwest::multipart::Form::new();
-  let form =
-    form.part("file", Part::bytes(bytes.to_vec()).file_name("audio.wav"));
-  let form = form.text("model", "whisper-1".to_string());
+  let form = reqwest::multipart::Form::new()
+    .part("file", Part::bytes(bytes.to_vec()).file_name("audio.wav"))
+    .text("model", "whisper-1".to_string());
 
   let response = client
     .post("https://api.openai.com/v1/audio/transcriptions")
     .multipart(form)
     .header(
       header::AUTHORIZATION,
-      header::HeaderValue::from_str(&format!(
-        "Bearer {}",
-        &state.openai_api_key
-      ))
-      .unwrap(),
+      header::HeaderValue::from_str(&format!("Bearer {}", openai_api_key))
+        .unwrap(),
     )
     .header(
       header::CONTENT_TYPE,
       header::HeaderValue::from_str("multipart/form-data").unwrap(),
     )
     .send()
-    .await
-    .unwrap();
+    .await?;
 
-  let text = response.text().await.unwrap();
-  tracing::info!("Transcribed request: {} chars", text.len());
-  if let Ok(reply) = serde_json::from_str::<AudioResponse>(&text) {
-    if let Some(command) =
-      complete_atc_request(reply.text.clone(), query.frequency).await
+  let text = response.text().await?;
+  Ok(text)
+}
+
+fn write_json_data(command: &CommandWithFreq) {
+  if let Some(ref audio_path) = CLI.audio_path {
+    let now = duration_now();
+    let mut audio_path = audio_path.join(format!("{now:?}"));
+    audio_path.set_extension("json");
+
+    match std::fs::OpenOptions::new()
+      .create_new(true)
+      .write(true)
+      .open(audio_path)
     {
-      if let Some(ref audio_path) = CLI.audio_path {
-        let mut audio_path = audio_path.join(format!("{now:?}"));
-        audio_path.set_extension("json");
+      Ok(file) => match serde_json::to_writer(file, command) {
+        Ok(()) => {
+          tracing::debug!("Wrote associated audio command file")
+        }
+        Err(e) => {
+          tracing::warn!("Unable to write associated audio command file: {e}")
+        }
+      },
+      Err(e) => {
+        tracing::warn!("Unable to create associated audio command file: {e}")
+      }
+    }
+  }
+}
 
-        match std::fs::OpenOptions::new()
-          .create_new(true)
-          .write(true)
-          .open(audio_path)
+async fn comms_voice(
+  State(mut state): State<AppState>,
+  Query(query): Query<CommsFrequencyQuery>,
+  bytes: Bytes,
+) {
+  tracing::info!("Received comms voice request: {} bytes", bytes.len());
+
+  match transcribe_voice(bytes, state.openai_api_key.clone()).await {
+    Ok(text) => {
+      tracing::info!("Transcribed request: {} chars", text.len());
+      if let Ok(reply) = serde_json::from_str::<AudioResponse>(&text) {
+        if let Some(command) = complete_atc_request(
+          &mut state.tiny_sender,
+          reply.text.clone(),
+          query.frequency,
+        )
+        .await
         {
-          Ok(file) => match serde_json::to_writer(file, &command) {
-            Ok(()) => {
-              tracing::debug!("Wrote associated audio command file")
-            }
-            Err(e) => tracing::warn!(
-              "Unable to write associated audio command file: {e}"
-            ),
-          },
-          Err(e) => tracing::warn!(
-            "Unable to create associated audio command file: {e}"
-          ),
+          write_json_data(&command);
+
+          let _ = JobReq::send(
+            ArgReqKind::Command {
+              atc: CommandWithFreq::new(
+                "ATC".to_string(),
+                command.frequency,
+                CommandReply::Blank { text: reply.text },
+                Vec::new(),
+              ),
+              reply: command.clone(),
+            },
+            &mut state.big_sender,
+          )
+          .recv()
+          .await;
         }
       }
-
-      let _ = JobReq::send(
-        ArgReqKind::Command {
-          atc: CommandWithFreq::new(
-            "ATC".to_string(),
-            command.frequency,
-            CommandReply::WithoutCallsign { text: reply.text },
-            Vec::new(),
-          ),
-          reply: command.clone(),
-        },
-        &mut state.big_sender,
-      )
-      .recv()
-      .await;
     }
+    Err(e) => tracing::error!("Transcription failed: {}", e),
   }
 
   tracing::info!("Replied to voice request");
@@ -340,22 +363,59 @@ pub async fn send_chatgpt_request(
 }
 
 async fn complete_atc_request(
+  tiny_sender: &mut GetSender,
   message: String,
   frequency: f32,
 ) -> Option<CommandWithFreq> {
-  let prompter = Prompter::new(message);
-  let result = prompter.execute().await;
-  match result {
-    Ok(command) => Some(CommandWithFreq::new(
-      command.id,
-      frequency,
-      command.reply,
-      command.tasks,
-    )),
-    Err(err) => {
-      tracing::error!("Unable to parse command: {}", err);
-      None
+  let split = Prompter::split_request(message).await;
+  // match result {
+  //   Ok(command) => Some(CommandWithFreq::new(
+  //     command.id,
+  //     frequency,
+  //     command.reply,
+  //     command.tasks,
+  //   )),
+  //   Err(err) => {
+  //     tracing::error!("Unable to parse command: {}", err);
+  //     None
+  //   }
+  // }
+
+  // Split the request into the callsign and the rest of the message.
+  match split {
+    Ok(split) => {
+      // Find the aircraft associated with the request.
+      let res = JobReq::send(
+        TinyReqKind::OneAircraft(Intern::from_ref(&split.callsign)),
+        tiny_sender,
+      )
+      .recv()
+      .await;
+      match res {
+        Ok(ResKind::OneAircraft(Some(aircraft))) => {
+          // Parse the command from the message.
+          let command = Prompter::parse_into_command(split, &aircraft).await;
+          match command {
+            // Return the command.
+            Ok(command) => Some(CommandWithFreq::new(
+              aircraft.id.to_string(),
+              frequency,
+              command.reply,
+              command.tasks,
+            )),
+            Err(err) => {
+              tracing::error!("Unable to parse command: {}", err);
+              None
+            }
+          }
+        }
+        _ => {
+          tracing::error!("Unable to find aircraft for command");
+          None
+        }
+      }
     }
+    Err(_) => todo!(),
   }
 }
 

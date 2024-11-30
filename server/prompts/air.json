@@ -1,7 +1,7 @@
 {
   "imports": [
     "server/prompts/tasks/PREFIX.json",
-    "server/prompts/tasks/ALL.json"
+    "server/prompts/tasks/AIR.json"
   ],
   "prompt": []
 }

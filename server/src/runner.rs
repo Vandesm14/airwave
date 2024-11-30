@@ -57,6 +57,7 @@ pub enum TinyReqKind {
   World,
   Points,
   Aircraft,
+  OneAircraft(Intern<String>),
   Pause,
 }
 
@@ -79,6 +80,7 @@ pub enum ResKind {
   World(World),
   Points(Points),
   Aircraft(Vec<Aircraft>),
+  OneAircraft(Option<Aircraft>),
 }
 
 #[derive(Debug)]
@@ -284,6 +286,11 @@ impl Runner {
         }
         TinyReqKind::Aircraft => {
           incoming.reply(ResKind::Aircraft(self.game.aircraft.clone()));
+        }
+        TinyReqKind::OneAircraft(id) => {
+          let aircraft =
+            self.game.aircraft.iter().find(|a| a.id == *id).cloned();
+          incoming.reply(ResKind::OneAircraft(aircraft));
         }
         TinyReqKind::Pause => {
           self.game.paused = !self.game.paused;

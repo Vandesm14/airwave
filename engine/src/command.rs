@@ -109,9 +109,11 @@ pub fn decode_callsign(callsign: &str) -> String {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CommandReply {
-  GoAround { runway: String },
   WithCallsign { text: String },
   WithoutCallsign { text: String },
+  Blank { text: String },
+
+  GoAround { runway: String },
   HoldShortRunway { runway: String },
   ReadyForDeparture { airport: String },
   TaxiToGates { runway: String },
@@ -127,14 +129,18 @@ impl fmt::Display for CommandWithFreq {
     let decoded_callsign = decode_callsign(&self.id);
 
     match &self.reply {
-      CommandReply::GoAround { runway } => {
-        write!(f, "{decoded_callsign}, going around, missed approach for runway {runway}.")
-      }
       CommandReply::WithCallsign { text } => {
         write!(f, "{text}, {}.", decoded_callsign)
       }
       CommandReply::WithoutCallsign { text } => {
         write!(f, "{text}.")
+      }
+      CommandReply::Blank { text } => {
+        write!(f, "{text}")
+      }
+
+      CommandReply::GoAround { runway } => {
+        write!(f, "{decoded_callsign}, going around, missed approach for runway {runway}.")
       }
       CommandReply::ArriveInAirspace {
         direction,
