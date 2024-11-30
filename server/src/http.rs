@@ -24,7 +24,7 @@ use engine::{
   duration_now,
   engine::UICommand,
 };
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 
 use crate::{
   job::JobReq,
