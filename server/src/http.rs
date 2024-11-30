@@ -69,20 +69,24 @@ async fn comms_text(
 ) {
   tracing::info!("Received comms text request: {} chars", text.len());
 
+  let _ = JobReq::send(
+    ArgReqKind::CommandATC(CommandWithFreq::new(
+      "ATC".to_string(),
+      query.frequency,
+      CommandReply::Blank { text: text.clone() },
+      Vec::new(),
+    )),
+    &mut state.big_sender,
+  )
+  .recv()
+  .await;
+
   let command =
     complete_atc_request(&mut state.tiny_sender, text.clone(), query.frequency)
       .await;
   if let Some(command) = command {
     let _ = JobReq::send(
-      ArgReqKind::Command {
-        atc: CommandWithFreq::new(
-          "ATC".to_string(),
-          command.frequency,
-          CommandReply::Blank { text },
-          Vec::new(),
-        ),
-        reply: command.clone(),
-      },
+      ArgReqKind::CommandReply(command.clone()),
       &mut state.big_sender,
     )
     .recv()
@@ -172,6 +176,20 @@ async fn comms_voice(
     Ok(text) => {
       tracing::info!("Transcribed request: {} chars", text.len());
       if let Ok(reply) = serde_json::from_str::<AudioResponse>(&text) {
+        let _ = JobReq::send(
+          ArgReqKind::CommandATC(CommandWithFreq::new(
+            "ATC".to_string(),
+            query.frequency,
+            CommandReply::Blank {
+              text: reply.text.clone(),
+            },
+            Vec::new(),
+          )),
+          &mut state.big_sender,
+        )
+        .recv()
+        .await;
+
         if let Some(command) = complete_atc_request(
           &mut state.tiny_sender,
           reply.text.clone(),
@@ -182,15 +200,7 @@ async fn comms_voice(
           write_json_data(&command);
 
           let _ = JobReq::send(
-            ArgReqKind::Command {
-              atc: CommandWithFreq::new(
-                "ATC".to_string(),
-                command.frequency,
-                CommandReply::Blank { text: reply.text },
-                Vec::new(),
-              ),
-              reply: command.clone(),
-            },
+            ArgReqKind::CommandReply(command.clone()),
             &mut state.big_sender,
           )
           .recv()

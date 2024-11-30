@@ -63,10 +63,10 @@ pub enum TinyReqKind {
 
 #[derive(Debug, Clone)]
 pub enum ArgReqKind {
-  Command {
-    atc: CommandWithFreq,
-    reply: CommandWithFreq,
-  },
+  /// A command sent from ATC to an aircraft.
+  CommandATC(CommandWithFreq),
+  /// A reply from an aircraft to ATC.
+  CommandReply(CommandWithFreq),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -307,9 +307,13 @@ impl Runner {
       };
 
       match incoming.req() {
-        ArgReqKind::Command { atc, reply } => {
-          self.messages.push(atc.clone());
-          commands.push(reply.clone());
+        ArgReqKind::CommandATC(command) => {
+          self.messages.push(command.clone());
+          incoming.reply(ResKind::Any);
+        }
+        ArgReqKind::CommandReply(command) => {
+          commands.push(command.clone());
+          incoming.reply(ResKind::Any);
         }
       }
     }
