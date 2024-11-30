@@ -12,7 +12,7 @@ use turborand::{rng::Rng, TurboRand};
 use engine::{
   angle_between_points, circle_circle_intersection,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
-  engine::{Engine, Event, UICommand},
+  engine::{Engine, Event},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
@@ -51,21 +51,21 @@ pub enum OutgoingReply {
 }
 
 #[derive(Debug, Clone)]
-pub enum GetReqKind {
+pub enum TinyReqKind {
   Ping,
   Messages,
   World,
   Points,
   Aircraft,
+  Pause,
 }
 
 #[derive(Debug, Clone)]
-pub enum PostReqKind {
+pub enum ArgReqKind {
   Command {
     atc: CommandWithFreq,
     reply: CommandWithFreq,
   },
-  Pause,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -88,8 +88,8 @@ pub struct Runner {
   pub engine: Engine,
   pub messages: RingBuffer<CommandWithFreq>,
 
-  pub get_queue: JobQueue<GetReqKind, ResKind>,
-  pub post_queue: JobQueue<PostReqKind, ResKind>,
+  pub get_queue: JobQueue<TinyReqKind, ResKind>,
+  pub post_queue: JobQueue<ArgReqKind, ResKind>,
 
   pub save_to: Option<PathBuf>,
   pub rng: Rng,
@@ -100,10 +100,8 @@ pub struct Runner {
 
 impl Runner {
   pub fn new(
-    get_rcv: tokio::sync::mpsc::UnboundedReceiver<JobReq<GetReqKind, ResKind>>,
-    post_rcv: tokio::sync::mpsc::UnboundedReceiver<
-      JobReq<PostReqKind, ResKind>,
-    >,
+    get_rcv: tokio::sync::mpsc::UnboundedReceiver<JobReq<TinyReqKind, ResKind>>,
+    post_rcv: tokio::sync::mpsc::UnboundedReceiver<JobReq<ArgReqKind, ResKind>>,
     save_to: Option<PathBuf>,
     rng: Rng,
   ) -> Self {
@@ -274,16 +272,21 @@ impl Runner {
       };
 
       match incoming.req() {
-        GetReqKind::Ping => incoming.reply(ResKind::Pong),
-        GetReqKind::Messages => incoming.reply(ResKind::Messages(
+        TinyReqKind::Ping => incoming.reply(ResKind::Pong),
+        TinyReqKind::Messages => incoming.reply(ResKind::Messages(
           self.messages.iter().cloned().map(|m| m.into()).collect(),
         )),
-        GetReqKind::World => incoming.reply(ResKind::World(self.world.clone())),
-        GetReqKind::Points => {
+        TinyReqKind::World => {
+          incoming.reply(ResKind::World(self.world.clone()))
+        }
+        TinyReqKind::Points => {
           incoming.reply(ResKind::Points(self.game.points.clone()));
         }
-        GetReqKind::Aircraft => {
+        TinyReqKind::Aircraft => {
           incoming.reply(ResKind::Aircraft(self.game.aircraft.clone()));
+        }
+        TinyReqKind::Pause => {
+          self.game.paused = !self.game.paused;
         }
       }
     }
@@ -297,12 +300,9 @@ impl Runner {
       };
 
       match incoming.req() {
-        PostReqKind::Command { atc, reply } => {
+        ArgReqKind::Command { atc, reply } => {
           self.messages.push(atc.clone());
           commands.push(reply.clone());
-        }
-        PostReqKind::Pause => {
-          self.game.paused = !self.game.paused;
         }
       }
     }
