@@ -19,9 +19,14 @@ $transparent-black: #000a;
   justify-content: center;
   align-items: center;
 
+  color: white;
+
   h1 {
     font-size: 24px;
-    color: white;
+  }
+
+  h2 {
+    font-size: 18px;
   }
 }
 

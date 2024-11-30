@@ -24,6 +24,7 @@ use engine::{
   duration_now,
   engine::UICommand,
 };
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
   job::JobReq,
@@ -281,6 +282,7 @@ pub async fn run(
   post_sender: PostSender,
   openai_api_key: Arc<str>,
 ) {
+  let cors = CorsLayer::very_permissive();
   let app = Router::new().nest(
     "/api",
     Router::new()
@@ -293,7 +295,8 @@ pub async fn run(
       .route("/game/aircraft", get(get_aircraft))
       .route("/pause", post(post_pause))
       .route("/ping", get(ping_pong))
-      .with_state(AppState::new(get_sender, post_sender, openai_api_key)),
+      .with_state(AppState::new(get_sender, post_sender, openai_api_key))
+      .layer(cors),
   );
 
   let listener = tokio::net::TcpListener::bind(address).await.unwrap();
