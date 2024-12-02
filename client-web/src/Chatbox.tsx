@@ -24,7 +24,14 @@ export default function Chatbox({
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
   let [lastRead, setLastRead] = createSignal(Date.now() / 1000);
+  let [voices, setVoices] = createSignal<
+    Map<String, { rate: number; pitch: number }>
+  >(new Map());
   const messages = useMessages();
+
+  function randBetween(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
 
   function speak(message: RadioMessage) {
     if (
@@ -38,9 +45,21 @@ export default function Chatbox({
         const utterance = new SpeechSynthesisUtterance(
           message.reply.replace(/[0-9]/g, '$& ')
         );
+
+        if (voices().has(message.id)) {
+          utterance.rate = voices().get(message.id)!.rate;
+          utterance.pitch = voices().get(message.id)!.pitch;
+        } else {
+          const voice = {
+            rate: (1.0 * randBetween(100, 110)) / 100,
+            pitch: (1.3 * randBetween(80, 115)) / 100,
+          };
+          setVoices((voices) => voices.set(message.id, voice));
+          utterance.rate = voice.rate;
+          utterance.pitch = voice.pitch;
+        }
+
         utterance.volume = 0.01;
-        utterance.rate = 1.0;
-        utterance.pitch = 1.3;
         window.speechSynthesis.speak(utterance);
       }
     } else {
