@@ -145,7 +145,7 @@ export default function App() {
       <Show when={!query.data}>
         <div class="connection-message">
           <h1>Connecting to server...</h1>
-          <h2>at {baseAPIPath}</h2>
+          <h2>Retrying: {baseAPIPath}</h2>
         </div>
       </Show>
     </>
