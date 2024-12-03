@@ -53,7 +53,7 @@ export type AircraftStateParked = {
   type: 'parked';
   value: {
     at: NodeVec2;
-    ready_at: Duration;
+    active: boolean;
   };
 };
 
@@ -244,4 +244,10 @@ export type Points = {
     rate: Duration;
     marks: Duration[];
   };
+};
+
+export type Flight = {
+  id: number;
+  kind: 'inbound' | 'outbound';
+  spawn_at: Duration;
 };
