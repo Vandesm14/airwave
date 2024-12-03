@@ -4,13 +4,13 @@ pub mod shared;
 use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
-  routing::{get, post},
+  routing::{delete, get, post},
   Router,
 };
 use methods::{
   aircraft::{get_aircraft, get_one_aircraft},
   comms::{comms_text, comms_voice},
-  flights::{create_flight, get_flights},
+  flights::{create_flight, delete_flight, get_flights},
   misc::{ping_pong, post_pause},
   state::{get_messages, get_points, get_world},
 };
@@ -43,6 +43,7 @@ pub async fn run(
       // Flights
       .route("/game/flights", get(get_flights))
       .route("/game/flight", post(create_flight))
+      .route("/game/flight/:id", delete(delete_flight))
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))

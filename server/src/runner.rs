@@ -362,8 +362,8 @@ impl Runner {
             .reply(ResKind::OneFlight(self.game.flights.get(id).cloned()));
         }
         TinyReqKind::DeleteFlight(id) => {
-          self.game.flights.remove(*id);
-          incoming.reply(ResKind::Any);
+          let flight = self.game.flights.remove(*id);
+          incoming.reply(ResKind::OneFlight(flight));
         }
 
         // Other State

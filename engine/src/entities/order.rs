@@ -49,13 +49,12 @@ impl Flights {
     id
   }
 
-  pub fn remove(&mut self, id: usize) -> bool {
+  pub fn remove(&mut self, id: usize) -> Option<Flight> {
     let index = self.flights.iter().position(|flight| flight.id == id);
     if let Some(index) = index {
-      self.flights.swap_remove(index);
-      true
+      Some(self.flights.swap_remove(index))
     } else {
-      false
+      None
     }
   }
 

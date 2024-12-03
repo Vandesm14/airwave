@@ -39,8 +39,6 @@ pub async fn create_flight(
   State(mut state): State<AppState>,
   Form(form): Form<CreateFlightForm>,
 ) -> Result<String, http::StatusCode> {
-  tracing::info!("{form:?}");
-
   let res = JobReq::send(
     TinyReqKind::CreateFlight {
       kind: form.kind,
@@ -58,5 +56,29 @@ pub async fn create_flight(
     }
   } else {
     Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+  }
+}
+
+pub async fn delete_flight(
+  State(mut state): State<AppState>,
+  id: String,
+) -> Result<String, http::StatusCode> {
+  let id = id.parse();
+  if let Ok(id) = id {
+    let res =
+      JobReq::send(TinyReqKind::DeleteFlight(id), &mut state.tiny_sender)
+        .recv()
+        .await;
+    if let Ok(ResKind::OneFlight(flight)) = res {
+      if let Ok(string) = serde_json::to_string(&flight) {
+        Ok(string)
+      } else {
+        Err(http::StatusCode::BAD_REQUEST)
+      }
+    } else {
+      Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+    }
+  } else {
+    Err(http::StatusCode::BAD_REQUEST)
   }
 }
