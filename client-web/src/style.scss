@@ -253,6 +253,12 @@ $transparent-black: #000a;
     right: 10px;
     font-size: 18px;
 
+    pointer-events: none;
+
+    & > * {
+      pointer-events: auto;
+    }
+
     height: calc(100% - 10px);
 
     gap: 5px;
