@@ -23,22 +23,15 @@ export function FlightItem({ flight }: { flight: Flight }) {
 export function FlightForm() {
   const client = new QueryClient();
 
-  async function handleSubmit(e: Event) {
-    e.preventDefault();
-
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    const data = new URLSearchParams({
-      kind: formData.get('kind') as string,
-      spawn_at: formData.get('spawn_at') as string,
-    });
+  async function createFlight(data: { kind: string; spawn_at: string }) {
+    const body = new URLSearchParams(data);
 
     const res = await fetch(`${baseAPIPath}${postCreateFlight}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: data,
+      body,
     });
 
     await client.invalidateQueries({
@@ -53,9 +46,32 @@ export function FlightForm() {
     });
   }
 
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    const quantity = parseInt(formData.get('quantity') as string);
+    const stagger = parseInt(formData.get('stagger') as string);
+    const spawnAt = parseInt(formData.get('spawn_at') as string);
+    const kind = formData.get('kind') as string;
+
+    for (let i = 0; i < quantity; i++) {
+      await createFlight({
+        spawn_at: (spawnAt + i * stagger).toString(),
+        kind,
+      });
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <h2>Order:</h2>
+      <label>
+        <span>Quantity:</span>
+        <input type="number" name="quantity" min={1} value={1} />
+      </label>
       <label>
         <span>Flight kind:</span>
         <select name="kind">
@@ -65,7 +81,11 @@ export function FlightForm() {
       </label>
       <label>
         <span>Spawn in (secs):</span>
-        <input type="number" name="spawn_at" placeholder="seconds" />
+        <input type="number" name="spawn_at" min={0} step={15} value={0} />
+      </label>
+      <label>
+        <span>Stagger (secs):</span>
+        <input type="number" name="stagger" min={0} step={15} value={0} />
       </label>
       <button type="submit">Add</button>
     </form>
