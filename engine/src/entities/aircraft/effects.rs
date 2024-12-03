@@ -1,16 +1,14 @@
-use std::{f32::consts::PI, ops::Add, time::Duration};
-
-use turborand::TurboRand;
+use std::f32::consts::PI;
 
 use crate::{
   add_degrees, angle_between_points, calculate_ils_altitude,
   closest_point_on_line,
   command::{CommandReply, CommandWithFreq},
-  delta_angle, duration_now,
+  delta_angle,
   engine::Bundle,
   inverse_degrees, move_point,
   pathfinder::NodeBehavior,
-  Line, DEPARTURE_WAIT_RANGE, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
 use super::{
@@ -363,9 +361,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         if let NodeBehavior::Park = current.behavior {
           aircraft.state = AircraftState::Parked {
             at: current.clone(),
-            ready_at: duration_now().add(Duration::from_secs(
-              bundle.rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-            )),
+            active: false,
           };
           aircraft.flip_flight_plan();
         }

@@ -1,17 +1,14 @@
 pub mod effects;
 pub mod events;
 
-use std::{ops::Add, time::Duration};
-
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
-  duration_now,
   pathfinder::{Node, NodeVORData},
-  DEPARTURE_WAIT_RANGE, ENROUTE_TIME_MULTIPLIER,
+  ENROUTE_TIME_MULTIPLIER,
 };
 
 use super::{
@@ -89,7 +86,7 @@ pub enum AircraftState {
   },
   Parked {
     at: Node<Vec2>,
-    ready_at: Duration,
+    active: bool,
   },
 }
 
@@ -254,9 +251,17 @@ pub struct Aircraft {
 
 // Helper methods
 impl Aircraft {
-  pub fn set_parked_now(&mut self) {
-    if let AircraftState::Parked { ready_at, .. } = &mut self.state {
-      *ready_at = duration_now();
+  pub fn active(&self) -> bool {
+    if let AircraftState::Parked { active, .. } = &self.state {
+      *active
+    } else {
+      true
+    }
+  }
+
+  pub fn set_active(&mut self, active: bool) {
+    if let AircraftState::Parked { active: a, .. } = &mut self.state {
+      *a = active;
     }
   }
 
@@ -299,9 +304,7 @@ impl Aircraft {
 
       state: AircraftState::Parked {
         at: gate.into(),
-        ready_at: duration_now().add(Duration::from_secs(
-          rng.sample_iter(DEPARTURE_WAIT_RANGE).unwrap(),
-        )),
+        active: false,
       },
       target: AircraftTargets::default(),
       flight_plan: FlightPlan::new(
