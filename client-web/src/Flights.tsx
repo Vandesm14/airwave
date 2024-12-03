@@ -1,6 +1,7 @@
 import {
   baseAPIPath,
   deleteFlight,
+  getAircraft,
   getFlights,
   postCreateFlight,
   useFlights,
@@ -73,9 +74,17 @@ export function FlightForm() {
       )
     );
 
+    // Invalidate and refetch flights
     await client.cancelQueries({ queryKey: [getFlights] });
     await client.invalidateQueries({ queryKey: [getFlights] });
     await client.refetchQueries({ queryKey: [getFlights] });
+
+    if (spawnAt <= 4) {
+      // Invalidate and refetch aircraft
+      await client.cancelQueries({ queryKey: [getAircraft] });
+      await client.invalidateQueries({ queryKey: [getAircraft] });
+      await client.refetchQueries({ queryKey: [getAircraft] });
+    }
   }
 
   return (
