@@ -3,6 +3,7 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 /// The kind of flight scheduled: Inbound or Outbound.
 pub enum FlightKind {
   Inbound,

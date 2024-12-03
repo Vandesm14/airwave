@@ -129,7 +129,7 @@ async fn main() {
 
   runner.game.flights.add(
     FlightKind::Inbound,
-    duration_now().add(Duration::from_secs(1000)),
+    duration_now().add(Duration::from_secs(10)),
   );
 
   tracing::info!("Starting game loop...");

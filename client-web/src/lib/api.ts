@@ -67,6 +67,8 @@ export function useFlights() {
   }));
 }
 
+export const postCreateFlight = '/api/game/flight';
+
 // State
 export const getWorld = '/api/world';
 export function useWorld() {

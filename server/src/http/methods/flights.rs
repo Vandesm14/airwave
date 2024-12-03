@@ -1,4 +1,8 @@
-use axum::{extract::State, http};
+use std::{ops::Add, time::Duration};
+
+use axum::{extract::State, http, Form};
+use engine::{duration_now, entities::order::FlightKind};
+use serde::Deserialize;
 
 use crate::{
   http::shared::AppState,
@@ -16,6 +20,38 @@ pub async fn get_flights(
     let mut sorted = flights;
     sorted.sort_by_key(|f| f.spawn_at);
     if let Ok(string) = serde_json::to_string(&sorted) {
+      Ok(string)
+    } else {
+      Err(http::StatusCode::BAD_REQUEST)
+    }
+  } else {
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+  }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateFlightForm {
+  pub kind: FlightKind,
+  pub spawn_at: u64,
+}
+
+pub async fn create_flight(
+  State(mut state): State<AppState>,
+  Form(form): Form<CreateFlightForm>,
+) -> Result<String, http::StatusCode> {
+  tracing::info!("{form:?}");
+
+  let res = JobReq::send(
+    TinyReqKind::CreateFlight {
+      kind: form.kind,
+      spawn_at: duration_now().add(Duration::from_secs(form.spawn_at)),
+    },
+    &mut state.tiny_sender,
+  )
+  .recv()
+  .await;
+  if let Ok(ResKind::OneFlight(flight)) = res {
+    if let Ok(string) = serde_json::to_string(&flight) {
       Ok(string)
     } else {
       Err(http::StatusCode::BAD_REQUEST)

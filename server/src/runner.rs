@@ -64,6 +64,10 @@ pub enum TinyReqKind {
   // Flights
   Flights,
   GetFlight(usize),
+  CreateFlight {
+    kind: FlightKind,
+    spawn_at: Duration,
+  },
   DeleteFlight(usize),
 
   // Other State
@@ -74,6 +78,7 @@ pub enum TinyReqKind {
 
 #[derive(Debug, Clone)]
 pub enum ArgReqKind {
+  // Comms
   /// A command sent from ATC to an aircraft.
   CommandATC(CommandWithFreq),
   /// A reply from an aircraft to ATC.
@@ -350,6 +355,11 @@ impl Runner {
         TinyReqKind::GetFlight(id) => {
           let flight = self.game.flights.get(*id).cloned();
           incoming.reply(ResKind::OneFlight(flight));
+        }
+        TinyReqKind::CreateFlight { kind, spawn_at } => {
+          let id = self.game.flights.add(kind.clone(), *spawn_at);
+          incoming
+            .reply(ResKind::OneFlight(self.game.flights.get(id).cloned()));
         }
         TinyReqKind::DeleteFlight(id) => {
           self.game.flights.remove(*id);
