@@ -8,25 +8,23 @@ import {
 import { formatTime } from './lib/lib';
 import { Flight } from './lib/types';
 import './Flights.scss';
-import { QueryClient } from '@tanstack/solid-query';
+import { useQueryClient } from '@tanstack/solid-query';
 
 export function FlightItem({ flight }: { flight: Flight }) {
+  const client = useQueryClient();
+
   async function handleDelete() {
-    const client = new QueryClient();
-    await fetch(`${baseAPIPath}${deleteFlight(flight.id)}`, {
+    const res = await fetch(`${baseAPIPath}${deleteFlight(flight.id)}`, {
       method: 'DELETE',
     });
 
-    await client.invalidateQueries({
-      queryKey: [getFlights],
-      type: 'all',
-      exact: true,
-    });
-    await client.refetchQueries({
-      queryKey: [getFlights],
-      type: 'all',
-      exact: true,
-    });
+    if (res.ok) {
+      await client.cancelQueries({ queryKey: [getFlights] });
+      await client.setQueryData([getFlights], (old: Flight[]) => {
+        console.log({ old });
+        return old.filter((f) => f.id !== flight.id);
+      });
+    }
   }
 
   return (
@@ -41,28 +39,17 @@ export function FlightItem({ flight }: { flight: Flight }) {
 }
 
 export function FlightForm() {
-  const client = new QueryClient();
+  const client = useQueryClient();
 
   async function createFlight(data: { kind: string; spawn_at: string }) {
     const body = new URLSearchParams(data);
 
-    const res = await fetch(`${baseAPIPath}${postCreateFlight}`, {
+    await fetch(`${baseAPIPath}${postCreateFlight}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body,
-    });
-
-    await client.invalidateQueries({
-      queryKey: [getFlights],
-      type: 'all',
-      exact: true,
-    });
-    await client.refetchQueries({
-      queryKey: [getFlights],
-      type: 'all',
-      exact: true,
     });
   }
 
@@ -77,12 +64,18 @@ export function FlightForm() {
     const spawnAt = parseInt(formData.get('spawn_at') as string);
     const kind = formData.get('kind') as string;
 
-    for (let i = 0; i < quantity; i++) {
-      await createFlight({
-        spawn_at: (spawnAt + i * stagger).toString(),
-        kind,
-      });
-    }
+    await Promise.all(
+      Array.from({ length: quantity }).map((_, i) =>
+        createFlight({
+          spawn_at: (spawnAt + i * stagger).toString(),
+          kind,
+        })
+      )
+    );
+
+    await client.cancelQueries({ queryKey: [getFlights] });
+    await client.invalidateQueries({ queryKey: [getFlights] });
+    await client.refetchQueries({ queryKey: [getFlights] });
   }
 
   return (
@@ -90,22 +83,22 @@ export function FlightForm() {
       <h2>Order:</h2>
       <label>
         <span>Quantity:</span>
-        <input type="number" name="quantity" min={1} value={1} />
+        <input type="number" name="quantity" min={1} value={5} />
       </label>
       <label>
         <span>Flight kind:</span>
         <select name="kind">
-          <option value="inbound">Inbound</option>
           <option value="outbound">Outbound</option>
+          <option value="inbound">Inbound</option>
         </select>
       </label>
       <label>
         <span>Spawn in (secs):</span>
-        <input type="number" name="spawn_at" min={0} step={15} value={0} />
+        <input type="number" name="spawn_at" min={0} step={15} value={60} />
       </label>
       <label>
         <span>Stagger (secs):</span>
-        <input type="number" name="stagger" min={0} step={15} value={0} />
+        <input type="number" name="stagger" min={0} step={15} value={60} />
       </label>
       <button type="submit">Add</button>
     </form>

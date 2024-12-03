@@ -9,7 +9,7 @@ import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
 import { baseAPIPath, getMessages, usePing } from './lib/api';
 import Points from './Points';
-import { QueryClient } from '@tanstack/solid-query';
+import { useQueryClient } from '@tanstack/solid-query';
 import Flights from './Flights';
 
 export default function App() {
@@ -19,7 +19,7 @@ export default function App() {
   let [frequency] = useStorageAtom(frequencyAtom);
   let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   const query = usePing();
-  const client = new QueryClient();
+  const client = useQueryClient();
 
   async function getMedia(constraints: MediaStreamConstraints) {
     await navigator.mediaDevices.getUserMedia(constraints);
