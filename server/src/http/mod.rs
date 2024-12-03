@@ -42,10 +42,8 @@ pub async fn run(
       .route("/game/aircraft/:id", get(get_one_aircraft))
       // Flights
       .route("/game/flights", get(get_flights))
-      .route(
-        "/game/flight/:id",
-        post(create_flight).delete(delete_flight),
-      )
+      .route("/game/flight", post(create_flight))
+      .route("/game/flight/:id", delete(delete_flight))
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
