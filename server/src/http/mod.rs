@@ -31,15 +31,21 @@ pub async fn run(
     "/api",
     Router::new()
       .route("/", get(|| async { "Airwave API is active." }))
+      // Misc
+      .route("/pause", post(post_pause))
+      .route("/ping", get(ping_pong))
+      // Comms
       .route("/comms/text", post(comms_text))
       .route("/comms/voice", post(comms_voice))
+      // Aircraft
+      .route("/game/aircraft", get(get_aircraft))
+      .route("/game/aircraft/:id", get(get_aircraft))
+      // Flights
+      .route("/game/flights", get(get_flights))
+      // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
       .route("/game/points", get(get_points))
-      .route("/game/flights", get(get_flights))
-      .route("/game/aircraft", get(get_aircraft))
-      .route("/pause", post(post_pause))
-      .route("/ping", get(ping_pong))
       .with_state(AppState::new(get_sender, post_sender, openai_api_key))
       .layer(cors),
   );
