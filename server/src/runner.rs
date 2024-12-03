@@ -231,7 +231,6 @@ impl Runner {
     let mut aircrafts: Vec<Aircraft> = Vec::new();
     for airport in self.world.airspace.airports.iter() {
       for terminal in airport.terminals.iter() {
-        let mut first = true;
         for gate in terminal.gates.iter() {
           let mut aircraft = Aircraft::random_parked(
             gate.clone(),
@@ -244,11 +243,6 @@ impl Runner {
             .sample(&self.world.connections)
             .map(|c| c.id)
             .unwrap_or_default();
-
-          if first {
-            aircraft.set_parked_now();
-            first = false;
-          }
 
           aircrafts.push(aircraft);
         }
