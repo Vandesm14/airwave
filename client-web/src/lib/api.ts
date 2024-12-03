@@ -68,6 +68,7 @@ export function useFlights() {
 }
 
 export const postCreateFlight = '/api/game/flight';
+export const deleteFlight = (id: number) => `/api/game/flight/${id}`;
 
 // State
 export const getWorld = '/api/world';

@@ -1,5 +1,6 @@
 import {
   baseAPIPath,
+  deleteFlight,
   getFlights,
   postCreateFlight,
   useFlights,
@@ -10,12 +11,31 @@ import './Flights.scss';
 import { QueryClient } from '@tanstack/solid-query';
 
 export function FlightItem({ flight }: { flight: Flight }) {
+  async function handleDelete() {
+    const client = new QueryClient();
+    await fetch(`${baseAPIPath}${deleteFlight(flight.id)}`, {
+      method: 'DELETE',
+    });
+
+    await client.invalidateQueries({
+      queryKey: [getFlights],
+      type: 'all',
+      exact: true,
+    });
+    await client.refetchQueries({
+      queryKey: [getFlights],
+      type: 'all',
+      exact: true,
+    });
+  }
+
   return (
     <div class="flight">
       <span class="kind">{flight.kind.toLocaleUpperCase()}</span>
       <span class="timer">
         {formatTime(flight.spawn_at.secs * 1000 - new Date().getTime())}
       </span>
+      <button onClick={handleDelete}>Del</button>
     </div>
   );
 }
