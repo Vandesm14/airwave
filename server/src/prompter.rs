@@ -1,6 +1,13 @@
 use std::{fs, path::PathBuf};
 
-use async_openai::error::OpenAIError;
+use async_openai::{
+  error::OpenAIError,
+  types::{
+    ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
+    ChatCompletionRequestUserMessage, ChatCompletionRequestUserMessageContent,
+    CreateChatCompletionRequest,
+  },
+};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -10,7 +17,40 @@ use engine::{
   entities::aircraft::{Aircraft, AircraftState},
 };
 
-use crate::http::send_chatgpt_request;
+pub async fn send_chatgpt_request(
+  prompt: String,
+  message: String,
+) -> Result<Option<String>, OpenAIError> {
+  let client = async_openai::Client::new();
+  let request = CreateChatCompletionRequest {
+    messages: vec![
+      ChatCompletionRequestMessage::System(
+        ChatCompletionRequestSystemMessage {
+          content: prompt.clone(),
+          name: None,
+        },
+      ),
+      ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
+        content: ChatCompletionRequestUserMessageContent::Text(message.clone()),
+        name: None,
+      }),
+    ],
+    model: "gpt-4o-mini".into(),
+    ..Default::default()
+  };
+
+  let response = client.chat().create(request).await;
+  match response {
+    Ok(response) => Ok(response.choices.first().and_then(|c| {
+      let c = c.message.content.clone();
+      tracing::debug!(
+        "**sent prompt:**\n{prompt}\n\n**message:**\n{message}\n\n**response:**\n{c:?}",
+      );
+      c
+    })),
+    Err(err) => Err(err),
+  }
+}
 
 fn deserialize_string_or_any<'de, D>(
   deserializer: D,
