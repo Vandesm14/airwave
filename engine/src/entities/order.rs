@@ -23,8 +23,8 @@ pub struct Flight {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 /// A collection of scheduled flights.
 pub struct Flights {
-  pub flights: Vec<Flight>,
-  pub id_seq: usize,
+  flights: Vec<Flight>,
+  id_seq: usize,
 }
 
 impl Flights {
@@ -33,6 +33,10 @@ impl Flights {
       flights: Vec::new(),
       id_seq: 0,
     }
+  }
+
+  pub fn flights(&self) -> &[Flight] {
+    &self.flights
   }
 
   pub fn add(&mut self, kind: FlightKind, spawn_at: Duration) -> usize {

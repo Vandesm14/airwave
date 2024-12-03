@@ -8,7 +8,7 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use super::{
-  aircraft::Aircraft, airport::Airport, airspace::Airspace, order::Flight,
+  aircraft::Aircraft, airport::Airport, airspace::Airspace, order::Flights,
 };
 
 pub fn closest_airport(airspace: &Airspace, point: Vec2) -> Option<&Airport> {
@@ -67,7 +67,7 @@ pub struct Points {
 pub struct Game {
   pub aircraft: Vec<Aircraft>,
   pub funds: usize,
-  pub flights: Vec<Flight>,
+  pub flights: Flights,
   pub points: Points,
   pub paused: bool,
 }
