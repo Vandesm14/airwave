@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal } from 'solid-js';
+import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import {
   Aircraft,
   Frequencies,
@@ -296,8 +296,17 @@ function Strip({ strip }: StripProps) {
         <span>{distanceText}</span>
       </div>
       <div class="vertical">
-        <span>{strip.flight_plan.departing}</span>
-        <span>{strip.flight_plan.arriving}</span>
+        <Show
+          when={
+            !(
+              strip.state.type === 'parked' &&
+              strip.state.value.active === false
+            )
+          }
+        >
+          <span>{strip.flight_plan.departing}</span>
+          <span>{strip.flight_plan.arriving}</span>
+        </Show>
       </div>
       <div class="vertical">
         <span>{topStatus}</span>
