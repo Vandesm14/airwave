@@ -56,12 +56,19 @@ pub enum TinyReqKind {
   Ping,
   Pause,
 
+  // Aircraft
+  Aircraft,
+  OneAircraft(Intern<String>),
+
+  // Flights
+  Flights,
+  GetFlight(usize),
+  DeleteFlight(usize),
+
+  // Other State
   Messages,
   World,
   Points,
-  Flights,
-  Aircraft,
-  OneAircraft(Intern<String>),
 }
 
 #[derive(Debug, Clone)]
@@ -76,15 +83,20 @@ pub enum ArgReqKind {
 pub enum ResKind {
   #[default]
   Any,
-
-  // GET
   Pong,
+
+  // Aircraft
+  Aircraft(Vec<Aircraft>),
+  OneAircraft(Option<Aircraft>),
+
+  // Flights
+  Flights(Vec<Flight>),
+  OneFlight(Option<Flight>),
+
+  // Other State
   Messages(Vec<OutgoingCommandReply>),
   World(World),
   Points(Points),
-  Flights(Vec<Flight>),
-  Aircraft(Vec<Aircraft>),
-  OneAircraft(Option<Aircraft>),
 }
 
 #[derive(Debug)]
@@ -299,19 +311,11 @@ impl Runner {
 
       match incoming.req() {
         TinyReqKind::Ping => incoming.reply(ResKind::Pong),
-        TinyReqKind::Messages => incoming.reply(ResKind::Messages(
-          self.messages.iter().cloned().map(|m| m.into()).collect(),
-        )),
-        TinyReqKind::World => {
-          incoming.reply(ResKind::World(self.world.clone()))
+        TinyReqKind::Pause => {
+          self.game.paused = !self.game.paused;
         }
-        TinyReqKind::Points => {
-          incoming.reply(ResKind::Points(self.game.points.clone()));
-        }
-        TinyReqKind::Flights => {
-          incoming
-            .reply(ResKind::Flights(self.game.flights.flights().to_vec()));
-        }
+
+        // Aircraft
         TinyReqKind::Aircraft => {
           incoming.reply(ResKind::Aircraft(self.game.aircraft.clone()));
         }
@@ -320,8 +324,30 @@ impl Runner {
             self.game.aircraft.iter().find(|a| a.id == *id).cloned();
           incoming.reply(ResKind::OneAircraft(aircraft));
         }
-        TinyReqKind::Pause => {
-          self.game.paused = !self.game.paused;
+
+        // Flights
+        TinyReqKind::Flights => {
+          incoming
+            .reply(ResKind::Flights(self.game.flights.flights().to_vec()));
+        }
+        TinyReqKind::GetFlight(id) => {
+          let flight = self.game.flights.get(*id).cloned();
+          incoming.reply(ResKind::OneFlight(flight));
+        }
+        TinyReqKind::DeleteFlight(id) => {
+          self.game.flights.remove(*id);
+          incoming.reply(ResKind::Any);
+        }
+
+        // Other State
+        TinyReqKind::Messages => incoming.reply(ResKind::Messages(
+          self.messages.iter().cloned().map(|m| m.into()).collect(),
+        )),
+        TinyReqKind::World => {
+          incoming.reply(ResKind::World(self.world.clone()))
+        }
+        TinyReqKind::Points => {
+          incoming.reply(ResKind::Points(self.game.points.clone()));
         }
       }
     }
