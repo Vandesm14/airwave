@@ -12,7 +12,7 @@ import { QueryClient } from '@tanstack/solid-query';
 export function FlightItem({ flight }: { flight: Flight }) {
   return (
     <div class="flight">
-      <span class="kind">{flight.kind}</span>
+      <span class="kind">{flight.kind.toLocaleUpperCase()}</span>
       <span class="timer">
         {formatTime(flight.spawn_at.secs * 1000 - new Date().getTime())}
       </span>
