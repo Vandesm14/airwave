@@ -1,6 +1,9 @@
 use std::{ops::Add, time::Duration};
 
-use axum::{extract::State, http, Form};
+use axum::{
+  extract::{Path, State},
+  http, Form,
+};
 use engine::{duration_now, entities::order::FlightKind};
 use serde::Deserialize;
 
@@ -61,24 +64,18 @@ pub async fn create_flight(
 
 pub async fn delete_flight(
   State(mut state): State<AppState>,
-  id: String,
+  Path(id): Path<usize>,
 ) -> Result<String, http::StatusCode> {
-  let id = id.parse();
-  if let Ok(id) = id {
-    let res =
-      JobReq::send(TinyReqKind::DeleteFlight(id), &mut state.tiny_sender)
-        .recv()
-        .await;
-    if let Ok(ResKind::OneFlight(flight)) = res {
-      if let Ok(string) = serde_json::to_string(&flight) {
-        Ok(string)
-      } else {
-        Err(http::StatusCode::BAD_REQUEST)
-      }
+  let res = JobReq::send(TinyReqKind::DeleteFlight(id), &mut state.tiny_sender)
+    .recv()
+    .await;
+  if let Ok(ResKind::OneFlight(flight)) = res {
+    if let Ok(string) = serde_json::to_string(&flight) {
+      Ok(string)
     } else {
-      Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+      Err(http::StatusCode::BAD_REQUEST)
     }
   } else {
-    Err(http::StatusCode::BAD_REQUEST)
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }

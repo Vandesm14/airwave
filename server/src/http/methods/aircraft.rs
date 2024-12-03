@@ -1,4 +1,7 @@
-use axum::{extract::State, http};
+use axum::{
+  extract::{Path, State},
+  http,
+};
 use internment::Intern;
 
 use crate::{
@@ -26,7 +29,7 @@ pub async fn get_aircraft(
 
 pub async fn get_one_aircraft(
   State(mut state): State<AppState>,
-  id: String,
+  Path(id): Path<String>,
 ) -> Result<String, http::StatusCode> {
   let res = JobReq::send(
     TinyReqKind::OneAircraft(Intern::from(id)),
