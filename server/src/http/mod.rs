@@ -39,11 +39,13 @@ pub async fn run(
       .route("/comms/voice", post(comms_voice))
       // Aircraft
       .route("/game/aircraft", get(get_aircraft))
-      .route("/game/aircraft", get(get_one_aircraft))
+      .route("/game/aircraft/:id", get(get_one_aircraft))
       // Flights
       .route("/game/flights", get(get_flights))
-      .route("/game/flight", post(create_flight))
-      .route("/game/flight", delete(delete_flight))
+      .route(
+        "/game/flight/:id",
+        post(create_flight).delete(delete_flight),
+      )
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
