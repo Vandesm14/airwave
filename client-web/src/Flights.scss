@@ -3,12 +3,31 @@
     margin: 5px;
   }
 
-  & > .list {
+  form {
     display: flex;
     flex-direction: column;
     gap: 5px;
 
-    & > .flight {
+    font-size: 18px;
+
+    label {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 5px;
+
+      span {
+        width: max-content;
+      }
+    }
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    .flight {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
@@ -20,11 +39,11 @@
 
       gap: 10px;
 
-      & > .kind {
+      .kind {
         font-weight: bold;
       }
 
-      & > .timer {
+      .timer {
         opacity: 0.7;
       }
     }

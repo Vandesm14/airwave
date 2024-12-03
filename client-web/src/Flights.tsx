@@ -55,15 +55,16 @@ export function FlightForm() {
 
   return (
     <form onSubmit={handleSubmit}>
+      <h2>Order:</h2>
       <label>
-        Kind:
+        <span>Flight kind:</span>
         <select name="kind">
           <option value="inbound">Inbound</option>
           <option value="outbound">Outbound</option>
         </select>
       </label>
       <label>
-        Spawn in (secs):
+        <span>Spawn in (secs):</span>
         <input type="number" name="spawn_at" placeholder="seconds" />
       </label>
       <button type="submit">Add</button>
@@ -77,6 +78,7 @@ export default function Flights() {
   return (
     <div class="flights">
       <FlightForm />
+      <hr />
       <h2>Flights</h2>
       <div class="list">
         {query.data.map((f) => (
