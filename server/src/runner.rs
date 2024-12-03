@@ -18,7 +18,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftState, FlightPlan,
     },
-    order::FlightKind,
+    order::{Flight, FlightKind},
     world::{Connection, ConnectionState, Game, Points, World},
   },
   pathfinder::new_vor,
@@ -54,12 +54,14 @@ pub enum OutgoingReply {
 #[derive(Debug, Clone)]
 pub enum TinyReqKind {
   Ping,
+  Pause,
+
   Messages,
   World,
   Points,
+  Flights,
   Aircraft,
   OneAircraft(Intern<String>),
-  Pause,
 }
 
 #[derive(Debug, Clone)]
@@ -80,6 +82,7 @@ pub enum ResKind {
   Messages(Vec<OutgoingCommandReply>),
   World(World),
   Points(Points),
+  Flights(Vec<Flight>),
   Aircraft(Vec<Aircraft>),
   OneAircraft(Option<Aircraft>),
 }
@@ -304,6 +307,10 @@ impl Runner {
         }
         TinyReqKind::Points => {
           incoming.reply(ResKind::Points(self.game.points.clone()));
+        }
+        TinyReqKind::Flights => {
+          incoming
+            .reply(ResKind::Flights(self.game.flights.flights().to_vec()));
         }
         TinyReqKind::Aircraft => {
           incoming.reply(ResKind::Aircraft(self.game.aircraft.clone()));

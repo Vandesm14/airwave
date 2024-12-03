@@ -278,6 +278,23 @@ async fn get_points(
   }
 }
 
+async fn get_flights(
+  State(mut state): State<AppState>,
+) -> Result<String, http::StatusCode> {
+  let res = JobReq::send(TinyReqKind::Flights, &mut state.tiny_sender)
+    .recv()
+    .await;
+  if let Ok(ResKind::Flights(flights)) = res {
+    if let Ok(string) = serde_json::to_string(&flights) {
+      Ok(string)
+    } else {
+      Err(http::StatusCode::BAD_REQUEST)
+    }
+  } else {
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+  }
+}
+
 async fn get_aircraft(
   State(mut state): State<AppState>,
 ) -> Result<String, http::StatusCode> {
@@ -325,6 +342,7 @@ pub async fn run(
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
       .route("/game/points", get(get_points))
+      .route("/game/flights", get(get_flights))
       .route("/game/aircraft", get(get_aircraft))
       .route("/pause", post(post_pause))
       .route("/ping", get(ping_pong))
