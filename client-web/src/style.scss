@@ -13,6 +13,26 @@ main {
 
 $transparent-black: #000a;
 
+.container {
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  gap: 5px;
+
+  width: min-content;
+
+  border: 1px solid white;
+  color: white;
+}
+
+.top-left {
+  @extend .container;
+
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
 .connection-message {
   display: flex;
   flex-direction: column;

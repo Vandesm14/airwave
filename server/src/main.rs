@@ -2,8 +2,9 @@ use core::str::FromStr;
 use std::{
   fs,
   net::{IpAddr, Ipv4Addr, SocketAddr},
+  ops::Add,
   path::PathBuf,
-  time::SystemTime,
+  time::{Duration, SystemTime},
 };
 
 use glam::Vec2;
@@ -11,7 +12,10 @@ use internment::Intern;
 use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
-use engine::entities::{airport::Airport, airspace::Airspace};
+use engine::{
+  duration_now,
+  entities::{airport::Airport, airspace::Airspace, order::FlightKind},
+};
 use server::{
   airport::new_v_pattern,
   config::Config,
@@ -112,6 +116,21 @@ async fn main() {
   runner.fill_gates();
 
   //
+
+  runner.game.flights.add(
+    FlightKind::Outbound,
+    duration_now().add(Duration::from_secs(3)),
+  );
+
+  runner.game.flights.add(
+    FlightKind::Outbound,
+    duration_now().add(Duration::from_secs(5)),
+  );
+
+  runner.game.flights.add(
+    FlightKind::Inbound,
+    duration_now().add(Duration::from_secs(10)),
+  );
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());

@@ -12,6 +12,7 @@ use turborand::{rng::Rng, TurboRand};
 use engine::{
   angle_between_points, circle_circle_intersection,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
+  duration_now,
   engine::{Engine, Event},
   entities::{
     aircraft::{
@@ -271,7 +272,7 @@ impl Runner {
   }
 
   pub fn handle_flights(&mut self) {
-    let now = SystemTime::now().elapsed().unwrap();
+    let now = duration_now();
     let mut to_remove: Vec<usize> = Vec::new();
     for flight in self.game.flights.iter() {
       if flight.spawn_at <= now {
@@ -286,12 +287,28 @@ impl Runner {
             self.game.aircraft.push(aircraft);
             to_remove.push(flight.id);
           }
-          FlightKind::Outbound => todo!("spawn outbound flight"),
+          FlightKind::Outbound => {
+            let aircraft = self.game.aircraft.iter_mut().find(|a| {
+              matches!(a.state, AircraftState::Parked { active: false, .. })
+            });
+
+            if let Some(aircraft) = aircraft {
+              aircraft.flight_plan.departing = self.world.airspace.id;
+              aircraft.flight_plan.arriving =
+                self.rng.sample(&self.world.connections).unwrap().id;
+              aircraft.set_active(true);
+              aircraft.sync_targets_to_vals();
+              to_remove.push(flight.id);
+            } else {
+              tracing::warn!("No aircraft available for outbound flight.");
+            }
+          }
         }
       }
     }
 
     for id in to_remove {
+      tracing::info!("Removing flight {}", id);
       self.game.flights.remove(id);
     }
   }
@@ -413,6 +430,7 @@ impl Runner {
         .cloned(),
     );
 
+    self.handle_flights();
     self.cleanup(events.iter());
     // TODO: self.save_world();
   }
@@ -490,38 +508,38 @@ impl Runner {
     }
   }
 
-  pub fn prepare(&mut self) {
-    self.spawn_inbound();
+  // pub fn prepare(&mut self) {
+  //   self.spawn_inbound();
 
-    let mut i = 0;
-    let mut last_spawn = 0.0;
-    loop {
-      let realtime = i as f32 * 1.0 / self.rate as f32;
-      if Duration::from_secs_f32(realtime - last_spawn) >= PREP_SPAWN_RATE
-        && self.game.aircraft.len() < SPAWN_LIMIT
-      {
-        self.spawn_inbound();
-        last_spawn = realtime;
-      }
+  //   let mut i = 0;
+  //   let mut last_spawn = 0.0;
+  //   loop {
+  //     let realtime = i as f32 * 1.0 / self.rate as f32;
+  //     if Duration::from_secs_f32(realtime - last_spawn) >= PREP_SPAWN_RATE
+  //       && self.game.aircraft.len() < SPAWN_LIMIT
+  //     {
+  //       self.spawn_inbound();
+  //       last_spawn = realtime;
+  //     }
 
-      let dt = 1.0 / self.rate as f32;
-      let events =
-        self
-          .engine
-          .tick(&self.world, &mut self.game, &mut self.rng, dt);
+  //     let dt = 1.0 / self.rate as f32;
+  //     let events =
+  //       self
+  //         .engine
+  //         .tick(&self.world, &mut self.game, &mut self.rng, dt);
 
-      self.cleanup(events.iter());
+  //     self.cleanup(events.iter());
 
-      if self.game.aircraft.iter().any(|aircraft| {
-        aircraft.altitude != 0.0
-          && aircraft.pos.distance_squared(self.world.airspace.pos)
-            <= MANUAL_TOWER_AIRSPACE_RADIUS.powf(2.0)
-      }) {
-        tracing::info!("Done ({} simulated seconds).", realtime.round());
-        return;
-      }
+  //     if self.game.aircraft.iter().any(|aircraft| {
+  //       aircraft.altitude != 0.0
+  //         && aircraft.pos.distance_squared(self.world.airspace.pos)
+  //           <= MANUAL_TOWER_AIRSPACE_RADIUS.powf(2.0)
+  //     }) {
+  //       tracing::info!("Done ({} simulated seconds).", realtime.round());
+  //       return;
+  //     }
 
-      i += 1;
-    }
-  }
+  //     i += 1;
+  //   }
+  // }
 }

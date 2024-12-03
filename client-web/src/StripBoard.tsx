@@ -83,6 +83,7 @@ function assignAircraftToStrips(
 
   const isArrivingToLocalAirspace =
     ourAirspace === aircraft.flight_plan.arriving;
+  const isSelected = aircraft.id === selectedAircraft;
 
   if (aircraft.is_colliding) {
     return 'Colliding';
@@ -95,7 +96,11 @@ function assignAircraftToStrips(
       return 'Takeoff';
     } else if (isInLocalAirspace) {
       if (aircraft.state.type === 'parked') {
-        return 'Parked';
+        if (aircraft.state.value.active || isSelected) {
+          return 'Parked';
+        } else {
+          return 'None';
+        }
       } else {
         return 'Ground';
       }
@@ -115,7 +120,7 @@ function assignAircraftToStrips(
       return 'Inbound';
     }
   } else {
-    if (aircraft.id === selectedAircraft) {
+    if (isSelected) {
       return 'Selected';
     } else {
       return 'None';
@@ -203,10 +208,10 @@ function Strip({ strip }: StripProps) {
 
   let topStatus = '';
   let bottomStatus = '';
-  let theirs = strip.frequency !== ourFrequency();
+  let dimmer = strip.frequency !== ourFrequency();
 
   if (sinceCreated.startsWith('-') && sinceCreated !== '--:--') {
-    theirs = true;
+    dimmer = true;
   }
 
   if (strip.state.type === 'landing') {
@@ -242,7 +247,8 @@ function Strip({ strip }: StripProps) {
   }
 
   if (
-    (strip.state.type === 'parked' || strip.state.type === 'taxiing') &&
+    ((strip.state.type === 'parked' && strip.state.value.active) ||
+      strip.state.type === 'taxiing') &&
     strip.flight_plan.arriving !== airspace()
   ) {
     const connection = query.data.connections.find(
@@ -266,6 +272,8 @@ function Strip({ strip }: StripProps) {
 
       distanceText = `FOR ${heading.toString().slice(0, 2)}`;
     }
+  } else if (strip.state.type === 'parked' && !strip.state.value.active) {
+    dimmer = true;
   }
 
   function handleMouseDown() {
@@ -276,7 +284,7 @@ function Strip({ strip }: StripProps) {
     <div
       classList={{
         strip: true,
-        theirs,
+        theirs: dimmer,
         colliding: strip.is_colliding,
         selected: selectedAircraft() === strip.id,
         departure: airspace() === strip.flight_plan.departing,

@@ -1,12 +1,35 @@
 import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
-import { Aircraft, Points, RadioMessage, World } from './types';
+import { Aircraft, Flight, Points, RadioMessage, World } from './types';
 import fastDeepEqual from 'fast-deep-equal';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
 export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;
 
+// Misc
+export const getPing = '/api/ping';
+export function usePing() {
+  return createQuery<boolean>(() => ({
+    queryKey: [getPing],
+    queryFn: async () => {
+      try {
+        const result = await fetch(`${baseAPIPath}${getPing}`);
+        if (!result.ok) return false;
+        return (await result.text()) === 'pong';
+      } catch {
+        return false;
+      }
+    },
+    staleTime: 2000,
+    refetchInterval: 2000,
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
+}
+
+// Aircraft
 export const getAircraft = '/api/game/aircraft';
 export function useAircraft(renderRate: Accessor<number>) {
   return createQuery<Array<Aircraft>>(() => ({
@@ -25,6 +48,26 @@ export function useAircraft(renderRate: Accessor<number>) {
   }));
 }
 
+// Flights
+export const getFlights = '/api/game/flights';
+export function useFlights() {
+  return createQuery<Array<Flight>>(() => ({
+    queryKey: [getFlights],
+    queryFn: async () => {
+      const result = await fetch(`${baseAPIPath}${getFlights}`);
+      if (!result.ok) return [];
+      return result.json();
+    },
+    initialData: [],
+    staleTime: 2000,
+    refetchInterval: 2000,
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
+}
+
+// State
 export const getWorld = '/api/world';
 export function useWorld() {
   return createQuery<World>(() => ({
@@ -81,27 +124,6 @@ export function useMessages() {
     initialData: [],
     staleTime: 500,
     refetchInterval: 500,
-    refetchOnMount: 'always',
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
-}
-
-export const getPing = '/api/ping';
-export function usePing() {
-  return createQuery<boolean>(() => ({
-    queryKey: [getPing],
-    queryFn: async () => {
-      try {
-        const result = await fetch(`${baseAPIPath}${getPing}`);
-        if (!result.ok) return false;
-        return (await result.text()) === 'pong';
-      } catch {
-        return false;
-      }
-    },
-    staleTime: 2000,
-    refetchInterval: 2000,
     refetchOnMount: 'always',
     refetchOnReconnect: 'always',
     throwOnError: true, // Throw an error if the query fails

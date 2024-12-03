@@ -10,6 +10,7 @@ import { useStorageAtom } from './lib/hooks';
 import { baseAPIPath, getMessages, usePing } from './lib/api';
 import Points from './Points';
 import { QueryClient } from '@tanstack/solid-query';
+import Flights from './Flights';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -109,6 +110,9 @@ export default function App() {
   return (
     <>
       <Show when={query.data}>
+        <div class="top-left">
+          <Flights />
+        </div>
         <div class="bottom-left">
           <Points />
           <Chatbox sendMessage={sendTextMessage}></Chatbox>
