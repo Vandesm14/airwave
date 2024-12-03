@@ -1,4 +1,5 @@
 use axum::{extract::State, http};
+use internment::Intern;
 
 use crate::{
   http::shared::AppState,
@@ -25,12 +26,15 @@ pub async fn get_aircraft(
 
 pub async fn get_one_aircraft(
   State(mut state): State<AppState>,
-  id: u32,
+  id: String,
 ) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(TinyReqKind::Aircraft, &mut state.tiny_sender)
-    .recv()
-    .await;
-  if let Ok(ResKind::Aircraft(aircraft)) = res {
+  let res = JobReq::send(
+    TinyReqKind::OneAircraft(Intern::from(id)),
+    &mut state.tiny_sender,
+  )
+  .recv()
+  .await;
+  if let Ok(ResKind::OneAircraft(aircraft)) = res {
     if let Ok(string) = serde_json::to_string(&aircraft) {
       Ok(string)
     } else {
