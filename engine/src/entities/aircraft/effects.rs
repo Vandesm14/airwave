@@ -363,7 +363,6 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             at: current.clone(),
             active: false,
           };
-          aircraft.flip_flight_plan();
         }
       }
     }
