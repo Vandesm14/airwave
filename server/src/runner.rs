@@ -1,6 +1,6 @@
 use std::{
   path::PathBuf,
-  time::{Duration, Instant},
+  time::{Duration, Instant, SystemTime},
 };
 
 use glam::Vec2;
@@ -18,6 +18,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftState, FlightPlan,
     },
+    order::FlightKind,
     world::{Connection, ConnectionState, Game, Points, World},
   },
   pathfinder::new_vor,
@@ -251,6 +252,32 @@ impl Runner {
 
     for aircraft in aircrafts.drain(..) {
       self.add_aircraft(aircraft);
+    }
+  }
+
+  pub fn handle_flights(&mut self) {
+    let now = SystemTime::now().elapsed().unwrap();
+    let mut to_remove: Vec<usize> = Vec::new();
+    for flight in self.game.flights.iter() {
+      if flight.spawn_at <= now {
+        match flight.kind {
+          FlightKind::Inbound => {
+            let aircraft = Aircraft::random_inbound(
+              self.world.airspace.frequencies.approach,
+              self.rng.sample(&self.world.connections).unwrap(),
+              &self.world.airspace,
+              &mut self.rng,
+            );
+            self.game.aircraft.push(aircraft);
+            to_remove.push(flight.id);
+          }
+          FlightKind::Outbound => todo!("spawn outbound flight"),
+        }
+      }
+    }
+
+    for id in to_remove {
+      self.game.flights.remove(id);
     }
   }
 

@@ -1,19 +1,22 @@
 pub mod effects;
 pub mod events;
 
+use events::EventKind;
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
-  pathfinder::{Node, NodeVORData},
+  angle_between_points,
+  pathfinder::{new_vor, Node, NodeVORData},
   ENROUTE_TIME_MULTIPLIER,
 };
 
 use super::{
   airport::{Gate, Runway},
   airspace::Airspace,
+  world::Connection,
 };
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -341,6 +344,37 @@ impl Aircraft {
       frequency,
     }
     .with_synced_targets()
+  }
+
+  pub fn random_inbound(
+    frequency: f32,
+    departure: &Connection,
+    arrival: &Airspace,
+    rng: &mut Rng,
+  ) -> Self {
+    let mut aircraft = Self::random_flying(
+      frequency,
+      FlightPlan::new(departure.id, arrival.id),
+      rng,
+    );
+
+    aircraft.pos = departure.pos;
+    aircraft.heading = angle_between_points(departure.pos, arrival.pos);
+    aircraft.speed = 300.0;
+    aircraft.altitude = 7000.0;
+    aircraft.sync_targets_to_vals();
+
+    aircraft.state = AircraftState::Flying {
+      waypoints: vec![new_vor(departure.id, departure.transition)
+        .with_name(Intern::from_ref("TRSN"))
+        .with_behavior(vec![
+          EventKind::EnRoute(false),
+          EventKind::SpeedAtOrBelow(250.0),
+        ])],
+      enroute: true,
+    };
+
+    aircraft
   }
 
   pub fn flip_flight_plan(&mut self) {
