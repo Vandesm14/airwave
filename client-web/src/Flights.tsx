@@ -1,13 +1,16 @@
 import { useFlights } from './lib/api';
 import { formatTime } from './lib/lib';
 import { Flight } from './lib/types';
+import './Flights.scss';
 
 export function FlightItem({ flight }: { flight: Flight }) {
   return (
-    <li>
-      {flight.kind}{' '}
-      {formatTime(new Date().getTime() - flight.spawn_at.secs * 1000)}
-    </li>
+    <div class="flight">
+      <span class="kind">{flight.kind}</span>
+      <span class="timer">
+        {formatTime(flight.spawn_at.secs * 1000 - new Date().getTime())}
+      </span>
+    </div>
   );
 }
 
@@ -17,11 +20,11 @@ export default function Flights() {
   return (
     <div class="flights">
       <h2>Flights</h2>
-      <ul>
+      <div class="list">
         {query.data.map((f) => (
           <FlightItem flight={f} />
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

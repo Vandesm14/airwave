@@ -1,0 +1,32 @@
+.flights {
+  h2 {
+    margin: 5px;
+  }
+
+  & > .list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    & > .flight {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+
+      border: 1px solid white;
+      padding: 5px;
+
+      font-size: 16px;
+
+      gap: 10px;
+
+      & > .kind {
+        font-weight: bold;
+      }
+
+      & > .timer {
+        opacity: 0.7;
+      }
+    }
+  }
+}
