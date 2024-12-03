@@ -3,19 +3,25 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// The kind of flight scheduled: Inbound or Outbound.
 pub enum FlightKind {
   Inbound,
   Outbound,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// A scheduled flight.
 pub struct Flight {
+  /// The unique identifier of the flight.
   pub id: usize,
+  /// The kind of flight.
   pub kind: FlightKind,
+  /// The time at which the flight is scheduled to spawn.
   pub spawn_at: Duration,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+/// A collection of scheduled flights.
 pub struct Flights {
   pub flights: Vec<Flight>,
   pub id_seq: usize,
@@ -66,9 +72,14 @@ impl Flights {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// A frontend order for a set of flights.
 pub struct FrontendOrder {
+  /// The quanity of flights to schedule.
   pub quantity: usize,
+  /// The kind of flight to schedule.
   pub kind: FlightKind,
+  /// The time at which the first flight is scheduled to spawn.
   pub spawn_at: Duration,
+  /// The time between each flight spawn.
   pub stagger_by: Duration,
 }
