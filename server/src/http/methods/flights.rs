@@ -4,7 +4,7 @@ use axum::{
   extract::{Path, State},
   http, Form,
 };
-use engine::{duration_now, entities::order::FlightKind};
+use engine::{duration_now, entities::flight::FlightKind};
 use serde::Deserialize;
 
 use crate::{

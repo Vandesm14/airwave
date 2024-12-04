@@ -8,7 +8,7 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use super::{
-  aircraft::Aircraft, airport::Airport, airspace::Airspace, order::Flights,
+  aircraft::Aircraft, airport::Airport, airspace::Airspace, flight::Flights,
 };
 
 pub fn closest_airport(airspace: &Airspace, point: Vec2) -> Option<&Airport> {

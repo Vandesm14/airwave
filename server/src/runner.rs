@@ -19,7 +19,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftState, FlightPlan,
     },
-    order::{Flight, FlightKind},
+    flight::{Flight, FlightKind},
     world::{Connection, ConnectionState, Game, Points, World},
   },
   pathfinder::new_vor,
