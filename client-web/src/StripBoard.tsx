@@ -442,7 +442,7 @@ export default function StripBoard() {
               class="header"
               onClick={() => onClickHeader(key as keyof Strips)}
             >
-              {list.length == 0 ? '. ' : collapse()[key] ? '□ ' : '■ '}
+              {list.length == 0 ? '- ' : collapse()[key] ? '□ ' : '■ '}
               {key}
               {list.length > 0 ? ` (${list.length})` : ''}
             </div>
