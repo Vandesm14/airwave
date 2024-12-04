@@ -23,11 +23,13 @@ button {
   padding: 4px;
 }
 
-button {
+button,
+input[type='button'] {
   cursor: pointer;
 }
 
-button:hover {
+button:hover,
+input[type='button']:hover {
   background-color: #222a;
 }
 
