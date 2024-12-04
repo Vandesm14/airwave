@@ -1,10 +1,5 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
-import {
-  Aircraft,
-  Frequencies,
-  isAircraftFlying,
-  isAircraftTaxiing,
-} from './lib/types';
+import { Aircraft, isAircraftFlying, isAircraftTaxiing } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
@@ -45,6 +40,20 @@ const newStrips = (): Strips => ({
   Takeoff: [],
   None: [],
 });
+
+type Collapse = {
+  [key: string]: boolean;
+};
+
+const newCollapse = (): Collapse => {
+  const strips = newStrips();
+  let collapse: Collapse = {};
+  Object.keys(strips).forEach((key) => {
+    collapse[key] = false;
+  });
+
+  return collapse;
+};
 
 type StripProps = {
   strip: Aircraft;
@@ -341,7 +350,7 @@ export default function StripBoard() {
 
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
-  let [_, setFrequency] = useAtom(frequencyAtom);
+  let [collapse, setCollapse] = createSignal<Collapse>(newCollapse());
 
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: [getAircraft],
@@ -401,19 +410,7 @@ export default function StripBoard() {
   });
 
   function onClickHeader(name: keyof Strips) {
-    const found = query.data?.airspace;
-    if (!found) {
-      return;
-    }
-
-    let key = name.toLowerCase() as keyof Frequencies;
-    if (name === 'Landing' || name === 'Takeoff') {
-      key = 'tower';
-    } else if (name === 'Parked') {
-      key = 'ground';
-    }
-
-    setFrequency(found.frequencies[key]);
+    setCollapse({ ...collapse(), [name]: !collapse()[name] });
   }
 
   return (
@@ -443,14 +440,17 @@ export default function StripBoard() {
           <>
             <div
               class="header"
-              onmousedown={() => onClickHeader(key as keyof Strips)}
+              onClick={() => onClickHeader(key as keyof Strips)}
             >
+              {list.length == 0 ? '. ' : collapse()[key] ? '□ ' : '■ '}
               {key}
               {list.length > 0 ? ` (${list.length})` : ''}
             </div>
-            {list.map((strip) => (
-              <Strip strip={strip}></Strip>
-            ))}
+            <Show when={!collapse()[key]}>
+              {list.map((strip) => (
+                <Strip strip={strip}></Strip>
+              ))}
+            </Show>
           </>
         ) : null
       )}
