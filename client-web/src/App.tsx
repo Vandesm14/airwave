@@ -119,30 +119,30 @@ export default function App() {
         </div>
         <div id="radar">
           <Canvas></Canvas>
-          <div class="top-right">
+          <div class="right">
             <StripBoard></StripBoard>
             <FreqSelector></FreqSelector>
-          </div>
-          <div class="bottom-right-buttons">
-            <button
-              classList={{ 'tts-toggle': true, enabled: useTTS() }}
-              onClick={toggleTTS}
-            >
-              {useTTS() ? 'Disable TTS' : 'Enable TTS'}
-            </button>
-            <button
-              class={`talk-button ${isRecording() ? 'recording' : ''}`}
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-            >
-              {isRecording() ? 'Recording...' : 'Talk'}
-            </button>
-            <button class="discard-button" onClick={discardRecording}>
-              Discard
-            </button>
-            <button class="pause-button" onClick={sendPause}>
-              Pause
-            </button>
+            <div class="bottom-right-buttons">
+              <button
+                classList={{ 'tts-toggle': true, enabled: useTTS() }}
+                onClick={toggleTTS}
+              >
+                {useTTS() ? 'Disable TTS' : 'Enable TTS'}
+              </button>
+              <button
+                class={`talk-button ${isRecording() ? 'recording' : ''}`}
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+              >
+                {isRecording() ? 'Recording...' : 'Talk'}
+              </button>
+              <button class="discard-button" onClick={discardRecording}>
+                Discard
+              </button>
+              <button class="pause-button" onClick={sendPause}>
+                Pause
+              </button>
+            </div>
           </div>
         </div>
       </Show>
