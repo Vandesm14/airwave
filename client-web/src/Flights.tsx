@@ -103,11 +103,11 @@ export function FlightForm() {
       </label>
       <label>
         <span>Spawn in (secs):</span>
-        <input type="number" name="spawn_at" min={0} step={15} value={0} />
+        <input type="number" name="spawn_at" min={0} step={1} value={0} />
       </label>
       <label>
         <span>Stagger (secs):</span>
-        <input type="number" name="stagger" min={0} step={15} value={60} />
+        <input type="number" name="stagger" min={0} step={1} value={60} />
       </label>
       <button type="submit">Add</button>
     </form>
