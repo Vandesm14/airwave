@@ -109,19 +109,16 @@ pub fn decode_callsign(callsign: &str) -> String {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CommandReply {
-  WithCallsign { text: String },
-  WithoutCallsign { text: String },
+  Empty,
   Blank { text: String },
+  WithoutCallsign { text: String },
+  WithCallsign { text: String },
 
   GoAround { runway: String },
   HoldShortRunway { runway: String },
   ReadyForDeparture { airport: String },
   TaxiToGates { runway: String },
-  DirectionOfDeparture { direction: String },
-  ContactCenter { altitude: f32 },
-  ContactClearance { arrival: String },
   ArriveInAirspace { direction: String, altitude: f32 },
-  Empty,
 }
 
 impl fmt::Display for CommandWithFreq {
@@ -129,14 +126,17 @@ impl fmt::Display for CommandWithFreq {
     let decoded_callsign = decode_callsign(&self.id);
 
     match &self.reply {
-      CommandReply::WithCallsign { text } => {
-        write!(f, "{text}, {}.", decoded_callsign)
+      CommandReply::Empty => {
+        write!(f, "")
+      }
+      CommandReply::Blank { text } => {
+        write!(f, "{text}")
       }
       CommandReply::WithoutCallsign { text } => {
         write!(f, "{text}.")
       }
-      CommandReply::Blank { text } => {
-        write!(f, "{text}")
+      CommandReply::WithCallsign { text } => {
+        write!(f, "{text}, {}.", decoded_callsign)
       }
 
       CommandReply::GoAround { runway } => {
@@ -163,37 +163,16 @@ impl fmt::Display for CommandWithFreq {
       CommandReply::ReadyForDeparture { airport } => {
         write!(
           f,
-          "Clearence, {} ready for departure to {}, as filed.",
+          "Ground, {} ready for departure to {}.",
           decoded_callsign, airport
         )
       }
       CommandReply::TaxiToGates { runway } => {
         write!(
           f,
-          "Ground, {} is at {}, requesting taxi to the gates.",
+          "Ground, {} is on runway {}, requesting taxi to the gates.",
           decoded_callsign, runway
         )
-      }
-      CommandReply::DirectionOfDeparture { direction } => {
-        write!(f, "{} is departing to the {direction}.", decoded_callsign,)
-      }
-      CommandReply::ContactCenter { altitude } => {
-        write!(
-          f,
-          "Center, {} is at {}, with you.",
-          decoded_callsign,
-          abbreviate_altitude(*altitude)
-        )
-      }
-      CommandReply::ContactClearance { arrival } => {
-        write!(
-          f,
-          "Clearance, {} requesting IFR clearance to {}.",
-          decoded_callsign, arrival
-        )
-      }
-      CommandReply::Empty => {
-        write!(f, "",)
       }
     }
   }
