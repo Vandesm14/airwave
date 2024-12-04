@@ -370,6 +370,7 @@ impl Aircraft {
         .with_behavior(vec![
           EventKind::EnRoute(false),
           EventKind::SpeedAtOrBelow(250.0),
+          EventKind::CalloutInAirspace,
         ])],
       enroute: true,
     };
