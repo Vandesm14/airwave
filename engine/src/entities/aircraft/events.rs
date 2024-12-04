@@ -333,15 +333,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Points
       // Points are handled within the engine itself.
       EventKind::SuccessfulTakeoff => {}
-      EventKind::SuccessfulLanding => {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::CompleteFlight,
-          }
-          .into(),
-        );
-      }
+      EventKind::SuccessfulLanding => {}
     }
   }
 }

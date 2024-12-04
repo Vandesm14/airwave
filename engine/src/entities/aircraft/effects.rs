@@ -365,6 +365,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             // If we are departing, keep us as active.
             active: aircraft.flight_plan.arriving != bundle.world.airspace.id,
           };
+          bundle.events.push(
+            AircraftEvent {
+              id: aircraft.id,
+              kind: EventKind::CompleteFlight,
+            }
+            .into(),
+          );
         }
       }
     }
