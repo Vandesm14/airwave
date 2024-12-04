@@ -43,6 +43,15 @@ async fn complete_atc_request(
       .await;
       match res {
         Ok(ResKind::OneAircraft(Some(aircraft))) => {
+          if !aircraft.active() {
+            // Prevent inactive aircraft from receiving commands.
+            tracing::warn!(
+              "Inactive aircraft \"{}\" received command",
+              aircraft.id
+            );
+            return None;
+          }
+
           // Parse the command from the message.
           let command = Prompter::parse_into_command(split, &aircraft).await;
           match command {

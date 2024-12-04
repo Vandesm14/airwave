@@ -100,11 +100,6 @@ pub trait AircraftEventHandler {
 pub struct HandleAircraftEvent;
 impl AircraftEventHandler for HandleAircraftEvent {
   fn run(aircraft: &mut Aircraft, event: &EventKind, bundle: &mut Bundle) {
-    // Prevent inactive aircraft from receiving commands.
-    if !aircraft.active() {
-      return;
-    }
-
     match event {
       // Any
       EventKind::Speed(speed) => {
@@ -336,6 +331,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Internal
       EventKind::Delete => {
+        tracing::info!("Deleting aircraft: {}", aircraft.id);
         // This is handled outside of the engine.
         bundle
           .events
