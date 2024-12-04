@@ -313,7 +313,7 @@ impl Runner {
     }
 
     for id in to_remove {
-      tracing::info!("Removing flight {}", id);
+      tracing::info!("Flight completed flight #{}", id);
       self.game.flights.remove(id);
     }
   }
