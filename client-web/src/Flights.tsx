@@ -118,7 +118,7 @@ export function FlightForm() {
       </label>
       <label>
         <span>Stagger (secs):</span>
-        <input type="number" name="stagger" min={0} step={1} value={60} />
+        <input type="number" name="stagger" min={0} step={1} value={180} />
       </label>
       <button type="submit">Add</button>
     </form>
