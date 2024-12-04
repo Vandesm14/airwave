@@ -2,9 +2,8 @@ use core::str::FromStr;
 use std::{
   fs,
   net::{IpAddr, Ipv4Addr, SocketAddr},
-  ops::Add,
   path::PathBuf,
-  time::{Duration, SystemTime},
+  time::SystemTime,
 };
 
 use glam::Vec2;
@@ -12,10 +11,7 @@ use internment::Intern;
 use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
-use engine::{
-  duration_now,
-  entities::{airport::Airport, airspace::Airspace, order::FlightKind},
-};
+use engine::entities::{airport::Airport, airspace::Airspace};
 use server::{
   airport::new_v_pattern,
   config::Config,
