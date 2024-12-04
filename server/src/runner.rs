@@ -293,9 +293,12 @@ impl Runner {
             to_remove.push(flight.id);
           }
           FlightKind::Outbound => {
-            let aircraft = self.game.aircraft.iter_mut().find(|a| {
-              matches!(a.state, AircraftState::Parked { active: false, .. })
-            });
+            let aircraft =
+              self
+                .rng
+                .sample_iter(self.game.aircraft.iter_mut().filter(|a| {
+                  matches!(a.state, AircraftState::Parked { active: false, .. })
+                }));
 
             if let Some(aircraft) = aircraft {
               aircraft.flight_plan.departing = self.world.airspace.id;
