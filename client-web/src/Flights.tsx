@@ -43,11 +43,17 @@ export function FlightItem({ flight }: { flight: Flight }) {
   let time = formatTime(flight.spawn_at.secs * 1000 - new Date().getTime());
   if (flight.status.type === 'ongoing') {
     time = formatTime(new Date().getTime() - flight.spawn_at.secs * 1000);
+  } else if (flight.status.type === 'completed') {
+    time = formatTime(
+      (flight.status.value[1].secs - flight.spawn_at.secs) * 1000
+    );
   }
 
   let callsign = '.......';
   if (flight.status.type === 'ongoing') {
     callsign = flight.status.value;
+  } else if (flight.status.type === 'completed') {
+    callsign = flight.status.value[0];
   }
 
   return (

@@ -253,5 +253,5 @@ export type Flight = {
   status:
     | { type: 'scheduled' }
     | { type: 'ongoing'; value: string }
-    | { type: 'completed'; value: string };
+    | { type: 'completed'; value: [string, Duration] };
 };
