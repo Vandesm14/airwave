@@ -361,7 +361,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
         if let NodeBehavior::Park = current.behavior {
           aircraft.state = AircraftState::Parked {
             at: current.clone(),
-            active: false,
+            active: aircraft.flight_plan.arriving != bundle.world.airspace.id,
           };
         }
       }
