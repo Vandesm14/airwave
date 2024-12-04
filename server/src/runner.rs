@@ -249,7 +249,9 @@ impl Runner {
     let now = duration_now();
     let mut to_mark: Vec<(usize, Intern<String>)> = Vec::new();
     for flight in self.game.flights.iter() {
-      if flight.spawn_at <= now {
+      if flight.spawn_at <= now
+        && matches!(flight.status, FlightStatus::Scheduled)
+      {
         match flight.kind {
           FlightKind::Inbound => {
             let aircraft = Aircraft::random_inbound(
