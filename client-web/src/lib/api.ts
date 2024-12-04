@@ -67,6 +67,42 @@ export function useFlights() {
   }));
 }
 
+export function useFlight(id: number) {
+  return createQuery<Flight | null>(() => ({
+    queryKey: [getFlights, id],
+    queryFn: async () => {
+      const flights = useFlights();
+      if (!flights.data) return null;
+      return flights.data.find((f) => f.id === id) ?? null;
+    },
+    staleTime: 2000,
+    refetchInterval: 2000,
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
+}
+
+export function useFlightByAircraft(id: string) {
+  return createQuery<Flight | null>(() => ({
+    queryKey: [getFlights, id],
+    queryFn: async () => {
+      const flights = useFlights();
+      if (!flights.data) return null;
+      return (
+        flights.data.find(
+          (f) => f.status.type !== 'scheduled' && f.status.value === id
+        ) ?? null
+      );
+    },
+    staleTime: 2000,
+    refetchInterval: 2000,
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
+    throwOnError: true, // Throw an error if the query fails
+  }));
+}
+
 export const postCreateFlight = '/api/game/flight';
 export const deleteFlight = (id: number) => `/api/game/flight/${id}`;
 

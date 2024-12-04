@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import {
   Aircraft,
+  Flight,
   Frequencies,
   isAircraftFlying,
   isAircraftTaxiing,
@@ -16,7 +17,13 @@ import {
   runwayInfo,
 } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
-import { useWorld } from './lib/api';
+import {
+  getAircraft,
+  getFlights,
+  useFlightByAircraft,
+  useFlights,
+  useWorld,
+} from './lib/api';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -129,6 +136,8 @@ function assignAircraftToStrips(
 }
 
 function Strip({ strip }: StripProps) {
+  const flight = useFlightByAircraft(strip.id);
+
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
@@ -280,6 +289,11 @@ function Strip({ strip }: StripProps) {
     setSelectedAircraft(strip.id);
   }
 
+  let flightTimer = '--:--';
+  if (flight.data) {
+    flightTimer = formatTime(Date.now() - flight.data.spawn_at.secs * 1000);
+  }
+
   return (
     <div
       classList={{
@@ -316,6 +330,10 @@ function Strip({ strip }: StripProps) {
         <span class="frequency">{strip.frequency}</span>
         <span class="timer">{sinceCreated}</span>
       </div>
+      <div class="vertical">
+        <span>FLGHT</span>
+        <span class="timer">{flightTimer}</span>
+      </div>
     </div>
   );
 }
@@ -333,9 +351,14 @@ export default function StripBoard() {
   let [_, setFrequency] = useAtom(frequencyAtom);
 
   const aircrafts = createQuery<Aircraft[]>(() => ({
-    queryKey: ['/api/game/aircraft'],
+    queryKey: [getAircraft],
     initialData: [],
   }));
+  // const flights = createQuery<Flight[]>(() => ({
+  //   queryKey: [getFlights],
+  //   initialData: [],
+  // }));
+  const flights = useFlights();
 
   const query = useWorld();
 
