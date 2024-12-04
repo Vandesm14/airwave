@@ -10,6 +10,7 @@ import { formatTime } from './lib/lib';
 import { Flight } from './lib/types';
 import './Flights.scss';
 import { useQueryClient } from '@tanstack/solid-query';
+import { createSignal, Show } from 'solid-js';
 
 function formatKind(kind: string) {
   switch (kind) {
@@ -45,7 +46,7 @@ export function FlightItem({ flight }: { flight: Flight }) {
     <div class="flight">
       <span class="kind">{formatKind(flight.kind)}</span>
       <span class="timer">{time}</span>
-      <button onClick={handleDelete}>Del</button>
+      <button onClick={handleDelete}>Delete</button>
     </div>
   );
 }
@@ -126,20 +127,27 @@ export function FlightForm() {
 }
 
 export default function Flights() {
+  const [show, setShow] = createSignal(false);
   const query = useFlights();
 
   return (
     <div class="flights">
-      <FlightForm />
-      <hr />
-      <h2>Scheduled</h2>
-      <div class="list">
-        {query.data
-          .filter((f) => f.status.type === 'scheduled')
-          .map((f) => (
-            <FlightItem flight={f} />
-          ))}
-      </div>
+      <Show when={!show()}>
+        <button onClick={() => setShow(true)}>Flights</button>
+      </Show>
+      <Show when={show()}>
+        <button onClick={() => setShow(false)}>Close</button>
+        <FlightForm />
+        <hr />
+        <h2>Scheduled</h2>
+        <div class="list">
+          {query.data
+            .filter((f) => f.status.type === 'scheduled')
+            .map((f) => (
+              <FlightItem flight={f} />
+            ))}
+        </div>
+      </Show>
     </div>
   );
 }
