@@ -10,18 +10,9 @@ import { formatTime } from './lib/lib';
 import { Flight } from './lib/types';
 import './Flights.scss';
 import { useQueryClient } from '@tanstack/solid-query';
-import { createSignal, Show } from 'solid-js';
-
-function formatKind(kind: string) {
-  switch (kind) {
-    case 'inbound':
-      return 'INB';
-    case 'outbound':
-      return 'OUT';
-    default:
-      return kind;
-  }
-}
+import { createMemo, createSignal, Show } from 'solid-js';
+import { useAtom } from 'solid-jotai';
+import { selectedAircraftAtom } from './lib/atoms';
 
 export function FlightItem({ flight }: { flight: Flight }) {
   const client = useQueryClient();
@@ -40,6 +31,17 @@ export function FlightItem({ flight }: { flight: Flight }) {
     }
   }
 
+  const [selected, setSelected] = useAtom(selectedAircraftAtom);
+
+  let callsign = '.......';
+  if (flight.status.type === 'ongoing') {
+    callsign = flight.status.value;
+  } else if (flight.status.type === 'completed') {
+    callsign = flight.status.value[0];
+  }
+
+  const isSelected = createMemo(() => selected() === callsign);
+
   let time = formatTime(flight.spawn_at.secs * 1000 - new Date().getTime());
   if (flight.status.type === 'ongoing') {
     time = formatTime(new Date().getTime() - flight.spawn_at.secs * 1000);
@@ -49,19 +51,23 @@ export function FlightItem({ flight }: { flight: Flight }) {
     );
   }
 
-  let callsign = '.......';
-  if (flight.status.type === 'ongoing') {
-    callsign = flight.status.value;
-  } else if (flight.status.type === 'completed') {
-    callsign = flight.status.value[0];
+  function handleSelect() {
+    setSelected(callsign);
   }
 
   return (
-    <div class="flight">
-      <span class="kind">{formatKind(flight.kind)}</span>
-      <span class="callsign">{callsign}</span>
+    <div class="flight" onClick={handleSelect}>
+      <span
+        classList={{
+          callsign: true,
+          outbound: flight.kind === 'outbound',
+          selected: isSelected(),
+        }}
+      >
+        {callsign}
+      </span>
       <span class="timer">{time}</span>
-      <button onClick={handleDelete}>Delete</button>
+      <button onClick={handleDelete}>Del</button>
     </div>
   );
 }

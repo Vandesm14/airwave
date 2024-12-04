@@ -11,7 +11,7 @@ import {
   runwayInfo,
 } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
-import { getAircraft, useFlightByAircraft, useWorld } from './lib/api';
+import { getAircraft, useWorld } from './lib/api';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -138,8 +138,6 @@ function assignAircraftToStrips(
 }
 
 function Strip({ strip }: StripProps) {
-  const flight = useFlightByAircraft(strip.id);
-
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
@@ -291,11 +289,6 @@ function Strip({ strip }: StripProps) {
     setSelectedAircraft(strip.id);
   }
 
-  let flightTimer = '--:--';
-  if (flight.data) {
-    flightTimer = formatTime(Date.now() - flight.data.spawn_at.secs * 1000);
-  }
-
   return (
     <div
       classList={{
@@ -331,10 +324,6 @@ function Strip({ strip }: StripProps) {
       <div class="vertical">
         <span class="frequency">{strip.frequency}</span>
         <span class="timer">{sinceCreated}</span>
-      </div>
-      <div class="vertical">
-        <span>FLGHT</span>
-        <span class="timer">{flightTimer}</span>
       </div>
     </div>
   );

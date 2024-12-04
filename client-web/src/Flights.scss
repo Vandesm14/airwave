@@ -39,6 +39,10 @@
     flex-direction: column;
     gap: 5px;
 
+    h2 {
+      font-size: 18px;
+    }
+
     .flight {
       display: flex;
       flex-direction: row;
@@ -48,12 +52,27 @@
       border: 1px solid white;
       padding: 5px;
 
-      font-size: 16px;
+      font-size: 18px;
 
       gap: 10px;
 
+      cursor: pointer;
+
       .kind {
         font-weight: bold;
+      }
+
+      .callsign {
+        color: #00dd00;
+
+        &.outbound {
+          color: #3087f2;
+        }
+
+        &.selected {
+          color: #ffe045;
+          font-weight: bold;
+        }
       }
 
       .timer {
