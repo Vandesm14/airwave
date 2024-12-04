@@ -250,5 +250,8 @@ export type Flight = {
   id: number;
   kind: 'inbound' | 'outbound';
   spawn_at: Duration;
-  status: 'scheduled' | 'ongoing' | 'completed';
+  status:
+    | { type: 'scheduled' }
+    | { type: 'ongoing'; value: string }
+    | { type: 'completed'; value: string };
 };

@@ -11,8 +11,20 @@ import { Flight } from './lib/types';
 import './Flights.scss';
 import { useQueryClient } from '@tanstack/solid-query';
 
+function formatKind(kind: string) {
+  switch (kind) {
+    case 'inbound':
+      return 'INB';
+    case 'outbound':
+      return 'OUT';
+    default:
+      return kind;
+  }
+}
+
 export function FlightItem({ flight }: { flight: Flight }) {
   const client = useQueryClient();
+  let aircraft = '';
 
   async function handleDelete() {
     const res = await fetch(`${baseAPIPath}${deleteFlight(flight.id)}`, {
@@ -28,9 +40,16 @@ export function FlightItem({ flight }: { flight: Flight }) {
     }
   }
 
+  console.log(flight);
+
+  if (flight.status.type === 'ongoing') {
+    aircraft = flight.status.value;
+  }
+
   return (
     <div class="flight">
-      <span class="kind">{flight.kind.toLocaleUpperCase()}</span>
+      <span class="kind">{formatKind(flight.kind)}</span>
+      <span class="aircraft">{aircraft}</span>
       <span class="timer">
         {formatTime(flight.spawn_at.secs * 1000 - new Date().getTime())}
       </span>

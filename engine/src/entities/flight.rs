@@ -13,6 +13,7 @@ pub enum FlightKind {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[serde(tag = "type", content = "value")]
 /// The kind of flight scheduled: Inbound or Outbound.
 pub enum FlightStatus {
   #[default]
