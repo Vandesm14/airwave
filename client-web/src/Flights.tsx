@@ -24,7 +24,7 @@ function formatKind(kind: string) {
 
 export function FlightItem({ flight }: { flight: Flight }) {
   const client = useQueryClient();
-  let aircraft = '';
+  let aircraft = '.......';
 
   async function handleDelete() {
     const res = await fetch(`${baseAPIPath}${deleteFlight(flight.id)}`, {
@@ -40,19 +40,20 @@ export function FlightItem({ flight }: { flight: Flight }) {
     }
   }
 
-  console.log(flight);
-
   if (flight.status.type === 'ongoing') {
     aircraft = flight.status.value;
+  }
+
+  let time = formatTime(flight.spawn_at.secs * 1000 - new Date().getTime());
+  if (flight.status.type !== 'scheduled') {
+    time = formatTime(new Date().getTime() - flight.spawn_at.secs * 1000);
   }
 
   return (
     <div class="flight">
       <span class="kind">{formatKind(flight.kind)}</span>
       <span class="aircraft">{aircraft}</span>
-      <span class="timer">
-        {formatTime(flight.spawn_at.secs * 1000 - new Date().getTime())}
-      </span>
+      <span class="timer">{time}</span>
       <button onClick={handleDelete}>Del</button>
     </div>
   );
