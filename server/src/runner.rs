@@ -11,7 +11,7 @@ use turborand::{rng::Rng, TurboRand};
 
 use engine::{
   angle_between_points, circle_circle_intersection,
-  command::{CommandWithFreq, OutgoingCommandReply, Task},
+  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
   duration_now,
   engine::{Engine, Event},
   entities::{
@@ -307,6 +307,15 @@ impl Runner {
               aircraft.set_active(true);
               aircraft.sync_targets_to_vals();
               to_remove.push(flight.id);
+
+              self.messages.push(CommandWithFreq::new(
+                aircraft.id.to_string(),
+                aircraft.frequency,
+                CommandReply::ReadyForDeparture {
+                  airport: aircraft.flight_plan.arriving.to_string(),
+                },
+                Vec::new(),
+              ));
             } else {
               tracing::warn!("No aircraft available for outbound flight.");
             }
@@ -406,22 +415,9 @@ impl Runner {
       return;
     }
 
-    // if Instant::now() - self.last_spawn
-    //   >= self.game.points.takeoff_rate.calc_rate()
-    //   && self.game.points.takeoff_rate.count() > 0
-    //   && self.game.aircraft.len() < SPAWN_LIMIT
-    // {
-    //   self.last_spawn = Instant::now();
-    //   self.spawn_inbound();
-    // }
-
     for command in commands {
       self.execute_command(command);
     }
-
-    // for ui_command in ui_commands {
-    //   self.engine.events.push(Event::UiEvent(ui_command.into()));
-    // }
 
     let dt = 1.0 / self.rate as f32;
     let events =
