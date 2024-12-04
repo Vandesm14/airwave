@@ -15,9 +15,9 @@ import { createSignal, Show } from 'solid-js';
 function formatKind(kind: string) {
   switch (kind) {
     case 'inbound':
-      return 'INBOUND';
+      return 'INB';
     case 'outbound':
-      return 'OUTBOUND';
+      return 'OUT';
     default:
       return kind;
   }
@@ -41,10 +41,19 @@ export function FlightItem({ flight }: { flight: Flight }) {
   }
 
   let time = formatTime(flight.spawn_at.secs * 1000 - new Date().getTime());
+  if (flight.status.type === 'ongoing') {
+    time = formatTime(new Date().getTime() - flight.spawn_at.secs * 1000);
+  }
+
+  let callsign = '.......';
+  if (flight.status.type === 'ongoing') {
+    callsign = flight.status.value;
+  }
 
   return (
     <div class="flight">
       <span class="kind">{formatKind(flight.kind)}</span>
+      <span class="callsign">{callsign}</span>
       <span class="timer">{time}</span>
       <button onClick={handleDelete}>Delete</button>
     </div>
@@ -143,6 +152,24 @@ export default function Flights() {
         <div class="list">
           {query.data
             .filter((f) => f.status.type === 'scheduled')
+            .map((f) => (
+              <FlightItem flight={f} />
+            ))}
+        </div>
+        <hr />
+        <h2>Ongoing</h2>
+        <div class="list">
+          {query.data
+            .filter((f) => f.status.type === 'ongoing')
+            .map((f) => (
+              <FlightItem flight={f} />
+            ))}
+        </div>
+        <hr />
+        <h2>Completed</h2>
+        <div class="list">
+          {query.data
+            .filter((f) => f.status.type === 'completed')
             .map((f) => (
               <FlightItem flight={f} />
             ))}

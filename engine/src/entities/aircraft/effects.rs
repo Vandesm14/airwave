@@ -6,7 +6,7 @@ use crate::{
   command::{CommandReply, CommandWithFreq},
   delta_angle,
   engine::Bundle,
-  inverse_degrees, move_point,
+  inverse_degrees, move_point, normalize_angle,
   pathfinder::NodeBehavior,
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
@@ -75,7 +75,7 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
       aircraft.altitude = altitude;
     }
     if heading != aircraft.heading {
-      aircraft.heading = heading;
+      aircraft.heading = normalize_angle(heading);
     }
     if speed != aircraft.speed {
       aircraft.speed = speed;

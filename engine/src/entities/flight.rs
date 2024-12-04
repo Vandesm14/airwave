@@ -19,7 +19,7 @@ pub enum FlightStatus {
   #[default]
   Scheduled,
   Ongoing(Intern<String>),
-  Completed(Intern<String>),
+  Completed(Intern<String>, Duration),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -33,6 +33,16 @@ pub struct Flight {
   pub kind: FlightKind,
   /// The time at which the flight is scheduled to spawn.
   pub spawn_at: Duration,
+}
+
+impl Flight {
+  pub fn aircraft_id(&self) -> Option<Intern<String>> {
+    match &self.status {
+      FlightStatus::Ongoing(aircraft_id) => Some(*aircraft_id),
+      FlightStatus::Completed(aircraft_id, ..) => Some(*aircraft_id),
+      _ => None,
+    }
+  }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -83,6 +93,17 @@ impl Flights {
 
   pub fn get_mut(&mut self, id: usize) -> Option<&mut Flight> {
     self.flights.iter_mut().find(|flight| flight.id == id)
+  }
+
+  pub fn get_by_aircraft_id(
+    &self,
+    aircraft_id: Intern<String>,
+  ) -> Option<usize> {
+    self
+      .flights
+      .iter()
+      .find(|flight| flight.aircraft_id() == Some(aircraft_id))
+      .map(|f| f.id)
   }
 
   pub fn iter(&self) -> impl Iterator<Item = &Flight> {

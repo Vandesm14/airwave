@@ -437,20 +437,31 @@ impl Runner {
       Event::Aircraft(aircraft_event) => Some(aircraft_event),
       Event::UiEvent(_) => None,
     }) {
-      if let AircraftEvent {
-        id,
-        kind: EventKind::Delete,
-      } = event
-      {
-        let index = self
-          .game
-          .aircraft
-          .iter()
-          .enumerate()
-          .find_map(|(i, a)| (a.id == *id).then_some(i));
-        if let Some(index) = index {
-          self.game.aircraft.swap_remove(index);
+      match event {
+        AircraftEvent {
+          id,
+          kind: EventKind::Delete,
+        } => {
+          let index = self
+            .game
+            .aircraft
+            .iter()
+            .enumerate()
+            .find_map(|(i, a)| (a.id == *id).then_some(i));
+          if let Some(index) = index {
+            self.game.aircraft.swap_remove(index);
+          }
         }
+        AircraftEvent {
+          id,
+          kind: EventKind::CompleteFlight,
+        } => {
+          if let Some(flight) = self.game.flights.get_by_aircraft_id(*id) {
+            self.game.flights.get_mut(flight).unwrap().status =
+              FlightStatus::Completed(*id, duration_now());
+          }
+        }
+        _ => {}
       }
     }
   }

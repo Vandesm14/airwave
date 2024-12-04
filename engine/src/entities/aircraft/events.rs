@@ -52,8 +52,9 @@ pub enum EventKind {
   Callout(CommandWithFreq),
   CalloutInAirspace,
 
-  // Internal
+  // External
   Delete,
+  CompleteFlight,
 
   // Points
   SuccessfulTakeoff,
@@ -169,21 +170,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
             aircraft.state = AircraftState::Flying {
               enroute,
               waypoints: vec![
-                new_vor(arrival.id, arrival.transition)
-                  .with_name(Intern::from_ref("TRSN"))
-                  .with_behavior(vec![
-                    EventKind::EnRoute(false),
-                    EventKind::CalloutInAirspace,
-                    EventKind::SpeedAtOrBelow(250.0),
-                  ]),
-                // TODO: Add a waypoint between APRT and TRSN that decreases
-                // their altitude and speed so they use cruise rules until
-                // transition to airspace.
                 new_vor(arrival.id, arrival.pos)
                   .with_name(Intern::from_ref("APRT"))
                   .with_behavior(vec![
-                    EventKind::AltitudeAtOrBelow(7000.0),
-                    EventKind::FlipFlightPlan,
+                    EventKind::CompleteFlight,
+                    EventKind::Delete,
                   ]),
                 new_vor(arrival.id, arrival.transition)
                   .with_name(Intern::from_ref("TRSN"))
@@ -329,7 +320,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
         )));
       }
 
-      // Internal
+      // External
       EventKind::Delete => {
         tracing::info!("Deleting aircraft: {}", aircraft.id);
         // This is handled outside of the engine.
@@ -337,11 +328,20 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .events
           .push(AircraftEvent::new(aircraft.id, EventKind::Delete).into());
       }
+      EventKind::CompleteFlight => {}
 
       // Points
       // Points are handled within the engine itself.
       EventKind::SuccessfulTakeoff => {}
-      EventKind::SuccessfulLanding => {}
+      EventKind::SuccessfulLanding => {
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::CompleteFlight,
+          }
+          .into(),
+        );
+      }
     }
   }
 }
