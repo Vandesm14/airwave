@@ -33,6 +33,10 @@ input[type='button']:hover {
   background-color: #222a;
 }
 
+.border {
+  border: 1px solid white;
+}
+
 .container {
   display: flex;
   flex-direction: column;
@@ -40,17 +44,18 @@ input[type='button']:hover {
   gap: 5px;
 
   width: min-content;
-
-  border: 1px solid white;
   color: white;
+
+  pointer-events: none;
+
+  & > *:not(.spacer) {
+    pointer-events: auto;
+  }
 }
 
-.top-left {
-  @extend .container;
-
-  position: absolute;
-  top: 10px;
-  left: 10px;
+.spacer {
+  flex-grow: 1;
+  pointer-events: none;
 }
 
 .connection-message {
@@ -71,15 +76,16 @@ input[type='button']:hover {
   }
 }
 
-.bottom-left {
+.left {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
 
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
 
+  height: calc(100% - 10px);
   width: min-content;
 
   gap: 5px;
@@ -389,7 +395,7 @@ input[type='button']:hover {
 
         gap: 5px;
 
-        pointer-events: initial;
+        pointer-events: auto;
       }
 
       input {

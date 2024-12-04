@@ -14,6 +14,17 @@ import { createMemo, createSignal, Show } from 'solid-js';
 import { useAtom } from 'solid-jotai';
 import { selectedAircraftAtom } from './lib/atoms';
 
+function formatKind(kind: string) {
+  switch (kind) {
+    case 'outbound':
+      return 'Depart';
+    case 'inbound':
+      return 'Arrive';
+    default:
+      return kind;
+  }
+}
+
 export function FlightItem({ flight }: { flight: Flight }) {
   const client = useQueryClient();
 
@@ -33,7 +44,7 @@ export function FlightItem({ flight }: { flight: Flight }) {
 
   const [selected, setSelected] = useAtom(selectedAircraftAtom);
 
-  let callsign = '.......';
+  let callsign = formatKind(flight.kind);
   if (flight.status.type === 'ongoing') {
     callsign = flight.status.value;
   } else if (flight.status.type === 'completed') {
@@ -152,41 +163,43 @@ export default function Flights() {
   const query = useFlights();
 
   return (
-    <div class="flights">
-      <Show when={!show()}>
-        <button onClick={() => setShow(true)}>Flights</button>
-      </Show>
-      <Show when={show()}>
-        <button onClick={() => setShow(false)}>Close</button>
-        <FlightForm />
-        <hr />
-        <h2>Scheduled</h2>
-        <div class="list">
-          {query.data
-            .filter((f) => f.status.type === 'scheduled')
-            .map((f) => (
-              <FlightItem flight={f} />
-            ))}
-        </div>
-        <hr />
-        <h2>Ongoing</h2>
-        <div class="list">
-          {query.data
-            .filter((f) => f.status.type === 'ongoing')
-            .map((f) => (
-              <FlightItem flight={f} />
-            ))}
-        </div>
-        <hr />
-        <h2>Completed</h2>
-        <div class="list">
-          {query.data
-            .filter((f) => f.status.type === 'completed')
-            .map((f) => (
-              <FlightItem flight={f} />
-            ))}
-        </div>
-      </Show>
+    <div class="container border">
+      <div class="flights">
+        <Show when={!show()}>
+          <button onClick={() => setShow(true)}>Flights</button>
+        </Show>
+        <Show when={show()}>
+          <button onClick={() => setShow(false)}>Close</button>
+          <FlightForm />
+          <hr />
+          <h2>Scheduled</h2>
+          <div class="list">
+            {query.data
+              .filter((f) => f.status.type === 'scheduled')
+              .map((f) => (
+                <FlightItem flight={f} />
+              ))}
+          </div>
+          <hr />
+          <h2>Ongoing</h2>
+          <div class="list">
+            {query.data
+              .filter((f) => f.status.type === 'ongoing')
+              .map((f) => (
+                <FlightItem flight={f} />
+              ))}
+          </div>
+          <hr />
+          <h2>Completed</h2>
+          <div class="list">
+            {query.data
+              .filter((f) => f.status.type === 'completed')
+              .map((f) => (
+                <FlightItem flight={f} />
+              ))}
+          </div>
+        </Show>
+      </div>
     </div>
   );
 }

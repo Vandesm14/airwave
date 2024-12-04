@@ -110,10 +110,9 @@ export default function App() {
   return (
     <>
       <Show when={query.data}>
-        <div class="top-left">
+        <div class="container left">
           <Flights />
-        </div>
-        <div class="bottom-left">
+          <div class="spacer"></div>
           <Points />
           <Chatbox sendMessage={sendTextMessage}></Chatbox>
         </div>
