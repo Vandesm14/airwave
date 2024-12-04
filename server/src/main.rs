@@ -117,62 +117,10 @@ async fn main() {
 
   //
 
-  runner.game.flights.add(
-    FlightKind::Outbound,
-    duration_now().add(Duration::from_secs(300)),
-  );
-
-  runner.game.flights.add(
-    FlightKind::Outbound,
-    duration_now().add(Duration::from_secs(500)),
-  );
-
-  runner.game.flights.add(
-    FlightKind::Inbound,
-    duration_now().add(Duration::from_secs(10)),
-  );
-
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
   let _ =
     tokio::spawn(http::run(address, get_tx, post_tx, openai_api_key.into()))
       .await;
-
-  // let listener = TcpListener::bind(address).await.unwrap();
-  // tracing::info!("Listening on {address}");
-
-  // loop {
-  //   let openai_api_key = openai_api_key.clone();
-  //   let command_tx = command_tx.clone();
-  //   let update_rx = update_rx.clone();
-
-  //   let (stream, _) = match listener.accept().await {
-  //     Ok(stream) => stream,
-  //     Err(e) => {
-  //       tracing::error!("Unable to accept TCP stream: {e}");
-  //       continue;
-  //     }
-  //   };
-
-  //   let stream = match tokio_tungstenite::accept_async(stream).await {
-  //     Ok(stream) => stream,
-  //     Err(e) => {
-  //       tracing::error!("Unable to accept WebSocket stream: {e}");
-  //       continue;
-  //     }
-  //   };
-
-  //   let (writer, reader) = stream.split();
-
-  //   command_tx.send(IncomingUpdate::Connect).await.unwrap();
-
-  //   tokio::spawn(broadcast_updates_to(writer, update_rx));
-  //   tokio::spawn(receive_commands_from(
-  //     openai_api_key,
-  //     reader,
-  //     update_tx.clone(),
-  //     command_tx,
-  //   ));
-  // }
 }
