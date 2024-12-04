@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10,11 +11,23 @@ pub enum FlightKind {
   Outbound,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+/// The kind of flight scheduled: Inbound or Outbound.
+pub enum FlightStatus {
+  #[default]
+  Scheduled,
+  Ongoing(Intern<String>),
+  Completed(Intern<String>),
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 /// A scheduled flight.
 pub struct Flight {
   /// The unique identifier of the flight.
   pub id: usize,
+  /// The status of the flight.
+  pub status: FlightStatus,
   /// The kind of flight.
   pub kind: FlightKind,
   /// The time at which the flight is scheduled to spawn.
@@ -42,7 +55,12 @@ impl Flights {
 
   pub fn add(&mut self, kind: FlightKind, spawn_at: Duration) -> usize {
     let id = self.id_seq;
-    let flight = Flight { id, kind, spawn_at };
+    let flight = Flight {
+      id,
+      status: FlightStatus::Scheduled,
+      kind,
+      spawn_at,
+    };
     self.id_seq += 1;
     self.flights.push(flight);
 

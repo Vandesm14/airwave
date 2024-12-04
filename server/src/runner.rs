@@ -10,19 +10,18 @@ use tokio::sync::mpsc::error::TryRecvError;
 use turborand::{rng::Rng, TurboRand};
 
 use engine::{
-  angle_between_points, circle_circle_intersection,
+  circle_circle_intersection,
   command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
   duration_now,
   engine::{Engine, Event},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
-      Aircraft, AircraftState, FlightPlan,
+      Aircraft, AircraftState,
     },
-    flight::{Flight, FlightKind},
+    flight::{Flight, FlightKind, FlightStatus},
     world::{Connection, ConnectionState, Game, Points, World},
   },
-  pathfinder::new_vor,
 };
 
 use crate::{
@@ -161,36 +160,6 @@ impl Runner {
     self.game.aircraft.push(aircraft);
   }
 
-  pub fn spawn_inbound(&mut self) {
-    let rng = &mut self.rng;
-
-    let departing = rng.sample(&self.world.connections).unwrap();
-    let mut aircraft = Aircraft::random_flying(
-      self.world.airspace.frequencies.approach,
-      FlightPlan::new(departing.id, self.world.airspace.id),
-      rng,
-    );
-
-    aircraft.speed = 300.0;
-    aircraft.pos = departing.pos;
-    aircraft.altitude = 7000.0;
-    aircraft.heading =
-      angle_between_points(departing.pos, self.world.airspace.pos);
-    aircraft.sync_targets_to_vals();
-
-    aircraft.state = AircraftState::Flying {
-      enroute: true,
-      waypoints: vec![new_vor(departing.id, departing.transition)
-        .with_name(Intern::from_ref("TRSN"))
-        .with_behavior(vec![
-          EventKind::EnRoute(false),
-          EventKind::SpeedAtOrBelow(250.0),
-        ])],
-    };
-
-    self.game.aircraft.push(aircraft);
-  }
-
   pub fn generate_airspaces(&mut self, world_rng: &mut Rng) {
     let airspace_names = [
       "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
@@ -278,7 +247,7 @@ impl Runner {
 
   pub fn handle_flights(&mut self) {
     let now = duration_now();
-    let mut to_remove: Vec<usize> = Vec::new();
+    let mut to_mark: Vec<(usize, Intern<String>)> = Vec::new();
     for flight in self.game.flights.iter() {
       if flight.spawn_at <= now {
         match flight.kind {
@@ -289,8 +258,10 @@ impl Runner {
               &self.world.airspace,
               &mut self.rng,
             );
+
+            to_mark.push((flight.id, aircraft.id));
+
             self.game.aircraft.push(aircraft);
-            to_remove.push(flight.id);
           }
           FlightKind::Outbound => {
             let aircraft =
@@ -306,7 +277,8 @@ impl Runner {
                 self.rng.sample(&self.world.connections).unwrap().id;
               aircraft.set_active(true);
               aircraft.sync_targets_to_vals();
-              to_remove.push(flight.id);
+
+              to_mark.push((flight.id, aircraft.id));
 
               self.messages.push(CommandWithFreq::new(
                 aircraft.id.to_string(),
@@ -324,9 +296,10 @@ impl Runner {
       }
     }
 
-    for id in to_remove {
-      tracing::info!("Flight completed flight #{}", id);
-      self.game.flights.remove(id);
+    for (flight, aircraft) in to_mark {
+      tracing::info!("Spawned flight #{}", flight);
+      self.game.flights.get_mut(flight).unwrap().status =
+        FlightStatus::Ongoing(aircraft);
     }
   }
 
