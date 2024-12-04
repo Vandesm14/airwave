@@ -14,9 +14,9 @@ import { useQueryClient } from '@tanstack/solid-query';
 function formatKind(kind: string) {
   switch (kind) {
     case 'inbound':
-      return 'INB';
+      return 'INBOUND';
     case 'outbound':
-      return 'OUT';
+      return 'OUTBOUND';
     default:
       return kind;
   }
@@ -24,7 +24,6 @@ function formatKind(kind: string) {
 
 export function FlightItem({ flight }: { flight: Flight }) {
   const client = useQueryClient();
-  let aircraft = '.......';
 
   async function handleDelete() {
     const res = await fetch(`${baseAPIPath}${deleteFlight(flight.id)}`, {
@@ -40,19 +39,11 @@ export function FlightItem({ flight }: { flight: Flight }) {
     }
   }
 
-  if (flight.status.type === 'ongoing') {
-    aircraft = flight.status.value;
-  }
-
   let time = formatTime(flight.spawn_at.secs * 1000 - new Date().getTime());
-  if (flight.status.type !== 'scheduled') {
-    time = formatTime(new Date().getTime() - flight.spawn_at.secs * 1000);
-  }
 
   return (
     <div class="flight">
       <span class="kind">{formatKind(flight.kind)}</span>
-      <span class="aircraft">{aircraft}</span>
       <span class="timer">{time}</span>
       <button onClick={handleDelete}>Del</button>
     </div>
@@ -141,11 +132,13 @@ export default function Flights() {
     <div class="flights">
       <FlightForm />
       <hr />
-      <h2>Flights</h2>
+      <h2>Scheduled</h2>
       <div class="list">
-        {query.data.map((f) => (
-          <FlightItem flight={f} />
-        ))}
+        {query.data
+          .filter((f) => f.status.type === 'scheduled')
+          .map((f) => (
+            <FlightItem flight={f} />
+          ))}
       </div>
     </div>
   );
