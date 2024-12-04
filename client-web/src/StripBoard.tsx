@@ -24,11 +24,11 @@ type Strips = {
   Inbound: Array<Aircraft>;
   Approach: Array<Aircraft>;
   Landing: Array<Aircraft>;
+  Departure: Array<Aircraft>;
+  Outbound: Array<Aircraft>;
   Parked: Array<Aircraft>;
   Ground: Array<Aircraft>;
   Takeoff: Array<Aircraft>;
-  Departure: Array<Aircraft>;
-  Outbound: Array<Aircraft>;
   None: Array<Aircraft>;
 };
 
@@ -38,11 +38,11 @@ const newStrips = (): Strips => ({
   Inbound: [],
   Approach: [],
   Landing: [],
+  Departure: [],
+  Outbound: [],
   Parked: [],
   Ground: [],
   Takeoff: [],
-  Departure: [],
-  Outbound: [],
   None: [],
 });
 
