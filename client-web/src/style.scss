@@ -13,6 +13,24 @@ main {
 
 $transparent-black: #000a;
 
+input,
+select,
+button {
+  background-color: $transparent-black;
+  border: 1px solid white;
+  color: white;
+  font-size: 16px;
+  padding: 4px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #222a;
+}
+
 .container {
   display: flex;
   flex-direction: column;
@@ -371,25 +389,16 @@ $transparent-black: #000a;
       }
 
       input {
-        background-color: $transparent-black;
-        border: 1px solid white;
-        color: white;
-        font-size: inherit;
-
         max-width: 80px;
-        padding: 10px 10px;
         flex-grow: 1;
+        padding: 10px;
+        font-size: inherit;
       }
 
       select {
-        background-color: $transparent-black;
-        border: 1px solid white;
-        color: white;
-        font-size: inherit;
-
-        // width: 100px;
-        padding: 10px 10px;
         flex-grow: 1;
+        padding: 10px;
+        font-size: inherit;
       }
     }
   }

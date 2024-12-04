@@ -22,8 +22,14 @@
         width: max-content;
       }
 
+      input,
+      select {
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
       input[type='number'] {
-        width: 6rem;
+        width: 8ch;
       }
     }
   }
@@ -52,6 +58,11 @@
 
       .timer {
         opacity: 0.7;
+      }
+
+      button {
+        color: #ff6868;
+        font-weight: bold;
       }
     }
   }
