@@ -1,7 +1,6 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import {
   Aircraft,
-  Flight,
   Frequencies,
   isAircraftFlying,
   isAircraftTaxiing,
@@ -17,13 +16,7 @@ import {
   runwayInfo,
 } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
-import {
-  getAircraft,
-  getFlights,
-  useFlightByAircraft,
-  useFlights,
-  useWorld,
-} from './lib/api';
+import { getAircraft, useFlightByAircraft, useWorld } from './lib/api';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -354,11 +347,6 @@ export default function StripBoard() {
     queryKey: [getAircraft],
     initialData: [],
   }));
-  // const flights = createQuery<Flight[]>(() => ({
-  //   queryKey: [getFlights],
-  //   initialData: [],
-  // }));
-  const flights = useFlights();
 
   const query = useWorld();
 
