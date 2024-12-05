@@ -472,7 +472,9 @@ export default function Canvas() {
     const isSelected = selectedAircraft() === aircraft.id;
     const isEnroute =
       aircraft.state.type === 'flying' && aircraft.state.value.enroute;
-    const isLanding = aircraft.state.type === 'landing';
+    const isOnLoc =
+      aircraft.state.type === 'landing' &&
+      aircraft.state.value.state === 'localizer';
 
     // Draw trail
     let trail = aircraftTrails().get(aircraft.id);
@@ -602,7 +604,7 @@ export default function Canvas() {
     // Draw callsign
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
-    if ((isAboveAirspace || isEnroute || isLanding) && !isSelected) {
+    if ((isAboveAirspace || isEnroute || isOnLoc) && !isSelected) {
       return;
     }
 
