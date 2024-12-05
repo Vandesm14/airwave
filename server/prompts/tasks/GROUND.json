@@ -3,6 +3,7 @@
     "server/prompts/tasks/delete.json",
     "server/prompts/tasks/frequency.json",
     "server/prompts/tasks/ident.json",
+    "server/prompts/tasks/line-up.json",
     "server/prompts/tasks/speed.json",
     "server/prompts/tasks/takeoff.json",
     "server/prompts/tasks/taxi.json"

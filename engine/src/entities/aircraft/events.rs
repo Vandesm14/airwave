@@ -44,6 +44,7 @@ pub enum EventKind {
   Taxi(Vec<Node<()>>),
   TaxiContinue,
   TaxiHold { and_state: bool },
+  LineUp(Intern<String>),
 
   // Requests
   Ident,
@@ -77,6 +78,7 @@ impl From<Task> for EventKind {
       Task::Taxi(x) => EventKind::Taxi(x),
       Task::TaxiContinue => EventKind::TaxiContinue,
       Task::TaxiHold => EventKind::TaxiHold { and_state: true },
+      Task::LineUp(x) => EventKind::LineUp(x),
       Task::Delete => EventKind::Delete,
     }
   }
@@ -277,6 +279,21 @@ impl AircraftEventHandler for HandleAircraftEvent {
         } else if let AircraftState::Parked { .. } = aircraft.state {
           aircraft.target.speed = 0.0;
           aircraft.speed = 0.0;
+        }
+      }
+      EventKind::LineUp(runway) => {
+        if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {
+          // If we were told to hold short, line up instead
+          if let Some(wp) = waypoints.first_mut() {
+            if wp.kind == NodeKind::Runway && wp.name == *runway {
+              wp.behavior = NodeBehavior::LineUp;
+            }
+          }
+
+          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            aircraft.id,
+            EventKind::TaxiContinue,
+          )));
         }
       }
 

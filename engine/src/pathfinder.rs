@@ -31,6 +31,7 @@ pub enum NodeBehavior {
   GoTo,
   Park,
   HoldShort,
+  LineUp,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]

@@ -30,11 +30,12 @@ pub enum Task {
   #[serde(rename = "resume")]
   ResumeOwnNavigation,
   Speed(f32),
-  Takeoff(Intern<String>),
 
   Taxi(Vec<Node<()>>),
   TaxiContinue,
   TaxiHold,
+  Takeoff(Intern<String>),
+  LineUp(Intern<String>),
 
   Delete,
 }

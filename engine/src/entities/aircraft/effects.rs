@@ -7,7 +7,7 @@ use crate::{
   delta_angle,
   engine::Bundle,
   inverse_degrees, move_point, normalize_angle,
-  pathfinder::NodeBehavior,
+  pathfinder::{NodeBehavior, NodeKind},
   Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
 };
 
@@ -358,20 +358,39 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           .into(),
         );
 
-        if let NodeBehavior::Park = current.behavior {
-          aircraft.state = AircraftState::Parked {
-            at: current.clone(),
-            // Only become inactive if we are arriving at the player's airspace.
-            // If we are departing, keep us as active.
-            active: aircraft.flight_plan.arriving != bundle.world.airspace.id,
-          };
-          bundle.events.push(
-            AircraftEvent {
-              id: aircraft.id,
-              kind: EventKind::CompleteFlight,
+        match current.behavior {
+          NodeBehavior::GoTo => {}
+          NodeBehavior::HoldShort => {}
+          NodeBehavior::Park => {
+            aircraft.state = AircraftState::Parked {
+              at: current.clone(),
+              // Only become inactive if we are arriving at the player's airspace.
+              // If we are departing, keep us as active.
+              active: aircraft.flight_plan.arriving != bundle.world.airspace.id,
+            };
+            bundle.events.push(
+              AircraftEvent {
+                id: aircraft.id,
+                kind: EventKind::CompleteFlight,
+              }
+              .into(),
+            );
+          }
+          NodeBehavior::LineUp => {
+            if current.kind == NodeKind::Runway {
+              if let Some(runway) = bundle
+                .world
+                .airspace
+                .airports
+                .iter()
+                .flat_map(|a| a.runways.iter())
+                .find(|r| r.id == current.name)
+              {
+                aircraft.heading = runway.heading;
+                aircraft.target.heading = runway.heading;
+              }
             }
-            .into(),
-          );
+          }
         }
       }
     }
@@ -402,6 +421,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
               }
             }
           }
+          NodeBehavior::LineUp => {}
         }
       }
     }
