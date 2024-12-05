@@ -6,19 +6,15 @@ use std::{
   time::SystemTime,
 };
 
-use glam::Vec2;
-use internment::Intern;
 use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
-use engine::entities::{airport::Airport, airspace::Airspace};
 use server::{
-  airport::new_v_pattern,
   config::Config,
   http,
   job::JobReq,
   runner::{ArgReqKind, ResKind, Runner, TinyReqKind},
-  Cli, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
+  Cli, CLI,
 };
 
 #[tokio::main]
