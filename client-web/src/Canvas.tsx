@@ -794,6 +794,7 @@ export default function Canvas() {
     let taxi_color =
       selectedAircraft() == aircraft.id ? colors.text_yellow : '#ffffff';
 
+    // Draw taxi waypoints
     if (
       aircraft.state.type === 'taxiing' &&
       selectedAircraft() == aircraft.id
@@ -801,6 +802,7 @@ export default function Canvas() {
       ctx.strokeStyle = '#ffff0088';
       ctx.lineWidth = scaleFeetToPixels(50);
 
+      // Draw waypoint lines
       ctx.beginPath();
       ctx.moveTo(pos[0], pos[1]);
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
@@ -809,6 +811,7 @@ export default function Canvas() {
       }
       ctx.stroke();
 
+      // Draw waypoint dots
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
         if (wp.behavior === 'goto') {
           ctx.fillStyle = colors.line_green;
@@ -816,6 +819,8 @@ export default function Canvas() {
           ctx.fillStyle = colors.line_green;
         } else if (wp.behavior === 'holdshort') {
           ctx.fillStyle = colors.line_red;
+        } else {
+          ctx.fillStyle = colors.line_yellow;
         }
         let pos = scalePoint(wp.value);
         ctx.beginPath();

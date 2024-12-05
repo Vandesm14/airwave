@@ -523,7 +523,10 @@ pub fn handle_takeoff_event(
   bundle: &mut Bundle,
   runway_id: Intern<String>,
 ) {
-  if let AircraftState::Taxiing { current, .. } = &aircraft.state {
+  if let AircraftState::Taxiing {
+    current, waypoints, ..
+  } = &mut aircraft.state
+  {
     // If we are at the runway
     if let Some(runway) = bundle
       .world
@@ -558,6 +561,14 @@ pub fn handle_takeoff_event(
           }
           .into(),
         );
+      } else if let Some(runway) = waypoints.first_mut() {
+        if runway.kind == NodeKind::Runway && runway.name == runway_id {
+          runway.behavior = NodeBehavior::Takeoff;
+
+          bundle.events.push(
+            AircraftEvent::new(aircraft.id, EventKind::TaxiContinue).into(),
+          );
+        }
       }
     }
   }

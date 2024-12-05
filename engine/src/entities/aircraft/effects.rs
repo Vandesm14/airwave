@@ -376,6 +376,8 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
               .into(),
             );
           }
+
+          // Runway specific
           NodeBehavior::LineUp => {
             if current.kind == NodeKind::Runway {
               if let Some(runway) = bundle
@@ -389,6 +391,17 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
                 aircraft.heading = runway.heading;
                 aircraft.target.heading = runway.heading;
               }
+            }
+          }
+          NodeBehavior::Takeoff => {
+            if current.kind == NodeKind::Runway {
+              bundle.events.push(
+                AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::Takeoff(current.name),
+                )
+                .into(),
+              );
             }
           }
         }
@@ -421,7 +434,10 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
               }
             }
           }
+
+          // Runway specific
           NodeBehavior::LineUp => {}
+          NodeBehavior::Takeoff => {}
         }
       }
     }

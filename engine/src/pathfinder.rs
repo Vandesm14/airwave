@@ -31,6 +31,9 @@ pub enum NodeBehavior {
   GoTo,
   Park,
   HoldShort,
+
+  // Runway specific
+  Takeoff,
   LineUp,
 }
 
