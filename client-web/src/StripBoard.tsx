@@ -429,7 +429,7 @@ export default function StripBoard() {
           <>
             <div
               class="header"
-              onClick={() => onClickHeader(key as keyof Strips)}
+              onmousedown={() => onClickHeader(key as keyof Strips)}
             >
               {collapse()[key] ? '- ' : list.length == 0 ? '□ ' : '■ '}
               {key}
