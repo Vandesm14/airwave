@@ -35,6 +35,10 @@ export default function Chatbox({
 
   const messages = useMessages();
 
+  onMount(() => {
+    audio().volume = 0.5;
+  });
+
   function play() {
     if (useTTS()) {
       if (world.data.options.use_piper_tts) {
