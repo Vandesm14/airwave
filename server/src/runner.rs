@@ -1,4 +1,5 @@
 use std::{
+  fs,
   path::PathBuf,
   time::{Duration, Instant},
 };
@@ -131,6 +132,13 @@ impl Runner {
     rng: Rng,
   ) -> Self {
     let world = World::from(config);
+
+    if world.options.use_piper_tts {
+      if fs::exists("static/replies").unwrap() {
+        fs::remove_dir_all("static/replies").unwrap();
+      }
+      fs::create_dir_all("static/replies").unwrap();
+    }
 
     Self {
       messages: Messages::new(30, world.options.use_piper_tts),
