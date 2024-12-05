@@ -26,7 +26,7 @@ use engine::{
 
 use crate::{
   job::{JobQueue, JobReq},
-  ring::RingBuffer,
+  message::Messages,
   AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
   TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
@@ -109,7 +109,7 @@ pub struct Runner {
   pub world: World,
   pub game: Game,
   pub engine: Engine,
-  pub messages: RingBuffer<CommandWithFreq>,
+  pub messages: Messages,
 
   pub get_queue: JobQueue<TinyReqKind, ResKind>,
   pub post_queue: JobQueue<ArgReqKind, ResKind>,
@@ -132,7 +132,7 @@ impl Runner {
       world: World::default(),
       game: Game::default(),
       engine: Engine::default(),
-      messages: RingBuffer::new(30),
+      messages: Messages::new(30),
 
       get_queue: JobQueue::new(get_rcv),
       post_queue: JobQueue::new(post_rcv),
@@ -282,7 +282,7 @@ impl Runner {
 
               to_mark.push((flight.id, aircraft.id));
 
-              self.messages.push(CommandWithFreq::new(
+              self.messages.add(CommandWithFreq::new(
                 aircraft.id.to_string(),
                 aircraft.frequency,
                 CommandReply::ReadyForDeparture {
@@ -303,6 +303,10 @@ impl Runner {
       self.game.flights.get_mut(flight).unwrap().status =
         FlightStatus::Ongoing(aircraft);
     }
+  }
+
+  pub fn add_message(&mut self, message: CommandWithFreq) {
+    self.messages.add(message);
   }
 
   pub fn tick(&mut self) {
@@ -376,7 +380,7 @@ impl Runner {
 
       match incoming.req() {
         ArgReqKind::CommandATC(command) => {
-          self.messages.push(command.clone());
+          self.messages.add(command.clone());
           incoming.reply(ResKind::Any);
         }
         ArgReqKind::CommandReply(command) => {
@@ -498,7 +502,7 @@ impl Runner {
       }
 
       if callout {
-        self.messages.push(command.clone());
+        self.messages.add(command.clone());
       }
     }
   }

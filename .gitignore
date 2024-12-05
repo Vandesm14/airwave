@@ -19,3 +19,7 @@ config.toml
 
 # From Replit
 .cargo
+
+# Generated at Runtime
+models
+static/

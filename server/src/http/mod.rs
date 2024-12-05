@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use shared::{AppState, GetSender, PostSender};
 
 use engine::engine::UICommand;
-use tower_http::cors::CorsLayer;
+use tower_http::{cors::CorsLayer, services::ServeDir};
 
 pub async fn run(
   address: SocketAddr,
@@ -48,6 +48,7 @@ pub async fn run(
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
       .route("/game/points", get(get_points))
+      .nest_service("/static", ServeDir::new("static"))
       .with_state(AppState::new(get_sender, post_sender, openai_api_key))
       .layer(cors),
   );
