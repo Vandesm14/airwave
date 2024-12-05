@@ -47,10 +47,12 @@ export default function Chatbox({
             audio().addEventListener('ended', play, { once: true });
           }
 
-          let message = queue().pop();
-          if (message) {
-            audio().src = `${baseAPIPath}/static/replies/${message?.created.secs}.ogg`;
-            audio().play();
+          if (!isRecording()) {
+            let message = queue().pop();
+            if (message) {
+              audio().src = `${baseAPIPath}/static/replies/${message?.created.secs}.ogg`;
+              audio().play();
+            }
           }
         }
       }
