@@ -132,16 +132,34 @@ impl Runner {
     rng: Rng,
   ) -> Self {
     let world = World::from(config);
+    let mut messages = Messages::new(30, world.options.use_piper_tts);
 
     if world.options.use_piper_tts {
       if fs::exists("static/replies").unwrap() {
         fs::remove_dir_all("static/replies").unwrap();
       }
       fs::create_dir_all("static/replies").unwrap();
+
+      // Read all the `.onnx` files in the `models` folder
+      let models = fs::read_dir("models").unwrap();
+      let models = models
+        .filter_map(|entry| {
+          let entry = entry.unwrap();
+          let path = entry.path();
+          if path.extension().unwrap() == "onnx" {
+            Some(path)
+          } else {
+            None
+          }
+        })
+        .map(|p| Intern::from(p.to_str().unwrap().to_owned()))
+        .collect::<Vec<_>>();
+
+      messages.set_available_voices(models);
     }
 
     Self {
-      messages: Messages::new(30, world.options.use_piper_tts),
+      messages,
 
       engine: Engine::default(),
       game: Game::default(),

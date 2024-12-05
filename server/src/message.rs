@@ -1,6 +1,11 @@
-use std::process::{Command, Stdio};
+use std::{
+  collections::HashMap,
+  process::{Command, Stdio},
+};
 
 use engine::command::CommandWithFreq;
+use internment::Intern;
+use turborand::{rng::Rng, TurboRand};
 
 use crate::ring::RingBuffer;
 
@@ -8,6 +13,9 @@ use crate::ring::RingBuffer;
 pub struct Messages {
   messages: RingBuffer<CommandWithFreq>,
   auto_generate: bool,
+
+  aircraft_voices: HashMap<Intern<String>, Intern<String>>,
+  available_voices: Vec<Intern<String>>,
 }
 
 impl Default for Messages {
@@ -21,7 +29,18 @@ impl Messages {
     Self {
       messages: RingBuffer::new(capacity),
       auto_generate,
+
+      aircraft_voices: HashMap::new(),
+      available_voices: Vec::new(),
     }
+  }
+
+  pub fn set_auto_generate(&mut self, auto_generate: bool) {
+    self.auto_generate = auto_generate;
+  }
+
+  pub fn set_available_voices(&mut self, voices: Vec<Intern<String>>) {
+    self.available_voices = voices;
   }
 
   pub fn add(&mut self, message: CommandWithFreq) {
@@ -31,7 +50,21 @@ impl Messages {
     self.messages.push(message);
   }
 
-  pub fn generate(&self, message: &CommandWithFreq) {
+  pub fn generate(&mut self, message: &CommandWithFreq) {
+    let voice = if let Some(voice) =
+      self.aircraft_voices.get(&Intern::from_ref(&message.id))
+    {
+      voice
+    } else {
+      let rng = Rng::new();
+      let voice = rng.sample(&self.available_voices).unwrap();
+      self
+        .aircraft_voices
+        .insert(Intern::from_ref(&message.id), *voice);
+
+      voice
+    };
+
     // Run `echo "message" | echo '{message.text}' | piper --model models/en_GB-vctk-medium.onnx --output_file {message.duration.seconds}.ogg`
     let mut echo = Command::new("echo")
       .arg(message.to_string())
@@ -43,7 +76,7 @@ impl Messages {
 
     let _ = Command::new("piper")
       .arg("--model")
-      .arg("models/en_GB-vctk-medium.onnx")
+      .arg(format!("{}", voice))
       .arg("--output_file")
       .arg(format!("static/replies/{}.ogg", message.created.as_secs()))
       .stdin(echo_out)
