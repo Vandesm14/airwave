@@ -84,29 +84,9 @@ async fn main() {
     get_rx,
     post_rx,
     Some(PathBuf::from_str("assets/world.json").unwrap()),
+    config.clone(),
     rng,
   );
-
-  let mut player_airspace = Airspace {
-    id: Intern::from_ref("KSFO"),
-    pos: Vec2::ZERO,
-    radius: MANUAL_TOWER_AIRSPACE_RADIUS,
-    airports: vec![],
-    frequencies: config.frequencies.unwrap_or_default(),
-  };
-
-  let mut airport_ksfo = Airport {
-    id: Intern::from_ref("KSFO"),
-    center: player_airspace.pos,
-    ..Default::default()
-  };
-
-  new_v_pattern::setup(&mut airport_ksfo);
-
-  airport_ksfo.calculate_waypoints();
-  player_airspace.airports.push(airport_ksfo);
-
-  runner.world.airspace = player_airspace;
 
   runner.generate_airspaces(&mut world_rng);
   runner.fill_gates();

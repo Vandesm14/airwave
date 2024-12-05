@@ -213,12 +213,18 @@ export type Connection = {
 export type World = {
   airspace: Airspace;
   connections: Array<Connection>;
+  options: {
+    use_piper_tts: boolean;
+  };
 };
 
 export function DefaultWorld(): World {
   return {
     airspace: DefaultAirspace(),
     connections: [],
+    options: {
+      use_piper_tts: false,
+    },
   };
 }
 

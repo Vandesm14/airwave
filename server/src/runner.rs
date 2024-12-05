@@ -25,6 +25,7 @@ use engine::{
 };
 
 use crate::{
+  config::Config,
   job::{JobQueue, JobReq},
   message::Messages,
   AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
@@ -126,13 +127,17 @@ impl Runner {
     get_rcv: tokio::sync::mpsc::UnboundedReceiver<JobReq<TinyReqKind, ResKind>>,
     post_rcv: tokio::sync::mpsc::UnboundedReceiver<JobReq<ArgReqKind, ResKind>>,
     save_to: Option<PathBuf>,
+    config: Config,
     rng: Rng,
   ) -> Self {
+    let world = World::from(config);
+
     Self {
-      world: World::default(),
-      game: Game::default(),
+      messages: Messages::new(30, world.options.use_piper_tts),
+
       engine: Engine::default(),
-      messages: Messages::new(30),
+      game: Game::default(),
+      world,
 
       get_queue: JobQueue::new(get_rcv),
       post_queue: JobQueue::new(post_rcv),

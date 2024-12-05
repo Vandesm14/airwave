@@ -1,6 +1,13 @@
 import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
-import { Aircraft, Flight, Points, RadioMessage, World } from './types';
+import {
+  Aircraft,
+  DefaultWorld,
+  Flight,
+  Points,
+  RadioMessage,
+  World,
+} from './types';
 import fastDeepEqual from 'fast-deep-equal';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
@@ -116,8 +123,10 @@ export function useWorld() {
       if (!result.ok) return null;
       return result.json();
     },
+    initialData: DefaultWorld,
     staleTime: Infinity,
     refetchOnReconnect: 'always',
+    refetchOnMount: 'always',
     throwOnError: true, // Throw an error if the query fails
   }));
 }

@@ -52,6 +52,13 @@ pub struct Connection {
 pub struct World {
   pub airspace: Airspace,
   pub connections: Vec<Connection>,
+
+  pub options: WorldOptions,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WorldOptions {
+  pub use_piper_tts: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

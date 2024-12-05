@@ -7,23 +7,27 @@ use crate::ring::RingBuffer;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Messages {
   messages: RingBuffer<CommandWithFreq>,
+  auto_generate: bool,
 }
 
 impl Default for Messages {
   fn default() -> Self {
-    Self::new(30)
+    Self::new(30, false)
   }
 }
 
 impl Messages {
-  pub fn new(capacity: usize) -> Self {
+  pub fn new(capacity: usize, auto_generate: bool) -> Self {
     Self {
       messages: RingBuffer::new(capacity),
+      auto_generate,
     }
   }
 
   pub fn add(&mut self, message: CommandWithFreq) {
-    self.generate(&message);
+    if self.auto_generate {
+      self.generate(&message);
+    }
     self.messages.push(message);
   }
 
@@ -37,7 +41,7 @@ impl Messages {
 
     let echo_out = echo.stdout.take().unwrap();
 
-    let mut piper = Command::new("piper")
+    let _ = Command::new("piper")
       .arg("--model")
       .arg("models/en_GB-vctk-medium.onnx")
       .arg("--output_file")
