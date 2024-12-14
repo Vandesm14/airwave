@@ -364,9 +364,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           NodeBehavior::Park => {
             aircraft.state = AircraftState::Parked {
               at: current.clone(),
-              // Only become inactive if we are arriving at the player's airspace.
-              // If we are departing, keep us as active.
-              active: aircraft.flight_plan.arriving != bundle.world.airspace.id,
+              active: false,
             };
             bundle.events.push(
               AircraftEvent {
