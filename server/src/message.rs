@@ -80,6 +80,7 @@ impl Messages {
       .arg("--output_file")
       .arg(format!("static/replies/{}.ogg", message.created.as_secs()))
       .stdin(echo_out)
+      .stdout(Stdio::null())
       .spawn()
       .unwrap()
       .wait();
