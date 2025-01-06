@@ -1,10 +1,5 @@
 import { useAtom } from 'solid-jotai';
-import {
-  frequencyAtom,
-  radarAtom,
-  renderAtom,
-  selectedAircraftAtom,
-} from './lib/atoms';
+import { radarAtom, renderAtom, selectedAircraftAtom } from './lib/atoms';
 import {
   Aircraft,
   Airspace,
@@ -49,7 +44,6 @@ export default function Canvas() {
 
   let [render, setRender] = useAtom(renderAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
-  let [frequency] = useAtom(frequencyAtom);
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
   let [aircraftTrails, setAircraftTrails] = createSignal<
@@ -591,9 +585,7 @@ export default function Canvas() {
     ctx.textAlign = 'left';
     ctx.fillStyle = colors.text_green;
 
-    if (aircraft.frequency !== frequency()) {
-      ctx.fillStyle = colors.text_grey;
-    } else if (selectedAircraft() == aircraft.id) {
+    if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = colors.text_yellow;
     } else if (aircraft.is_colliding) {
       ctx.fillStyle = colors.text_red;
