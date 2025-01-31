@@ -53,17 +53,27 @@ async fn complete_atc_request(
           }
 
           // Parse the command from the message.
-          let command = Prompter::parse_into_command(split, &aircraft).await;
-          match command {
+          let readback =
+            Prompter::generate_readback(split.request.clone(), &aircraft).await;
+          let tasks = Prompter::parse_into_tasks(split, &aircraft).await;
+          match (tasks, readback) {
             // Return the command.
-            Ok(command) => Some(CommandWithFreq::new(
+            (Ok(tasks), Ok(readback)) => Some(CommandWithFreq::new(
               aircraft.id.to_string(),
               frequency,
-              command.reply,
-              command.tasks,
+              CommandReply::Blank { text: readback },
+              tasks,
             )),
-            Err(err) => {
+            (Err(err), _) => {
               tracing::error!("Unable to parse command: {}", err);
+              None
+            }
+            (_, Err(err)) => {
+              tracing::error!("Unable to generate readback: {}", err);
+              None
+            }
+            _ => {
+              tracing::error!("Unknown error");
               None
             }
           }

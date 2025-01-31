@@ -195,10 +195,28 @@ impl Prompter {
     }
   }
 
-  pub async fn parse_into_command(
+  pub async fn generate_readback(
+    message: String,
+    aircraft: &Aircraft,
+  ) -> Result<String, Error> {
+    let prompt =
+      Self::load_prompt_as_string("server/prompts/readback.json".into())?;
+    let result = send_chatgpt_request(
+      prompt.clone(),
+      format!("{}, {}", aircraft.id, message),
+    )
+    .await?;
+    if let Some(result) = result {
+      Ok(result)
+    } else {
+      Err(Error::NoResult(prompt))
+    }
+  }
+
+  pub async fn parse_into_tasks(
     split: CallsignAndRequest,
     aircraft: &Aircraft,
-  ) -> Result<Command, Error> {
+  ) -> Result<Tasks, Error> {
     let mode = if matches!(
       aircraft.state,
       AircraftState::Flying { .. } | AircraftState::Landing { .. }
@@ -223,17 +241,10 @@ impl Prompter {
     if let Some(result) = result {
       let json: Tasks = serde_json::from_str(&result)
         .map_err(|e| LoadPromptError::Deserialize(e, result))?;
-      let command = Command {
-        id: split.callsign.clone(),
-        reply: CommandReply::WithCallsign {
-          text: split.request,
-        },
-        tasks: json.clone(),
-      };
 
-      tracing::info!("prompt result ({}): {:?}", aircraft.id, command);
+      tracing::info!("prompt result ({}): {:?}", aircraft.id, json.clone());
 
-      Ok(command)
+      Ok(json.clone())
     } else {
       tracing::error!("no prompt result for: {}", aircraft.id);
       Err(Error::NoResult(prompt))
