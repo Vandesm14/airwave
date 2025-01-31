@@ -795,6 +795,8 @@ export default function Canvas() {
     // let taxi_yellow = '#ffff00';
     let taxi_color =
       selectedAircraft() == aircraft.id ? colors.text_yellow : '#ffffff';
+    let callsign_color =
+      aircraft.frequency !== frequency() ? colors.text_grey : taxi_color;
 
     // Draw taxi waypoints
     if (
@@ -889,8 +891,9 @@ export default function Canvas() {
       textWidth,
       fontSize()
     );
-    ctx.fillStyle = taxi_color;
+    ctx.fillStyle = callsign_color;
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
+    ctx.fillStyle = taxi_color;
 
     // Draw altitude
     let drawAlt = aircraft.altitude > 0;
