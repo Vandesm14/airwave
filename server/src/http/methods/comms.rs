@@ -73,10 +73,6 @@ async fn complete_atc_request(
               tracing::error!("Unable to generate readback: {}", err);
               None
             }
-            _ => {
-              tracing::error!("Unknown error");
-              None
-            }
           }
         }
         _ => {
