@@ -51,7 +51,7 @@ export default function Chatbox({
           utterance.pitch = voices().get(message.id)!.pitch;
         } else {
           const voice = {
-            rate: (1.0 * randBetween(100, 110)) / 100,
+            rate: (1.0 * randBetween(100, 130)) / 100,
             pitch: (1.3 * randBetween(80, 115)) / 100,
           };
           setVoices((voices) => voices.set(message.id, voice));
