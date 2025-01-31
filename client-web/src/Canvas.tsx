@@ -476,7 +476,7 @@ export default function Canvas() {
       aircraft.state.type === 'flying' && aircraft.state.value.enroute;
     const isLanding =
       aircraft.state.type === 'landing' &&
-      aircraft.state.value.state === 'localizer';
+      aircraft.state.value.state !== 'before-turn';
 
     // Draw trail
     let trail = aircraftTrails().get(aircraft.id);
