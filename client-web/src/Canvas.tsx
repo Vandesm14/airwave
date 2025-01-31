@@ -104,12 +104,14 @@ export default function Canvas() {
 
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'PageUp') {
+      e.preventDefault();
       setRadar((radar) => {
         radar.scale = 1;
         radar.shiftPoint = { x: 0, y: 0 };
         return { ...radar };
       });
     } else if (e.key === 'PageDown') {
+      e.preventDefault();
       setRadar((radar) => {
         radar.scale = groundScale * 6;
         radar.shiftPoint = { x: 0, y: 0 };
