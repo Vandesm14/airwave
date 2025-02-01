@@ -217,11 +217,12 @@ function Strip({ strip }: StripProps) {
 
   let topStatus = '';
   let bottomStatus = '';
-  let dimmer = strip.frequency !== ourFrequency();
-
-  if (sinceCreated.startsWith('-') && sinceCreated !== '--:--') {
-    dimmer = true;
-  }
+  let dimmer = createMemo(
+    () =>
+      strip.frequency !== ourFrequency() ||
+      (sinceCreated.startsWith('-') && sinceCreated !== '--:--') ||
+      (strip.state.type === 'parked' && !strip.state.value.active)
+  );
 
   if (strip.state.type === 'landing') {
     topStatus = 'ILS';
@@ -281,8 +282,6 @@ function Strip({ strip }: StripProps) {
 
       distanceText = `FOR ${heading.toString().slice(0, 2)}`;
     }
-  } else if (strip.state.type === 'parked' && !strip.state.value.active) {
-    dimmer = true;
   }
 
   function handleMouseDown() {
@@ -293,7 +292,7 @@ function Strip({ strip }: StripProps) {
     <div
       classList={{
         strip: true,
-        theirs: dimmer,
+        theirs: dimmer(),
         colliding: strip.is_colliding,
         selected: selectedAircraft() === strip.id,
         departure: airspace() === strip.flight_plan.departing,
