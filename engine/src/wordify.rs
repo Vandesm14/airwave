@@ -1,25 +1,25 @@
-pub fn wordify_airline(airline: String) -> String {
+pub fn wordify_airline<'a>(airline: String) -> &'a str {
   match airline.as_str() {
-    "AAL" => "American".to_owned(),
-    "JBU" => "JetBlue".to_owned(),
-    "SKW" => "SkyWest".to_owned(),
-    _ => "Unknown".to_owned(),
+    "AAL" => "American",
+    "JBU" => "JetBlue",
+    "SKW" => "SkyWest",
+    _ => "Unknown",
   }
 }
 
-fn wordify_digit(digit: char) -> String {
+fn wordify_digit<'a>(digit: char) -> &'a str {
   match digit {
-    '0' => "zero".to_owned(),
-    '1' => "one".to_owned(),
-    '2' => "two".to_owned(),
-    '3' => "three".to_owned(),
-    '4' => "four".to_owned(),
-    '5' => "five".to_owned(),
-    '6' => "six".to_owned(),
-    '7' => "seven".to_owned(),
-    '8' => "eight".to_owned(),
-    '9' => "nine".to_owned(),
-    _ => "unknown".to_owned(),
+    '0' => "zero",
+    '1' => "one",
+    '2' => "two",
+    '3' => "three",
+    '4' => "four",
+    '5' => "five",
+    '6' => "six",
+    '7' => "seven",
+    '8' => "eight",
+    '9' => "nine",
+    _ => "unknown",
   }
 }
 
