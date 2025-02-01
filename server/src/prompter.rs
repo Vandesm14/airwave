@@ -195,17 +195,10 @@ impl Prompter {
     }
   }
 
-  pub async fn generate_readback(
-    message: String,
-    aircraft: &Aircraft,
-  ) -> Result<String, Error> {
+  pub async fn generate_readback(message: String) -> Result<String, Error> {
     let prompt =
       Self::load_prompt_as_string("server/prompts/readback.json".into())?;
-    let result = send_chatgpt_request(
-      prompt.clone(),
-      format!("{}, {}", aircraft.id, message),
-    )
-    .await?;
+    let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
       Ok(result)
     } else {

@@ -4,7 +4,9 @@ use std::time::Duration;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 
-use crate::{abbreviate_altitude, duration_now, pathfinder::Node};
+use crate::{
+  abbreviate_altitude, duration_now, pathfinder::Node, wordify::wordify,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -124,7 +126,7 @@ pub enum CommandReply {
 
 impl fmt::Display for CommandWithFreq {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let decoded_callsign = decode_callsign(&self.id);
+    let decoded_callsign = wordify(&self.id);
 
     match &self.reply {
       CommandReply::Empty => {

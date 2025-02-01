@@ -55,14 +55,14 @@ async fn complete_atc_request(
           // Parse the command from the message.
           let (tasks, readback) = tokio::join!(
             Prompter::parse_into_tasks(split.clone(), &aircraft),
-            Prompter::generate_readback(split.request, &aircraft)
+            Prompter::generate_readback(split.request)
           );
           match (tasks, readback) {
             // Return the command.
             (Ok(tasks), Ok(readback)) => Some(CommandWithFreq::new(
               aircraft.id.to_string(),
               frequency,
-              CommandReply::Blank { text: readback },
+              CommandReply::WithCallsign { text: readback },
               tasks,
             )),
             (Err(err), _) => {
