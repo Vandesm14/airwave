@@ -1,10 +1,20 @@
-use nannou::prelude::*;
+use std::path::PathBuf;
+
+use clap::Parser;
+use nannou::{event::KeyboardInput, prelude::*};
 use nannou_egui::{
-  self,
   egui::{self, Id},
   Egui,
 };
 use serde::{Deserialize, Serialize};
+
+/// View and edit an Airwave world file
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Cli {
+  /// The file to load
+  file: PathBuf,
+}
 
 fn main() {
   nannou::app(model).update(update).run();
@@ -18,6 +28,7 @@ struct WorldFile {
 struct Model {
   world_file: WorldFile,
   egui: Egui,
+  path: PathBuf,
 }
 
 fn model(app: &App) -> Model {
@@ -29,12 +40,19 @@ fn model(app: &App) -> Model {
     .build()
     .unwrap();
   let window = app.window(window_id).unwrap();
-
   let egui = Egui::from_window(&window);
+
+  let args = Cli::parse();
+  let world_file = if let Ok(world_file) = std::fs::read_to_string(&args.file) {
+    ron::from_str(&world_file).unwrap()
+  } else {
+    WorldFile::default()
+  };
 
   Model {
     egui,
-    world_file: WorldFile::default(),
+    world_file,
+    path: args.file,
   }
 }
 
@@ -75,6 +93,31 @@ fn raw_window_event(
   } = event
   {
     model.world_file.points.push(real_mouse_pos(app, model));
+  }
+
+  if let nannou::winit::event::WindowEvent::KeyboardInput {
+    input:
+      KeyboardInput {
+        state,
+        virtual_keycode,
+        modifiers,
+        ..
+      },
+    ..
+  } = event
+  {
+    // If Ctrl+S is pressed, save the world file
+    if let (
+      Some(nannou::winit::event::VirtualKeyCode::S),
+      nannou::winit::event::ElementState::Pressed,
+    ) = (virtual_keycode, state)
+    {
+      if modifiers.ctrl() {
+        if let Ok(world_file) = ron::to_string(&model.world_file) {
+          std::fs::write(model.path.clone(), world_file).unwrap();
+        }
+      }
+    }
   }
 }
 

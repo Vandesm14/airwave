@@ -8,6 +8,8 @@ license.workspace = true
 [dependencies]
 engine = { path = "../engine" }
 
+clap.workspace = true
+
 glam.workspace = true
 turborand.workspace = true
 
