@@ -49,6 +49,16 @@ fn update(_app: &App, model: &mut Model, update: Update) {
     .show(&ctx, |ui| {});
 }
 
+fn real_mouse_pos(app: &App, model: &Model) -> Vec2 {
+  let size = app.main_window().inner_size_points();
+  let size = Vec2::new(size.0, size.1);
+  let half_size = size / 2.0;
+
+  let pos = model.egui.input().pointer_pos;
+
+  Vec2::new(pos.x - half_size.x, -pos.y + half_size.y)
+}
+
 fn raw_window_event(
   app: &App,
   model: &mut Model,
@@ -64,16 +74,7 @@ fn raw_window_event(
     ..
   } = event
   {
-    let size = app.main_window().inner_size_points();
-    let size = Vec2::new(size.0, size.1);
-    let half_size = size / 2.0;
-
-    let pos = model.egui.input().pointer_pos;
-
-    model
-      .world_file
-      .points
-      .push(Vec2::new(pos.x - half_size.x, -pos.y + half_size.y));
+    model.world_file.points.push(real_mouse_pos(app, model));
   }
 }
 
@@ -83,12 +84,25 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
   draw.background().color(BLACK);
 
-  for point in &world_file.points {
+  let mut smallest_distance = f32::MAX;
+  let mut index = 0;
+  for (i, point) in world_file.points.iter().enumerate() {
+    let pos = real_mouse_pos(app, model);
+    let distance = pos.distance_squared(*point);
+    if distance < smallest_distance {
+      smallest_distance = distance;
+      index = i;
+    }
+  }
+
+  for (i, point) in world_file.points.iter().enumerate() {
+    let color = if i == index { RED } else { WHITE };
+
     draw
       .ellipse()
       .x_y(point.x, point.y)
       .w_h(10.0, 10.0)
-      .rgba(0.0, 1.0, 0.0, 0.5);
+      .color(color);
   }
 
   draw.to_frame(app, &frame).unwrap();
