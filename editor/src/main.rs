@@ -50,7 +50,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
 }
 
 fn raw_window_event(
-  _app: &App,
+  app: &App,
   model: &mut Model,
   event: &nannou::winit::event::WindowEvent,
 ) {
@@ -64,10 +64,11 @@ fn raw_window_event(
     ..
   } = event
   {
-    let pos = model.egui.input().pointer_pos;
-    let size = _app.main_window().inner_size_points();
-    let size = Vec2::new(size.0 as f32, size.1 as f32);
+    let size = app.main_window().inner_size_points();
+    let size = Vec2::new(size.0, size.1);
     let half_size = size / 2.0;
+
+    let pos = model.egui.input().pointer_pos;
 
     model
       .world_file
