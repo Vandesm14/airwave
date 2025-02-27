@@ -1,20 +1,22 @@
 use nannou::prelude::*;
-use nannou_egui::{self, egui, Egui};
+use nannou_egui::{
+  self,
+  egui::{self, Id},
+  Egui,
+};
+use serde::{Deserialize, Serialize};
 
 fn main() {
   nannou::app(model).update(update).run();
 }
 
-struct Settings {
-  resolution: u32,
-  scale: f32,
-  rotation: f32,
-  color: Srgb<u8>,
-  position: Vec2,
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+struct WorldFile {
+  points: Vec<Vec2>,
 }
 
 struct Model {
-  settings: Settings,
+  world_file: WorldFile,
   egui: Egui,
 }
 
@@ -32,43 +34,19 @@ fn model(app: &App) -> Model {
 
   Model {
     egui,
-    settings: Settings {
-      resolution: 10,
-      scale: 200.0,
-      rotation: 0.0,
-      color: WHITE,
-      position: vec2(0.0, 0.0),
-    },
+    world_file: WorldFile::default(),
   }
 }
 
 fn update(_app: &App, model: &mut Model, update: Update) {
   let egui = &mut model.egui;
-  let settings = &mut model.settings;
+  let world_file = &mut model.world_file;
 
   egui.set_elapsed_time(update.since_start);
   let ctx = egui.begin_frame();
 
-  egui::Window::new("Settings").show(&ctx, |ui| {
-    // Resolution slider
-    ui.label("Resolution:");
-    ui.add(egui::Slider::new(&mut settings.resolution, 1..=40));
-
-    // Scale slider
-    ui.label("Scale:");
-    ui.add(egui::Slider::new(&mut settings.scale, 0.0..=1000.0));
-
-    // Rotation slider
-    ui.label("Rotation:");
-    ui.add(egui::Slider::new(&mut settings.rotation, 0.0..=360.0));
-
-    // Random color button
-    let clicked = ui.button("Random color").clicked();
-
-    if clicked {
-      settings.color = rgb(random(), random(), random());
-    }
-  });
+  egui::SidePanel::new(egui::panel::Side::Left, Id::new("side_panel"))
+    .show(&ctx, |ui| {});
 }
 
 fn raw_window_event(
@@ -78,22 +56,39 @@ fn raw_window_event(
 ) {
   // Let egui handle things like keyboard and mouse input.
   model.egui.handle_raw_event(event);
+
+  // Detect mouse click
+  if let nannou::winit::event::WindowEvent::MouseInput {
+    state: nannou::winit::event::ElementState::Pressed,
+    button: nannou::winit::event::MouseButton::Left,
+    ..
+  } = event
+  {
+    let pos = model.egui.input().pointer_pos;
+    let size = _app.main_window().inner_size_points();
+    let size = Vec2::new(size.0 as f32, size.1 as f32);
+    let half_size = size / 2.0;
+
+    model
+      .world_file
+      .points
+      .push(Vec2::new(pos.x - half_size.x, -pos.y + half_size.y));
+  }
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-  let settings = &model.settings;
+  let world_file = &model.world_file;
 
   let draw = app.draw();
   draw.background().color(BLACK);
 
-  let rotation_radians = deg_to_rad(settings.rotation);
-  draw
-    .ellipse()
-    .resolution(settings.resolution as f32)
-    .xy(settings.position)
-    .color(settings.color)
-    .rotate(-rotation_radians)
-    .radius(settings.scale);
+  for point in &world_file.points {
+    draw
+      .ellipse()
+      .x_y(point.x, point.y)
+      .w_h(10.0, 10.0)
+      .rgba(0.0, 1.0, 0.0, 0.5);
+  }
 
   draw.to_frame(app, &frame).unwrap();
   model.egui.draw_to_frame(&frame).unwrap();
