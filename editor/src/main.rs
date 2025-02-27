@@ -1,12 +1,12 @@
-use std::path::PathBuf;
+use std::{ops::Div, path::PathBuf};
 
 use clap::Parser;
+use editor::{geom_to_glam, WorldFile};
 use nannou::{event::KeyboardInput, prelude::*};
 use nannou_egui::{
   egui::{self, Id},
   Egui,
 };
-use serde::{Deserialize, Serialize};
 
 /// View and edit an Airwave world file
 #[derive(Parser, Debug)]
@@ -20,15 +20,21 @@ fn main() {
   nannou::app(model).update(update).run();
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-struct WorldFile {
-  points: Vec<Vec2>,
+enum PointMode {
+  Add,
+  Remove,
+  Select,
 }
 
 struct Model {
-  world_file: WorldFile,
   egui: Egui,
+
   path: PathBuf,
+  world_file: WorldFile,
+
+  mode: PointMode,
+  selected: Option<usize>,
+  is_mouse_down: bool,
 }
 
 fn model(app: &App) -> Model {
@@ -51,8 +57,13 @@ fn model(app: &App) -> Model {
 
   Model {
     egui,
-    world_file,
+
     path: args.file,
+    world_file,
+
+    mode: PointMode::Add,
+    selected: None,
+    is_mouse_down: false,
   }
 }
 
@@ -67,14 +78,14 @@ fn update(_app: &App, model: &mut Model, update: Update) {
     .show(&ctx, |ui| {});
 }
 
-fn real_mouse_pos(app: &App, model: &Model) -> Vec2 {
+fn real_mouse_pos(app: &App, model: &Model) -> glam::Vec2 {
   let size = app.main_window().inner_size_points();
   let size = Vec2::new(size.0, size.1);
   let half_size = size / 2.0;
 
   let pos = model.egui.input().pointer_pos;
 
-  Vec2::new(pos.x - half_size.x, -pos.y + half_size.y)
+  glam::Vec2::new(pos.x - half_size.x, -pos.y + half_size.y)
 }
 
 fn raw_window_event(
@@ -92,9 +103,49 @@ fn raw_window_event(
     ..
   } = event
   {
-    model.world_file.points.push(real_mouse_pos(app, model));
+    let pos = real_mouse_pos(app, model);
+    let closest = model.world_file.find_closest_point(pos, 100.0);
+    match model.mode {
+      PointMode::Add => {
+        model.world_file.points.push(pos);
+      }
+      PointMode::Remove => {
+        if let Some(closest) = closest {
+          model.world_file.points.remove(closest);
+        }
+      }
+      PointMode::Select => {
+        model.selected = closest;
+
+        if closest.is_some() {
+          model.is_mouse_down = true;
+        }
+      }
+    }
+  } else if let nannou::winit::event::WindowEvent::MouseInput {
+    state: nannou::winit::event::ElementState::Released,
+    button: nannou::winit::event::MouseButton::Left,
+    ..
+  } = event
+  {
+    model.is_mouse_down = false;
   }
 
+  // Detect mouse move
+  if let nannou::winit::event::WindowEvent::CursorMoved { .. } = event {
+    let pos = real_mouse_pos(app, model);
+
+    if model.is_mouse_down {
+      if let Some(point) = model
+        .selected
+        .and_then(|s| model.world_file.points.get_mut(s))
+      {
+        *point = pos;
+      }
+    }
+  }
+
+  // Detect Keyboard input
   if let nannou::winit::event::WindowEvent::KeyboardInput {
     input:
       KeyboardInput {
@@ -120,6 +171,20 @@ fn raw_window_event(
         std::fs::write(model.path.clone(), world_file).unwrap();
       }
     }
+
+    match virtual_keycode {
+      Some(nannou::winit::event::VirtualKeyCode::A) => {
+        model.mode = PointMode::Add;
+      }
+      Some(nannou::winit::event::VirtualKeyCode::D) => {
+        model.mode = PointMode::Remove;
+      }
+      Some(nannou::winit::event::VirtualKeyCode::S) => {
+        model.mode = PointMode::Select;
+      }
+
+      _ => {}
+    }
   }
 }
 
@@ -129,19 +194,16 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
   draw.background().color(BLACK);
 
-  let mut smallest_distance = f32::MAX;
-  let mut index = 0;
-  for (i, point) in world_file.points.iter().enumerate() {
-    let pos = real_mouse_pos(app, model);
-    let distance = pos.distance_squared(*point);
-    if distance < smallest_distance {
-      smallest_distance = distance;
-      index = i;
-    }
-  }
+  let pos = real_mouse_pos(app, model);
+  let closest = world_file.find_closest_point(pos, 100.0);
 
   for (i, point) in world_file.points.iter().enumerate() {
-    let color = if i == index { RED } else { WHITE };
+    let color = if Some(i) == closest { RED } else { WHITE };
+    let color = if Some(i) == model.selected {
+      GREEN
+    } else {
+      color
+    };
 
     draw
       .ellipse()
@@ -149,6 +211,21 @@ fn view(app: &App, model: &Model, frame: Frame) {
       .w_h(10.0, 10.0)
       .color(color);
   }
+
+  // Draw mode at the bottom of the screen
+  let mode = match model.mode {
+    PointMode::Add => "Add",
+    PointMode::Remove => "Remove",
+    PointMode::Select => "Select",
+  };
+  let size = app.main_window().inner_size_points();
+  draw
+    .text(mode)
+    .x_y(-size.0.div(4.0), -size.1.div(4.0))
+    .color(WHITE)
+    .font_size(20)
+    .left_justify()
+    .align_text_bottom();
 
   draw.to_frame(app, &frame).unwrap();
   model.egui.draw_to_frame(&frame).unwrap();
