@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["engine", "server", "serve", "calculator"]
+members = ["engine", "server", "serve", "editor", "calculator"]
 
 [workspace.package]
 version = "0.1.0"
