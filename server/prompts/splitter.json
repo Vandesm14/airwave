@@ -1,10 +1,24 @@
 {
   "prompt": [
     "Split the following message from Air Traffic Control into a JSON object into callsign and request like so:",
-    {
-      "callsign": "SKW1234",
-      "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
-    },
+    [
+      {
+        "callsign": "SKW1234",
+        "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
+      }
+    ],
+    "If the phrase \"break\" is used, split the message into two or more JSON objects like so:",
+    "SkyWest 1234 - Descend and maintain 4000 feet and reduce speed to 200 knots. break JetBlue 1234 - Descend and maintain 4000 feet and reduce speed to 200 knots.",
+    [
+      {
+        "callsign": "SKW1234",
+        "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
+      },
+      {
+        "callsign": "JBU1234",
+        "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
+      }
+    ],
     "Available Callsigns: SKW (Skywest), AAL (\"American Airlines\" or \"American\"), JBU (Jet Blue)\""
   ]
 }

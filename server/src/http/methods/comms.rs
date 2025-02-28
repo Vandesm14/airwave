@@ -28,60 +28,71 @@ async fn complete_atc_request(
   tiny_sender: &mut GetSender,
   message: String,
   frequency: f32,
-) -> Option<CommandWithFreq> {
+) -> Vec<Option<CommandWithFreq>> {
   let split = Prompter::split_request(message).await;
 
   // Split the request into the callsign and the rest of the message.
   match split {
     Ok(split) => {
-      // Find the aircraft associated with the request.
-      let res = JobReq::send(
-        TinyReqKind::OneAircraft(Intern::from_ref(&split.callsign)),
-        tiny_sender,
-      )
-      .recv()
-      .await;
-      match res {
-        Ok(ResKind::OneAircraft(Some(aircraft))) => {
-          if !aircraft.active() {
-            // Prevent inactive aircraft from receiving commands.
-            tracing::warn!(
-              "Inactive aircraft \"{}\" received command",
-              aircraft.id
-            );
-            return None;
-          }
+      let mut messages: Vec<Option<CommandWithFreq>> = Vec::new();
+      for req in split {
+        // Find the aircraft associated with the request.
+        let res = JobReq::send(
+          TinyReqKind::OneAircraft(Intern::from_ref(&req.callsign)),
+          tiny_sender,
+        )
+        .recv()
+        .await;
+        match res {
+          Ok(ResKind::OneAircraft(Some(aircraft))) => {
+            if !aircraft.active() {
+              // Prevent inactive aircraft from receiving commands.
+              tracing::warn!(
+                "Inactive aircraft \"{}\" received command",
+                aircraft.id
+              );
+              messages.push(None);
+              continue;
+            }
 
-          // Parse the command from the message.
-          let (tasks, readback) = tokio::join!(
-            Prompter::parse_into_tasks(split.clone(), &aircraft),
-            Prompter::generate_readback(split.request)
-          );
-          match (tasks, readback) {
-            // Return the command.
-            (Ok(tasks), Ok(readback)) => Some(CommandWithFreq::new(
-              aircraft.id.to_string(),
-              frequency,
-              CommandReply::WithCallsign { text: readback },
-              tasks,
-            )),
-            (Err(err), _) => {
-              tracing::error!("Unable to parse command: {}", err);
-              None
-            }
-            (_, Err(err)) => {
-              tracing::error!("Unable to generate readback: {}", err);
-              None
+            // Parse the command from the message.
+            let (tasks, readback) = tokio::join!(
+              Prompter::parse_into_tasks(req.clone(), &aircraft),
+              Prompter::generate_readback(req.request)
+            );
+            match (tasks, readback) {
+              // Return the command.
+              (Ok(tasks), Ok(readback)) => {
+                messages.push(Some(CommandWithFreq::new(
+                  aircraft.id.to_string(),
+                  frequency,
+                  CommandReply::WithCallsign { text: readback },
+                  tasks,
+                )))
+              }
+              (Err(err), _) => {
+                tracing::error!("Unable to parse command: {}", err);
+                messages.push(None);
+              }
+              (_, Err(err)) => {
+                tracing::error!("Unable to generate readback: {}", err);
+                messages.push(None);
+              }
             }
           }
-        }
-        _ => {
-          tracing::error!("Unable to find aircraft for command");
-          None
+          _ => {
+            tracing::error!("Unable to find aircraft for command");
+            messages.push(None);
+          }
         }
       }
+
+      messages
     }
-    Err(_) => todo!(),
+    Err(e) => {
+      tracing::error!("Unable to parse command: {}", e);
+      Vec::new()
+    }
   }
 }
 
@@ -108,10 +119,11 @@ pub async fn comms_text(
   .recv()
   .await;
 
-  let command =
+  let commands =
     complete_atc_request(&mut state.tiny_sender, text.clone(), query.frequency)
       .await;
-  if let Some(command) = command {
+
+  for command in commands.iter().flatten() {
     let _ = JobReq::send(
       ArgReqKind::CommandReply(command.clone()),
       &mut state.big_sender,
@@ -217,14 +229,15 @@ pub async fn comms_voice(
         .recv()
         .await;
 
-        if let Some(command) = complete_atc_request(
+        let commands = complete_atc_request(
           &mut state.tiny_sender,
           reply.text.clone(),
           query.frequency,
         )
-        .await
-        {
-          write_json_data(&command);
+        .await;
+
+        for command in commands.iter().flatten() {
+          write_json_data(command);
 
           let _ = JobReq::send(
             ArgReqKind::CommandReply(command.clone()),
@@ -233,10 +246,10 @@ pub async fn comms_voice(
           .recv()
           .await;
         }
+
+        tracing::info!("Replied to voice request");
       }
     }
     Err(e) => tracing::error!("Transcription failed: {}", e),
   }
-
-  tracing::info!("Replied to voice request");
 }

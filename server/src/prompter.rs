@@ -13,7 +13,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use engine::{
-  command::{Command, CommandReply, Tasks},
+  command::Tasks,
   entities::aircraft::{Aircraft, AircraftState},
 };
 
@@ -181,12 +181,12 @@ impl Prompter {
 
   pub async fn split_request(
     message: String,
-  ) -> Result<CallsignAndRequest, Error> {
+  ) -> Result<Vec<CallsignAndRequest>, Error> {
     let prompt =
       Self::load_prompt_as_string("server/prompts/splitter.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
-      let json: CallsignAndRequest = serde_json::from_str(&result)
+      let json: Vec<CallsignAndRequest> = serde_json::from_str(&result)
         .map_err(|e| LoadPromptError::Deserialize(e, result))?;
 
       Ok(json)
