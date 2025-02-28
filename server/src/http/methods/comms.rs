@@ -29,6 +29,8 @@ async fn complete_atc_request(
   message: String,
   frequency: f32,
 ) -> Vec<Option<CommandWithFreq>> {
+  tracing::info!("Parsing request: {}", message);
+
   let split = Prompter::split_request(message).await;
 
   // Split the request into the callsign and the rest of the message.
