@@ -28,7 +28,7 @@ async fn complete_atc_request(
   tiny_sender: &mut GetSender,
   message: String,
   frequency: f32,
-) -> Vec<Option<CommandWithFreq>> {
+) -> Vec<CommandWithFreq> {
   tracing::info!("Parsing request: {}", message);
 
   let split = Prompter::split_request(message).await;
@@ -36,7 +36,8 @@ async fn complete_atc_request(
   // Split the request into the callsign and the rest of the message.
   match split {
     Ok(split) => {
-      let mut messages: Vec<Option<CommandWithFreq>> = Vec::new();
+      let mut messages: Vec<CommandWithFreq> = Vec::new();
+
       for req in split {
         // Find the aircraft associated with the request.
         let res = JobReq::send(
@@ -53,7 +54,6 @@ async fn complete_atc_request(
                 "Inactive aircraft \"{}\" received command",
                 aircraft.id
               );
-              messages.push(None);
               continue;
             }
 
@@ -64,27 +64,22 @@ async fn complete_atc_request(
             );
             match (tasks, readback) {
               // Return the command.
-              (Ok(tasks), Ok(readback)) => {
-                messages.push(Some(CommandWithFreq::new(
-                  aircraft.id.to_string(),
-                  frequency,
-                  CommandReply::WithCallsign { text: readback },
-                  tasks,
-                )))
-              }
+              (Ok(tasks), Ok(readback)) => messages.push(CommandWithFreq::new(
+                aircraft.id.to_string(),
+                frequency,
+                CommandReply::WithCallsign { text: readback },
+                tasks,
+              )),
               (Err(err), _) => {
                 tracing::error!("Unable to parse command: {}", err);
-                messages.push(None);
               }
               (_, Err(err)) => {
                 tracing::error!("Unable to generate readback: {}", err);
-                messages.push(None);
               }
             }
           }
           _ => {
             tracing::error!("Unable to find aircraft for command");
-            messages.push(None);
           }
         }
       }
@@ -125,7 +120,7 @@ pub async fn comms_text(
     complete_atc_request(&mut state.tiny_sender, text.clone(), query.frequency)
       .await;
 
-  for command in commands.iter().flatten() {
+  for command in commands.iter() {
     let _ = JobReq::send(
       ArgReqKind::CommandReply(command.clone()),
       &mut state.big_sender,
@@ -238,7 +233,7 @@ pub async fn comms_voice(
         )
         .await;
 
-        for command in commands.iter().flatten() {
+        for command in commands.iter() {
           write_json_data(command);
 
           let _ = JobReq::send(
