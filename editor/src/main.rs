@@ -163,12 +163,10 @@ fn raw_window_event(
       nannou::winit::event::ElementState::Pressed,
     ) = (virtual_keycode, state)
     {
-      if !modifiers.ctrl() {
-        return;
-      }
-
-      if let Ok(world_file) = ron::to_string(&model.world_file) {
-        std::fs::write(model.path.clone(), world_file).unwrap();
+      if modifiers.ctrl() {
+        if let Ok(world_file) = ron::to_string(&model.world_file) {
+          std::fs::write(model.path.clone(), world_file).unwrap();
+        }
       }
     }
 
