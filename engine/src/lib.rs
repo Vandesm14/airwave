@@ -40,8 +40,20 @@ pub fn normalize_angle(angle: f32) -> f32 {
   (360.0 + angle) % 360.0
 }
 
+pub trait Translate {
+  fn translate(&mut self, offset: Vec2) -> &mut Self;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct Line(pub Vec2, pub Vec2);
+
+impl Translate for Line {
+  fn translate(&mut self, offset: Vec2) -> &mut Self {
+    self.0 += offset;
+    self.1 += offset;
+    self
+  }
+}
 
 impl Line {
   pub fn new(a: Vec2, b: Vec2) -> Self {

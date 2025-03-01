@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   inverse_degrees, move_point,
   pathfinder::{Object, Pathfinder},
-  Line,
+  Line, Translate,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -46,14 +46,35 @@ impl Frequencies {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airport {
   pub id: Intern<String>,
+  pub frequencies: Frequencies,
+
   pub center: Vec2,
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
   pub terminals: Vec<Terminal>,
-  pub frequencies: Frequencies,
 
   #[serde(skip)]
   pub pathfinder: Pathfinder,
+}
+
+impl Translate for Airport {
+  fn translate(&mut self, offset: Vec2) -> &mut Self {
+    self.center += offset;
+
+    for runway in self.runways.iter_mut() {
+      runway.translate(offset);
+    }
+
+    for taxiway in self.taxiways.iter_mut() {
+      taxiway.translate(offset);
+    }
+
+    for terminal in self.terminals.iter_mut() {
+      terminal.translate(offset);
+    }
+
+    self
+  }
 }
 
 impl Airport {
@@ -98,6 +119,13 @@ pub struct Runway {
   pub length: f32,
 }
 
+impl Translate for Runway {
+  fn translate(&mut self, offset: Vec2) -> &mut Self {
+    self.pos += offset;
+    self
+  }
+}
+
 impl Runway {
   pub fn start(&self) -> Vec2 {
     move_point(self.pos, inverse_degrees(self.heading), self.length * 0.5)
@@ -115,6 +143,14 @@ pub struct Taxiway {
   pub b: Vec2,
 }
 
+impl Translate for Taxiway {
+  fn translate(&mut self, offset: Vec2) -> &mut Self {
+    self.a += offset;
+    self.b += offset;
+    self
+  }
+}
+
 impl Taxiway {
   pub fn new(id: Intern<String>, a: Vec2, b: Vec2) -> Self {
     Self { id, a, b }
@@ -124,6 +160,20 @@ impl Taxiway {
     self.a = self.a.move_towards(self.b, -padding);
     self.b = self.b.move_towards(self.a, -padding);
 
+    self
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Gate {
+  pub id: Intern<String>,
+  pub pos: Vec2,
+  pub heading: f32,
+}
+
+impl Translate for Gate {
+  fn translate(&mut self, offset: Vec2) -> &mut Self {
+    self.pos += offset;
     self
   }
 }
@@ -140,9 +190,17 @@ pub struct Terminal {
   pub apron: Line,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Gate {
-  pub id: Intern<String>,
-  pub pos: Vec2,
-  pub heading: f32,
+impl Translate for Terminal {
+  fn translate(&mut self, offset: Vec2) -> &mut Self {
+    self.a += offset;
+    self.b += offset;
+    self.c += offset;
+    self.d += offset;
+
+    for gate in self.gates.iter_mut() {
+      gate.translate(offset);
+    }
+
+    self
+  }
 }

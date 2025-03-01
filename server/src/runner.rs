@@ -19,14 +19,16 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftState,
     },
+    airport::Airport,
     airspace::Airspace,
     flight::{Flight, FlightKind, FlightStatus},
     world::{Game, Points, World},
   },
-  NAUTICALMILES_TO_FEET,
+  Translate, NAUTICALMILES_TO_FEET,
 };
 
 use crate::{
+  airport::new_v_pattern,
   job::{JobQueue, JobReq},
   ring::RingBuffer,
   AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
@@ -205,13 +207,25 @@ impl Runner {
         break position;
       };
 
-      let airspace = Airspace {
+      let mut airspace = Airspace {
         id: Intern::from_ref(airspace_name),
         pos: airspace_position,
         radius: NAUTICALMILES_TO_FEET * 30.0,
-        airports: Vec::new(),
+        airports: Vec::with_capacity(1),
         auto: true,
       };
+
+      let mut airport = Airport {
+        id: Intern::from_ref(airspace_name),
+        ..Default::default()
+      };
+
+      new_v_pattern::setup(&mut airport);
+
+      airport.translate(airspace.pos);
+      airport.calculate_waypoints();
+
+      airspace.airports.push(airport);
 
       self.world.airspaces.push(airspace);
     }
