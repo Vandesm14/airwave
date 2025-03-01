@@ -10,7 +10,7 @@ use turborand::{rng::Rng, TurboRand};
 use crate::{
   angle_between_points,
   pathfinder::{new_vor, Node, NodeVORData},
-  ENROUTE_TIME_MULTIPLIER,
+  NAUTICALMILES_TO_FEET,
 };
 
 use super::{
@@ -75,7 +75,6 @@ pub enum TaxiingState {
 pub enum AircraftState {
   Flying {
     waypoints: Vec<Node<NodeVORData>>,
-    enroute: bool,
   },
   Landing {
     runway: Runway,
@@ -96,7 +95,6 @@ impl Default for AircraftState {
   fn default() -> Self {
     Self::Flying {
       waypoints: Vec::new(),
-      enroute: false,
     }
   }
 }
@@ -118,8 +116,8 @@ impl Default for FlightPlan {
       arriving: Intern::from_ref("arriving"),
       departing: Intern::from_ref("departing"),
 
-      speed: 220.0,
-      altitude: 3000.0,
+      speed: 250.0,
+      altitude: 7000.0,
     }
   }
 }
@@ -335,7 +333,6 @@ impl Aircraft {
 
       state: AircraftState::Flying {
         waypoints: Vec::new(),
-        enroute: false,
       },
       target: AircraftTargets::default(),
       flight_plan,
@@ -347,7 +344,7 @@ impl Aircraft {
 
   pub fn random_inbound(
     frequency: f32,
-    departure: &Connection,
+    departure: &Airspace,
     arrival: &Airspace,
     rng: &mut Rng,
   ) -> Self {
@@ -363,15 +360,31 @@ impl Aircraft {
     aircraft.altitude = 7000.0;
     aircraft.sync_targets_to_vals();
 
+    // !5 NM is arbitrary. It's just half of the radius of an approach-space.
+    let transition_into = departure
+      .pos
+      .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 15.0);
+
+    // This is 30 NM + 15 NM to account for the radius of the approach airspace
+    let transition_out_of = arrival
+      .pos
+      .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 45.0);
+
+    // TODO: Aircraft should tune to the approach freq
     aircraft.state = AircraftState::Flying {
-      waypoints: vec![new_vor(departure.id, departure.transition)
-        .with_name(Intern::from_ref("TRSN"))
-        .with_behavior(vec![
-          EventKind::EnRoute(false),
-          EventKind::SpeedAtOrBelow(250.0),
-          EventKind::CalloutInAirspace,
-        ])],
-      enroute: true,
+      waypoints: vec![
+        new_vor(Intern::from_ref("STAR"), transition_out_of).with_behavior(
+          vec![
+            EventKind::SpeedAtOrBelow(250.0),
+            EventKind::AltitudeAtOrBelow(18000.0),
+            EventKind::CalloutInAirspace,
+          ],
+        ),
+        new_vor(Intern::from_ref("SID"), transition_into).with_behavior(vec![
+          EventKind::SpeedAtOrAbove(400.0),
+          EventKind::AltitudeAtOrAbove(38000.0),
+        ]),
+      ],
     };
 
     aircraft
@@ -422,14 +435,6 @@ impl Aircraft {
   }
 
   pub fn dt_enroute(&self, dt: f32) -> f32 {
-    if let AircraftState::Flying { enroute, .. } = &self.state {
-      if *enroute {
-        dt * ENROUTE_TIME_MULTIPLIER
-      } else {
-        dt
-      }
-    } else {
-      dt
-    }
+    dt
   }
 }

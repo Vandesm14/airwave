@@ -1,6 +1,6 @@
 use std::{net::SocketAddr, path::Path};
 
-use engine::entities::airspace::Frequencies;
+use engine::entities::airport::Frequencies;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

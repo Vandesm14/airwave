@@ -20,7 +20,7 @@ use engine::{
       Aircraft, AircraftState,
     },
     flight::{Flight, FlightKind, FlightStatus},
-    world::{Connection, ConnectionState, Game, Points, World},
+    world::{Game, Points, World},
   },
 };
 

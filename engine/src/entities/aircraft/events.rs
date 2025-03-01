@@ -37,7 +37,6 @@ pub enum EventKind {
   GoAround,
   Touchdown,
   Takeoff(Intern<String>),
-  EnRoute(bool),
   FlipFlightPlan,
 
   // Taxiing
@@ -119,16 +118,13 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::Heading(heading) => {
-        if let AircraftState::Flying { enroute, .. } = aircraft.state {
+        if let AircraftState::Flying { .. } = aircraft.state {
           aircraft.target.heading = *heading;
 
-          // Cancel waypoints of not enroute
-          if !enroute {
-            aircraft.state = AircraftState::Flying {
-              enroute: false,
-              waypoints: Vec::new(),
-            };
-          }
+          // Cancel waypoints
+          aircraft.state = AircraftState::Flying {
+            waypoints: Vec::new(),
+          };
         } else if let AircraftState::Landing { .. } = &aircraft.state {
           aircraft.target.heading = *heading;
         }
@@ -195,7 +191,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let AircraftState::Landing { .. } = aircraft.state {
           aircraft.state = AircraftState::Flying {
             waypoints: Vec::new(),
-            enroute: false,
           };
           aircraft.sync_targets_to_vals();
 
@@ -223,25 +218,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::Takeoff(runway) => {
         if let AircraftState::Taxiing { .. } = aircraft.state {
           handle_takeoff_event(aircraft, bundle, *runway);
-        }
-      }
-      EventKind::EnRoute(bool) => {
-        if let AircraftState::Flying { enroute, .. } = &mut aircraft.state {
-          *enroute = *bool;
-        }
-
-        // TODO: Automatically tuning them to approach when they enter the
-        // airspace might not be the best UX.
-        if !bool {
-          if let Some(frequency) =
-            closest_airport(&bundle.world.airspaces, aircraft.pos)
-              .map(|x| x.frequencies.approach)
-          {
-            bundle.events.push(Event::Aircraft(AircraftEvent::new(
-              aircraft.id,
-              EventKind::Frequency(frequency),
-            )))
-          }
         }
       }
       EventKind::FlipFlightPlan => {
@@ -544,7 +520,6 @@ pub fn handle_takeoff_event(
         aircraft.target.heading = runway.heading;
 
         aircraft.state = AircraftState::Flying {
-          enroute: false,
           waypoints: Vec::new(),
         };
 
