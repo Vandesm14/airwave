@@ -92,12 +92,13 @@ async fn main() {
     pos: Vec2::ZERO,
     radius: MANUAL_TOWER_AIRSPACE_RADIUS,
     airports: vec![],
-    frequencies: config.frequencies.unwrap_or_default(),
+    auto: false,
   };
 
   let mut airport_ksfo = Airport {
     id: Intern::from_ref("KSFO"),
     center: player_airspace.pos,
+    frequencies: config.frequencies.unwrap_or_default(),
     ..Default::default()
   };
 
@@ -106,7 +107,7 @@ async fn main() {
   airport_ksfo.calculate_waypoints();
   player_airspace.airports.push(airport_ksfo);
 
-  runner.world.airspace = player_airspace;
+  runner.world.airspaces.push(player_airspace);
 
   runner.generate_airspaces(&mut world_rng);
   runner.fill_gates();

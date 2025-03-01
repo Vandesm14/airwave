@@ -19,9 +19,11 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftState,
     },
+    airspace::Airspace,
     flight::{Flight, FlightKind, FlightStatus},
     world::{Game, Points, World},
   },
+  NAUTICALMILES_TO_FEET,
 };
 
 use crate::{
@@ -189,7 +191,7 @@ impl Runner {
           (world_rng.f32() - 0.5) * WORLD_RADIUS,
         );
 
-        for airport in self.world.connections.iter() {
+        for airport in self.world.airspaces.iter() {
           if circle_circle_intersection(
             position,
             airport.pos,
@@ -203,39 +205,35 @@ impl Runner {
         break position;
       };
 
-      let connection = Connection {
+      let airspace = Airspace {
         id: Intern::from_ref(airspace_name),
-        state: ConnectionState::Active,
         pos: airspace_position,
-        transition: self
-          .world
-          .airspace
-          .pos
-          .move_towards(airspace_position, MANUAL_TOWER_AIRSPACE_RADIUS),
+        radius: NAUTICALMILES_TO_FEET * 30.0,
+        airports: Vec::new(),
+        auto: true,
       };
 
-      self.world.connections.push(connection);
+      self.world.airspaces.push(airspace);
     }
   }
 
   pub fn fill_gates(&mut self) {
     let mut aircrafts: Vec<Aircraft> = Vec::new();
-    for airport in self.world.airspace.airports.iter() {
-      for terminal in airport.terminals.iter() {
-        for gate in terminal.gates.iter() {
-          let mut aircraft = Aircraft::random_parked(
-            gate.clone(),
-            &mut self.rng,
-            &self.world.airspace,
-          );
-          aircraft.flight_plan.departing = self.world.airspace.id;
-          aircraft.flight_plan.arriving = self
-            .rng
-            .sample(&self.world.connections)
-            .map(|c| c.id)
-            .unwrap_or_default();
+    for airspace in self.world.airspaces.iter() {
+      for airport in airspace.airports.iter() {
+        for terminal in airport.terminals.iter() {
+          for gate in terminal.gates.iter() {
+            let mut aircraft =
+              Aircraft::random_parked(gate.clone(), &mut self.rng, airport);
+            aircraft.flight_plan.departing = airspace.id;
+            aircraft.flight_plan.arriving = self
+              .rng
+              .sample(&self.world.airspaces)
+              .map(|a| a.id)
+              .unwrap_or_default();
 
-          aircrafts.push(aircraft);
+            aircrafts.push(aircraft);
+          }
         }
       }
     }
@@ -246,63 +244,64 @@ impl Runner {
   }
 
   pub fn handle_flights(&mut self) {
-    let now = duration_now();
-    let mut to_mark: Vec<(usize, Intern<String>)> = Vec::new();
-    for flight in self.game.flights.iter() {
-      if flight.spawn_at <= now
-        && matches!(flight.status, FlightStatus::Scheduled)
-      {
-        match flight.kind {
-          FlightKind::Inbound => {
-            let aircraft = Aircraft::random_inbound(
-              self.world.airspace.frequencies.approach,
-              self.rng.sample(&self.world.connections).unwrap(),
-              &self.world.airspace,
-              &mut self.rng,
-            );
+    // TODO: Reimplement
+    // let now = duration_now();
+    // let mut to_mark: Vec<(usize, Intern<String>)> = Vec::new();
+    // for flight in self.game.flights.iter() {
+    //   if flight.spawn_at <= now
+    //     && matches!(flight.status, FlightStatus::Scheduled)
+    //   {
+    //     match flight.kind {
+    //       FlightKind::Inbound => {
+    //         let aircraft = Aircraft::random_inbound(
+    //           self.world.airspace.frequencies.approach,
+    //           self.rng.sample(&self.world.connections).unwrap(),
+    //           &self.world.airspace,
+    //           &mut self.rng,
+    //         );
 
-            to_mark.push((flight.id, aircraft.id));
+    //         to_mark.push((flight.id, aircraft.id));
 
-            self.game.aircraft.push(aircraft);
-          }
-          FlightKind::Outbound => {
-            let aircraft =
-              self
-                .rng
-                .sample_iter(self.game.aircraft.iter_mut().filter(|a| {
-                  matches!(a.state, AircraftState::Parked { active: false, .. })
-                }));
+    //         self.game.aircraft.push(aircraft);
+    //       }
+    //       FlightKind::Outbound => {
+    //         let aircraft =
+    //           self
+    //             .rng
+    //             .sample_iter(self.game.aircraft.iter_mut().filter(|a| {
+    //               matches!(a.state, AircraftState::Parked { active: false, .. })
+    //             }));
 
-            if let Some(aircraft) = aircraft {
-              aircraft.flight_plan.departing = self.world.airspace.id;
-              aircraft.flight_plan.arriving =
-                self.rng.sample(&self.world.connections).unwrap().id;
-              aircraft.set_active(true);
-              aircraft.sync_targets_to_vals();
+    //         if let Some(aircraft) = aircraft {
+    //           aircraft.flight_plan.departing = self.world.airspace.id;
+    //           aircraft.flight_plan.arriving =
+    //             self.rng.sample(&self.world.connections).unwrap().id;
+    //           aircraft.set_active(true);
+    //           aircraft.sync_targets_to_vals();
 
-              to_mark.push((flight.id, aircraft.id));
+    //           to_mark.push((flight.id, aircraft.id));
 
-              self.messages.push(CommandWithFreq::new(
-                aircraft.id.to_string(),
-                aircraft.frequency,
-                CommandReply::ReadyForDeparture {
-                  airport: aircraft.flight_plan.arriving.to_string(),
-                },
-                Vec::new(),
-              ));
-            } else {
-              tracing::warn!("No aircraft available for outbound flight.");
-            }
-          }
-        }
-      }
-    }
+    //           self.messages.push(CommandWithFreq::new(
+    //             aircraft.id.to_string(),
+    //             aircraft.frequency,
+    //             CommandReply::ReadyForDeparture {
+    //               airport: aircraft.flight_plan.arriving.to_string(),
+    //             },
+    //             Vec::new(),
+    //           ));
+    //         } else {
+    //           tracing::warn!("No aircraft available for outbound flight.");
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
-    for (flight, aircraft) in to_mark {
-      tracing::info!("Spawned flight #{}", flight);
-      self.game.flights.get_mut(flight).unwrap().status =
-        FlightStatus::Ongoing(aircraft);
-    }
+    // for (flight, aircraft) in to_mark {
+    //   tracing::info!("Spawned flight #{}", flight);
+    //   self.game.flights.get_mut(flight).unwrap().status =
+    //     FlightStatus::Ongoing(aircraft);
+    // }
   }
 
   pub fn tick(&mut self) {
