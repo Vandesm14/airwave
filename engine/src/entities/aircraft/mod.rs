@@ -14,9 +14,8 @@ use crate::{
 };
 
 use super::{
-  airport::{Gate, Runway},
+  airport::{Airport, Gate, Runway},
   airspace::Airspace,
-  world::Connection,
 };
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -295,7 +294,7 @@ impl Aircraft {
     string
   }
 
-  pub fn random_parked(gate: Gate, rng: &mut Rng, airspace: &Airspace) -> Self {
+  pub fn random_parked(gate: Gate, rng: &mut Rng, airport: &Airport) -> Self {
     Self {
       id: Intern::from(Self::random_callsign(rng)),
       is_colliding: false,
@@ -315,7 +314,7 @@ impl Aircraft {
         Intern::from(String::new()),
       ),
 
-      frequency: airspace.frequencies.ground,
+      frequency: airport.frequencies.ground,
     }
     .with_synced_targets()
   }

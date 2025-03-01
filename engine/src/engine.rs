@@ -21,7 +21,7 @@ use crate::{
     },
     world::{Game, World},
   },
-  ENROUTE_TIME_MULTIPLIER, NAUTICALMILES_TO_FEET,
+  NAUTICALMILES_TO_FEET,
 };
 
 #[derive(Debug)]
@@ -155,7 +155,6 @@ impl Engine {
     game.points.landing_rate.calc_rate();
     game.points.takeoff_rate.calc_rate();
 
-    self.space_inbounds(world, game);
     self.taxi_collisions(&mut game.aircraft, &mut bundle);
 
     // Capture the left over events and actions for next time
@@ -201,65 +200,6 @@ impl Engine {
 
       aircraft.is_colliding = is_colliding;
     });
-  }
-
-  pub fn space_inbounds(&mut self, world: &World, game: &mut Game) {
-    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Default)]
-    struct DistanceTime {
-      index: usize,
-      distance: f32,
-      speed: f32,
-    }
-
-    // Aircraft spacing system
-    let mut reports: Vec<DistanceTime> = game
-      .aircraft
-      .iter()
-      .enumerate()
-      .filter(|(_, a)| {
-        if let AircraftState::Flying { enroute, waypoints } = &a.state {
-          // If they are on their way back
-          *enroute && waypoints.len() == 1
-        } else {
-          false
-        }
-      })
-      .map(|(index, a)| {
-        let distance = a.pos.distance(world.airspace.pos);
-        let speed = a.speed;
-        DistanceTime {
-          index,
-          distance,
-          speed,
-        }
-      })
-      .collect();
-
-    reports.sort_by(|a, b| b.distance.partial_cmp(&a.distance).unwrap());
-
-    if let Some(closest) = reports.pop() {
-      let default_speed = 300.0;
-      let minutes_apart = 1.0;
-      let min_distance = NAUTICALMILES_TO_FEET
-        * (((default_speed * ENROUTE_TIME_MULTIPLIER) / 60.0) * minutes_apart);
-
-      let mut last = closest;
-      for report in reports.iter_mut().rev() {
-        let diff = report.distance - last.distance;
-        let percent = diff / min_distance;
-        let speed = percent * default_speed;
-
-        report.speed = speed;
-
-        last = *report;
-      }
-
-      for report in reports.iter() {
-        if let Some(aircraft) = game.aircraft.get_mut(report.index) {
-          aircraft.target.speed = report.speed.clamp(250.0, 400.0);
-        }
-      }
-    }
   }
 
   pub fn taxi_collisions(

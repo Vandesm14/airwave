@@ -4,20 +4,85 @@ use std::{
 };
 
 use glam::Vec2;
-use internment::Intern;
 use serde::{Deserialize, Serialize};
+use turborand::{rng::Rng, TurboRand};
 
 use super::{
   aircraft::Aircraft, airport::Airport, airspace::Airspace, flight::Flights,
 };
 
-pub fn closest_airport(airspace: &Airspace, point: Vec2) -> Option<&Airport> {
+pub fn find_random_airspace_with<'a>(
+  airspaces: &'a [Airspace],
+  auto: Option<bool>,
+  require_airports: bool,
+  rng: &mut Rng,
+) -> Option<&'a Airspace> {
+  let filtered_airspaces = airspaces.iter().filter(|a| {
+    if let Some(auto) = auto {
+      if auto != a.auto {
+        return false;
+      }
+    }
+
+    if require_airports && a.airports.is_empty() {
+      return false;
+    }
+
+    true
+  });
+
+  rng.sample_iter(filtered_airspaces)
+}
+
+pub fn find_random_airspace<'a>(
+  airspaces: &'a [Airspace],
+  rng: &mut Rng,
+) -> Option<&'a Airspace> {
+  rng.sample(airspaces)
+}
+
+pub fn find_random_departure<'a>(
+  airspaces: &'a [Airspace],
+  rng: &mut Rng,
+) -> Option<&'a Airspace> {
+  find_random_airspace_with(airspaces, Some(true), false, rng)
+}
+
+pub fn find_random_arrival<'a>(
+  airspaces: &'a [Airspace],
+  rng: &mut Rng,
+) -> Option<&'a Airspace> {
+  find_random_airspace_with(airspaces, Some(false), true, rng)
+}
+
+pub fn closest_airport(
+  airspaces: &[Airspace],
+  point: Vec2,
+) -> Option<&Airport> {
   let mut closest: Option<&Airport> = None;
   let mut distance = f32::MAX;
-  for airport in airspace.airports.iter() {
-    if airport.center.distance_squared(point) < distance {
-      distance = airport.center.distance_squared(point);
-      closest = Some(airport);
+  for airspace in airspaces.iter().filter(|a| a.contains_point(point)) {
+    for airport in airspace.airports.iter() {
+      if airport.center.distance_squared(point) < distance {
+        distance = airport.center.distance_squared(point);
+        closest = Some(airport);
+      }
+    }
+  }
+
+  closest
+}
+
+pub fn closest_airspace(
+  airspaces: &[Airspace],
+  point: Vec2,
+) -> Option<&Airspace> {
+  let mut closest: Option<&Airspace> = None;
+  let mut distance = f32::MAX;
+  for airspace in airspaces.iter() {
+    if airspace.pos.distance_squared(point) < distance {
+      distance = airspace.pos.distance_squared(point);
+      closest = Some(airspace);
     }
   }
 
@@ -33,25 +98,8 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ConnectionState {
-  #[default]
-  Inactive,
-  Active,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Connection {
-  pub id: Intern<String>,
-  pub state: ConnectionState,
-  pub pos: Vec2,
-  pub transition: Vec2,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
-  pub airspace: Airspace,
-  pub connections: Vec<Connection>,
+  pub airspaces: Vec<Airspace>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

@@ -8,6 +8,41 @@ use crate::{
   Line,
 };
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Frequencies {
+  pub approach: f32,
+  pub departure: f32,
+  pub tower: f32,
+  pub ground: f32,
+  pub center: f32,
+}
+
+impl Default for Frequencies {
+  fn default() -> Self {
+    Self {
+      approach: 118.5,
+      departure: 118.5,
+      tower: 118.5,
+      ground: 118.5,
+      center: 118.5,
+    }
+  }
+}
+
+impl Frequencies {
+  pub fn try_from_string(&self, s: &str) -> Option<f32> {
+    match s {
+      "approach" => Some(self.approach),
+      "departure" => Some(self.departure),
+      "tower" => Some(self.tower),
+      "ground" => Some(self.ground),
+      "center" => Some(self.center),
+
+      _ => None,
+    }
+  }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Airport {
   pub id: Intern<String>,
@@ -15,6 +50,7 @@ pub struct Airport {
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
   pub terminals: Vec<Terminal>,
+  pub frequencies: Frequencies,
 
   #[serde(skip)]
   pub pathfinder: Pathfinder,
@@ -28,6 +64,7 @@ impl Airport {
       runways: Vec::new(),
       taxiways: Vec::new(),
       terminals: Vec::new(),
+      frequencies: Frequencies::default(),
 
       pathfinder: Pathfinder::new(),
     }

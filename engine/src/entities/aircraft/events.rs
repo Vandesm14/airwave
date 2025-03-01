@@ -6,11 +6,11 @@ use crate::{
   angle_between_points,
   command::{CommandReply, CommandWithFreq, Task},
   engine::{Bundle, Event},
-  entities::world::closest_airport,
+  entities::world::{closest_airport, closest_airspace},
   heading_to_direction,
   pathfinder::{
-    display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
-    NodeKind, Pathfinder,
+    display_node_vec2, display_vec_node_vec2, Node, NodeBehavior, NodeKind,
+    Pathfinder,
   },
 };
 
@@ -151,7 +151,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
       }
       EventKind::NamedFrequency(frq) => {
         if let Some(frequency) =
-          bundle.world.airspace.frequencies.try_from_string(frq)
+          closest_airport(&bundle.world.airspaces, aircraft.pos)
+            .and_then(|x| x.frequencies.try_from_string(frq))
         {
           aircraft.frequency = frequency;
         }
@@ -159,32 +160,33 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Flying
       EventKind::ResumeOwnNavigation => {
-        if let AircraftState::Flying { enroute, .. } = aircraft.state {
-          let arrival = bundle
-            .world
-            .connections
-            .iter()
-            .find(|a| a.id == aircraft.flight_plan.arriving);
+        // TODO: Reimplement
+        // if let AircraftState::Flying { enroute, .. } = aircraft.state {
+        //   let arrival = bundle
+        //     .world
+        //     .connections
+        //     .iter()
+        //     .find(|a| a.id == aircraft.flight_plan.arriving);
 
-          if let Some(arrival) = arrival {
-            aircraft.target.speed = 300.0;
-            aircraft.target.altitude = 13000.0;
-            aircraft.state = AircraftState::Flying {
-              enroute,
-              waypoints: vec![
-                new_vor(arrival.id, arrival.pos)
-                  .with_name(Intern::from_ref("APRT"))
-                  .with_behavior(vec![
-                    EventKind::CompleteFlight,
-                    EventKind::Delete,
-                  ]),
-                new_vor(arrival.id, arrival.transition)
-                  .with_name(Intern::from_ref("TRSN"))
-                  .with_behavior(vec![EventKind::EnRoute(true)]),
-              ],
-            }
-          }
-        }
+        //   if let Some(arrival) = arrival {
+        //     aircraft.target.speed = 300.0;
+        //     aircraft.target.altitude = 13000.0;
+        //     aircraft.state = AircraftState::Flying {
+        //       enroute,
+        //       waypoints: vec![
+        //         new_vor(arrival.id, arrival.pos)
+        //           .with_name(Intern::from_ref("APRT"))
+        //           .with_behavior(vec![
+        //             EventKind::CompleteFlight,
+        //             EventKind::Delete,
+        //           ]),
+        //         new_vor(arrival.id, arrival.transition)
+        //           .with_name(Intern::from_ref("TRSN"))
+        //           .with_behavior(vec![EventKind::EnRoute(true)]),
+        //       ],
+        //     }
+        //   }
+        // }
       }
 
       // Transitions
@@ -231,10 +233,15 @@ impl AircraftEventHandler for HandleAircraftEvent {
         // TODO: Automatically tuning them to approach when they enter the
         // airspace might not be the best UX.
         if !bool {
-          bundle.events.push(Event::Aircraft(AircraftEvent::new(
-            aircraft.id,
-            EventKind::Frequency(bundle.world.airspace.frequencies.approach),
-          )))
+          if let Some(frequency) =
+            closest_airport(&bundle.world.airspaces, aircraft.pos)
+              .map(|x| x.frequencies.approach)
+          {
+            bundle.events.push(Event::Aircraft(AircraftEvent::new(
+              aircraft.id,
+              EventKind::Frequency(frequency),
+            )))
+          }
         }
       }
       EventKind::FlipFlightPlan => {
@@ -247,7 +254,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
           aircraft.state
         {
           if let Some(airport) =
-            closest_airport(&bundle.world.airspace, aircraft.pos)
+            closest_airport(&bundle.world.airspaces, aircraft.pos)
           {
             handle_taxi_event(aircraft, bundle, waypoints, &airport.pathfinder);
           }
@@ -316,25 +323,29 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Callouts are handled outside of the engine.
       EventKind::Callout(..) => {}
       EventKind::CalloutInAirspace => {
-        let direction = heading_to_direction(angle_between_points(
-          bundle.world.airspace.pos,
-          aircraft.pos,
-        ))
-        .to_owned();
-        let command = CommandWithFreq::new(
-          Intern::to_string(&aircraft.id),
-          aircraft.frequency,
-          CommandReply::ArriveInAirspace {
-            direction,
-            altitude: aircraft.altitude,
-          },
-          Vec::new(),
-        );
+        if let Some(airspace) =
+          closest_airspace(&bundle.world.airspaces, aircraft.pos)
+        {
+          let direction = heading_to_direction(angle_between_points(
+            airspace.pos,
+            aircraft.pos,
+          ))
+          .to_owned();
+          let command = CommandWithFreq::new(
+            Intern::to_string(&aircraft.id),
+            aircraft.frequency,
+            CommandReply::ArriveInAirspace {
+              direction,
+              altitude: aircraft.altitude,
+            },
+            Vec::new(),
+          );
 
-        bundle.events.push(Event::Aircraft(AircraftEvent::new(
-          aircraft.id,
-          EventKind::Callout(command),
-        )));
+          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            aircraft.id,
+            EventKind::Callout(command),
+          )));
+        }
       }
 
       // External
@@ -361,13 +372,8 @@ pub fn handle_land_event(
   runway_id: Intern<String>,
 ) {
   if let AircraftState::Flying { .. } = aircraft.state {
-    if let Some(runway) = bundle
-      .world
-      .airspace
-      .airports
-      .iter()
-      .flat_map(|a| a.runways.iter())
-      .find(|r| r.id == runway_id)
+    if let Some(runway) = closest_airport(&bundle.world.airspaces, aircraft.pos)
+      .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       aircraft.state = AircraftState::Landing {
         runway: runway.clone(),
@@ -466,7 +472,7 @@ pub fn handle_taxi_event(
     if let Some(last) = all_waypoints.last() {
       if last.kind == NodeKind::Gate {
         if let Some(airport) =
-          closest_airport(&bundle.world.airspace, aircraft.pos)
+          closest_airport(&bundle.world.airspaces, aircraft.pos)
         {
           if let Some(gate) = airport
             .terminals
@@ -528,13 +534,8 @@ pub fn handle_takeoff_event(
   } = &mut aircraft.state
   {
     // If we are at the runway
-    if let Some(runway) = bundle
-      .world
-      .airspace
-      .airports
-      .iter()
-      .flat_map(|a| a.runways.iter())
-      .find(|r| r.id == runway_id)
+    if let Some(runway) = closest_airport(&bundle.world.airspaces, aircraft.pos)
+      .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       if NodeKind::Runway == current.kind && current.name == runway_id {
         aircraft.target.speed = aircraft.flight_plan.speed;
