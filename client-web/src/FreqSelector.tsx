@@ -4,6 +4,7 @@ import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import { Frequencies } from './lib/types';
 import { useWorld } from './lib/api';
+import { hardcodedAirport } from './lib/lib';
 
 export default function FreqSelector() {
   let [frequency, setFrequency] = useAtom(frequencyAtom);
@@ -12,7 +13,7 @@ export default function FreqSelector() {
   const query = useWorld();
 
   function updateKeyByFreqChange() {
-    const found = query.data?.airspace;
+    const found = hardcodedAirport(query.data!);
     if (!found) {
       return;
     }
@@ -31,7 +32,7 @@ export default function FreqSelector() {
   function changeViaKey(key: keyof Frequencies) {
     setKey(key as keyof Frequencies);
 
-    const found = query.data?.airspace;
+    const found = hardcodedAirport(query.data!);
     if (!found) {
       return;
     }
@@ -44,7 +45,7 @@ export default function FreqSelector() {
   function changeViaValue(value: number) {
     setFrequency(value);
 
-    const found = query.data?.airspace;
+    const found = hardcodedAirport(query.data!);
     if (!found) {
       return;
     }
@@ -93,15 +94,15 @@ export default function FreqSelector() {
           onchange={(e) => changeViaKey(e.target.value as keyof Frequencies)}
           value={key()}
         >
-          {query.data?.airspace?.frequencies
+          {query.data && hardcodedAirport(query.data)?.frequencies
             ? // TODO: Remove uses of as keyof Frequencies.
-              Object.entries(query.data?.airspace!.frequencies).map(
-                ([k, v]) => (
-                  <option value={k}>
-                    {k} - {v}
-                  </option>
-                )
-              )
+              Object.entries(
+                query.data && hardcodedAirport(query.data)!.frequencies
+              ).map(([k, v]) => (
+                <option value={k}>
+                  {k} - {v}
+                </option>
+              ))
             : null}
         </select>
         <input

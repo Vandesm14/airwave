@@ -3,10 +3,9 @@ import { Aircraft, isAircraftFlying, isAircraftTaxiing } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
-  angleBetweenPoints,
   calculateDistance,
-  ENROUTE_TIME_MULTIPLIER,
   formatTime,
+  hardcodedAirspace,
   nauticalMilesToFeet,
   runwayInfo,
 } from './lib/lib';
@@ -83,8 +82,7 @@ function assignAircraftToStrips(
     }
   })();
 
-  const isInLocalAirspace =
-    aircraft.state.type === 'flying' ? !aircraft.state.value.enroute : true;
+  const isInLocalAirspace = aircraft.state.type === 'flying';
   const isDepartingAndInLocalAirspace =
     isInLocalAirspace && ourAirspace === aircraft.flight_plan.departing;
   const isDepartingFromLocalAirspace =
@@ -153,7 +151,7 @@ function Strip({ strip }: StripProps) {
   let sinceCreated = `--:--`;
 
   if (isAircraftFlying(strip.state)) {
-    if (strip.state.value.enroute && strip.state.value.waypoints.length > 0) {
+    if (strip.state.value.waypoints.length > 0) {
       let current = strip.pos;
       let distance = 0;
       let waypoints = strip.state.value.waypoints.slice();
@@ -162,25 +160,6 @@ function Strip({ strip }: StripProps) {
         distance += calculateDistance(current, waypoint.value.to);
         current = waypoint.value.to;
       });
-
-      let distanceInNm = distance / nauticalMilesToFeet;
-      let time =
-        (distanceInNm / (strip.speed * ENROUTE_TIME_MULTIPLIER)) *
-        1000 *
-        60 *
-        60;
-      sinceCreated = formatTime(time);
-    } else if (
-      !strip.state.value.enroute &&
-      strip.state.value.waypoints.length > 0
-    ) {
-      let current = strip.pos;
-      let distance = 0;
-      let waypoint = strip.state.value.waypoints.at(-1);
-
-      if (typeof waypoint !== 'undefined') {
-        distance += calculateDistance(current, waypoint.value.to);
-      }
 
       let distanceInNm = distance / nauticalMilesToFeet;
       let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
@@ -245,7 +224,10 @@ function Strip({ strip }: StripProps) {
     bottomStatus = strip.state.value.at.name;
   }
 
-  let distance = calculateDistance(strip.pos, query.data.airspace.pos);
+  let distance = calculateDistance(
+    strip.pos,
+    hardcodedAirspace(query.data)!.pos
+  );
   let distanceText = '';
 
   if (strip.state.type === 'flying' || strip.state.type === 'landing') {
@@ -256,33 +238,34 @@ function Strip({ strip }: StripProps) {
     distanceText = `${distanceText} NM`;
   }
 
-  if (
-    ((strip.state.type === 'parked' && strip.state.value.active) ||
-      strip.state.type === 'taxiing') &&
-    strip.flight_plan.arriving !== airspace()
-  ) {
-    const connection = query.data.connections.find(
-      (c) => c.id === strip.flight_plan.arriving
-    );
-    if (connection !== undefined) {
-      const rawAngle = angleBetweenPoints([0, 0], connection.pos);
-      const angle = (360 - Math.round(rawAngle) + 90) % 360;
+  // TODO: implement a scratchpad, or remove this.
+  // if (
+  //   ((strip.state.type === 'parked' && strip.state.value.active) ||
+  //     strip.state.type === 'taxiing') &&
+  //   strip.flight_plan.arriving !== airspace()
+  // ) {
+  //   const connection = query.data.connections.find(
+  //     (c) => c.id === strip.flight_plan.arriving
+  //   );
+  //   if (connection !== undefined) {
+  //     const rawAngle = angleBetweenPoints([0, 0], connection.pos);
+  //     const angle = (360 - Math.round(rawAngle) + 90) % 360;
 
-      let closestAngle = Infinity;
-      let heading = angle;
-      for (const runway of query.data.airspace.airports.flatMap(
-        (a) => a.runways
-      )) {
-        let diff = Math.abs(runway.heading - angle);
-        if (diff < closestAngle) {
-          closestAngle = diff;
-          heading = runway.heading;
-        }
-      }
+  //     let closestAngle = Infinity;
+  //     let heading = angle;
+  //     for (const runway of query.data.airspace.airports.flatMap(
+  //       (a) => a.runways
+  //     )) {
+  //       let diff = Math.abs(runway.heading - angle);
+  //       if (diff < closestAngle) {
+  //         closestAngle = diff;
+  //         heading = runway.heading;
+  //       }
+  //     }
 
-      distanceText = `FOR ${heading.toString().slice(0, 2)}`;
-    }
-  }
+  //     distanceText = `FOR ${heading.toString().slice(0, 2)}`;
+  //   }
+  // }
 
   function handleMouseDown() {
     setSelectedAircraft(strip.id);
@@ -348,7 +331,7 @@ export default function StripBoard() {
   const query = useWorld();
 
   createEffect(() => {
-    const found = query.data?.airspace;
+    const found = hardcodedAirspace(query.data!);
     if (!found) {
       return;
     }

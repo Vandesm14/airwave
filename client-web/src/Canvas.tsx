@@ -8,7 +8,6 @@ import {
 import {
   Aircraft,
   Airspace,
-  Connection,
   Gate,
   Runway,
   Taxiway,
@@ -25,6 +24,7 @@ import {
 } from 'solid-js';
 import {
   calculateSquaredDistance,
+  HARD_CODED_AIRPORT,
   headingToDegrees,
   knotToFeetPerSecond,
   midpointBetweenPoints,
@@ -448,32 +448,9 @@ export default function Canvas() {
     ctx.fillText(name, pos[0], pos[1] - spacing);
   }
 
-  function drawConnection(ctx: Ctx, connection: Connection) {
-    let activeColor = colors.text_grey;
-    let inactiveColor = colors.special.connection.inactive;
-    let selectedColor = colors.text_yellow;
-
-    let color = connection.state === 'active' ? activeColor : inactiveColor;
-
-    let aircraft = aircrafts.data.find((a) => a.id === selectedAircraft());
-    if (aircraft) {
-      if (aircraft.flight_plan.arriving === connection.id) {
-        color = selectedColor;
-      }
-    }
-
-    // Draw the airport waypoint
-    drawWaypoint(ctx, connection.id, connection.pos, color);
-
-    // Draw the transition waypoint
-    drawWaypoint(ctx, connection.id, connection.transition, color);
-  }
-
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
     const isAboveAirspace = aircraft.altitude > 10000;
     const isSelected = selectedAircraft() === aircraft.id;
-    const isEnroute =
-      aircraft.state.type === 'flying' && aircraft.state.value.enroute;
     const isLanding =
       aircraft.state.type === 'landing' &&
       aircraft.state.value.state !== 'before-turn';
@@ -483,13 +460,17 @@ export default function Canvas() {
     if (trail) {
       const dotSize = Math.max(2, scaleFeetToPixels(750));
 
+      // If selected
       if (selectedAircraft() == aircraft.id) {
         ctx.fillStyle = colors.text_yellow;
+        // If colliding
       } else if (aircraft.is_colliding) {
         ctx.fillStyle = colors.text_red;
-      } else if (aircraft.flight_plan.departing === world.data?.airspace.id) {
+        // If departure
+      } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
         ctx.fillStyle = colors.line_blue;
       } else {
+        // Else, arrival
         ctx.fillStyle = colors.line_green;
       }
 
@@ -593,20 +574,24 @@ export default function Canvas() {
     ctx.textAlign = 'left';
     ctx.fillStyle = colors.text_green;
 
+    // If not on frequency, grey out
     if (aircraft.frequency !== frequency()) {
       ctx.fillStyle = colors.text_grey;
+      // If selected
     } else if (selectedAircraft() == aircraft.id) {
       ctx.fillStyle = colors.text_yellow;
+      // If colliding
     } else if (aircraft.is_colliding) {
       ctx.fillStyle = colors.text_red;
-    } else if (aircraft.flight_plan.departing === world.data?.airspace.id) {
+      // If departure
+    } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
       ctx.fillStyle = colors.line_blue;
     }
 
     // Draw callsign
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
-    if ((isAboveAirspace || isEnroute || isLanding) && !isSelected) {
+    if ((isAboveAirspace || isLanding) && !isSelected) {
       return;
     }
 
@@ -969,17 +954,14 @@ export default function Canvas() {
   }
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
-    let airspace = world.airspace;
-    drawAirspace(ctx, airspace);
+    for (let airspace of world.airspaces) {
+      drawAirspace(ctx, airspace);
 
-    for (let airport of airspace.airports) {
-      for (let runway of airport.runways) {
-        drawRunway(ctx, runway);
+      for (let airport of airspace.airports) {
+        for (let runway of airport.runways) {
+          drawRunway(ctx, runway);
+        }
       }
-    }
-
-    for (let connection of world.connections) {
-      drawConnection(ctx, connection);
     }
 
     for (let aircraft of aircrafts.filter(
@@ -1000,21 +982,22 @@ export default function Canvas() {
   }
 
   function drawGround(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
-    let airspace = world.airspace;
-    drawAirspace(ctx, airspace);
+    for (let airspace of world.airspaces) {
+      drawAirspace(ctx, airspace);
 
-    for (let airport of airspace.airports) {
-      for (let taxiway of airport.taxiways) {
-        drawTaxiway(ctx, taxiway);
-      }
-      for (let runway of airport.runways) {
-        drawRunwayGround(ctx, runway);
-      }
-      for (let terminal of airport.terminals) {
-        drawTerminal(ctx, terminal);
-      }
-      for (let taxiway of airport.taxiways) {
-        drawTaxiwayLabel(ctx, taxiway);
+      for (let airport of airspace.airports) {
+        for (let taxiway of airport.taxiways) {
+          drawTaxiway(ctx, taxiway);
+        }
+        for (let runway of airport.runways) {
+          drawRunwayGround(ctx, runway);
+        }
+        for (let terminal of airport.terminals) {
+          drawTerminal(ctx, terminal);
+        }
+        for (let taxiway of airport.taxiways) {
+          drawTaxiwayLabel(ctx, taxiway);
+        }
       }
     }
 

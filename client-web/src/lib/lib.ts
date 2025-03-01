@@ -1,11 +1,41 @@
-import { LandingState, Runway, TaxiingState, Vec2 } from './types';
+import {
+  Airport,
+  Airspace,
+  LandingState,
+  Runway,
+  TaxiingState,
+  Vec2,
+  World,
+} from './types';
 
 export const timeScale = 1;
 
 export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
 
-export const ENROUTE_TIME_MULTIPLIER = 10;
+// TODO: remove this
+export const HARD_CODED_AIRPORT = 'KSFO';
+export function hardcodedAirspace(world: World): Airspace | undefined {
+  for (let airspace of world.airspaces) {
+    if (airspace.id === HARD_CODED_AIRPORT) {
+      return airspace;
+    }
+  }
+
+  return undefined;
+}
+export function hardcodedAirport(world: World): Airport | undefined {
+  for (let airspace of world.airspaces) {
+    let airport = airspace.airports.find(
+      (airport) => airport.id === HARD_CODED_AIRPORT
+    );
+    if (airport) {
+      return airport;
+    }
+  }
+
+  return undefined;
+}
 
 export function isSome<T>(value: T): value is NonNullable<T> {
   return value !== undefined && value !== null;

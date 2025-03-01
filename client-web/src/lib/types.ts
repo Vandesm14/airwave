@@ -18,7 +18,7 @@ export type NodeVOR = {
 
 export type AircraftStateFlying = {
   type: 'flying';
-  value: { waypoints: Array<NodeVOR>; enroute: boolean };
+  value: { waypoints: Array<NodeVOR> };
 };
 
 export type LandingState =
@@ -169,6 +169,7 @@ export type Airport = {
   runways: Array<Runway>;
   taxiways: Array<Taxiway>;
   terminals: Array<Terminal>;
+  frequencies: Frequencies;
 };
 
 export type Frequencies = {
@@ -184,7 +185,6 @@ export type Airspace = {
   pos: Vec2;
   radius: number;
   airports: Array<Airport>;
-  frequencies: Frequencies;
 };
 
 export function DefaultAirspace(): Airspace {
@@ -193,32 +193,16 @@ export function DefaultAirspace(): Airspace {
     pos: [0, 0],
     radius: 500,
     airports: [],
-    frequencies: {
-      approach: 118.5,
-      departure: 118.5,
-      tower: 118.5,
-      ground: 118.5,
-      center: 118.5,
-    },
   };
 }
 
-export type Connection = {
-  id: string;
-  state: 'inactive' | 'active';
-  pos: Vec2;
-  transition: Vec2;
-};
-
 export type World = {
-  airspace: Airspace;
-  connections: Array<Connection>;
+  airspaces: Array<Airspace>;
 };
 
 export function DefaultWorld(): World {
   return {
-    airspace: DefaultAirspace(),
-    connections: [],
+    airspaces: [DefaultAirspace()],
   };
 }
 
