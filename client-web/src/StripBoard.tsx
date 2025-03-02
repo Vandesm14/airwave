@@ -69,6 +69,7 @@ function assignAircraftToStrips(
   selectedAircraft: string
 ): keyof Strips {
   const isSelected = aircraft.id === selectedAircraft;
+  const isAccepted = aircraft.accepted;
 
   const isOurArrival = ourAirspace === aircraft.flight_plan.arriving;
   const isOurDeparture = ourAirspace === aircraft.flight_plan.departing;
@@ -83,27 +84,29 @@ function assignAircraftToStrips(
 
   const isLanding = aircraft.segment === 'land';
   const isApproach = aircraft.segment === 'approach';
-  const isInbound = aircraft.segment === 'arrival';
+  const isInbound = true;
 
   if (aircraft.is_colliding) {
     return 'Colliding';
   }
 
-  if (isOurs) {
-    if (isParked) return 'Parked';
-    if (isGround) return 'Ground';
-  }
+  if (isAccepted) {
+    if (isOurs) {
+      if (isParked) return 'Parked';
+      if (isGround) return 'Ground';
+    }
 
-  if (isOurDeparture) {
-    if (isTakeoff) return 'Takeoff';
-    if (isDeparture) return 'Departure';
-    if (isOutbound) return 'Outbound';
-  }
+    if (isOurDeparture) {
+      if (isTakeoff) return 'Takeoff';
+      if (isDeparture) return 'Departure';
+      if (isOutbound) return 'Outbound';
+    }
 
-  if (isOurArrival) {
-    if (isLanding) return 'Landing';
-    if (isApproach) return 'Approach';
-    if (isInbound) return 'Inbound';
+    if (isOurArrival) {
+      if (isLanding) return 'Landing';
+      if (isApproach) return 'Approach';
+      if (isInbound) return 'Inbound';
+    }
   }
 
   if (isSelected) return 'Selected';

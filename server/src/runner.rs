@@ -59,6 +59,7 @@ pub enum TinyReqKind {
   // Aircraft
   Aircraft,
   OneAircraft(Intern<String>),
+  AcceptFlight(Intern<String>),
 
   // Other State
   Messages,
@@ -78,6 +79,8 @@ pub enum ArgReqKind {
 pub enum ResKind {
   #[default]
   Any,
+  Err,
+
   Pong,
 
   // Aircraft
@@ -266,6 +269,16 @@ impl Runner {
           let aircraft =
             self.game.aircraft.iter().find(|a| a.id == *id).cloned();
           incoming.reply(ResKind::OneAircraft(aircraft));
+        }
+        TinyReqKind::AcceptFlight(id) => {
+          let aircraft = self.game.aircraft.iter_mut().find(|a| a.id == *id);
+          if let Some(aircraft) = aircraft {
+            aircraft.accepted = true;
+
+            incoming.reply(ResKind::Any);
+          } else {
+            incoming.reply(ResKind::Err);
+          }
         }
 
         // Other State

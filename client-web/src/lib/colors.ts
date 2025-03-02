@@ -11,6 +11,7 @@ export default {
   text_yellow: '#ffe045',
   text_green: '#44ff44',
   text_grey: '#777',
+  text_dark_grey: '#555',
 
   text_background: '#000a',
 

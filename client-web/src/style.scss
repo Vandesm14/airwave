@@ -1,3 +1,5 @@
+@import 'styles/vars.scss';
+
 html,
 body,
 main {
@@ -10,8 +12,6 @@ main {
 
   font: 14px monospace;
 }
-
-$transparent-black: #000a;
 
 input,
 select,

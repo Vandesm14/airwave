@@ -139,6 +139,8 @@ export type Aircraft = {
 
   frequency: number;
   segment: FlightSegment;
+
+  accepted: boolean;
 };
 
 export function isAircraftFlying(

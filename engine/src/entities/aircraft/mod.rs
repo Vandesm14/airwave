@@ -223,13 +223,14 @@ impl AircraftKind {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
 /// FlightSegment denotes the exact segment of flight that an aircraft is in.
 ///
 /// This is simply a flag for denoting the segment of flight and does not
 /// contain any data or further information. [`AircraftState`] is the primary
 /// holder of state and data for an aircraft.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[repr(u8)]
 pub enum FlightSegment {
   #[default]
   /// Parked and motionless.
@@ -270,6 +271,8 @@ pub struct Aircraft {
 
   pub frequency: f32,
   pub segment: FlightSegment,
+
+  pub accepted: bool,
 }
 
 // Helper methods
@@ -324,6 +327,8 @@ impl Aircraft {
 
       frequency: airport.frequencies.ground,
       segment: FlightSegment::Parked,
+
+      accepted: false,
     }
     .with_synced_targets()
   }
@@ -331,6 +336,12 @@ impl Aircraft {
   pub fn flip_flight_plan(&mut self) {
     let d = self.flight_plan.departing;
     let a = self.flight_plan.arriving;
+
+    // TODO: Is this the best place to put this change?
+    //
+    // If a flight plan is flipped, it does mean its a new flight, so that's
+    // why I put it here.
+    self.accepted = false;
 
     self.flight_plan.departing = a;
     self.flight_plan.arriving = d;

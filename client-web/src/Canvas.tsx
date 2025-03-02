@@ -484,6 +484,8 @@ export default function Canvas() {
       aircraft.state.type === 'landing' &&
       aircraft.state.value.state !== 'before-turn';
 
+    const isAccepted = aircraft.accepted;
+
     // Draw trail
     let trail = aircraftTrails().get(aircraft.id);
     if (trail) {
@@ -538,6 +540,9 @@ export default function Canvas() {
     if (isSelected) {
       ctx.fillStyle = colors.line_yellow;
       ctx.strokeStyle = colors.line_yellow;
+    } else if (!isAccepted) {
+      ctx.fillStyle = colors.text_dark_grey;
+      ctx.strokeStyle = colors.text_dark_grey;
     } else if (aircraft.is_colliding) {
       ctx.fillStyle = colors.line_red;
       ctx.strokeStyle = colors.line_red;
@@ -583,24 +588,24 @@ export default function Canvas() {
     ctx.textAlign = 'left';
     ctx.fillStyle = colors.text_green;
 
-    // If not on frequency, grey out
-    if (aircraft.frequency !== frequency()) {
-      ctx.fillStyle = colors.text_grey;
-      // If selected
-    } else if (selectedAircraft() == aircraft.id) {
+    if (isSelected) {
       ctx.fillStyle = colors.text_yellow;
-      // If colliding
+    } else if (!isAccepted) {
+      ctx.fillStyle = colors.text_dark_grey;
+    } else if (aircraft.frequency !== frequency()) {
+      ctx.fillStyle = colors.text_grey;
     } else if (aircraft.is_colliding) {
       ctx.fillStyle = colors.text_red;
-      // If departure
     } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
       ctx.fillStyle = colors.line_blue;
     }
 
+    if (!isAccepted && !isSelected) return;
+
     // Draw callsign
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
-    if ((isAboveAirspace || isLanding) && !isSelected) {
+    if (isLanding && !isSelected) {
       return;
     }
 

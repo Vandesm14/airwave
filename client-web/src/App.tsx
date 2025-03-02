@@ -9,6 +9,7 @@ import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
 import { baseAPIPath, getMessages, usePing } from './lib/api';
 import { useQueryClient } from '@tanstack/solid-query';
+import Flights from './Flights';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -109,6 +110,7 @@ export default function App() {
     <>
       <Show when={query.data}>
         <div class="container left">
+          <Flights />
           <div class="spacer"></div>
           <Chatbox sendMessage={sendTextMessage}></Chatbox>
         </div>

@@ -8,7 +8,7 @@ use axum::{
   Router,
 };
 use methods::{
-  aircraft::{get_aircraft, get_one_aircraft},
+  aircraft::{accept_flight, get_aircraft, get_one_aircraft},
   comms::{comms_text, comms_voice},
   misc::{ping_pong, post_pause},
   state::{get_messages, get_world},
@@ -39,6 +39,7 @@ pub async fn run(
       // Aircraft
       .route("/game/aircraft", get(get_aircraft))
       .route("/game/aircraft/:id", get(get_one_aircraft))
+      .route("/game/aircraft/:id/accept", post(accept_flight))
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
