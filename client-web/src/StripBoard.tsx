@@ -96,43 +96,44 @@ function assignAircraftToStrips(
     return 'Colliding';
   }
 
+  let category: keyof Strips = 'None';
   if (isInLocalAirspace && isLanding) {
-    return 'Landing';
+    category = 'Landing';
   } else if (isTaxiing || isParked) {
     if (isTaxiingToRunway && isDepartingAndInLocalAirspace) {
-      return 'Takeoff';
+      category = 'Takeoff';
     } else if (isInLocalAirspace) {
       if (aircraft.state.type === 'parked') {
         if (aircraft.state.value.active || isSelected) {
-          return 'Parked';
+          category = 'Parked';
         } else {
-          return 'None';
+          category = 'None';
         }
       } else {
-        return 'Ground';
+        category = 'Ground';
       }
     } else {
-      return 'None';
+      category = 'None';
     }
   } else if (isDepartingFromLocalAirspace) {
     if (isInLocalAirspace) {
-      return 'Departure';
+      category = 'Departure';
     } else {
-      return 'Outbound';
+      category = 'Outbound';
     }
   } else if (isArrivingToLocalAirspace) {
     if (isInLocalAirspace) {
-      return 'Approach';
+      category = 'Approach';
     } else {
-      return 'Inbound';
-    }
-  } else {
-    if (isSelected) {
-      return 'Selected';
-    } else {
-      return 'None';
+      category = 'Inbound';
     }
   }
+
+  if (isSelected && category === 'None') {
+    category = 'Selected';
+  }
+
+  return category;
 }
 
 function Strip({ strip }: StripProps) {
@@ -238,35 +239,6 @@ function Strip({ strip }: StripProps) {
     distanceText = `${distanceText} NM`;
   }
 
-  // TODO: implement a scratchpad, or remove this.
-  // if (
-  //   ((strip.state.type === 'parked' && strip.state.value.active) ||
-  //     strip.state.type === 'taxiing') &&
-  //   strip.flight_plan.arriving !== airspace()
-  // ) {
-  //   const connection = query.data.connections.find(
-  //     (c) => c.id === strip.flight_plan.arriving
-  //   );
-  //   if (connection !== undefined) {
-  //     const rawAngle = angleBetweenPoints([0, 0], connection.pos);
-  //     const angle = (360 - Math.round(rawAngle) + 90) % 360;
-
-  //     let closestAngle = Infinity;
-  //     let heading = angle;
-  //     for (const runway of query.data.airspace.airports.flatMap(
-  //       (a) => a.runways
-  //     )) {
-  //       let diff = Math.abs(runway.heading - angle);
-  //       if (diff < closestAngle) {
-  //         closestAngle = diff;
-  //         heading = runway.heading;
-  //       }
-  //     }
-
-  //     distanceText = `FOR ${heading.toString().slice(0, 2)}`;
-  //   }
-  // }
-
   function handleMouseDown() {
     setSelectedAircraft(strip.id);
   }
@@ -306,6 +278,10 @@ function Strip({ strip }: StripProps) {
       <div class="vertical">
         <span class="frequency">{strip.frequency}</span>
         <span class="timer">{sinceCreated}</span>
+      </div>
+      <div class="vertical">
+        <span class="segment">{strip.segment}</span>
+        <span>.....</span>
       </div>
     </div>
   );
