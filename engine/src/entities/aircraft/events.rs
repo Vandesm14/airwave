@@ -430,7 +430,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
                   NodeBehavior::Park,
                   gate.pos,
                 ),
-                active: false,
               };
 
               aircraft.pos = gate.pos;

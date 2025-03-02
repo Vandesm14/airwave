@@ -48,14 +48,15 @@ async fn complete_atc_request(
         .await;
         match res {
           Ok(ResKind::OneAircraft(Some(aircraft))) => {
-            if !aircraft.active() {
-              // Prevent inactive aircraft from receiving commands.
-              tracing::warn!(
-                "Inactive aircraft \"{}\" received command",
-                aircraft.id
-              );
-              continue;
-            }
+            // TODO: remove if we don't need this later
+            // if !aircraft.active() {
+            //   // Prevent inactive aircraft from receiving commands.
+            //   tracing::warn!(
+            //     "Inactive aircraft \"{}\" received command",
+            //     aircraft.id
+            //   );
+            //   continue;
+            // }
 
             // Parse the command from the message.
             let (tasks, readback) = tokio::join!(

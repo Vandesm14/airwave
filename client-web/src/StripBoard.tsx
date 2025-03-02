@@ -104,7 +104,7 @@ function assignAircraftToStrips(
       category = 'Takeoff';
     } else if (isInLocalAirspace) {
       if (aircraft.state.type === 'parked') {
-        if (aircraft.state.value.active || isSelected) {
+        if (isSelected) {
           category = 'Parked';
         } else {
           category = 'None';
@@ -201,7 +201,7 @@ function Strip({ strip }: StripProps) {
     () =>
       strip.frequency !== ourFrequency() ||
       (sinceCreated.startsWith('-') && sinceCreated !== '--:--') ||
-      (strip.state.type === 'parked' && !strip.state.value.active)
+      strip.state.type === 'parked'
   );
 
   if (strip.state.type === 'landing') {
@@ -259,14 +259,7 @@ function Strip({ strip }: StripProps) {
         <span>{distanceText}</span>
       </div>
       <div class="vertical">
-        <Show
-          when={
-            !(
-              strip.state.type === 'parked' &&
-              strip.state.value.active === false
-            )
-          }
-        >
+        <Show when={!(strip.state.type === 'parked')}>
           <span>{strip.flight_plan.departing}</span>
           <span>{strip.flight_plan.arriving}</span>
         </Show>

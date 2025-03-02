@@ -365,11 +365,12 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           NodeBehavior::Park => {
             aircraft.state = AircraftState::Parked {
               at: current.clone(),
-              // Only become inactive if we are arriving at the player's airspace.
-              // If we are departing, keep us as active.
-              active: closest_airport(&bundle.world.airspaces, aircraft.pos)
-                .map(|x| x.id != aircraft.flight_plan.arriving)
-                .unwrap_or(true),
+              // TODO: remove if we don't need this later
+              // // Only become inactive if we are arriving at the player's airspace.
+              // // If we are departing, keep us as active.
+              // active: closest_airport(&bundle.world.airspaces, aircraft.pos)
+              //   .map(|x| x.id != aircraft.flight_plan.arriving)
+              //   .unwrap_or(true),
             };
 
             aircraft.segment = FlightSegment::Parked;

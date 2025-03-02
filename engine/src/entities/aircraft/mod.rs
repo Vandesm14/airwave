@@ -79,7 +79,6 @@ pub enum AircraftState {
   },
   Parked {
     at: Node<Vec2>,
-    active: bool,
   },
 }
 
@@ -275,22 +274,8 @@ pub struct Aircraft {
 
 // Helper methods
 impl Aircraft {
-  pub fn active(&self) -> bool {
-    if let AircraftState::Parked { active, .. } = &self.state {
-      *active
-    } else {
-      true
-    }
-  }
-
   pub fn is_parked(&self) -> bool {
     matches!(self.state, AircraftState::Parked { .. })
-  }
-
-  pub fn set_active(&mut self, active: bool) {
-    if let AircraftState::Parked { active: a, .. } = &mut self.state {
-      *a = active;
-    }
   }
 
   pub fn sync_targets_to_vals(&mut self) {
@@ -330,10 +315,7 @@ impl Aircraft {
       heading: gate.heading,
       altitude: 0.0,
 
-      state: AircraftState::Parked {
-        at: gate.into(),
-        active: false,
-      },
+      state: AircraftState::Parked { at: gate.into() },
       target: AircraftTargets::default(),
       flight_plan: FlightPlan::new(
         Intern::from(String::new()),

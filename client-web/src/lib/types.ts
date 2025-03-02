@@ -53,7 +53,6 @@ export type AircraftStateParked = {
   type: 'parked';
   value: {
     at: NodeVec2;
-    active: boolean;
   };
 };
 
