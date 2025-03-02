@@ -134,7 +134,7 @@ impl Runner {
       rate,
       tick_counter: 0,
 
-      spawns: SignalGenerator::new(rate * 10),
+      spawns: SignalGenerator::new(rate * 60),
     }
   }
 
