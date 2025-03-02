@@ -12,7 +12,8 @@ use crate::{
       effects::{
         AircraftEffect, AircraftUpdateFlyingEffect,
         AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
-        AircraftUpdatePositionEffect, AircraftUpdateTaxiingEffect,
+        AircraftUpdatePositionEffect, AircraftUpdateSegmentEffect,
+        AircraftUpdateTaxiingEffect,
       },
       events::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
@@ -159,6 +160,7 @@ impl Engine {
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
+      AircraftUpdateSegmentEffect::run(aircraft, &mut bundle);
     }
 
     if self.config.run_collisions() {

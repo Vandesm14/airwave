@@ -377,6 +377,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
             aircraft.flight_plan.arriving = arrival.id;
 
+            aircraft.segment = FlightSegment::Takeoff;
+
             bundle.events.push(
               AircraftEvent {
                 id: aircraft.id,
@@ -424,6 +426,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
               aircraft.heading = gate.heading;
               aircraft.altitude = 0.0;
               aircraft.sync_targets_to_vals();
+
+              aircraft.segment = FlightSegment::Parked;
 
               aircraft.flip_flight_plan();
             } else {
