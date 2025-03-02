@@ -21,7 +21,6 @@ use crate::{
     },
     world::{Game, World},
   },
-  pathfinder::Node,
 };
 
 #[derive(Debug)]

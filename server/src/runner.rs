@@ -338,7 +338,7 @@ impl Runner {
       }
     }
 
-    // self.cleanup(events.iter());
+    self.cleanup(events.iter());
     // TODO: self.save_world();
 
     self.tick_counter += 1;
