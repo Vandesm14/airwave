@@ -213,29 +213,4 @@ export type RadioMessage = {
   created: Duration;
 };
 
-export type Game = {
-  points: Points;
-};
-
-export type Points = {
-  landings: number;
-  landing_rate: {
-    rate: Duration;
-    marks: Duration[];
-  };
-  takeoffs: number;
-  takeoff_rate: {
-    rate: Duration;
-    marks: Duration[];
-  };
-};
-
-export type Flight = {
-  id: number;
-  kind: 'inbound' | 'outbound';
-  spawn_at: Duration;
-  status:
-    | { type: 'scheduled' }
-    | { type: 'ongoing'; value: string }
-    | { type: 'completed'; value: [string, Duration] };
-};
+export type Game = {};

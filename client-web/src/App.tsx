@@ -8,9 +8,7 @@ import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
 import { baseAPIPath, getMessages, usePing } from './lib/api';
-import Points from './Points';
 import { useQueryClient } from '@tanstack/solid-query';
-import Flights from './Flights';
 
 export default function App() {
   const whisper = new WhisperSTT();
@@ -111,9 +109,7 @@ export default function App() {
     <>
       <Show when={query.data}>
         <div class="container left">
-          <Flights />
           <div class="spacer"></div>
-          <Points />
           <Chatbox sendMessage={sendTextMessage}></Chatbox>
         </div>
         <div id="radar">

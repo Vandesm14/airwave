@@ -1,6 +1,6 @@
 import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
-import { Aircraft, Flight, Points, RadioMessage, World } from './types';
+import { Aircraft, RadioMessage, World } from './types';
 import fastDeepEqual from 'fast-deep-equal';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
@@ -48,64 +48,6 @@ export function useAircraft(renderRate: Accessor<number>) {
   }));
 }
 
-// Flights
-export const getFlights = '/api/game/flights';
-export function useFlights() {
-  return createQuery<Array<Flight>>(() => ({
-    queryKey: [getFlights],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}${getFlights}`);
-      if (!result.ok) return [];
-      return result.json();
-    },
-    initialData: [],
-    staleTime: 2000,
-    refetchInterval: 2000,
-    refetchOnMount: 'always',
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
-}
-
-export function useFlight(id: number) {
-  return createQuery<Flight | null>(() => ({
-    queryKey: [getFlights, id],
-    queryFn: async () => {
-      const flights = useFlights();
-      if (!flights.data) return null;
-      return flights.data.find((f) => f.id === id) ?? null;
-    },
-    staleTime: 2000,
-    refetchInterval: 2000,
-    refetchOnMount: 'always',
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
-}
-
-export function useFlightByAircraft(id: string) {
-  return createQuery<Flight | null>(() => ({
-    queryKey: [getFlights, id],
-    queryFn: async () => {
-      const flights = useFlights();
-      if (!flights.data) return null;
-      return (
-        flights.data.find(
-          (f) => f.status.type !== 'scheduled' && f.status.value === id
-        ) ?? null
-      );
-    },
-    staleTime: 2000,
-    refetchInterval: 2000,
-    refetchOnMount: 'always',
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
-}
-
-export const postCreateFlight = '/api/game/flight';
-export const deleteFlight = (id: number) => `/api/game/flight/${id}`;
-
 // State
 export const getWorld = '/api/world';
 export function useWorld() {
@@ -117,22 +59,6 @@ export function useWorld() {
       return result.json();
     },
     staleTime: Infinity,
-    refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
-  }));
-}
-
-export const getPoints = '/api/game/points';
-export function usePoints() {
-  return createQuery<Points>(() => ({
-    queryKey: [getPoints],
-    queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}${getPoints}`);
-      if (!result.ok) return null;
-      return result.json();
-    },
-    staleTime: 1000,
-    refetchInterval: 1000,
     refetchOnReconnect: 'always',
     throwOnError: true, // Throw an error if the query fails
   }));
