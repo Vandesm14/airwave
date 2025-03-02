@@ -230,10 +230,6 @@ function Strip({ strip }: StripProps) {
         <span class="frequency">{strip.frequency}</span>
         <span class="timer">{sinceCreated}</span>
       </div>
-      <div class="vertical">
-        <span class="segment">{strip.segment}</span>
-        <span>&nbsp;</span>
-      </div>
     </div>
   );
 }
