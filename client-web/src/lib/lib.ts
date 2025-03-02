@@ -16,6 +16,7 @@ export const knotToFeetPerSecond = 1.68781 * timeScale;
 // TODO: remove this
 export const HARD_CODED_AIRPORT = 'KSFO';
 export function hardcodedAirspace(world: World): Airspace | undefined {
+  if (!world) return undefined;
   for (let airspace of world.airspaces) {
     if (airspace.id === HARD_CODED_AIRPORT) {
       return airspace;
@@ -25,6 +26,7 @@ export function hardcodedAirspace(world: World): Airspace | undefined {
   return undefined;
 }
 export function hardcodedAirport(world: World): Airport | undefined {
+  if (!world) return undefined;
   for (let airspace of world.airspaces) {
     let airport = airspace.airports.find(
       (airport) => airport.id === HARD_CODED_AIRPORT
