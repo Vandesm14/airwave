@@ -233,6 +233,39 @@ impl AircraftKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+/// FlightSegment denotes the exact segment of flight that an aircraft is in.
+///
+/// This is simply a flag for denoting the segment of flight and does not
+/// contain any data or further information. [`AircraftState`] is the primary
+/// holder of state and data for an aircraft.
+pub enum FlightSegment {
+  #[default]
+  /// Parked and motionless.
+  Parked,
+
+  /// Taxiing as a departure.
+  TaxiDep,
+  /// Taking off (not yet in the air).
+  Takeoff,
+  /// Departing, most likely via a SID.
+  Departure,
+  /// Outside of terminal airspace, at cruise altitude and speed.
+  Cruise,
+
+  /// Descending from cruise, most likely via a STAR.
+  Arrival,
+  /// Within a terminal airspace for vectors to final.
+  Approach,
+  /// Following ILS for landing.
+  Land,
+  /// Touched down and slowing to taxi speed.
+  Touchdown,
+  /// Taxiing as an arrival.
+  TaxiArr,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub id: Intern<String>,
   pub is_colliding: bool,
@@ -247,6 +280,7 @@ pub struct Aircraft {
   pub flight_plan: FlightPlan,
 
   pub frequency: f32,
+  pub segment: FlightSegment,
 }
 
 // Helper methods
@@ -317,81 +351,9 @@ impl Aircraft {
       ),
 
       frequency: airport.frequencies.ground,
+      segment: FlightSegment::Parked,
     }
     .with_synced_targets()
-  }
-
-  pub fn random_flying(
-    frequency: f32,
-    flight_plan: FlightPlan,
-    rng: &mut Rng,
-  ) -> Self {
-    Self {
-      id: Intern::from(Aircraft::random_callsign(rng)),
-      is_colliding: false,
-
-      pos: Vec2::ZERO,
-      speed: 250.0,
-      heading: 0.0,
-      altitude: 7000.0,
-
-      state: AircraftState::Flying {
-        waypoints: Vec::new(),
-      },
-      target: AircraftTargets::default(),
-      flight_plan,
-
-      frequency,
-    }
-    .with_synced_targets()
-  }
-
-  pub fn random_inbound(
-    frequency: f32,
-    departure: &Airspace,
-    arrival: &Airspace,
-    rng: &mut Rng,
-  ) -> Self {
-    let mut aircraft = Self::random_flying(
-      frequency,
-      FlightPlan::new(departure.id, arrival.id),
-      rng,
-    );
-
-    aircraft.pos = departure.pos;
-    aircraft.heading = angle_between_points(departure.pos, arrival.pos);
-    aircraft.speed = 300.0;
-    aircraft.altitude = 7000.0;
-    aircraft.sync_targets_to_vals();
-
-    // !5 NM is arbitrary. It's just half of the radius of an approach-space.
-    let transition_into = departure
-      .pos
-      .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 15.0);
-
-    // This is 30 NM + 15 NM to account for the radius of the approach airspace
-    let transition_out_of = arrival
-      .pos
-      .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 45.0);
-
-    // TODO: Aircraft should tune to the approach freq
-    aircraft.state = AircraftState::Flying {
-      waypoints: vec![
-        new_vor(Intern::from_ref("STAR"), transition_out_of).with_behavior(
-          vec![
-            EventKind::SpeedAtOrBelow(250.0),
-            EventKind::AltitudeAtOrBelow(18000.0),
-            EventKind::CalloutInAirspace,
-          ],
-        ),
-        new_vor(Intern::from_ref("SID"), transition_into).with_behavior(vec![
-          EventKind::SpeedAtOrAbove(400.0),
-          EventKind::AltitudeAtOrAbove(38000.0),
-        ]),
-      ],
-    };
-
-    aircraft
   }
 
   pub fn flip_flight_plan(&mut self) {

@@ -72,6 +72,18 @@ export function newDuration(secs: number, nanos: number): Duration {
   return { secs, nanos };
 }
 
+export type FlightSegment =
+  | 'parked'
+  | 'taxi-dep'
+  | 'takeoff'
+  | 'departure'
+  | 'cruise'
+  | 'arrival'
+  | 'approach'
+  | 'land'
+  | 'touchdown'
+  | 'taxi-arr';
+
 export type Aircraft = {
   id: string;
   is_colliding: boolean;
@@ -102,6 +114,7 @@ export type Aircraft = {
   };
 
   frequency: number;
+  segment: FlightSegment;
 };
 
 export function isAircraftFlying(
