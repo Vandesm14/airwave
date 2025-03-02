@@ -13,7 +13,8 @@ use crate::{
     display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
     NodeKind, Pathfinder,
   },
-  NAUTICALMILES_TO_FEET,
+  APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
+  TRANSITION_ALTITUDE,
 };
 
 use super::{
@@ -181,6 +182,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let transition_sid = departure
               .pos
               .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 15.0);
+
+            // TOD: Top of Descent
+            let transition_tod = arrival
+              .pos
+              .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 90.0);
             let transition_star = arrival
               .pos
               .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 60.0);
@@ -191,22 +197,29 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let wp_sid = new_vor(Intern::from_ref("SID"), transition_sid)
               .with_behavior(vec![
                 EventKind::SpeedAtOrAbove(450.0),
-                EventKind::AltitudeAtOrAbove(38000.0),
+                EventKind::AltitudeAtOrAbove(CRUISE_ALTITUDE),
+              ]);
+
+            let wp_tod = new_vor(Intern::from_ref("TOD"), transition_tod)
+              .with_behavior(vec![
+                EventKind::SpeedAtOrBelow(250.0),
+                EventKind::AltitudeAtOrBelow(TRANSITION_ALTITUDE),
               ]);
             let wp_star = new_vor(Intern::from_ref("STAR"), transition_star)
               .with_behavior(vec![
                 EventKind::SpeedAtOrBelow(250.0),
-                EventKind::AltitudeAtOrBelow(18000.0),
+                EventKind::AltitudeAtOrBelow(ARRIVAL_ALTITUDE),
               ]);
-
             let wp_iap = new_vor(Intern::from_ref("IAP"), transition_iap)
-              .with_behavior(vec![EventKind::AltitudeAtOrBelow(3000.0)]);
-
+              .with_behavior(vec![
+                EventKind::SpeedAtOrBelow(180.0),
+                EventKind::AltitudeAtOrBelow(APPROACH_ALTITUDE),
+              ]);
             let wp_aprt = new_vor(Intern::from_ref("APRT"), arrival.pos)
               .with_behavior(vec![EventKind::QuickArrive]);
 
             aircraft.state = AircraftState::Flying {
-              waypoints: vec![wp_aprt, wp_iap, wp_star, wp_sid],
+              waypoints: vec![wp_aprt, wp_iap, wp_star, wp_tod, wp_sid],
             };
           }
         }

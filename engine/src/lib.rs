@@ -32,7 +32,11 @@ pub const COUNTERCLOCKWISE: f32 = 270.0;
 pub const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 180..=900;
 
 pub const HARD_CODED_AIRPORT: &str = "KSFO";
+
+pub const CRUISE_ALTITUDE: f32 = 38000.0;
 pub const TRANSITION_ALTITUDE: f32 = 18000.0;
+pub const ARRIVAL_ALTITUDE: f32 = 7000.0;
+pub const APPROACH_ALTITUDE: f32 = 3000.0;
 
 pub fn duration_now() -> Duration {
   SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
