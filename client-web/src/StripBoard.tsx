@@ -63,77 +63,47 @@ function assignAircraftToStrips(
   ourAirspace: string,
   selectedAircraft: string
 ): keyof Strips {
-  const isLanding = aircraft.state.type === 'landing';
-  const isTaxiing = aircraft.state.type === 'taxiing';
-  const isParked = aircraft.state.type === 'parked';
-
-  const isTaxiingToRunway = (() => {
-    if (isAircraftTaxiing(aircraft.state)) {
-      const firstWaypoint = aircraft.state.value.waypoints[0];
-
-      return (
-        (typeof firstWaypoint !== 'undefined' &&
-          firstWaypoint.kind === 'runway' &&
-          aircraft.state.value.waypoints.length == 1) ||
-        aircraft.state.value.current.kind === 'runway'
-      );
-    } else {
-      return false;
-    }
-  })();
-
-  const isInLocalAirspace = aircraft.state.type === 'flying';
-  const isDepartingAndInLocalAirspace =
-    isInLocalAirspace && ourAirspace === aircraft.flight_plan.departing;
-  const isDepartingFromLocalAirspace =
-    ourAirspace === aircraft.flight_plan.departing;
-
-  const isArrivingToLocalAirspace =
-    ourAirspace === aircraft.flight_plan.arriving;
   const isSelected = aircraft.id === selectedAircraft;
+
+  const isOurArrival = ourAirspace === aircraft.flight_plan.arriving;
+  const isOurDeparture = ourAirspace === aircraft.flight_plan.departing;
+  const isOurs = isOurArrival || isOurDeparture;
+
+  const isParked = aircraft.segment === 'parked';
+  const isGround = aircraft.segment.startsWith('taxi-');
+
+  const isTakeoff = aircraft.segment === 'takeoff';
+  const isDeparture = aircraft.segment === 'departure';
+  const isOutbound = aircraft.segment === 'cruise';
+
+  const isLanding = aircraft.segment === 'land';
+  const isApproach = aircraft.segment === 'approach';
+  const isInbound = aircraft.segment === 'arrival';
 
   if (aircraft.is_colliding) {
     return 'Colliding';
   }
 
-  let category: keyof Strips = 'None';
-  if (isInLocalAirspace && isLanding) {
-    category = 'Landing';
-  } else if (isTaxiing || isParked) {
-    if (isTaxiingToRunway && isDepartingAndInLocalAirspace) {
-      category = 'Takeoff';
-    } else if (isInLocalAirspace) {
-      if (aircraft.state.type === 'parked') {
-        if (isSelected) {
-          category = 'Parked';
-        } else {
-          category = 'None';
-        }
-      } else {
-        category = 'Ground';
-      }
-    } else {
-      category = 'None';
-    }
-  } else if (isDepartingFromLocalAirspace) {
-    if (isInLocalAirspace) {
-      category = 'Departure';
-    } else {
-      category = 'Outbound';
-    }
-  } else if (isArrivingToLocalAirspace) {
-    if (isInLocalAirspace) {
-      category = 'Approach';
-    } else {
-      category = 'Inbound';
-    }
+  if (isOurs) {
+    if (isParked) return 'Parked';
+    if (isGround) return 'Ground';
   }
 
-  if (isSelected && category === 'None') {
-    category = 'Selected';
+  if (isOurDeparture) {
+    if (isTakeoff) return 'Takeoff';
+    if (isDeparture) return 'Departure';
+    if (isOutbound) return 'Outbound';
   }
 
-  return category;
+  if (isOurArrival) {
+    if (isLanding) return 'Landing';
+    if (isApproach) return 'Approach';
+    if (isInbound) return 'Inbound';
+  }
+
+  if (isSelected) return 'Selected';
+
+  return 'None';
 }
 
 function Strip({ strip }: StripProps) {
