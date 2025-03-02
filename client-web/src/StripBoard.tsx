@@ -1,5 +1,10 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
-import { Aircraft, isAircraftFlying, isAircraftTaxiing } from './lib/types';
+import {
+  Aircraft,
+  isAircraftFlying,
+  isAircraftLanding,
+  isAircraftParked,
+} from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
@@ -114,13 +119,11 @@ function Strip({ strip }: StripProps) {
   let [airspace] = useAtom(control().airspace);
 
   const query = useWorld();
-
   if (!query.data) {
     return null;
   }
 
   let sinceCreated = `--:--`;
-
   if (isAircraftFlying(strip.state)) {
     if (strip.state.value.waypoints.length > 0) {
       let current = strip.pos;
@@ -135,25 +138,8 @@ function Strip({ strip }: StripProps) {
       let distanceInNm = distance / nauticalMilesToFeet;
       let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
       sinceCreated = formatTime(time);
-    } else {
-      sinceCreated = `--:--`;
     }
-  } else if (isAircraftTaxiing(strip.state) && strip.speed > 0) {
-    if (strip.state.value.waypoints.length > 0) {
-      let current = strip.pos;
-      let distance = 0;
-      let waypoints = strip.state.value.waypoints.slice();
-      waypoints.reverse();
-      waypoints.forEach((waypoint) => {
-        distance += calculateDistance(current, waypoint.value);
-        current = waypoint.value;
-      });
-
-      let distanceInNm = distance / nauticalMilesToFeet;
-      let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
-      sinceCreated = formatTime(time);
-    }
-  } else if (strip.state.type === 'landing') {
+  } else if (isAircraftLanding(strip.state)) {
     let distance = calculateDistance(
       strip.pos,
       runwayInfo(strip.state.value.runway).start
@@ -174,7 +160,7 @@ function Strip({ strip }: StripProps) {
       strip.state.type === 'parked'
   );
 
-  if (strip.state.type === 'landing') {
+  if (isAircraftLanding(strip.state)) {
     topStatus = 'ILS';
     bottomStatus = strip.state.value.runway.id;
   } else if (strip.state.type === 'taxiing') {
@@ -190,7 +176,7 @@ function Strip({ strip }: StripProps) {
     }
 
     bottomStatus = current.name;
-  } else if (strip.state.type === 'parked') {
+  } else if (isAircraftParked(strip.state)) {
     topStatus = 'PARK';
     bottomStatus = strip.state.value.at.name;
   }
@@ -201,11 +187,13 @@ function Strip({ strip }: StripProps) {
   );
   let distanceText = '';
 
-  if (strip.state.type === 'flying' || strip.state.type === 'landing') {
+  if (isAircraftFlying(strip.state) || isAircraftLanding(strip.state)) {
     distanceText = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
+
     if (distanceText.endsWith('.')) {
       distanceText = distanceText.replace('.', ' ');
     }
+
     distanceText = `${distanceText} NM`;
   }
 
@@ -244,7 +232,7 @@ function Strip({ strip }: StripProps) {
       </div>
       <div class="vertical">
         <span class="segment">{strip.segment}</span>
-        <span>.....</span>
+        <span>&nbsp;</span>
       </div>
     </div>
   );
