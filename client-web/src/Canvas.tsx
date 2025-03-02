@@ -61,6 +61,11 @@ export default function Canvas() {
   const aircrafts = useAircraft(renderRate);
   const world = useWorld();
 
+  // FPS variables
+  let [lastFpsUpdate, setLastFpsUpdate] = createSignal(Date.now());
+  let [frameCount, setFrameCount] = createSignal(0);
+  let [currentFps, setCurrentFps] = createSignal(0);
+
   function scaleFeetToPixels(num: number): number {
     const FEET_TO_PIXELS = 0.003;
     return num * FEET_TO_PIXELS * radar().scale;
@@ -135,7 +140,7 @@ export default function Canvas() {
     document.addEventListener('keydown', onKeydown);
 
     if (canvas instanceof HTMLCanvasElement && canvas !== null) {
-      setInterval(() => doRender(canvas), 1000 / 30);
+      setInterval(() => doRender(canvas), 1000 / 60);
 
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
@@ -242,7 +247,15 @@ export default function Canvas() {
   function doRender(canvas: HTMLCanvasElement) {
     doDraw(canvas);
 
+    // FPS counter update
+    setFrameCount((count) => count + 1);
     let now = Date.now();
+    if (now - lastFpsUpdate() >= 1000) {
+      setCurrentFps(frameCount());
+      setFrameCount(0);
+      setLastFpsUpdate(now);
+    }
+
     if (now - render().lastDraw > renderRate() || render().doInitialDraw) {
       setRender((render) => {
         setAircraftTrails((map) => {
@@ -279,10 +292,7 @@ export default function Canvas() {
 
   function resetTransform(ctx: CanvasRenderingContext2D) {
     ctx.resetTransform();
-    // ctx.translate(radar().shiftPoint.x, radar().shiftPoint.y);
-    // Set 0.0 to be the center of the canvas
     ctx.translate(canvas.width * 0.5, canvas.height * 0.5);
-
     ctx.lineWidth = 1;
     ctx.strokeStyle = 'white';
     ctx.fillStyle = 'white';
@@ -315,7 +325,18 @@ export default function Canvas() {
       }
 
       drawCollodingMessage(ctx, aircrafts.data);
+      drawFPS(ctx);
     }
+  }
+
+  // FPS counter
+  function drawFPS(ctx: Ctx) {
+    ctx.resetTransform();
+    ctx.font = `900 ${fontSize()}px monospace`;
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`FPS: ${currentFps()}`, 10, 10);
   }
 
   function drawCompass(ctx: Ctx) {
@@ -355,6 +376,7 @@ export default function Canvas() {
     }
   }
 
+  // ... (the rest of your drawing functions remain unchanged)
   function drawAirspace(ctx: Ctx, airspace: Airspace) {
     resetTransform(ctx);
     let pos = scalePoint(airspace.pos);
@@ -376,7 +398,6 @@ export default function Canvas() {
       minAngle: scalePoint(info.ils.minAngle),
     };
 
-    // Draw the runway
     ctx.strokeStyle = 'grey';
     ctx.fillStyle = 'grey';
     ctx.lineWidth = scaleFeetToPixels(1000);
@@ -385,7 +406,6 @@ export default function Canvas() {
     ctx.lineTo(end[0], end[1]);
     ctx.stroke();
 
-    // Draw the localizer beacon
     ctx.fillStyle = colors.line_blue;
     ctx.strokeStyle = colors.line_blue;
     ctx.lineWidth = 1;
@@ -394,7 +414,6 @@ export default function Canvas() {
     ctx.lineTo(ils.end[0], ils.end[1]);
     ctx.stroke();
 
-    // Draw the max and min localizer angle
     ctx.strokeStyle = colors.line_grey;
     ctx.beginPath();
     ctx.moveTo(start[0], start[1]);
