@@ -201,7 +201,7 @@ impl Engine {
     }
   }
 
-  pub fn handle_collisions(&mut self, aircrafts: &mut [Aircraft]) {
+  pub fn handle_collisions(&mut self, _aircrafts: &mut [Aircraft]) {
     // TODO: Collisions are disabled for now
     // let mut collisions: HashSet<Intern<String>> = HashSet::new();
     // for pair in aircrafts.iter().combinations(2) {

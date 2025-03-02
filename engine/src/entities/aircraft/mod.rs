@@ -1,22 +1,14 @@
 pub mod effects;
 pub mod events;
 
-use events::EventKind;
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::{
-  angle_between_points,
-  pathfinder::{new_vor, Node, NodeVORData},
-  NAUTICALMILES_TO_FEET,
-};
+use crate::pathfinder::{Node, NodeVORData};
 
-use super::{
-  airport::{Airport, Gate, Runway},
-  airspace::Airspace,
-};
+use super::airport::{Airport, Gate, Runway};
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct AircraftTargets {
