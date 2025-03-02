@@ -347,7 +347,7 @@ impl Runner {
   pub fn quick_start(&mut self) -> usize {
     self.engine.config = EngineConfig::Minimal;
 
-    let size_nm = (WORLD_RADIUS * 2.0) / NAUTICALMILES_TO_FEET;
+    let size_nm = (WORLD_RADIUS) / NAUTICALMILES_TO_FEET;
     let base_speed_knots = 450.0;
 
     let max_time_hours = size_nm / base_speed_knots;
