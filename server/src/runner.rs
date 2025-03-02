@@ -11,18 +11,16 @@ use turborand::{rng::Rng, TurboRand};
 
 use engine::{
   circle_circle_intersection,
-  command::{CommandReply, CommandWithFreq, OutgoingCommandReply, Task},
-  duration_now,
+  command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, Event},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
-      Aircraft, AircraftState,
+      Aircraft,
     },
     airport::Airport,
     airspace::Airspace,
-    flight::{Flight, FlightKind, FlightStatus},
-    world::{Game, Points, World},
+    world::{Game, World},
   },
   Translate, NAUTICALMILES_TO_FEET,
 };
@@ -31,8 +29,7 @@ use crate::{
   airport::new_v_pattern,
   job::{JobQueue, JobReq},
   ring::RingBuffer,
-  AUTO_TOWER_AIRSPACE_RADIUS, MANUAL_TOWER_AIRSPACE_RADIUS,
-  TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
+  AUTO_TOWER_AIRSPACE_RADIUS, TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
 
 pub const SPAWN_RATE: Duration = Duration::from_secs(210);
@@ -51,8 +48,6 @@ pub enum OutgoingReply {
   Aircraft(Vec<Aircraft>),
   World(World),
   Size(f32),
-  Points(Points),
-  Funds(usize),
 }
 
 #[derive(Debug, Clone)]
@@ -64,19 +59,9 @@ pub enum TinyReqKind {
   Aircraft,
   OneAircraft(Intern<String>),
 
-  // Flights
-  Flights,
-  GetFlight(usize),
-  CreateFlight {
-    kind: FlightKind,
-    spawn_at: Duration,
-  },
-  DeleteFlight(usize),
-
   // Other State
   Messages,
   World,
-  Points,
 }
 
 #[derive(Debug, Clone)]
@@ -98,14 +83,9 @@ pub enum ResKind {
   Aircraft(Vec<Aircraft>),
   OneAircraft(Option<Aircraft>),
 
-  // Flights
-  Flights(Vec<Flight>),
-  OneFlight(Option<Flight>),
-
   // Other State
   Messages(Vec<OutgoingCommandReply>),
   World(World),
-  Points(Points),
 }
 
 #[derive(Debug)]
@@ -347,34 +327,12 @@ impl Runner {
           incoming.reply(ResKind::OneAircraft(aircraft));
         }
 
-        // Flights
-        TinyReqKind::Flights => {
-          incoming
-            .reply(ResKind::Flights(self.game.flights.flights().to_vec()));
-        }
-        TinyReqKind::GetFlight(id) => {
-          let flight = self.game.flights.get(*id).cloned();
-          incoming.reply(ResKind::OneFlight(flight));
-        }
-        TinyReqKind::CreateFlight { kind, spawn_at } => {
-          let id = self.game.flights.add(kind.clone(), *spawn_at);
-          incoming
-            .reply(ResKind::OneFlight(self.game.flights.get(id).cloned()));
-        }
-        TinyReqKind::DeleteFlight(id) => {
-          let flight = self.game.flights.remove(*id);
-          incoming.reply(ResKind::OneFlight(flight));
-        }
-
         // Other State
         TinyReqKind::Messages => incoming.reply(ResKind::Messages(
           self.messages.iter().cloned().map(|m| m.into()).collect(),
         )),
         TinyReqKind::World => {
           incoming.reply(ResKind::World(self.world.clone()))
-        }
-        TinyReqKind::Points => {
-          incoming.reply(ResKind::Points(self.game.points.clone()));
         }
       }
     }
@@ -450,31 +408,20 @@ impl Runner {
       Event::Aircraft(aircraft_event) => Some(aircraft_event),
       Event::UiEvent(_) => None,
     }) {
-      match event {
-        AircraftEvent {
-          id,
-          kind: EventKind::Delete,
-        } => {
-          let index = self
-            .game
-            .aircraft
-            .iter()
-            .enumerate()
-            .find_map(|(i, a)| (a.id == *id).then_some(i));
-          if let Some(index) = index {
-            self.game.aircraft.swap_remove(index);
-          }
+      if let AircraftEvent {
+        id,
+        kind: EventKind::Delete,
+      } = event
+      {
+        let index = self
+          .game
+          .aircraft
+          .iter()
+          .enumerate()
+          .find_map(|(i, a)| (a.id == *id).then_some(i));
+        if let Some(index) = index {
+          self.game.aircraft.swap_remove(index);
         }
-        AircraftEvent {
-          id,
-          kind: EventKind::CompleteFlight,
-        } => {
-          if let Some(flight) = self.game.flights.get_by_aircraft_id(*id) {
-            self.game.flights.get_mut(flight).unwrap().status =
-              FlightStatus::Completed(*id, duration_now());
-          }
-        }
-        _ => {}
       }
     }
   }

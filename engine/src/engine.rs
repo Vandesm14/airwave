@@ -131,29 +131,6 @@ impl Engine {
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
     }
 
-    for event in bundle.events.iter() {
-      match event {
-        Event::Aircraft(AircraftEvent {
-          kind: EventKind::SuccessfulTakeoff,
-          ..
-        }) => {
-          game.points.takeoff_rate.mark();
-          game.points.takeoffs += 1;
-        }
-        Event::Aircraft(AircraftEvent {
-          kind: EventKind::SuccessfulLanding,
-          ..
-        }) => {
-          game.points.landing_rate.mark();
-          game.points.landings += 1;
-        }
-        _ => {}
-      }
-    }
-
-    game.points.landing_rate.calc_rate();
-    game.points.takeoff_rate.calc_rate();
-
     self.taxi_collisions(&mut game.aircraft, &mut bundle);
 
     // Capture the left over events and actions for next time

@@ -4,15 +4,14 @@ pub mod shared;
 use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
-  routing::{delete, get, post},
+  routing::{get, post},
   Router,
 };
 use methods::{
   aircraft::{get_aircraft, get_one_aircraft},
   comms::{comms_text, comms_voice},
-  flights::{create_flight, delete_flight, get_flights},
   misc::{ping_pong, post_pause},
-  state::{get_messages, get_points, get_world},
+  state::{get_messages, get_world},
 };
 use serde::{Deserialize, Serialize};
 use shared::{AppState, GetSender, PostSender};
@@ -40,14 +39,9 @@ pub async fn run(
       // Aircraft
       .route("/game/aircraft", get(get_aircraft))
       .route("/game/aircraft/:id", get(get_one_aircraft))
-      // Flights
-      .route("/game/flights", get(get_flights))
-      .route("/game/flight", post(create_flight))
-      .route("/game/flight/:id", delete(delete_flight))
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
-      .route("/game/points", get(get_points))
       .with_state(AppState::new(get_sender, post_sender, openai_api_key))
       .layer(cors),
   );

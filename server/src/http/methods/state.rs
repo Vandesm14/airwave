@@ -39,20 +39,3 @@ pub async fn get_world(
     Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }
-
-pub async fn get_points(
-  State(mut state): State<AppState>,
-) -> Result<String, http::StatusCode> {
-  let res = JobReq::send(TinyReqKind::Points, &mut state.tiny_sender)
-    .recv()
-    .await;
-  if let Ok(ResKind::Points(points)) = res {
-    if let Ok(string) = serde_json::to_string(&points) {
-      Ok(string)
-    } else {
-      Err(http::StatusCode::BAD_REQUEST)
-    }
-  } else {
-    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
-  }
-}

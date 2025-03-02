@@ -55,10 +55,6 @@ pub enum EventKind {
   // External
   Delete,
   CompleteFlight,
-
-  // Points
-  SuccessfulTakeoff,
-  SuccessfulLanding,
 }
 
 impl From<Task> for EventKind {
@@ -212,7 +208,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       }
       EventKind::Touchdown => {
         if let AircraftState::Landing { .. } = aircraft.state {
-          handle_touchdown_event(aircraft, bundle);
+          handle_touchdown_event(aircraft);
         }
       }
       EventKind::Takeoff(runway) => {
@@ -333,11 +329,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .push(AircraftEvent::new(aircraft.id, EventKind::Delete).into());
       }
       EventKind::CompleteFlight => {}
-
-      // Points
-      // Points are handled within the engine itself.
-      EventKind::SuccessfulTakeoff => {}
-      EventKind::SuccessfulLanding => {}
     }
   }
 }
@@ -359,7 +350,7 @@ pub fn handle_land_event(
   }
 }
 
-pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+pub fn handle_touchdown_event(aircraft: &mut Aircraft) {
   let AircraftState::Landing { runway, .. } = &mut aircraft.state else {
     unreachable!("outer function asserts that aircraft is landing")
   };
@@ -381,14 +372,6 @@ pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     waypoints: Vec::new(),
     state: TaxiingState::Override,
   };
-
-  bundle.events.push(
-    AircraftEvent {
-      id: aircraft.id,
-      kind: EventKind::SuccessfulLanding,
-    }
-    .into(),
-  );
 }
 
 pub fn handle_taxi_event(
@@ -523,13 +506,6 @@ pub fn handle_takeoff_event(
           waypoints: Vec::new(),
         };
 
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::SuccessfulTakeoff,
-          }
-          .into(),
-        );
         bundle.events.push(
           AircraftEvent {
             id: aircraft.id,

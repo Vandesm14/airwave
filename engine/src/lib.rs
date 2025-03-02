@@ -29,8 +29,9 @@ pub const RIGHT: f32 = 90.0;
 pub const CLOCKWISE: f32 = 90.0;
 pub const COUNTERCLOCKWISE: f32 = 270.0;
 
-pub const ENROUTE_TIME_MULTIPLIER: f32 = 10.0;
 pub const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 180..=900;
+
+pub const HARD_CODED_AIRPORT: &str = "KSFO";
 
 pub fn duration_now() -> Duration {
   SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
