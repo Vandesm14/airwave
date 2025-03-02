@@ -384,9 +384,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
               waypoints: Vec::new(),
             };
 
-            aircraft.altitude = 0.0;
+            aircraft.altitude = 1000.0;
             aircraft.target.altitude = aircraft.flight_plan.altitude;
-            aircraft.speed = 180.0;
+            aircraft.speed = 150.0;
             aircraft.target.speed = aircraft.flight_plan.speed;
 
             aircraft.flight_plan.arriving = arrival.id;
