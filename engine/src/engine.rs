@@ -92,8 +92,32 @@ impl From<AircraftEvent> for Event {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
+pub enum EngineConfig {
+  /// Runs only flight layers.
+  Minimal,
+
+  /// Runs all layers for aircraft movement.
+  Base,
+
+  #[default]
+  /// Runs all collision checks.
+  Full,
+}
+
+impl EngineConfig {
+  pub fn run_collisions(&self) -> bool {
+    matches!(self, EngineConfig::Full)
+  }
+
+  pub fn run_all_layers(&self) -> bool {
+    matches!(self, EngineConfig::Base) || matches!(self, EngineConfig::Full)
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Engine {
   pub events: Vec<Event>,
+  pub config: EngineConfig,
 }
 
 impl Engine {
@@ -105,7 +129,9 @@ impl Engine {
     dt: f32,
   ) -> Vec<Event> {
     self.compute_available_gates(&game.aircraft, world);
-    self.handle_collisions(&mut game.aircraft);
+    if self.config.run_collisions() {
+      self.handle_collisions(&mut game.aircraft);
+    }
 
     if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
@@ -127,14 +153,18 @@ impl Engine {
       }
 
       // Run through all effects
-      AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
+      if self.config.run_all_layers() {
+        AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
+        AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
+      }
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
-      AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
     }
 
-    self.taxi_collisions(&mut game.aircraft, &mut bundle);
+    if self.config.run_collisions() {
+      self.taxi_collisions(&mut game.aircraft, &mut bundle);
+    }
 
     // Capture the left over events and actions for next time
     if !bundle.events.is_empty() {
@@ -227,6 +257,12 @@ impl Engine {
     {
       let aircraft = pair.first().unwrap();
       let other_aircraft = pair.last().unwrap();
+
+      // This allows us to ignore non-moving aircraft included parked.
+      if aircraft.speed == 0.0 && other_aircraft.speed == 0.0 {
+        continue;
+      }
+
       let distance = aircraft.pos.distance_squared(other_aircraft.pos);
 
       if distance <= 250.0_f32.powf(2.0) * 2.0 {

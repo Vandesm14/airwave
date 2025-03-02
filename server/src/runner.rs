@@ -12,7 +12,7 @@ use turborand::{rng::Rng, TurboRand};
 use engine::{
   circle_circle_intersection,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
-  engine::{Engine, Event},
+  engine::{Engine, EngineConfig, Event},
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
@@ -103,7 +103,8 @@ pub struct Runner {
   pub rng: Rng,
 
   last_tick: Instant,
-  rate: usize,
+  pub rate: usize,
+  pub tick_counter: usize,
 
   spawns: SignalGenerator,
 }
@@ -115,6 +116,8 @@ impl Runner {
     save_to: Option<PathBuf>,
     rng: Rng,
   ) -> Self {
+    let rate = 15;
+
     Self {
       world: World::default(),
       game: Game::default(),
@@ -128,9 +131,10 @@ impl Runner {
       rng,
 
       last_tick: Instant::now(),
-      rate: 15,
+      rate,
+      tick_counter: 0,
 
-      spawns: SignalGenerator::new(Duration::from_secs(10)),
+      spawns: SignalGenerator::new(rate * 10),
     }
   }
 
@@ -235,67 +239,6 @@ impl Runner {
     }
   }
 
-  pub fn handle_flights(&mut self) {
-    // TODO: Reimplement
-    // let now = duration_now();
-    // let mut to_mark: Vec<(usize, Intern<String>)> = Vec::new();
-    // for flight in self.game.flights.iter() {
-    //   if flight.spawn_at <= now
-    //     && matches!(flight.status, FlightStatus::Scheduled)
-    //   {
-    //     match flight.kind {
-    //       FlightKind::Inbound => {
-    //         let aircraft = Aircraft::random_inbound(
-    //           self.world.airspace.frequencies.approach,
-    //           self.rng.sample(&self.world.connections).unwrap(),
-    //           &self.world.airspace,
-    //           &mut self.rng,
-    //         );
-
-    //         to_mark.push((flight.id, aircraft.id));
-
-    //         self.game.aircraft.push(aircraft);
-    //       }
-    //       FlightKind::Outbound => {
-    //         let aircraft =
-    //           self
-    //             .rng
-    //             .sample_iter(self.game.aircraft.iter_mut().filter(|a| {
-    //               matches!(a.state, AircraftState::Parked { active: false, .. })
-    //             }));
-
-    //         if let Some(aircraft) = aircraft {
-    //           aircraft.flight_plan.departing = self.world.airspace.id;
-    //           aircraft.flight_plan.arriving =
-    //             self.rng.sample(&self.world.connections).unwrap().id;
-    //           aircraft.set_active(true);
-    //           aircraft.sync_targets_to_vals();
-
-    //           to_mark.push((flight.id, aircraft.id));
-
-    //           self.messages.push(CommandWithFreq::new(
-    //             aircraft.id.to_string(),
-    //             aircraft.frequency,
-    //             CommandReply::ReadyForDeparture {
-    //               airport: aircraft.flight_plan.arriving.to_string(),
-    //             },
-    //             Vec::new(),
-    //           ));
-    //         } else {
-    //           tracing::warn!("No aircraft available for outbound flight.");
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-
-    // for (flight, aircraft) in to_mark {
-    //   tracing::info!("Spawned flight #{}", flight);
-    //   self.game.flights.get_mut(flight).unwrap().status =
-    //     FlightStatus::Ongoing(aircraft);
-    // }
-  }
-
   pub fn tick(&mut self) {
     self.last_tick = Instant::now();
 
@@ -383,7 +326,7 @@ impl Runner {
         .cloned(),
     );
 
-    if self.spawns.tick() {
+    if self.spawns.tick(self.tick_counter) {
       let aircraft = self
         .rng
         .sample_iter(self.game.aircraft.iter().filter(|a| a.is_parked()));
@@ -395,12 +338,32 @@ impl Runner {
       }
     }
 
-    self.handle_flights();
-    self.cleanup(events.iter());
+    // self.cleanup(events.iter());
     // TODO: self.save_world();
+
+    self.tick_counter += 1;
+  }
+
+  pub fn quick_start(&mut self) -> usize {
+    self.engine.config = EngineConfig::Minimal;
+
+    let size_nm = (WORLD_RADIUS * 2.0) / NAUTICALMILES_TO_FEET;
+    let base_speed_knots = 450.0;
+
+    let max_time_hours = size_nm / base_speed_knots;
+    let max_time_secs = max_time_hours * 60.0 * 60.0;
+    let max_ticks = (max_time_secs * self.rate as f32).ceil() as usize;
+
+    for _ in 0..max_ticks {
+      self.tick();
+    }
+
+    self.tick_counter
   }
 
   pub fn begin_loop(&mut self) {
+    self.engine.config = EngineConfig::Full;
+
     loop {
       if Instant::now() - self.last_tick
         >= Duration::from_secs_f32(1.0 / self.rate as f32)

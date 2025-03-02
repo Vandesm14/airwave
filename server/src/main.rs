@@ -3,7 +3,7 @@ use std::{
   fs,
   net::{IpAddr, Ipv4Addr, SocketAddr},
   path::PathBuf,
-  time::SystemTime,
+  time::{Instant, SystemTime},
 };
 
 use glam::Vec2;
@@ -113,6 +113,15 @@ async fn main() {
   runner.fill_gates();
 
   //
+
+  tracing::info!("Quick start loop...");
+  let start = Instant::now();
+  let ticks_ran = runner.quick_start();
+  let duration = start.elapsed();
+  tracing::info!(
+    "Preloaded {ticks_ran} ticks in {} seconds.",
+    duration.as_secs_f32()
+  );
 
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
