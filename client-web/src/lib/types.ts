@@ -197,6 +197,8 @@ export type Airspace = {
   pos: Vec2;
   radius: number;
   airports: Array<Airport>;
+
+  auto: boolean;
 };
 
 export function DefaultAirspace(): Airspace {
@@ -205,6 +207,8 @@ export function DefaultAirspace(): Airspace {
     pos: [0, 0],
     radius: 500,
     airports: [],
+
+    auto: false,
   };
 }
 

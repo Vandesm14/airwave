@@ -258,30 +258,31 @@ export default function Canvas() {
 
     if (now - render().lastDraw > renderRate() || render().doInitialDraw) {
       setRender((render) => {
-        setAircraftTrails((map) => {
-          for (let aircraft of aircrafts.data) {
-            const trail = map.get(aircraft.id);
+        // TODO: fix or remove trails
+        // setAircraftTrails((map) => {
+        //   for (let aircraft of aircrafts.data) {
+        //     const trail = map.get(aircraft.id);
 
-            if (typeof trail !== 'undefined') {
-              let last = trail.at(-1);
+        //     if (typeof trail !== 'undefined') {
+        //       let last = trail.at(-1);
 
-              if (
-                typeof last !== 'undefined' &&
-                now - last.now > 1000 * 4 * 2
-              ) {
-                trail.push({ now, pos: aircraft.pos });
-              }
+        //       if (
+        //         typeof last !== 'undefined' &&
+        //         now - last.now > 1000 * 4 * 2
+        //       ) {
+        //         trail.push({ now, pos: aircraft.pos });
+        //       }
 
-              if (trail.length > 10) {
-                map.set(aircraft.id, trail.slice(1));
-              }
-            } else {
-              map.set(aircraft.id, [{ now, pos: aircraft.pos }]);
-            }
-          }
+        //       if (trail.length > 10) {
+        //         map.set(aircraft.id, trail.slice(1));
+        //       }
+        //     } else {
+        //       map.set(aircraft.id, [{ now, pos: aircraft.pos }]);
+        //     }
+        //   }
 
-          return map;
-        });
+        //   return map;
+        // });
 
         render.doInitialDraw = false;
 
@@ -376,7 +377,6 @@ export default function Canvas() {
     }
   }
 
-  // ... (the rest of your drawing functions remain unchanged)
   function drawAirspace(ctx: Ctx, airspace: Airspace) {
     resetTransform(ctx);
     let pos = scalePoint(airspace.pos);
@@ -385,6 +385,16 @@ export default function Canvas() {
     ctx.beginPath();
     ctx.arc(pos[0], pos[1], scaleFeetToPixels(airspace.radius), 0, Math.PI * 2);
     ctx.stroke();
+
+    // Draw airspace name
+    ctx.fillStyle = '#777';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(
+      airspace.id,
+      pos[0],
+      pos[1] - scaleFeetToPixels(airspace.radius) - 20
+    );
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
