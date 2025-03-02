@@ -562,22 +562,6 @@ export default function Canvas() {
       ctx.stroke();
     }
 
-    // Draw the turning radius
-    if (
-      isSelected &&
-      (aircraft.state.type === 'flying' || aircraft.state.type === 'landing')
-    ) {
-      const dps = 2;
-      const timeToCircle = 360 / dps;
-      const circumfrence = aircraft.speed * knotToFeetPerSecond * timeToCircle;
-      const radius = circumfrence / (2 * Math.PI);
-
-      let point = scalePoint(movePoint(aircraft.pos, radius, aircraft.heading));
-      ctx.beginPath();
-      ctx.arc(point[0], point[1], 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
