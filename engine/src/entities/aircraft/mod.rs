@@ -251,8 +251,6 @@ pub enum FlightSegment {
   Approach,
   /// Following ILS for landing.
   Land,
-  /// Touched down and slowing to taxi speed.
-  Touchdown,
   /// Taxiing as an arrival.
   TaxiArr,
 }

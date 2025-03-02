@@ -9,12 +9,12 @@ use crate::{
   entities::world::closest_airport,
   inverse_degrees, move_point, normalize_angle,
   pathfinder::{NodeBehavior, NodeKind},
-  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET,
+  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
 };
 
 use super::{
   events::{AircraftEvent, EventKind},
-  Aircraft, AircraftState, LandingState,
+  Aircraft, AircraftState, FlightSegment, LandingState,
 };
 
 pub trait AircraftEffect {
@@ -371,6 +371,8 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
                 .map(|x| x.id != aircraft.flight_plan.arriving)
                 .unwrap_or(true),
             };
+
+            aircraft.segment = FlightSegment::Parked;
           }
 
           // Runway specific
@@ -430,6 +432,70 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           // Runway specific
           NodeBehavior::LineUp => {}
           NodeBehavior::Takeoff => {}
+        }
+      }
+    }
+  }
+}
+
+pub struct AircraftUpdateSegmentEffect;
+impl AircraftEffect for AircraftUpdateSegmentEffect {
+  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+    // The Following states are handled by events:
+    // Parked (effect)
+    // TaxiDep
+    // Takeoff
+    // --
+    // Land
+    // TaxiArr
+
+    if let AircraftState::Flying { .. } = &aircraft.state {
+      // If taking off and off the ground, set to departure
+      if FlightSegment::Takeoff == aircraft.segment && aircraft.altitude > 0.0 {
+        aircraft.segment = FlightSegment::Departure;
+      }
+
+      if FlightSegment::Departure == aircraft.segment {
+        // If passed transition altitude, set to cruise
+        if aircraft.altitude >= TRANSITION_ALTITUDE {
+          aircraft.segment = FlightSegment::Cruise;
+        } else {
+          let departure = bundle
+            .world
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.departing);
+
+          // If outside of departure airspace, set to cruise
+          if let Some(departure) = departure {
+            let distance = departure.pos.distance(aircraft.pos);
+            if distance >= NAUTICALMILES_TO_FEET * 30.0 {
+              aircraft.segment = FlightSegment::Cruise;
+            }
+          }
+        }
+      }
+
+      // TODO: This is a cheap solution instead of checking distance.
+      if FlightSegment::Cruise == aircraft.segment
+        && aircraft.altitude <= TRANSITION_ALTITUDE
+      {
+        aircraft.segment = FlightSegment::Arrival;
+      }
+
+      if FlightSegment::Arrival == aircraft.segment {
+        let arrival = bundle
+          .world
+          .airspaces
+          .iter()
+          .find(|a| a.id == aircraft.flight_plan.arriving);
+
+        // If within arrival airspace, set to approach
+        if let Some(arrival) = arrival {
+          let distance = aircraft.pos.distance(arrival.pos);
+          if distance <= NAUTICALMILES_TO_FEET * 30.0 {
+            aircraft.segment = FlightSegment::Approach;
+          }
         }
       }
     }

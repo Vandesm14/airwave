@@ -16,7 +16,9 @@ use crate::{
   NAUTICALMILES_TO_FEET,
 };
 
-use super::{Aircraft, AircraftState, LandingState, TaxiingState};
+use super::{
+  Aircraft, AircraftState, FlightSegment, LandingState, TaxiingState,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventKind {
@@ -251,6 +253,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Taxiing
       EventKind::Taxi(waypoints) => {
+        if let AircraftState::Parked { .. } = aircraft.state {
+          aircraft.segment = FlightSegment::TaxiDep;
+        }
+
         if let AircraftState::Taxiing { .. } | AircraftState::Parked { .. } =
           aircraft.state
         {
@@ -456,6 +462,8 @@ pub fn handle_land_event(
         runway: runway.clone(),
         state: LandingState::default(),
       };
+
+      aircraft.segment = FlightSegment::Land;
     }
   }
 }
@@ -482,6 +490,8 @@ pub fn handle_touchdown_event(aircraft: &mut Aircraft) {
     waypoints: Vec::new(),
     state: TaxiingState::Override,
   };
+
+  aircraft.segment = FlightSegment::TaxiArr;
 }
 
 pub fn handle_taxi_event(
@@ -607,6 +617,8 @@ pub fn handle_takeoff_event(
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       if NodeKind::Runway == current.kind && current.name == runway_id {
+        aircraft.segment = FlightSegment::Takeoff;
+
         aircraft.target.speed = aircraft.flight_plan.speed;
         aircraft.target.altitude = aircraft.flight_plan.altitude;
         aircraft.heading = runway.heading;
