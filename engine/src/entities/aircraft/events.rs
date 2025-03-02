@@ -176,9 +176,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
             .find(|a| a.id == aircraft.flight_plan.arriving);
 
           if let Some((departure, arrival)) = departure.zip(arrival) {
-            aircraft.target.speed = 450.0;
-            aircraft.target.altitude = 13000.0;
-
             // !5 NM is arbitrary. It's just half of the radius of an approach-space.
             let transition_into = departure
               .pos
