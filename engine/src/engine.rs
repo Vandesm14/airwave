@@ -133,7 +133,7 @@ impl Engine {
       self.handle_collisions(&mut game.aircraft);
     }
 
-    if !self.events.is_empty() {
+    if !self.events.is_empty() && self.config != EngineConfig::Minimal {
       tracing::trace!("tick events: {:?}", self.events);
     }
 
@@ -167,7 +167,7 @@ impl Engine {
     }
 
     // Capture the left over events and actions for next time
-    if !bundle.events.is_empty() {
+    if !bundle.events.is_empty() && self.config != EngineConfig::Minimal {
       tracing::info!("new events: {:?}", bundle.events);
     }
 
