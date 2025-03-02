@@ -367,7 +367,7 @@ impl Runner {
     let events =
       self
         .engine
-        .tick(&self.world, &mut self.game, &mut self.rng, dt);
+        .tick(&mut self.world, &mut self.game, &mut self.rng, dt);
 
     // Run through all callout events and broadcast them
     self.messages.extend(

@@ -169,6 +169,7 @@ pub struct Gate {
   pub id: Intern<String>,
   pub pos: Vec2,
   pub heading: f32,
+  pub available: bool,
 }
 
 impl Translate for Gate {

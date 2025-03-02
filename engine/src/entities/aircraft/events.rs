@@ -197,7 +197,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 EventKind::AltitudeAtOrBelow(18000.0),
               ]);
             let wp_aprt = new_vor(Intern::from_ref("APRT"), arrival.pos)
-              .with_behavior(vec![EventKind::Delete, EventKind::QuickArrive]);
+              .with_behavior(vec![EventKind::QuickArrive]);
 
             aircraft.state = AircraftState::Flying {
               waypoints: vec![wp_aprt, wp_star, wp_sid],
@@ -379,7 +379,51 @@ impl AircraftEventHandler for HandleAircraftEvent {
           }
         }
       }
-      EventKind::QuickArrive => {}
+      EventKind::QuickArrive => {
+        if let AircraftState::Flying { .. } = aircraft.state {
+          let arrival = bundle
+            .world
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.arriving)
+            .and_then(|a| {
+              a.airports
+                .iter()
+                .find(|a| a.id == aircraft.flight_plan.arriving)
+            });
+          if let Some(arrival) = arrival {
+            let available_gate = arrival
+              .terminals
+              .iter()
+              .flat_map(|t| t.gates.iter())
+              .find(|g| g.available);
+            if let Some(gate) = available_gate {
+              aircraft.state = AircraftState::Parked {
+                at: Node::new(
+                  gate.id,
+                  NodeKind::Gate,
+                  NodeBehavior::Park,
+                  gate.pos,
+                ),
+                active: false,
+              };
+
+              aircraft.pos = gate.pos;
+
+              aircraft.speed = 0.0;
+              aircraft.heading = gate.heading;
+              aircraft.altitude = 0.0;
+              aircraft.sync_targets_to_vals();
+            } else {
+              tracing::error!(
+                "No available gates for {} at {}",
+                aircraft.id,
+                aircraft.flight_plan.arriving
+              );
+            }
+          }
+        }
+      }
 
       // External
       EventKind::Delete => {

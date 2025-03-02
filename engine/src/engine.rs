@@ -21,6 +21,7 @@ use crate::{
     },
     world::{Game, World},
   },
+  pathfinder::Node,
 };
 
 #[derive(Debug)]
@@ -98,17 +99,19 @@ pub struct Engine {
 impl Engine {
   pub fn tick(
     &mut self,
-    world: &World,
+    world: &mut World,
     game: &mut Game,
     rng: &mut Rng,
     dt: f32,
   ) -> Vec<Event> {
-    let mut bundle = Bundle::from_world(world, rng, dt);
+    self.compute_available_gates(&game.aircraft, world);
     self.handle_collisions(&mut game.aircraft);
 
     if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
+
+    let mut bundle = Bundle::from_world(world, rng, dt);
     for aircraft in game.aircraft.iter_mut() {
       // Capture the previous state
       bundle.prev = aircraft.clone();
@@ -137,9 +140,36 @@ impl Engine {
     if !bundle.events.is_empty() {
       tracing::info!("new events: {:?}", bundle.events);
     }
-    self.events = core::mem::take(&mut bundle.events);
 
+    self.events = core::mem::take(&mut bundle.events);
     self.events.clone()
+  }
+
+  pub fn compute_available_gates(
+    &mut self,
+    aircrafts: &[Aircraft],
+    world: &mut World,
+  ) {
+    for gate in world
+      .airspaces
+      .iter_mut()
+      .flat_map(|a| a.airports.iter_mut())
+      .flat_map(|a| a.terminals.iter_mut())
+      .flat_map(|t| t.gates.iter_mut())
+    {
+      let aircraft = aircrafts
+        .iter()
+        .filter_map(|a| {
+          if let AircraftState::Parked { at, .. } = &a.state {
+            Some(at)
+          } else {
+            None
+          }
+        })
+        .find(|a| a.name == gate.id && a.value == gate.pos);
+
+      gate.available = aircraft.is_some();
+    }
   }
 
   pub fn handle_collisions(&mut self, aircrafts: &mut [Aircraft]) {

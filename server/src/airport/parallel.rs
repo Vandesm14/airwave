@@ -178,6 +178,7 @@ pub fn setup(airport: &mut Airport) {
         UP,
         150.0,
       ),
+      available: false,
     });
 
     terminal_b.gates.push(Gate {
@@ -190,6 +191,7 @@ pub fn setup(airport: &mut Airport) {
         DOWN,
         150.0,
       ),
+      available: false,
     });
   }
 

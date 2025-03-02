@@ -169,6 +169,7 @@ pub fn setup(airport: &mut Airport) {
         terminal_a.a.distance(terminal_a.b) * 0.35,
       ),
       heading: inverse_degrees(runway_22.heading),
+      available: false,
     };
     terminal_a.gates.push(gate);
   }
@@ -184,6 +185,7 @@ pub fn setup(airport: &mut Airport) {
         terminal_a.a.distance(terminal_a.b) * 0.35,
       ),
       heading: runway_22.heading,
+      available: false,
     };
     terminal_a.gates.push(gate);
   }
@@ -228,6 +230,7 @@ pub fn setup(airport: &mut Airport) {
         terminal_b.a.distance(terminal_b.b) * 0.35,
       ),
       heading: inverse_degrees(runway_13.heading),
+      available: false,
     };
     terminal_b.gates.push(gate);
   }
@@ -243,6 +246,7 @@ pub fn setup(airport: &mut Airport) {
         terminal_b.a.distance(terminal_b.b) * 0.35,
       ),
       heading: runway_13.heading,
+      available: false,
     };
     terminal_b.gates.push(gate);
   }
