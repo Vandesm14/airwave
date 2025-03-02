@@ -460,19 +460,22 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         if aircraft.altitude >= TRANSITION_ALTITUDE {
           aircraft.segment = FlightSegment::Cruise;
         } else {
-          let departure = bundle
-            .world
-            .airspaces
-            .iter()
-            .find(|a| a.id == aircraft.flight_plan.departing);
+          // TODO: This conflicts with the Cruise -> Arrival transition since it
+          // expects that an aircraft is already above trans alt.
+          //
+          // let departure = bundle
+          //   .world
+          //   .airspaces
+          //   .iter()
+          //   .find(|a| a.id == aircraft.flight_plan.departing);
 
-          // If outside of departure airspace, set to cruise
-          if let Some(departure) = departure {
-            let distance = departure.pos.distance(aircraft.pos);
-            if distance >= NAUTICALMILES_TO_FEET * 30.0 {
-              aircraft.segment = FlightSegment::Cruise;
-            }
-          }
+          // // If outside of departure airspace, set to cruise
+          // if let Some(departure) = departure {
+          //   let distance = departure.pos.distance(aircraft.pos);
+          //   if distance >= NAUTICALMILES_TO_FEET * 30.0 {
+          //     aircraft.segment = FlightSegment::Cruise;
+          //   }
+          // }
         }
       }
 
