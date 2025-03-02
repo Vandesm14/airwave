@@ -414,6 +414,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
               aircraft.heading = gate.heading;
               aircraft.altitude = 0.0;
               aircraft.sync_targets_to_vals();
+
+              aircraft.flip_flight_plan();
             } else {
               tracing::error!(
                 "No available gates for {} at {}",
