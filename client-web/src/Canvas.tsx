@@ -519,11 +519,12 @@ export default function Canvas() {
       ctx.stroke();
 
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
-        let pos = scalePoint(wp.value.to);
-        ctx.beginPath();
-        ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
-        ctx.fill();
+        // ctx.fillStyle = wp.behavior === 'goto' ? '#ffff00' : '#ff0000';
+        // let pos = scalePoint(wp.value.to);
+        // ctx.beginPath();
+        // ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
+        // ctx.fill();
+        drawWaypoint(ctx, wp.name, wp.value.to, colors.text_yellow);
       }
     }
 
