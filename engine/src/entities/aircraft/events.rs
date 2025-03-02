@@ -18,7 +18,8 @@ use crate::{
 };
 
 use super::{
-  Aircraft, AircraftState, FlightSegment, LandingState, TaxiingState,
+  Aircraft, AircraftKind, AircraftState, FlightSegment, LandingState,
+  TaxiingState,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -196,7 +197,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
             let wp_sid = new_vor(Intern::from_ref("SID"), transition_sid)
               .with_behavior(vec![
-                EventKind::SpeedAtOrAbove(450.0),
+                EventKind::SpeedAtOrAbove(AircraftKind::A21N.stats().max_speed),
                 EventKind::AltitudeAtOrAbove(CRUISE_ALTITUDE),
               ]);
 

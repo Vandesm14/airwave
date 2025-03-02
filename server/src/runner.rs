@@ -16,7 +16,7 @@ use engine::{
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
-      Aircraft,
+      Aircraft, AircraftKind,
     },
     airport::Airport,
     airspace::Airspace,
@@ -348,7 +348,7 @@ impl Runner {
     self.engine.config = EngineConfig::Minimal;
 
     let size_nm = (WORLD_RADIUS) / NAUTICALMILES_TO_FEET;
-    let base_speed_knots = 450.0;
+    let base_speed_knots = AircraftKind::A21N.stats().max_speed;
 
     let max_time_hours = size_nm / base_speed_knots;
     let max_time_secs = max_time_hours * 60.0 * 60.0;
