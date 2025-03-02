@@ -371,13 +371,6 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
                 .map(|x| x.id != aircraft.flight_plan.arriving)
                 .unwrap_or(true),
             };
-            bundle.events.push(
-              AircraftEvent {
-                id: aircraft.id,
-                kind: EventKind::CompleteFlight,
-              }
-              .into(),
-            );
           }
 
           // Runway specific

@@ -1,6 +1,7 @@
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
+use turborand::TurboRand;
 
 use crate::{
   angle_between_points,
@@ -9,9 +10,10 @@ use crate::{
   entities::world::{closest_airport, closest_airspace},
   heading_to_direction,
   pathfinder::{
-    display_node_vec2, display_vec_node_vec2, Node, NodeBehavior, NodeKind,
-    Pathfinder,
+    display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
+    NodeKind, Pathfinder,
   },
+  NAUTICALMILES_TO_FEET,
 };
 
 use super::{Aircraft, AircraftState, LandingState, TaxiingState};
@@ -42,7 +44,9 @@ pub enum EventKind {
   // Taxiing
   Taxi(Vec<Node<()>>),
   TaxiContinue,
-  TaxiHold { and_state: bool },
+  TaxiHold {
+    and_state: bool,
+  },
   LineUp(Intern<String>),
 
   // Requests
@@ -52,9 +56,15 @@ pub enum EventKind {
   Callout(CommandWithFreq),
   CalloutInAirspace,
 
+  // Configuration and Automation
+  /// Teleports an aircraft from its gate to the takeoff phase.
+  QuickDepart,
+  /// Teleports an aircraft from the approach phase to a gate.
+  QuickArrive,
+
   // External
+  // TODO: I think the engine can handle this instead internally.
   Delete,
-  CompleteFlight,
 }
 
 impl From<Task> for EventKind {
@@ -153,32 +163,50 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Flying
       EventKind::ResumeOwnNavigation => {
         // TODO: Reimplement
-        // if let AircraftState::Flying { enroute, .. } = aircraft.state {
-        //   let arrival = bundle
-        //     .world
-        //     .connections
-        //     .iter()
-        //     .find(|a| a.id == aircraft.flight_plan.arriving);
+        if let AircraftState::Flying { .. } = aircraft.state {
+          let departure = bundle
+            .world
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.departing);
+          let arrival = bundle
+            .world
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.arriving);
 
-        //   if let Some(arrival) = arrival {
-        //     aircraft.target.speed = 300.0;
-        //     aircraft.target.altitude = 13000.0;
-        //     aircraft.state = AircraftState::Flying {
-        //       enroute,
-        //       waypoints: vec![
-        //         new_vor(arrival.id, arrival.pos)
-        //           .with_name(Intern::from_ref("APRT"))
-        //           .with_behavior(vec![
-        //             EventKind::CompleteFlight,
-        //             EventKind::Delete,
-        //           ]),
-        //         new_vor(arrival.id, arrival.transition)
-        //           .with_name(Intern::from_ref("TRSN"))
-        //           .with_behavior(vec![EventKind::EnRoute(true)]),
-        //       ],
-        //     }
-        //   }
-        // }
+          if let Some((departure, arrival)) = departure.zip(arrival) {
+            aircraft.target.speed = 450.0;
+            aircraft.target.altitude = 13000.0;
+
+            // !5 NM is arbitrary. It's just half of the radius of an approach-space.
+            let transition_into = departure
+              .pos
+              .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 15.0);
+
+            // This is 30 NM + 15 NM to account for the radius of the approach airspace
+            let transition_out_of = arrival
+              .pos
+              .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 45.0);
+
+            let wp_sid = new_vor(Intern::from_ref("SID"), transition_into)
+              .with_behavior(vec![
+                EventKind::SpeedAtOrAbove(450.0),
+                EventKind::AltitudeAtOrAbove(38000.0),
+              ]);
+            let wp_star = new_vor(Intern::from_ref("STAR"), transition_out_of)
+              .with_behavior(vec![
+                EventKind::SpeedAtOrBelow(250.0),
+                EventKind::AltitudeAtOrBelow(18000.0),
+              ]);
+            let wp_aprt = new_vor(Intern::from_ref("APRT"), arrival.pos)
+              .with_behavior(vec![EventKind::Delete, EventKind::QuickArrive]);
+
+            aircraft.state = AircraftState::Flying {
+              waypoints: vec![wp_aprt, wp_star, wp_sid],
+            };
+          }
+        }
       }
 
       // Transitions
@@ -320,6 +348,42 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
 
+      // Configuration and Automation
+      EventKind::QuickDepart => {
+        if let AircraftState::Parked { .. } = &aircraft.state {
+          let arrival = bundle.rng.sample_iter(
+            bundle
+              .world
+              .airspaces
+              .iter()
+              .filter(|a| a.id != aircraft.flight_plan.departing),
+          );
+          if let Some(arrival) = arrival {
+            aircraft.state = AircraftState::Flying {
+              waypoints: Vec::new(),
+            };
+
+            aircraft.altitude = 0.0;
+            aircraft.target.altitude = aircraft.flight_plan.altitude;
+            aircraft.speed = 180.0;
+            aircraft.target.speed = aircraft.flight_plan.speed;
+
+            aircraft.flight_plan.arriving = arrival.id;
+
+            bundle.events.push(
+              AircraftEvent {
+                id: aircraft.id,
+                kind: EventKind::ResumeOwnNavigation,
+              }
+              .into(),
+            );
+          } else {
+            tracing::error!("No arrival airspace found for {:?}", aircraft.id);
+          }
+        }
+      }
+      EventKind::QuickArrive => {}
+
       // External
       EventKind::Delete => {
         tracing::info!("Deleting aircraft: {}", aircraft.id);
@@ -328,7 +392,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
           .events
           .push(AircraftEvent::new(aircraft.id, EventKind::Delete).into());
       }
-      EventKind::CompleteFlight => {}
     }
   }
 }

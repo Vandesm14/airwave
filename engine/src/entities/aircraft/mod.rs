@@ -259,6 +259,10 @@ impl Aircraft {
     }
   }
 
+  pub fn is_parked(&self) -> bool {
+    matches!(self.state, AircraftState::Parked { .. })
+  }
+
   pub fn set_active(&mut self, active: bool) {
     if let AircraftState::Parked { active: a, .. } = &mut self.state {
       *a = active;

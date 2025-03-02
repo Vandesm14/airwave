@@ -29,6 +29,7 @@ use crate::{
   airport::new_v_pattern,
   job::{JobQueue, JobReq},
   ring::RingBuffer,
+  signal_gen::SignalGenerator,
   AUTO_TOWER_AIRSPACE_RADIUS, TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
 
@@ -103,6 +104,8 @@ pub struct Runner {
 
   last_tick: Instant,
   rate: usize,
+
+  spawns: SignalGenerator,
 }
 
 impl Runner {
@@ -126,19 +129,14 @@ impl Runner {
 
       last_tick: Instant::now(),
       rate: 15,
+
+      spawns: SignalGenerator::new(Duration::from_secs(10)),
     }
   }
 
   pub fn add_aircraft(&mut self, mut aircraft: Aircraft) {
     while self.game.aircraft.iter().any(|a| a.id == aircraft.id) {
       aircraft.id = Intern::from(Aircraft::random_callsign(&mut self.rng));
-    }
-
-    if aircraft.flight_plan.departing == aircraft.flight_plan.arriving {
-      tracing::warn!(
-        "deleted a flight departing and arriving at the same airspace"
-      );
-      return;
     }
 
     self.game.aircraft.push(aircraft);
@@ -384,6 +382,18 @@ impl Runner {
         })
         .cloned(),
     );
+
+    if self.spawns.tick() {
+      let aircraft = self
+        .rng
+        .sample_iter(self.game.aircraft.iter().filter(|a| a.is_parked()));
+      if let Some(aircraft) = aircraft {
+        self.engine.events.push(Event::Aircraft(AircraftEvent::new(
+          aircraft.id,
+          EventKind::QuickDepart,
+        )));
+      }
+    }
 
     self.handle_flights();
     self.cleanup(events.iter());

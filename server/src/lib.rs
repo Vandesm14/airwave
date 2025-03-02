@@ -17,6 +17,7 @@ pub mod job;
 pub mod prompter;
 pub mod ring;
 pub mod runner;
+pub mod signal_gen;
 
 pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);
 
