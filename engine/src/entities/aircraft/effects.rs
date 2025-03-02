@@ -293,6 +293,33 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 }
 
 pub struct AircraftUpdateFlyingEffect;
+
+impl AircraftUpdateFlyingEffect {
+  fn prune_waypoints(aircraft: &mut Aircraft) {
+    if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
+      if waypoints.len() < 2 {
+        return;
+      }
+
+      let waypoints_new = waypoints.drain(..).rev().collect::<Vec<_>>();
+      let mut skip_amount = 0;
+      for (i, wp) in waypoints_new.windows(2).enumerate() {
+        let a = wp.first().unwrap();
+        let b = wp.last().unwrap();
+
+        let wp_distance = a.value.to.distance_squared(b.value.to);
+        let distance = aircraft.pos.distance_squared(b.value.to);
+
+        if distance < wp_distance {
+          skip_amount = i + 1;
+        }
+      }
+
+      waypoints.extend(waypoints_new.into_iter().skip(skip_amount).rev());
+    }
+  }
+}
+
 impl AircraftEffect for AircraftUpdateFlyingEffect {
   fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     if aircraft.altitude < 2000.0 {
@@ -301,6 +328,9 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
 
     let dt = aircraft.dt_enroute(bundle.dt);
     let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
+
+    AircraftUpdateFlyingEffect::prune_waypoints(aircraft);
+
     if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
       if let Some(current) = waypoints.last() {
         let heading = angle_between_points(aircraft.pos, current.value.to);
