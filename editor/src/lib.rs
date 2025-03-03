@@ -1,13 +1,20 @@
 use engine::{
   angle_between_points,
   entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
-  pathfinder::Node,
 };
 use glam::Vec2;
 use internment::Intern;
 use nannou::{color, geom};
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
+
+pub fn scale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
+  (point + offset) / scale
+}
+
+pub fn unscale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
+  point * scale - offset
+}
 
 new_key_type! { pub struct PointKey; }
 
