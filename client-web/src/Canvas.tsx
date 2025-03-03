@@ -36,7 +36,7 @@ import {
   toRadians,
 } from './lib/lib';
 import colors from './lib/colors';
-import { useAircraft, useWorld } from './lib/api';
+import { useAircraftWithRate, useWorld } from './lib/api';
 
 const groundScale = 5.0;
 
@@ -59,7 +59,7 @@ export default function Canvas() {
 
   let renderRate = createMemo(() => (isGround() ? 1000 * 0.5 : 1000 * 4));
 
-  const aircrafts = useAircraft(renderRate);
+  const aircrafts = useAircraftWithRate(renderRate);
   const world = useWorld();
 
   // FPS variables

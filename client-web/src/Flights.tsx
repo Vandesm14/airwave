@@ -1,4 +1,9 @@
-import { useAcceptFlight, useAircraft, useWorld } from './lib/api';
+import {
+  useAcceptFlight,
+  useAircraft,
+  useAircraftWithRate,
+  useWorld,
+} from './lib/api';
 import './Flights.scss';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { selectedAircraftAtom } from './lib/atoms';
@@ -66,7 +71,7 @@ export default function Flights() {
   const [show, setShow] = createSignal(false);
   const [selectedAircraft] = useAtom(selectedAircraftAtom);
 
-  const aircrafts = useAircraft(() => 1000);
+  const aircrafts = useAircraft();
   const world = useWorld();
   // TODO: Don't think this should be a memo, but it doesn't update the
   // mutation when selectedAircraft changes.

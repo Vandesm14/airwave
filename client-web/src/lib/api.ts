@@ -35,7 +35,7 @@ export function usePing() {
 
 // Aircraft
 export const getAircraft = '/api/game/aircraft';
-export function useAircraft(renderRate: Accessor<number>) {
+export function useAircraftWithRate(renderRate: Accessor<number>) {
   return createQuery<Array<Aircraft>>(() => ({
     queryKey: [getAircraft],
     queryFn: async () => {
@@ -49,6 +49,17 @@ export function useAircraft(renderRate: Accessor<number>) {
     refetchOnMount: 'always',
     refetchOnReconnect: 'always',
     throwOnError: true, // Throw an error if the query fails
+  }));
+}
+export function useAircraft() {
+  return createQuery<Array<Aircraft>>(() => ({
+    queryKey: [getAircraft],
+    queryFn: async () => {
+      const result = await fetch(`${baseAPIPath}${getAircraft}`);
+      if (!result.ok) return [];
+      return result.json();
+    },
+    initialData: [],
   }));
 }
 
