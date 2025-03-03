@@ -47,7 +47,7 @@ impl WorldFile {
   }
 }
 
-fn glam_to_geom(v: Vec2) -> geom::Vec2 {
+pub fn glam_to_geom(v: Vec2) -> geom::Vec2 {
   geom::Vec2::new(v.x, v.y)
 }
 
@@ -66,7 +66,7 @@ pub struct MetaRunway {
 }
 
 pub trait Draw {
-  fn draw(&self, draw: &nannou::Draw, scale: f32);
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2);
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -100,7 +100,7 @@ impl MetaAirport {
 }
 
 impl Draw for Taxiway {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     draw
       .line()
       .start(glam_to_geom(self.a * scale))
@@ -111,7 +111,7 @@ impl Draw for Taxiway {
 }
 
 impl Draw for Runway {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     let scaled_start = glam_to_geom(self.start() * scale);
     let scaled_end = glam_to_geom(self.end() * scale);
 
@@ -132,7 +132,7 @@ impl Draw for Runway {
 }
 
 impl Draw for Terminal {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     draw
       .quad()
       .points(
@@ -144,13 +144,13 @@ impl Draw for Terminal {
       .color(color::rgb::<u8>(0x99, 0x99, 0x99));
 
     for gate in self.gates.iter() {
-      gate.draw(draw, scale);
+      gate.draw(draw, scale, offset);
     }
   }
 }
 
 impl Draw for Gate {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     let pos = self.pos * scale;
     draw
       .ellipse()
@@ -162,40 +162,15 @@ impl Draw for Gate {
 }
 
 impl Draw for Airport {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     for taxiway in self.taxiways.iter() {
-      taxiway.draw(draw, scale);
+      taxiway.draw(draw, scale, offset);
     }
     for runway in self.runways.iter() {
-      runway.draw(draw, scale);
+      runway.draw(draw, scale, offset);
     }
     for terminal in self.terminals.iter() {
-      terminal.draw(draw, scale);
-    }
-  }
-}
-
-impl Draw for Node<Vec2> {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {
-    let pos = self.value * scale;
-    draw
-      .ellipse()
-      .x_y(pos.x, pos.y)
-      .width(100.0 * scale)
-      .height(100.0 * scale)
-      .color(color::rgb::<u8>(0xff, 0xff, 0x00));
-  }
-}
-
-impl Draw for Vec<Node<Vec2>> {
-  fn draw(&self, draw: &nannou::Draw, scale: f32) {
-    let yellow = color::rgb::<u8>(0xff, 0xff, 0x00);
-    draw.polyline().weight(20.0 * scale).points_colored(
-      self.iter().map(|w| (glam_to_geom(w.value * scale), yellow)),
-    );
-
-    for point in self.iter() {
-      point.draw(draw, scale);
+      terminal.draw(draw, scale, offset);
     }
   }
 }
