@@ -59,6 +59,7 @@ pub enum EventKind {
   // Callouts
   Callout(CommandWithFreq),
   CalloutInAirspace,
+  CalloutTARA,
 
   // Configuration and Automation
   /// Teleports an aircraft from its gate to the takeoff phase.
@@ -404,6 +405,21 @@ impl AircraftEventHandler for HandleAircraftEvent {
             )));
           }
         }
+      }
+      EventKind::CalloutTARA => {
+        let command = CommandWithFreq::new(
+          Intern::to_string(&aircraft.id),
+          aircraft.frequency,
+          CommandReply::TARAResolved {
+            assigned_alt: aircraft.target.altitude,
+          },
+          Vec::new(),
+        );
+
+        bundle.events.push(Event::Aircraft(AircraftEvent::new(
+          aircraft.id,
+          EventKind::Callout(command),
+        )));
       }
 
       // Configuration and Automation

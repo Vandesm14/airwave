@@ -298,6 +298,20 @@ pub enum TCAS {
   Descend,
 }
 
+impl TCAS {
+  pub fn is_idle(&self) -> bool {
+    matches!(self, Self::Idle)
+  }
+
+  pub fn is_ta(&self) -> bool {
+    matches!(self, Self::Warning)
+  }
+
+  pub fn is_ra(&self) -> bool {
+    matches!(self, Self::Climb | Self::Descend)
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub id: Intern<String>,

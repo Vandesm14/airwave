@@ -127,15 +127,16 @@ impl Engine {
     dt: f32,
   ) -> Vec<Event> {
     self.compute_available_gates(&game.aircraft, world);
-    if self.config.run_collisions() {
-      self.handle_tcas(&mut game.aircraft);
-    }
 
     if self.config.show_logs() && !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
 
     let mut bundle = Bundle::from_world(world, rng, dt);
+    if self.config.run_collisions() {
+      self.handle_tcas(&mut game.aircraft, &mut bundle);
+    }
+
     for aircraft in game.aircraft.iter_mut() {
       // Capture the previous state
       bundle.prev = aircraft.clone();
@@ -196,7 +197,11 @@ impl Engine {
     }
   }
 
-  pub fn handle_tcas(&mut self, aircrafts: &mut [Aircraft]) {
+  pub fn handle_tcas(
+    &mut self,
+    aircrafts: &mut [Aircraft],
+    bundle: &mut Bundle,
+  ) {
     let mut collisions: HashMap<Intern<String>, TCAS> = HashMap::new();
     for pair in aircrafts.iter().combinations(2) {
       let aircraft = pair.first().unwrap();
@@ -238,7 +243,14 @@ impl Engine {
     aircrafts.iter_mut().for_each(|aircraft| {
       if let Some(tcas) = collisions.get(&aircraft.id) {
         aircraft.tcas = *tcas;
-      } else {
+      } else if !aircraft.tcas.is_idle() {
+        if aircraft.tcas.is_ra() {
+          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            aircraft.id,
+            EventKind::CalloutTARA,
+          )));
+        }
+
         aircraft.tcas = TCAS::Idle;
       }
     });

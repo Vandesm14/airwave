@@ -122,6 +122,7 @@ pub enum CommandReply {
   ReadyForDeparture { airport: String },
   TaxiToGates { runway: String },
   ArriveInAirspace { direction: String, altitude: f32 },
+  TARAResolved { assigned_alt: f32 },
 }
 
 impl fmt::Display for CommandWithFreq {
@@ -175,6 +176,14 @@ impl fmt::Display for CommandWithFreq {
           f,
           "Ground, {} is on runway {}, requesting taxi to the gates.",
           decoded_callsign, runway
+        )
+      }
+      CommandReply::TARAResolved { assigned_alt } => {
+        write!(
+          f,
+          "Center, {} TCAS RA, returning to {}.",
+          decoded_callsign,
+          abbreviate_altitude(*assigned_alt)
         )
       }
     }
