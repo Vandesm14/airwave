@@ -336,9 +336,9 @@ export default function Canvas() {
     ctx.resetTransform();
     ctx.font = `900 ${fontSize()}px monospace`;
     ctx.fillStyle = 'white';
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(`FPS: ${currentFps()}`, 10, 10);
+    ctx.fillText(`FPS: ${currentFps()}`, canvas.width / 2, 10);
   }
 
   function drawCompass(ctx: Ctx) {
