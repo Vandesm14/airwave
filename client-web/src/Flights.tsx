@@ -3,14 +3,19 @@ import {
   getAircraft,
   postAcceptFlight,
   useAircraft,
+  useWorld,
 } from './lib/api';
 import './Flights.scss';
 import { useQueryClient } from '@tanstack/solid-query';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { selectedAircraftAtom } from './lib/atoms';
 import { useAtom } from 'solid-jotai';
-import { Aircraft } from './lib/types';
-import { HARD_CODED_AIRPORT } from './lib/lib';
+import { Aircraft, World } from './lib/types';
+import {
+  calculateSquaredDistance,
+  HARD_CODED_AIRPORT,
+  hardcodedAirspace,
+} from './lib/lib';
 
 async function acceptFlight(id: string) {
   await fetch(`${baseAPIPath}${postAcceptFlight(id)}`, {
@@ -67,6 +72,22 @@ export function FlightItem({ flight }: { flight: Aircraft }) {
   );
 }
 
+function sortByDistance(
+  aircraft: Array<Aircraft>,
+  world: World | undefined
+): Array<Aircraft> {
+  let airspace = hardcodedAirspace(world);
+  if (airspace) {
+    aircraft.sort((a, b) => {
+      let aDist = calculateSquaredDistance(a.pos, airspace.pos);
+      let bDist = calculateSquaredDistance(b.pos, airspace.pos);
+      return aDist - bDist;
+    });
+  }
+
+  return aircraft;
+}
+
 export default function Flights() {
   const [show, setShow] = createSignal(false);
   const client = useQueryClient();
@@ -77,18 +98,25 @@ export default function Flights() {
   //   initialData: [],
   // }));
   const aircrafts = useAircraft(() => 1000);
+  const world = useWorld();
 
   const arrivals = createMemo(() =>
-    aircrafts.data.filter(
-      (a) =>
-        !a.accepted &&
-        a.flight_plan.arriving === HARD_CODED_AIRPORT &&
-        a.segment !== 'parked'
+    sortByDistance(
+      aircrafts.data.filter(
+        (a) =>
+          !a.accepted &&
+          a.flight_plan.arriving === HARD_CODED_AIRPORT &&
+          a.segment !== 'parked'
+      ),
+      world.data
     )
   );
   const departures = createMemo(() =>
-    aircrafts.data.filter(
-      (a) => !a.accepted && a.flight_plan.departing === HARD_CODED_AIRPORT
+    sortByDistance(
+      aircrafts.data.filter(
+        (a) => !a.accepted && a.flight_plan.departing === HARD_CODED_AIRPORT
+      ),
+      world.data
     )
   );
 
