@@ -85,7 +85,7 @@ fn model(app: &App) -> Model {
     drag_anchor: None,
     old_shift_pos: glam::Vec2::default(),
     shift_pos: glam::Vec2::default(),
-    scale: 1.0,
+    scale: 0.1,
 
     held_keys: HeldKeys {
       ctrl: false,
@@ -153,7 +153,7 @@ fn raw_window_event(
     ..
   } = event
   {
-    if *y > 0.0 {
+    if *y < 0.0 {
       model.scale *= 0.9;
     } else {
       model.scale *= 1.1;
@@ -172,7 +172,9 @@ fn raw_window_event(
 
       let pos = real_mouse_pos(app, model);
       let scaled_pos = unscale_point(pos, model.shift_pos, model.scale);
-      let closest = model.world_data.find_closest_point(scaled_pos, 100.0);
+      let closest = model
+        .world_data
+        .find_closest_point(scaled_pos, 30.0 / model.scale);
       match model.mode {
         PointMode::Add => {
           model.world_data.points.insert(scaled_pos);
@@ -205,10 +207,7 @@ fn raw_window_event(
   } = event
   {
     model.is_mouse_down = false;
-
-    if model.drag_anchor.is_some() {
-      model.drag_anchor = None;
-    }
+    model.drag_anchor = None;
   }
 
   // Detect mouse move
@@ -225,7 +224,7 @@ fn raw_window_event(
         model.world_data.trigger_update();
       } else if let Some(drag_anchor) = model.drag_anchor {
         model.shift_pos =
-          model.old_shift_pos + (pos - drag_anchor) * model.scale;
+          model.old_shift_pos + (pos - drag_anchor) / model.scale;
       }
     }
   }
@@ -277,11 +276,14 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
   draw.background().color(BLACK);
 
-  model.world_data.airport.draw(&draw, 1.0, model.shift_pos);
+  model
+    .world_data
+    .airport
+    .draw(&draw, model.scale, model.shift_pos);
 
   let pos =
     unscale_point(real_mouse_pos(app, model), model.shift_pos, model.scale);
-  let closest = world_file.find_closest_point(pos, 100.0);
+  let closest = world_file.find_closest_point(pos, 30.0 / model.scale);
 
   for point in world_file.points.iter() {
     let color = if Some(point.0) == closest.map(|c| c.0) {
