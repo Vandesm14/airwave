@@ -17,3 +17,7 @@ client-web/bindings/
 assets/
 recordings/
 /config.toml
+/world
+
+# From Replit
+.cargo
