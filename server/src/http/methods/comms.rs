@@ -36,6 +36,11 @@ async fn complete_atc_request(
   // Split the request into the callsign and the rest of the message.
   match split {
     Ok(split) => {
+      if split.is_empty() {
+        tracing::warn!("Received empty request");
+        return Vec::new();
+      }
+
       let mut messages: Vec<CommandWithFreq> = Vec::new();
 
       for req in split {
