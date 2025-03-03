@@ -1,4 +1,8 @@
-import { createQuery } from '@tanstack/solid-query';
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
 import { Aircraft, RadioMessage, World } from './types';
 import fastDeepEqual from 'fast-deep-equal';
@@ -49,45 +53,31 @@ export function useAircraft(renderRate: Accessor<number>) {
 }
 
 // Flights
-// export function useFlight(id: number) {
-//   return createQuery<Flight | null>(() => ({
-//     queryKey: [getFlights, id],
-//     queryFn: async () => {
-//       const flights = useFlights();
-//       if (!flights.data) return null;
-//       return flights.data.find((f) => f.id === id) ?? null;
-//     },
-//     staleTime: 2000,
-//     refetchInterval: 2000,
-//     refetchOnMount: 'always',
-//     refetchOnReconnect: 'always',
-//     throwOnError: true, // Throw an error if the query fails
-//   }));
-// }
-
-// export function useFlightByAircraft(id: string) {
-//   return createQuery<Flight | null>(() => ({
-//     queryKey: [getFlights, id],
-//     queryFn: async () => {
-//       const flights = useFlights();
-//       if (!flights.data) return null;
-//       return (
-//         flights.data.find(
-//           (f) => f.status.type !== 'scheduled' && f.status.value === id
-//         ) ?? null
-//       );
-//     },
-//     staleTime: 2000,
-//     refetchInterval: 2000,
-//     refetchOnMount: 'always',
-//     refetchOnReconnect: 'always',
-//     throwOnError: true, // Throw an error if the query fails
-//   }));
-// }
 
 export const postAcceptFlight = (id: string) =>
   `/api/game/aircraft/${id}/accept`;
-// export const deleteFlight = (id: number) => `/api/game/flight/${id}`;
+export function useAcceptFlight(id: string) {
+  const client = useQueryClient();
+
+  return createMutation(() => ({
+    mutationKey: [`/api/game/aircraft/${id}/accept`],
+    mutationFn: async () =>
+      await fetch(`${baseAPIPath}${postAcceptFlight(id)}`, {
+        method: 'POST',
+      }),
+    onMutate: () =>
+      client.setQueryData<Array<Aircraft>>([getAircraft], (old) =>
+        (old ?? []).map((a) => {
+          if (a.id === id) {
+            a.accepted = true;
+          }
+
+          return a;
+        })
+      ),
+    onSettled: () => client.invalidateQueries({ queryKey: [getAircraft] }),
+  }));
+}
 
 // State
 export const getWorld = '/api/world';

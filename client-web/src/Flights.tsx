@@ -1,12 +1,5 @@
-import {
-  baseAPIPath,
-  getAircraft,
-  postAcceptFlight,
-  useAircraft,
-  useWorld,
-} from './lib/api';
+import { useAcceptFlight, useAircraft, useWorld } from './lib/api';
 import './Flights.scss';
-import { useQueryClient } from '@tanstack/solid-query';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { selectedAircraftAtom } from './lib/atoms';
 import { useAtom } from 'solid-jotai';
@@ -17,30 +10,11 @@ import {
   hardcodedAirspace,
 } from './lib/lib';
 
-async function acceptFlight(id: string) {
-  await fetch(`${baseAPIPath}${postAcceptFlight(id)}`, {
-    method: 'POST',
-  });
-}
-
 export function FlightItem({ flight }: { flight: Aircraft }) {
-  const client = useQueryClient();
+  const acceptFlight = useAcceptFlight(flight.id);
 
-  async function handleDelete() {
-    // const res = await fetch(`${baseAPIPath}${deleteFlight(flight.id)}`, {
-    //   method: 'DELETE',
-    // });
-    // if (res.ok) {
-    //   await client.cancelQueries({ queryKey: [getFlights] });
-    //   await client.setQueryData([getFlights], (old: Flight[]) => {
-    //     console.log({ old });
-    //     return old.filter((f) => f.id !== flight.id);
-    //   });
-    // }
-  }
-
-  async function handleAccept() {
-    await acceptFlight(flight.id);
+  function handleAccept() {
+    acceptFlight.mutate();
   }
 
   const [selected, setSelected] = useAtom(selectedAircraftAtom);
@@ -90,15 +64,11 @@ function sortByDistance(
 
 export default function Flights() {
   const [show, setShow] = createSignal(false);
-  const client = useQueryClient();
   const [selectedAircraft] = useAtom(selectedAircraftAtom);
 
-  // const aircrafts = createQuery<Aircraft[]>(() => ({
-  //   queryKey: [getAircraft],
-  //   initialData: [],
-  // }));
   const aircrafts = useAircraft(() => 1000);
   const world = useWorld();
+  const acceptFlight = useAcceptFlight(selectedAircraft());
 
   const arrivals = createMemo(() =>
     sortByDistance(
@@ -118,12 +88,7 @@ export default function Flights() {
   );
 
   async function handleSubmit(e: Event) {
-    acceptFlight(selectedAircraft());
-
-    // Invalidate and refetch aircraft
-    await client.cancelQueries({ queryKey: [getAircraft] });
-    await client.invalidateQueries({ queryKey: [getAircraft] });
-    await client.refetchQueries({ queryKey: [getAircraft] });
+    await acceptFlight.mutate();
   }
 
   return (
