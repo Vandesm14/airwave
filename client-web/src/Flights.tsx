@@ -68,7 +68,9 @@ export default function Flights() {
 
   const aircrafts = useAircraft(() => 1000);
   const world = useWorld();
-  const acceptFlight = useAcceptFlight(selectedAircraft());
+  // TODO: Don't think this should be a memo, but it doesn't update the
+  // mutation when selectedAircraft changes.
+  const acceptFlight = createMemo(() => useAcceptFlight(selectedAircraft()));
 
   const arrivals = createMemo(() =>
     sortByDistance(
@@ -88,7 +90,7 @@ export default function Flights() {
   );
 
   async function handleSubmit(e: Event) {
-    await acceptFlight.mutate();
+    await acceptFlight().mutate();
   }
 
   return (
