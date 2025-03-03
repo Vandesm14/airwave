@@ -490,44 +490,44 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         // If passed transition altitude, set to cruise
         if aircraft.altitude >= TRANSITION_ALTITUDE {
           aircraft.segment = FlightSegment::Cruise;
+          // If outside of departure airspace, set to cruise
         } else {
-          // TODO: This conflicts with the Cruise -> Arrival transition since it
-          // expects that an aircraft is already above trans alt.
-          //
-          // let departure = bundle
-          //   .world
-          //   .airspaces
-          //   .iter()
-          //   .find(|a| a.id == aircraft.flight_plan.departing);
-
-          // // If outside of departure airspace, set to cruise
-          // if let Some(departure) = departure {
-          //   let distance = departure.pos.distance(aircraft.pos);
-          //   if distance >= NAUTICALMILES_TO_FEET * 30.0 {
-          //     aircraft.segment = FlightSegment::Cruise;
-          //   }
-          // }
+          let departure = bundle
+            .world
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.departing);
+          if let Some(departure) = departure {
+            let distance = departure.pos.distance_squared(aircraft.pos);
+            if distance >= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
+              aircraft.segment = FlightSegment::Cruise;
+            }
+          }
         }
       }
 
-      // TODO: This is a cheap solution instead of checking distance.
+      // If below transition altitude, set to arrival
       if FlightSegment::Cruise == aircraft.segment
         && aircraft.altitude <= TRANSITION_ALTITUDE
       {
-        aircraft.segment = FlightSegment::Arrival;
-      }
+        // FIXME: Aircraft leave their departure airspace before reaching
+        // trans altitude. This means that they are immediately categorized from
+        // Cruise to Arrival. What we need to define, is what an Arrival means
+        // rather than simple altitude or distance checks (Approach is within
+        // the arrival airspace)
+        //
+        // aircraft.segment = FlightSegment::Arrival;
 
-      if FlightSegment::Arrival == aircraft.segment {
+        // If within arrival airspace, set to approach
+      } else {
         let arrival = bundle
           .world
           .airspaces
           .iter()
           .find(|a| a.id == aircraft.flight_plan.arriving);
-
-        // If within arrival airspace, set to approach
         if let Some(arrival) = arrival {
-          let distance = aircraft.pos.distance(arrival.pos);
-          if distance <= NAUTICALMILES_TO_FEET * 30.0 {
+          let distance = aircraft.pos.distance_squared(arrival.pos);
+          if distance <= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
             aircraft.segment = FlightSegment::Approach;
           }
         }

@@ -370,6 +370,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let Some(airspace) =
           closest_airspace(&bundle.world.airspaces, aircraft.pos)
         {
+          aircraft.segment = FlightSegment::Approach;
+
           if !airspace.auto {
             aircraft.frequency =
               airspace.airports.first().unwrap().frequencies.approach;
