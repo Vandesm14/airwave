@@ -89,8 +89,8 @@ export default function Flights() {
     )
   );
 
-  async function handleSubmit(e: Event) {
-    await acceptFlight().mutate();
+  function handleSubmit() {
+    acceptFlight().mutate();
   }
 
   return (

@@ -52,7 +52,7 @@ export default function Canvas() {
   let [frequency] = useAtom(frequencyAtom);
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
-  let [aircraftTrails, setAircraftTrails] = createSignal<
+  let [aircraftTrails, _setAircraftTrails] = createSignal<
     Map<string, Array<{ pos: Vec2; now: number }>>
   >(new Map());
   let [mod, setMod] = createSignal(false);
