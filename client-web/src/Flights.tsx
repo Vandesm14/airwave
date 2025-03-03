@@ -136,14 +136,14 @@ export default function Flights() {
           <button onClick={() => setShow(false)}>Close</button>
           <hr />
           <button onClick={handleSubmit}>Accept Selected</button>
-          <h2>Arrivals</h2>
+          <h2>Arrivals ({arrivals().length})</h2>
           <div class="list">
             {arrivals().map((f) => (
               <FlightItem flight={f} />
             ))}
           </div>
           <hr />
-          <h2>Departures</h2>
+          <h2>Departures ({departures().length})</h2>
           <div class="list">
             {departures().map((f) => (
               <FlightItem flight={f} />
