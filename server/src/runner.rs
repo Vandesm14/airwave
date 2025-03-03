@@ -18,7 +18,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
       Aircraft, AircraftKind, AircraftState,
     },
-    airport::Airport,
+    airport::{Airport, Frequencies},
     airspace::Airspace,
     world::{Game, World},
   },
@@ -27,6 +27,7 @@ use engine::{
 
 use crate::{
   airport::new_v_pattern,
+  config::Config,
   job::{JobQueue, JobReq},
   ring::RingBuffer,
   signal_gen::SignalGenerator,
@@ -150,7 +151,11 @@ impl Runner {
     self.game.aircraft.push(aircraft);
   }
 
-  pub fn generate_airspaces(&mut self, world_rng: &mut Rng) {
+  pub fn generate_airspaces(
+    &mut self,
+    world_rng: &mut Rng,
+    config_frequencies: &Frequencies,
+  ) {
     let airspace_names = [
       "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KATL", "KMCO", "KDTW",
     ];
@@ -200,8 +205,17 @@ impl Runner {
         auto: true,
       };
 
+      let frequencies = Frequencies {
+        approach: 0.0,
+        departure: 0.0,
+        tower: 0.0,
+        ground: 0.0,
+        center: config_frequencies.center,
+      };
+
       let mut airport = Airport {
         id: Intern::from_ref(airspace_name),
+        frequencies,
         ..Default::default()
       };
 

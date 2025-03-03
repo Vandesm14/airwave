@@ -95,10 +95,11 @@ async fn main() {
     auto: false,
   };
 
+  let frequencies = config.frequencies.unwrap_or_default();
   let mut airport_ksfo = Airport {
     id: Intern::from_ref("KSFO"),
     center: player_airspace.pos,
-    frequencies: config.frequencies.unwrap_or_default(),
+    frequencies: frequencies.clone(),
     ..Default::default()
   };
 
@@ -109,7 +110,7 @@ async fn main() {
 
   runner.world.airspaces.push(player_airspace);
 
-  runner.generate_airspaces(&mut world_rng);
+  runner.generate_airspaces(&mut world_rng, &frequencies);
   runner.fill_gates();
 
   //

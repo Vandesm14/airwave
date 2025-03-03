@@ -368,6 +368,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
           closest_airspace(&bundle.world.airspaces, aircraft.pos)
         {
           if !airspace.auto {
+            aircraft.frequency =
+              airspace.airports.first().unwrap().frequencies.approach;
+
             let direction = heading_to_direction(angle_between_points(
               airspace.pos,
               aircraft.pos,
