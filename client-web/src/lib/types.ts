@@ -108,7 +108,7 @@ export function smallFlightSegment(segment: FlightSegment): string {
   }
 }
 
-export type TCAS = 'idle' | 'warning' | 'climb' | 'descend';
+export type TCAS = 'idle' | 'warning' | 'climb' | 'descend' | 'hold';
 
 export type Aircraft = {
   id: string;

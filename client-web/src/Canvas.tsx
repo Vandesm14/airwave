@@ -491,7 +491,10 @@ export default function Canvas() {
 
     const isAccepted = aircraft.accepted;
     const isTcas = aircraft.tcas !== 'idle';
-    const isTcasTaRa = aircraft.tcas === 'climb' || aircraft.tcas === 'descend';
+    const isTcasTaRa =
+      aircraft.tcas === 'climb' ||
+      aircraft.tcas === 'descend' ||
+      aircraft.tcas === 'hold';
 
     // Draw trail
     // let trail = aircraftTrails().get(aircraft.id);
@@ -642,7 +645,7 @@ export default function Canvas() {
       targetAltitude = '⬈' + 'CLB';
     } else if (aircraft.tcas === 'descend') {
       targetAltitude = '⬊' + 'DES';
-    } else if (aircraft.tcas === 'warning') {
+    } else if (aircraft.tcas === 'hold') {
       targetAltitude = '⬌' + 'HLD';
     }
 

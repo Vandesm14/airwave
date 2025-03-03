@@ -296,6 +296,7 @@ pub enum TCAS {
   Warning,
   Climb,
   Descend,
+  Hold,
 }
 
 impl TCAS {
@@ -308,7 +309,7 @@ impl TCAS {
   }
 
   pub fn is_ra(&self) -> bool {
-    matches!(self, Self::Climb | Self::Descend)
+    matches!(self, Self::Climb | Self::Descend | Self::Hold)
   }
 }
 

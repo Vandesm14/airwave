@@ -221,20 +221,47 @@ impl Engine {
         continue;
       }
 
-      let a_feet_to_descend = (1000.0 / aircraft.dt_climb_speed(1.0))
+      let a_feet_to_descend = (500.0 / aircraft.dt_climb_speed(1.0))
         * aircraft.speed
         * KNOT_TO_FEET_PER_SECOND;
-      let b_feet_to_descend = (1000.0 / other_aircraft.dt_climb_speed(1.0))
+      let b_feet_to_descend = (500.0 / other_aircraft.dt_climb_speed(1.0))
         * other_aircraft.speed
         * KNOT_TO_FEET_PER_SECOND;
       let total_distance = a_feet_to_descend + b_feet_to_descend;
 
-      if distance <= (total_distance).powf(2.0) {
-        if vertical_distance < 1000.0 {
-          collisions.insert(aircraft.id, TCAS::Climb);
-          collisions.insert(other_aircraft.id, TCAS::Descend);
-        } else if vertical_distance < 2000.0 {
+      let a_angle = delta_angle(
+        angle_between_points(aircraft.pos, other_aircraft.pos),
+        aircraft.heading,
+      );
+      let b_angle = delta_angle(
+        angle_between_points(other_aircraft.pos, aircraft.pos),
+        other_aircraft.heading,
+      );
+      let intersection = a_angle.abs() < 90.0 || b_angle.abs() < 90.0;
+
+      if intersection && vertical_distance < 1000.0 {
+        if distance <= (total_distance).powf(2.0) {
+          if aircraft.altitude < other_aircraft.altitude {
+            collisions.insert(aircraft.id, TCAS::Descend);
+            collisions.insert(other_aircraft.id, TCAS::Climb);
+          } else {
+            collisions.insert(aircraft.id, TCAS::Climb);
+            collisions.insert(other_aircraft.id, TCAS::Descend);
+          }
+        }
+      } else if intersection
+        && distance <= (total_distance * 2.0).powf(2.0)
+        && vertical_distance < 2000.0
+      {
+        if aircraft.tcas.is_ra() {
+          collisions.insert(aircraft.id, TCAS::Hold);
+        } else {
           collisions.insert(aircraft.id, TCAS::Warning);
+        }
+
+        if other_aircraft.tcas.is_ra() {
+          collisions.insert(other_aircraft.id, TCAS::Hold);
+        } else {
           collisions.insert(other_aircraft.id, TCAS::Warning);
         }
       }

@@ -38,8 +38,8 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     let mut speed = aircraft.speed;
 
     let target_altitude = match aircraft.tcas {
-      TCAS::Idle => aircraft.target.altitude,
-      TCAS::Warning => aircraft.altitude,
+      TCAS::Idle | TCAS::Warning => aircraft.target.altitude,
+      TCAS::Hold => aircraft.altitude,
       TCAS::Climb => aircraft.altitude + 1000.0,
       TCAS::Descend => aircraft.altitude - 1000.0,
     };
