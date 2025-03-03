@@ -574,6 +574,8 @@ export default function Canvas() {
       ctx.stroke();
     }
 
+    if (!isAccepted && !isSelected) return;
+
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
@@ -601,8 +603,6 @@ export default function Canvas() {
       ctx.fillStyle = colors.line_blue;
     }
 
-    if (!isAccepted && !isSelected) return;
-
     // Draw callsign
     ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
 
@@ -623,12 +623,12 @@ export default function Canvas() {
       Math.round(aircraft.altitude / 100)
         .toString()
         .padStart(3, '0') +
-        (isAboveAirspace
-          ? ''
-          : altitudeIcon +
+        (aircraft.target.altitude !== aircraft.altitude
+          ? altitudeIcon +
             Math.round(aircraft.target.altitude / 100)
               .toString()
-              .padStart(3, '0')),
+              .padStart(3, '0')
+          : ''),
       pos[0] + spacing,
       pos[1] - spacing + fontSize()
     );
