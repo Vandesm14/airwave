@@ -56,6 +56,7 @@ export default function Canvas() {
     Map<string, Array<{ pos: Vec2; now: number }>>
   >(new Map());
   let [mod, setMod] = createSignal(false);
+
   let renderRate = createMemo(() => (isGround() ? 1000 * 0.5 : 1000 * 4));
 
   const aircrafts = useAircraft(renderRate);
