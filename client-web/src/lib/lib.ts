@@ -99,7 +99,7 @@ export function runwayInfo(
   start: Vec2;
   end: Vec2;
   ils: {
-    altitudePoints: Vec2[];
+    minGlideslope: Vec2;
     end: Vec2;
     maxAngle: Vec2;
     minAngle: Vec2;
@@ -112,19 +112,6 @@ export function runwayInfo(
   let end = movePoint(pos, length * 0.5, runway.heading);
 
   let maxIlsRangeMiles = 18;
-  let ilsPoints: Vec2[] = [];
-  let separate = 6.0 / 4;
-  for (let i = 1; i < 4; i += 1) {
-    let point = i * separate + 0;
-    ilsPoints.push(
-      movePoint(
-        start,
-        length + nauticalMilesToFeet * point,
-        inverseDegrees(runway.heading)
-      )
-    );
-  }
-
   let ilsStart = movePoint(
     start,
     length / 2 + nauticalMilesToFeet * 20,
@@ -141,11 +128,21 @@ export function runwayInfo(
     length / 2 + nauticalMilesToFeet * maxIlsRangeMiles,
     inverseDegrees((runway.heading + (360 - 5)) % 360)
   );
+  let minGlideslope = movePoint(
+    start,
+    nauticalMilesToFeet * 4.5,
+    inverseDegrees(runway.heading)
+  );
 
   return {
     start,
     end,
-    ils: { altitudePoints: ilsPoints, end: ilsStart, maxAngle, minAngle },
+    ils: {
+      minGlideslope,
+      end: ilsStart,
+      maxAngle,
+      minAngle,
+    },
   };
 }
 

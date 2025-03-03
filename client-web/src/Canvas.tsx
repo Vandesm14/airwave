@@ -404,6 +404,7 @@ export default function Canvas() {
     let start = scalePoint(info.start);
     let end = scalePoint(info.end);
     let ils = {
+      minGlideslope: scalePoint(info.ils.minGlideslope),
       end: scalePoint(info.ils.end),
       maxAngle: scalePoint(info.ils.maxAngle),
       minAngle: scalePoint(info.ils.minAngle),
@@ -438,12 +439,16 @@ export default function Canvas() {
 
     // Draw the localizer altitude points
     ctx.strokeStyle = colors.line_blue;
-    for (let p of info.ils.altitudePoints) {
-      let point = scalePoint(p);
-      ctx.beginPath();
-      ctx.arc(point[0], point[1], scaleFeetToPixels(1500), 0, Math.PI * 2);
-      ctx.stroke();
-    }
+
+    ctx.beginPath();
+    ctx.arc(
+      ils.minGlideslope[0],
+      ils.minGlideslope[1],
+      scaleFeetToPixels(1500),
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
   }
 
   function drawWaypoint(ctx: Ctx, name: string, position: Vec2, color: string) {
@@ -479,7 +484,6 @@ export default function Canvas() {
   }
 
   function drawBlip(ctx: Ctx, aircraft: Aircraft) {
-    const isAboveAirspace = aircraft.altitude > 10000;
     const isSelected = selectedAircraft() === aircraft.id;
     const isLanding =
       aircraft.state.type === 'landing' &&
