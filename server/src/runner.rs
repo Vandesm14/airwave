@@ -16,12 +16,13 @@ use engine::{
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
-      Aircraft, AircraftKind,
+      Aircraft, AircraftKind, AircraftState,
     },
     airport::Airport,
     airspace::Airspace,
     world::{Game, World},
   },
+  pathfinder::{Node, NodeKind},
   Translate, NAUTICALMILES_TO_FEET,
 };
 
@@ -137,7 +138,7 @@ impl Runner {
       rate,
       tick_counter: 0,
 
-      spawns: SignalGenerator::new(rate * 20),
+      spawns: SignalGenerator::new(rate * 45),
     }
   }
 
@@ -339,14 +340,48 @@ impl Runner {
     );
 
     if self.spawns.tick(self.tick_counter) {
-      let aircraft = self
-        .rng
-        .sample_iter(self.game.aircraft.iter().filter(|a| a.is_parked()));
-      if let Some(aircraft) = aircraft {
-        self.engine.events.push(Event::Aircraft(AircraftEvent::new(
-          aircraft.id,
-          EventKind::QuickDepart,
-        )));
+      let airports = self
+        .world
+        .airspaces
+        .iter()
+        .filter(|a| a.auto)
+        .flat_map(|a| a.airports.iter());
+      let always_spawn = self.rng.sample_iter(airports).map(|a| a.id).unwrap();
+
+      let airports = self
+        .world
+        .airspaces
+        .iter()
+        .filter(|a| a.auto)
+        .flat_map(|a| a.airports.iter());
+
+      for airport in airports {
+        let chance = self.rng.chance(0.7);
+        if !(chance || airport.id == always_spawn) {
+          continue;
+        }
+
+        let gates = airport
+          .terminals
+          .iter()
+          .flat_map(|t| t.gates.iter().filter(|g| !g.available));
+        let gate = self.rng.sample_iter(gates);
+        if let Some(gate) = gate {
+          let aircraft = self.game.aircraft.iter().find(|a| {
+            if let AircraftState::Parked { at } = &a.state {
+              at.name == gate.id && a.pos == gate.pos
+            } else {
+              false
+            }
+          });
+
+          if let Some(aircraft) = aircraft {
+            self.engine.events.push(Event::Aircraft(AircraftEvent::new(
+              aircraft.id,
+              EventKind::QuickDepart,
+            )));
+          }
+        }
       }
     }
 
