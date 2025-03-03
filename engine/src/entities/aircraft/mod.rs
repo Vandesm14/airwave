@@ -255,6 +255,39 @@ pub enum FlightSegment {
   TaxiArr,
 }
 
+// TODO: Implement these tests into the segment effect in effect.rs.
+impl FlightSegment {
+  pub fn on_ground(&self) -> bool {
+    matches!(self, Self::Parked | Self::TaxiDep | Self::TaxiArr)
+  }
+
+  pub fn in_air(&self) -> bool {
+    matches!(
+      self,
+      Self::Departure
+        | Self::Cruise
+        | Self::Arrival
+        | Self::Approach
+        | Self::Land
+    )
+  }
+
+  pub fn departing(&self) -> bool {
+    matches!(self, Self::TaxiDep | Self::Takeoff | Self::Departure)
+  }
+
+  pub fn en_route(&self) -> bool {
+    matches!(self, Self::Departure | Self::Cruise)
+  }
+
+  pub fn arriving(&self) -> bool {
+    matches!(
+      self,
+      Self::Arrival | Self::Approach | Self::Land | Self::TaxiArr
+    )
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub id: Intern<String>,
