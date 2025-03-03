@@ -407,38 +407,49 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .filter(|a| a.id != aircraft.flight_plan.departing),
           );
           if let Some((departure, arrival)) = departure.zip(arrival) {
-            aircraft.state = AircraftState::Flying {
-              waypoints: Vec::new(),
-            };
-
-            aircraft.pos = departure.pos;
-
-            aircraft.altitude = 1000.0;
-            aircraft.target.altitude = aircraft.flight_plan.altitude;
-
-            aircraft.speed = 150.0;
-            aircraft.target.speed = aircraft.flight_plan.speed;
-
-            aircraft.heading = departure
+            let departure_angle =
+              angle_between_points(departure.pos, arrival.pos);
+            let runways = departure
               .airports
-              .iter()
-              .flat_map(|a| a.runways.first())
-              .next()
-              .unwrap()
-              .heading;
-            aircraft.target.heading = aircraft.heading;
+              .first()
+              .map(|a| a.runways.iter())
+              .unwrap();
+
+            let mut smallest_angle = f32::MAX;
+            let mut closest = None;
+            for runway in runways {
+              let diff = delta_angle(runway.heading, departure_angle).abs();
+              if diff < smallest_angle {
+                smallest_angle = diff;
+                closest = Some(runway);
+              }
+            }
+
+            // If an airport doesn't have a runway, we have other problems.
+            let runway = closest.unwrap();
 
             aircraft.flight_plan.arriving = arrival.id;
-
             aircraft.segment = FlightSegment::Takeoff;
 
-            bundle.events.push(
-              AircraftEvent {
-                id: aircraft.id,
-                kind: EventKind::ResumeOwnNavigation,
-              }
-              .into(),
-            );
+            aircraft.pos = runway.start();
+            aircraft.heading = runway.heading;
+            aircraft.target.heading = runway.heading;
+
+            aircraft.state = AircraftState::Taxiing {
+              current: Node::new(
+                runway.id,
+                NodeKind::Runway,
+                NodeBehavior::Takeoff,
+                runway.start(),
+              ),
+              waypoints: Vec::new(),
+              state: TaxiingState::default(),
+            };
+
+            bundle.events.push(Event::Aircraft(AircraftEvent::new(
+              aircraft.id,
+              EventKind::Takeoff(runway.id),
+            )));
           } else {
             tracing::error!("No arrival airspace found for {:?}", aircraft.id);
           }
