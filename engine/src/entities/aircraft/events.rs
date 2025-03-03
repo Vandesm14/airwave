@@ -375,6 +375,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Configuration and Automation
       EventKind::QuickDepart => {
         if let AircraftState::Parked { .. } = &aircraft.state {
+          let departure = bundle
+            .world
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.departing);
           let arrival = bundle.rng.sample_iter(
             bundle
               .world
@@ -382,15 +387,21 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .iter()
               .filter(|a| a.id != aircraft.flight_plan.departing),
           );
-          if let Some(arrival) = arrival {
+          if let Some((departure, arrival)) = departure.zip(arrival) {
             aircraft.state = AircraftState::Flying {
               waypoints: Vec::new(),
             };
 
+            aircraft.pos = departure.pos;
+
             aircraft.altitude = 1000.0;
             aircraft.target.altitude = aircraft.flight_plan.altitude;
+
             aircraft.speed = 150.0;
             aircraft.target.speed = aircraft.flight_plan.speed;
+
+            aircraft.heading = angle_between_points(aircraft.pos, arrival.pos);
+            aircraft.target.heading = aircraft.heading;
 
             aircraft.flight_plan.arriving = arrival.id;
 

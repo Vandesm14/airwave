@@ -22,7 +22,6 @@ use engine::{
     airspace::Airspace,
     world::{Game, World},
   },
-  pathfinder::{Node, NodeKind},
   Translate, NAUTICALMILES_TO_FEET,
 };
 
@@ -138,7 +137,7 @@ impl Runner {
       rate,
       tick_counter: 0,
 
-      spawns: SignalGenerator::new(rate * 45),
+      spawns: SignalGenerator::new(rate * 60),
     }
   }
 
@@ -346,18 +345,9 @@ impl Runner {
         .iter()
         .filter(|a| a.auto)
         .flat_map(|a| a.airports.iter());
-      let always_spawn = self.rng.sample_iter(airports).map(|a| a.id).unwrap();
-
-      let airports = self
-        .world
-        .airspaces
-        .iter()
-        .filter(|a| a.auto)
-        .flat_map(|a| a.airports.iter());
-
       for airport in airports {
-        let chance = self.rng.chance(0.7);
-        if !(chance || airport.id == always_spawn) {
+        let chance = self.rng.chance(0.8);
+        if !chance {
           continue;
         }
 
@@ -381,6 +371,8 @@ impl Runner {
               EventKind::QuickDepart,
             )));
           }
+        } else {
+          tracing::warn!("No gates available for {:?}", airport.id);
         }
       }
     }

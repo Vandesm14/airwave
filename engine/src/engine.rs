@@ -188,16 +188,13 @@ impl Engine {
       .flat_map(|a| a.terminals.iter_mut())
       .flat_map(|t| t.gates.iter_mut())
     {
-      let aircraft = aircrafts
-        .iter()
-        .filter_map(|a| {
-          if let AircraftState::Parked { at, .. } = &a.state {
-            Some(at)
-          } else {
-            None
-          }
-        })
-        .find(|a| a.name == gate.id && a.value == gate.pos);
+      let aircraft = aircrafts.iter().find(|a| {
+        if let AircraftState::Parked { at, .. } = &a.state {
+          at.name == gate.id && a.pos == gate.pos
+        } else {
+          false
+        }
+      });
 
       gate.available = aircraft.is_none();
     }
