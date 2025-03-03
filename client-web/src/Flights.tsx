@@ -112,11 +112,8 @@ export default function Flights() {
     )
   );
   const departures = createMemo(() =>
-    sortByDistance(
-      aircrafts.data.filter(
-        (a) => !a.accepted && a.flight_plan.departing === HARD_CODED_AIRPORT
-      ),
-      world.data
+    aircrafts.data.filter(
+      (a) => !a.accepted && a.flight_plan.departing === HARD_CODED_AIRPORT
     )
   );
 
