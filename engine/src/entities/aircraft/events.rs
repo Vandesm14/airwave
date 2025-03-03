@@ -220,6 +220,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .with_behavior(vec![
                 EventKind::SpeedAtOrAbove(AircraftKind::A21N.stats().max_speed),
                 EventKind::AltitudeAtOrAbove(CRUISE_ALTITUDE),
+                EventKind::Frequency(
+                  departure.airports.first().unwrap().frequencies.center,
+                ),
               ]);
             let wp_tod = new_vor(Intern::from_ref("TOD"), transition_tod)
               .with_behavior(vec![
