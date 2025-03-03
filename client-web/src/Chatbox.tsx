@@ -170,6 +170,7 @@ export default function Chatbox({
                   callsign: true,
                   atc: m.id === 'ATC',
                 }}
+                onClick={() => setSelectedAircraft(m.id)}
               >
                 {m.id}
               </span>
