@@ -6,6 +6,4 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
-clap.workspace = true
-glam.workspace = true
 inquire = "0.7.5"
