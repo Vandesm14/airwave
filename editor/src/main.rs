@@ -20,6 +20,12 @@ fn main() {
   nannou::app(model).update(update).run();
 }
 
+struct HeldKeys {
+  ctrl: bool,
+  shift: bool,
+  alt: bool,
+}
+
 enum PointMode {
   Add,
   Remove,
@@ -35,6 +41,8 @@ struct Model {
   mode: PointMode,
   selected: Vec<PointKey>,
   is_mouse_down: bool,
+
+  held_keys: HeldKeys,
 }
 
 fn model(app: &App) -> Model {
@@ -64,6 +72,12 @@ fn model(app: &App) -> Model {
     mode: PointMode::Add,
     selected: Vec::new(),
     is_mouse_down: false,
+
+    held_keys: HeldKeys {
+      ctrl: false,
+      shift: false,
+      alt: false,
+    },
   }
 }
 
@@ -96,6 +110,14 @@ fn raw_window_event(
   // Let egui handle things like keyboard and mouse input.
   model.egui.handle_raw_event(event);
 
+  // Update Modifiers
+  if let nannou::winit::event::WindowEvent::ModifiersChanged(modifiers) = event
+  {
+    model.held_keys.ctrl = modifiers.ctrl();
+    model.held_keys.shift = modifiers.shift();
+    model.held_keys.alt = modifiers.alt();
+  }
+
   // Detect mouse click
   if let nannou::winit::event::WindowEvent::MouseInput {
     state: nannou::winit::event::ElementState::Pressed,
@@ -116,8 +138,12 @@ fn raw_window_event(
       }
       PointMode::Select => {
         if let Some(closest) = closest {
-          model.selected.clear();
+          if !model.held_keys.shift {
+            model.selected.clear();
+          }
           model.selected.push(closest.0);
+        } else {
+          model.selected.clear();
         }
 
         if closest.is_some() {
@@ -151,13 +177,11 @@ fn raw_window_event(
 
   // Detect Keyboard input
   if let nannou::winit::event::WindowEvent::KeyboardInput {
-    input:
-      KeyboardInput {
-        state,
-        virtual_keycode,
-        modifiers,
-        ..
-      },
+    input: KeyboardInput {
+      state,
+      virtual_keycode,
+      ..
+    },
     ..
   } = event
   {
@@ -167,7 +191,7 @@ fn raw_window_event(
       nannou::winit::event::ElementState::Pressed,
     ) = (virtual_keycode, state)
     {
-      if modifiers.ctrl() {
+      if model.held_keys.ctrl {
         if let Ok(world_file) = ron::to_string(&model.world_file) {
           std::fs::write(model.path.clone(), world_file).unwrap();
         }
