@@ -501,6 +501,13 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
             let distance = departure.pos.distance_squared(aircraft.pos);
             if distance >= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
               aircraft.segment = FlightSegment::Cruise;
+
+              if departure.auto {
+                // TODO: Add proper callout events (to the waypoints) instead
+                // of hard-coding this.
+                aircraft.frequency =
+                  departure.airports.first().unwrap().frequencies.center;
+              }
             }
           }
         }

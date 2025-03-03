@@ -372,7 +372,7 @@ impl Runner {
           .flat_map(|t| t.gates.iter().filter(|g| !g.available));
         let gate = self.rng.sample_iter(gates);
         if let Some(gate) = gate {
-          let aircraft = self.game.aircraft.iter().find(|a| {
+          let aircraft = self.game.aircraft.iter_mut().find(|a| {
             if let AircraftState::Parked { at } = &a.state {
               at.name == gate.id && a.pos == gate.pos
             } else {
@@ -381,6 +381,21 @@ impl Runner {
           });
 
           if let Some(aircraft) = aircraft {
+            let go_to_non_auto = self.rng.chance(0.5);
+            let destination =
+              self
+                .rng
+                .sample_iter(self.world.airspaces.iter().filter(|a| {
+                  if go_to_non_auto {
+                    a.auto
+                  } else {
+                    !a.auto
+                  }
+                }));
+            if let Some(destination) = destination {
+              aircraft.flight_plan.arriving = destination.id;
+            }
+
             self.engine.events.push(Event::Aircraft(AircraftEvent::new(
               aircraft.id,
               EventKind::QuickDepart,
