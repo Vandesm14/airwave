@@ -1,9 +1,4 @@
-import {
-  useAcceptFlight,
-  useAircraft,
-  useAircraftWithRate,
-  useWorld,
-} from './lib/api';
+import { useAcceptFlight, useAircraft, useWorld } from './lib/api';
 import './Flights.scss';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { selectedAircraftAtom } from './lib/atoms';
