@@ -1,7 +1,9 @@
 use std::{ops::Div, path::PathBuf};
 
 use clap::Parser;
-use editor::{Draw, MetaTaxiway, PointKey, WorldFile};
+use editor::{
+  scale_point, unscale_point, Draw, MetaTaxiway, PointKey, WorldFile,
+};
 use nannou::{event::KeyboardInput, prelude::*};
 use nannou_egui::{
   egui::{self, Id},
@@ -46,6 +48,7 @@ struct Model {
   drag_anchor: Option<glam::Vec2>,
   old_shift_pos: glam::Vec2,
   shift_pos: glam::Vec2,
+  scale: f32,
 
   held_keys: HeldKeys,
 }
@@ -82,6 +85,7 @@ fn model(app: &App) -> Model {
     drag_anchor: None,
     old_shift_pos: glam::Vec2::default(),
     shift_pos: glam::Vec2::default(),
+    scale: 1.0,
 
     held_keys: HeldKeys {
       ctrl: false,
@@ -143,6 +147,19 @@ fn raw_window_event(
     model.held_keys.alt = modifiers.alt();
   }
 
+  // Detect mouse wheel
+  if let nannou::winit::event::WindowEvent::MouseWheel {
+    delta: MouseScrollDelta::LineDelta(_, y),
+    ..
+  } = event
+  {
+    if *y > 0.0 {
+      model.scale *= 0.9;
+    } else {
+      model.scale *= 1.1;
+    }
+  }
+
   // Detect mouse click
   if let nannou::winit::event::WindowEvent::MouseInput {
     state: nannou::winit::event::ElementState::Pressed,
@@ -154,10 +171,11 @@ fn raw_window_event(
       model.is_mouse_down = true;
 
       let pos = real_mouse_pos(app, model);
-      let closest = model.world_data.find_closest_point(pos, 100.0);
+      let scaled_pos = unscale_point(pos, model.shift_pos, model.scale);
+      let closest = model.world_data.find_closest_point(scaled_pos, 100.0);
       match model.mode {
         PointMode::Add => {
-          model.world_data.points.insert(pos);
+          model.world_data.points.insert(scaled_pos);
           model.world_data.trigger_update();
         }
         PointMode::Remove => {
@@ -196,16 +214,18 @@ fn raw_window_event(
   // Detect mouse move
   if let nannou::winit::event::WindowEvent::CursorMoved { .. } = event {
     let pos = real_mouse_pos(app, model);
+    let scaled_pos = unscale_point(pos, model.shift_pos, model.scale);
     if model.is_mouse_down {
       if let Some(point) = model
         .selected
         .first()
         .and_then(|s| model.world_data.points.get_mut(*s))
       {
-        *point = pos;
+        *point = scaled_pos;
         model.world_data.trigger_update();
       } else if let Some(drag_anchor) = model.drag_anchor {
-        model.shift_pos = model.old_shift_pos + pos - drag_anchor;
+        model.shift_pos =
+          model.old_shift_pos + (pos - drag_anchor) * model.scale;
       }
     }
   }
@@ -259,7 +279,8 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
   model.world_data.airport.draw(&draw, 1.0, model.shift_pos);
 
-  let pos = real_mouse_pos(app, model);
+  let pos =
+    unscale_point(real_mouse_pos(app, model), model.shift_pos, model.scale);
   let closest = world_file.find_closest_point(pos, 100.0);
 
   for point in world_file.points.iter() {
@@ -274,7 +295,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
       color
     };
 
-    let pos = point.1 + model.shift_pos;
+    let pos = scale_point(*point.1, model.shift_pos, model.scale);
     draw
       .ellipse()
       .x_y(pos.x, pos.y)
