@@ -130,7 +130,7 @@ export function runwayInfo(
   );
   let minGlideslope = movePoint(
     start,
-    nauticalMilesToFeet * 4.5,
+    nauticalMilesToFeet * 6.0,
     inverseDegrees(runway.heading)
   );
 
