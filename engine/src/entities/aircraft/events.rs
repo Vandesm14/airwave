@@ -400,7 +400,13 @@ impl AircraftEventHandler for HandleAircraftEvent {
             aircraft.speed = 150.0;
             aircraft.target.speed = aircraft.flight_plan.speed;
 
-            aircraft.heading = angle_between_points(aircraft.pos, arrival.pos);
+            aircraft.heading = departure
+              .airports
+              .iter()
+              .flat_map(|a| a.runways.first())
+              .next()
+              .unwrap()
+              .heading;
             aircraft.target.heading = aircraft.heading;
 
             aircraft.flight_plan.arriving = arrival.id;
