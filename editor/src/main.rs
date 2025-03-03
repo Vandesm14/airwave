@@ -1,7 +1,7 @@
 use std::{ops::Div, path::PathBuf};
 
 use clap::Parser;
-use editor::{PointKey, WorldFile};
+use editor::{Draw, MetaTaxiway, PointKey, WorldFile};
 use nannou::{event::KeyboardInput, prelude::*};
 use nannou_egui::{
   egui::{self, Id},
@@ -36,11 +36,12 @@ struct Model {
   egui: Egui,
 
   path: PathBuf,
-  world_file: WorldFile,
+  world_data: WorldFile,
 
   mode: PointMode,
   selected: Vec<PointKey>,
   is_mouse_down: bool,
+  is_over_ui: bool,
 
   held_keys: HeldKeys,
 }
@@ -67,11 +68,12 @@ fn model(app: &App) -> Model {
     egui,
 
     path: args.file,
-    world_file,
+    world_data: world_file,
 
     mode: PointMode::Add,
     selected: Vec::new(),
     is_mouse_down: false,
+    is_over_ui: false,
 
     held_keys: HeldKeys {
       ctrl: false,
@@ -82,14 +84,29 @@ fn model(app: &App) -> Model {
 }
 
 fn update(_app: &App, model: &mut Model, update: Update) {
-  let egui = &mut model.egui;
-  let world_file = &mut model.world_file;
+  model.egui.set_elapsed_time(update.since_start);
+  let ctx = model.egui.begin_frame();
 
-  egui.set_elapsed_time(update.since_start);
-  let ctx = egui.begin_frame();
+  let side_panel = egui::SidePanel::new(
+    egui::panel::Side::Left,
+    Id::new("side_panel"),
+  )
+  .show(&ctx, |ui| {
+    if ui.button("Add Taxiway").clicked() {
+      if model.selected.len() == 2 {
+        model.world_data.meta_airport.taxiways.push(MetaTaxiway {
+          name: "New Taxiway".to_string(),
+          a: model.selected[0],
+          b: model.selected[1],
+        });
+        model.world_data.trigger_update();
+      } else {
+        // TODO: show toast
+      }
+    }
+  });
 
-  egui::SidePanel::new(egui::panel::Side::Left, Id::new("side_panel"))
-    .show(&ctx, |ui| {});
+  model.is_over_ui = side_panel.response.hovered();
 }
 
 fn real_mouse_pos(app: &App, model: &Model) -> glam::Vec2 {
@@ -125,29 +142,33 @@ fn raw_window_event(
     ..
   } = event
   {
-    let pos = real_mouse_pos(app, model);
-    let closest = model.world_file.find_closest_point(pos, 100.0);
-    match model.mode {
-      PointMode::Add => {
-        model.world_file.points.insert(pos);
-      }
-      PointMode::Remove => {
-        if let Some(closest) = closest {
-          model.world_file.points.remove(closest.0);
+    if !model.is_over_ui {
+      let pos = real_mouse_pos(app, model);
+      let closest = model.world_data.find_closest_point(pos, 100.0);
+      match model.mode {
+        PointMode::Add => {
+          model.world_data.points.insert(pos);
+          model.world_data.trigger_update();
         }
-      }
-      PointMode::Select => {
-        if let Some(closest) = closest {
-          if !model.held_keys.shift {
+        PointMode::Remove => {
+          if let Some(closest) = closest {
+            model.world_data.points.remove(closest.0);
+            model.world_data.trigger_update();
+          }
+        }
+        PointMode::Select => {
+          if let Some(closest) = closest {
+            if !model.held_keys.shift {
+              model.selected.clear();
+            }
+            model.selected.push(closest.0);
+          } else {
             model.selected.clear();
           }
-          model.selected.push(closest.0);
-        } else {
-          model.selected.clear();
-        }
 
-        if closest.is_some() {
-          model.is_mouse_down = true;
+          if closest.is_some() {
+            model.is_mouse_down = true;
+          }
         }
       }
     }
@@ -168,9 +189,10 @@ fn raw_window_event(
       if let Some(point) = model
         .selected
         .first()
-        .and_then(|s| model.world_file.points.get_mut(*s))
+        .and_then(|s| model.world_data.points.get_mut(*s))
       {
         *point = pos;
+        model.world_data.trigger_update();
       }
     }
   }
@@ -192,7 +214,9 @@ fn raw_window_event(
     ) = (virtual_keycode, state)
     {
       if model.held_keys.ctrl {
-        if let Ok(world_file) = ron::to_string(&model.world_file) {
+        if let Ok(world_file) = ron::to_string(&model.world_data) {
+          // This ensures that the airport is up-to-date before saving.
+          model.world_data.trigger_update();
           std::fs::write(model.path.clone(), world_file).unwrap();
         }
       }
@@ -215,10 +239,12 @@ fn raw_window_event(
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-  let world_file = &model.world_file;
+  let world_file = &model.world_data;
 
   let draw = app.draw();
   draw.background().color(BLACK);
+
+  model.world_data.airport.draw(&draw, 1.0);
 
   let pos = real_mouse_pos(app, model);
   let closest = world_file.find_closest_point(pos, 100.0);
