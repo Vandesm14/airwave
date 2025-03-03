@@ -93,11 +93,8 @@ impl From<AircraftEvent> for Event {
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum EngineConfig {
-  /// Runs only flight layers.
+  /// Runs no collision checks.
   Minimal,
-
-  /// Runs all layers for aircraft movement.
-  Base,
 
   #[default]
   /// Runs all collision checks.
@@ -107,10 +104,6 @@ pub enum EngineConfig {
 impl EngineConfig {
   pub fn run_collisions(&self) -> bool {
     matches!(self, EngineConfig::Full)
-  }
-
-  pub fn run_all_layers(&self) -> bool {
-    matches!(self, EngineConfig::Base) || matches!(self, EngineConfig::Full)
   }
 }
 
@@ -153,10 +146,8 @@ impl Engine {
       }
 
       // Run through all effects
-      if self.config.run_all_layers() {
-        AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
-        AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
-      }
+      AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
+      AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
       AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
       AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
@@ -237,6 +228,8 @@ impl Engine {
     // });
   }
 
+  // FIXME: There's a bug here when aircraft land it spits out a ton of
+  // TaxiContinue events. Not sure why.
   pub fn taxi_collisions(
     &mut self,
     aircrafts: &mut [Aircraft],

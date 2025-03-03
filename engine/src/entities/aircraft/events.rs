@@ -6,9 +6,10 @@ use turborand::TurboRand;
 use crate::{
   angle_between_points,
   command::{CommandReply, CommandWithFreq, Task},
+  delta_angle,
   engine::{Bundle, Event},
   entities::world::{closest_airport, closest_airspace},
-  heading_to_direction,
+  heading_to_direction, inverse_degrees, move_point,
   pathfinder::{
     display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
     NodeKind, Pathfinder,
@@ -180,48 +181,66 @@ impl AircraftEventHandler for HandleAircraftEvent {
             .find(|a| a.id == aircraft.flight_plan.arriving);
 
           if let Some((departure, arrival)) = departure.zip(arrival) {
+            let arrival_angle =
+              angle_between_points(departure.pos, arrival.pos);
+            let runways =
+              arrival.airports.first().map(|a| a.runways.iter()).unwrap();
+
+            let mut smallest_angle = f32::MAX;
+            let mut closest = None;
+            for runway in runways {
+              let diff = delta_angle(runway.heading, arrival_angle).abs();
+              if diff < smallest_angle {
+                smallest_angle = diff;
+                closest = Some(runway);
+              }
+            }
+
+            // If an airport doesn't have a runway, we have other problems.
+            let runway = closest.unwrap();
+
             let transition_sid = departure
               .pos
-              .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 15.0);
-
-            // TOD: Top of Descent
-            let transition_tod = arrival
-              .pos
-              .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 90.0);
+              .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 30.0);
+            let transition_tod = arrival.pos.move_towards(
+              departure.pos,
+              NAUTICALMILES_TO_FEET * (30.0 + 55.0),
+            );
             let transition_star = arrival
               .pos
-              .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 60.0);
-            let transition_iap = arrival
-              .pos
               .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 30.0);
+            let transition_iaf = move_point(
+              runway.start(),
+              inverse_degrees(runway.heading),
+              NAUTICALMILES_TO_FEET * 15.0,
+            );
+            let transition_vctr = transition_star.lerp(transition_iaf, 0.5);
 
             let wp_sid = new_vor(Intern::from_ref("SID"), transition_sid)
               .with_behavior(vec![
                 EventKind::SpeedAtOrAbove(AircraftKind::A21N.stats().max_speed),
                 EventKind::AltitudeAtOrAbove(CRUISE_ALTITUDE),
               ]);
-
             let wp_tod = new_vor(Intern::from_ref("TOD"), transition_tod)
               .with_behavior(vec![
-                EventKind::SpeedAtOrBelow(250.0),
+                EventKind::SpeedAtOrBelow(300.0),
                 EventKind::AltitudeAtOrBelow(TRANSITION_ALTITUDE),
               ]);
             let wp_star = new_vor(Intern::from_ref("STAR"), transition_star)
               .with_behavior(vec![
                 EventKind::SpeedAtOrBelow(250.0),
                 EventKind::AltitudeAtOrBelow(ARRIVAL_ALTITUDE),
+                EventKind::CalloutInAirspace,
               ]);
-            let wp_iap = new_vor(Intern::from_ref("IAP"), transition_iap)
+            let wp_vctr = new_vor(Intern::from_ref("VCTR"), transition_vctr)
               .with_behavior(vec![
                 EventKind::SpeedAtOrBelow(180.0),
                 EventKind::AltitudeAtOrBelow(APPROACH_ALTITUDE),
-                EventKind::CalloutInAirspace,
+                EventKind::Land(runway.id),
               ]);
-            let wp_aprt = new_vor(Intern::from_ref("APRT"), arrival.pos)
-              .with_behavior(vec![EventKind::QuickArrive]);
 
             aircraft.state = AircraftState::Flying {
-              waypoints: vec![wp_aprt, wp_iap, wp_star, wp_tod, wp_sid],
+              waypoints: vec![wp_vctr, wp_star, wp_tod, wp_sid],
             };
           }
         }
@@ -239,14 +258,14 @@ impl AircraftEventHandler for HandleAircraftEvent {
           bundle.events.push(
             AircraftEvent {
               id: aircraft.id,
-              kind: EventKind::AltitudeAtOrAbove(3000.0),
+              kind: EventKind::AltitudeAtOrAbove(5000.0),
             }
             .into(),
           );
           bundle.events.push(
             AircraftEvent {
               id: aircraft.id,
-              kind: EventKind::SpeedAtOrAbove(210.0),
+              kind: EventKind::SpeedAtOrAbove(250.0),
             }
             .into(),
           );
@@ -254,7 +273,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       }
       EventKind::Touchdown => {
         if let AircraftState::Landing { .. } = aircraft.state {
-          handle_touchdown_event(aircraft);
+          handle_touchdown_event(aircraft, bundle);
         }
       }
       EventKind::Takeoff(runway) => {
@@ -426,50 +445,48 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::QuickArrive => {
-        if let AircraftState::Flying { .. } = aircraft.state {
-          let arrival = bundle
-            .world
-            .airspaces
-            .iter()
-            .find(|a| a.id == aircraft.flight_plan.arriving)
-            .and_then(|a| {
-              a.airports
-                .iter()
-                .find(|a| a.id == aircraft.flight_plan.arriving)
-            });
-          if let Some(arrival) = arrival {
-            let available_gate = arrival
-              .terminals
+        let arrival = bundle
+          .world
+          .airspaces
+          .iter()
+          .find(|a| a.id == aircraft.flight_plan.arriving)
+          .and_then(|a| {
+            a.airports
               .iter()
-              .flat_map(|t| t.gates.iter())
-              .find(|g| g.available);
-            if let Some(gate) = available_gate {
-              aircraft.state = AircraftState::Parked {
-                at: Node::new(
-                  gate.id,
-                  NodeKind::Gate,
-                  NodeBehavior::Park,
-                  gate.pos,
-                ),
-              };
+              .find(|a| a.id == aircraft.flight_plan.arriving)
+          });
+        if let Some(arrival) = arrival {
+          let available_gate = arrival
+            .terminals
+            .iter()
+            .flat_map(|t| t.gates.iter())
+            .find(|g| g.available);
+          if let Some(gate) = available_gate {
+            aircraft.state = AircraftState::Parked {
+              at: Node::new(
+                gate.id,
+                NodeKind::Gate,
+                NodeBehavior::Park,
+                gate.pos,
+              ),
+            };
 
-              aircraft.pos = gate.pos;
+            aircraft.pos = gate.pos;
 
-              aircraft.speed = 0.0;
-              aircraft.heading = gate.heading;
-              aircraft.altitude = 0.0;
-              aircraft.sync_targets_to_vals();
+            aircraft.speed = 0.0;
+            aircraft.heading = gate.heading;
+            aircraft.altitude = 0.0;
+            aircraft.sync_targets_to_vals();
 
-              aircraft.segment = FlightSegment::Parked;
+            aircraft.segment = FlightSegment::Parked;
 
-              aircraft.flip_flight_plan();
-            } else {
-              tracing::error!(
-                "No available gates for {} at {}",
-                aircraft.id,
-                aircraft.flight_plan.arriving
-              );
-            }
+            aircraft.flip_flight_plan();
+          } else {
+            tracing::error!(
+              "No available gates for {} at {}",
+              aircraft.id,
+              aircraft.flight_plan.arriving
+            );
           }
         }
       }
@@ -505,10 +522,20 @@ pub fn handle_land_event(
   }
 }
 
-pub fn handle_touchdown_event(aircraft: &mut Aircraft) {
+pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
   let AircraftState::Landing { runway, .. } = &mut aircraft.state else {
     unreachable!("outer function asserts that aircraft is landing")
   };
+
+  let airspace = closest_airspace(&bundle.world.airspaces, aircraft.pos);
+  if let Some(airspace) = airspace {
+    if airspace.auto {
+      bundle.events.push(Event::Aircraft(AircraftEvent::new(
+        aircraft.id,
+        EventKind::QuickArrive,
+      )));
+    }
+  }
 
   aircraft.target.altitude = 0.0;
   aircraft.altitude = 0.0;

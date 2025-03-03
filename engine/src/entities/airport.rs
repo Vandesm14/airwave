@@ -8,25 +8,13 @@ use crate::{
   Line, Translate,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Frequencies {
   pub approach: f32,
   pub departure: f32,
   pub tower: f32,
   pub ground: f32,
   pub center: f32,
-}
-
-impl Default for Frequencies {
-  fn default() -> Self {
-    Self {
-      approach: 118.5,
-      departure: 118.5,
-      tower: 118.5,
-      ground: 118.5,
-      center: 118.5,
-    }
-  }
 }
 
 impl Frequencies {
