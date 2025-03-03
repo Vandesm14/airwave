@@ -137,7 +137,8 @@ impl Runner {
       rate,
       tick_counter: 0,
 
-      spawns: SignalGenerator::new(rate * 60),
+      // Spawn rate is 60 + 15 seconds to make it less robotic.
+      spawns: SignalGenerator::new(rate * 75),
     }
   }
 
@@ -372,7 +373,10 @@ impl Runner {
             )));
           }
         } else {
-          tracing::warn!("No gates available for {:?}", airport.id);
+          tracing::warn!(
+            "No departures available for {:?} (gates are empty)",
+            airport.id
+          );
         }
       }
     }
