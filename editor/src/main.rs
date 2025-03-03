@@ -1,7 +1,7 @@
 use std::{ops::Div, path::PathBuf};
 
 use clap::Parser;
-use editor::{geom_to_glam, WorldFile};
+use editor::{PointKey, WorldFile};
 use nannou::{event::KeyboardInput, prelude::*};
 use nannou_egui::{
   egui::{self, Id},
@@ -33,7 +33,7 @@ struct Model {
   world_file: WorldFile,
 
   mode: PointMode,
-  selected: Option<usize>,
+  selected: Vec<PointKey>,
   is_mouse_down: bool,
 }
 
@@ -62,7 +62,7 @@ fn model(app: &App) -> Model {
     world_file,
 
     mode: PointMode::Add,
-    selected: None,
+    selected: Vec::new(),
     is_mouse_down: false,
   }
 }
@@ -107,15 +107,18 @@ fn raw_window_event(
     let closest = model.world_file.find_closest_point(pos, 100.0);
     match model.mode {
       PointMode::Add => {
-        model.world_file.points.push(pos);
+        model.world_file.points.insert(pos);
       }
       PointMode::Remove => {
         if let Some(closest) = closest {
-          model.world_file.points.remove(closest);
+          model.world_file.points.remove(closest.0);
         }
       }
       PointMode::Select => {
-        model.selected = closest;
+        if let Some(closest) = closest {
+          model.selected.clear();
+          model.selected.push(closest.0);
+        }
 
         if closest.is_some() {
           model.is_mouse_down = true;
@@ -138,7 +141,8 @@ fn raw_window_event(
     if model.is_mouse_down {
       if let Some(point) = model
         .selected
-        .and_then(|s| model.world_file.points.get_mut(s))
+        .first()
+        .and_then(|s| model.world_file.points.get_mut(*s))
       {
         *point = pos;
       }
@@ -195,9 +199,13 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let pos = real_mouse_pos(app, model);
   let closest = world_file.find_closest_point(pos, 100.0);
 
-  for (i, point) in world_file.points.iter().enumerate() {
-    let color = if Some(i) == closest { RED } else { WHITE };
-    let color = if Some(i) == model.selected {
+  for point in world_file.points.iter() {
+    let color = if Some(point.0) == closest.map(|c| c.0) {
+      RED
+    } else {
+      WHITE
+    };
+    let color = if model.selected.contains(&point.0) {
       GREEN
     } else {
       color
@@ -205,7 +213,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     draw
       .ellipse()
-      .x_y(point.x, point.y)
+      .x_y(point.1.x, point.1.y)
       .w_h(10.0, 10.0)
       .color(color);
   }
