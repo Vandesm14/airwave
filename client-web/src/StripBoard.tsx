@@ -160,8 +160,7 @@ function Strip({ strip }: StripProps) {
   let dimmer = createMemo(
     () =>
       strip.frequency !== ourFrequency() ||
-      (sinceCreated.startsWith('-') && sinceCreated !== '--:--') ||
-      strip.state.type === 'parked'
+      (sinceCreated.startsWith('-') && sinceCreated !== '--:--')
   );
 
   if (isAircraftLanding(strip.state)) {
@@ -223,10 +222,8 @@ function Strip({ strip }: StripProps) {
         <span>{distanceText}</span>
       </div>
       <div class="vertical">
-        <Show when={!(strip.state.type === 'parked')}>
-          <span>{strip.flight_plan.departing}</span>
-          <span>{strip.flight_plan.arriving}</span>
-        </Show>
+        <span>{strip.flight_plan.departing}</span>
+        <span>{strip.flight_plan.arriving}</span>
       </div>
       <div class="vertical">
         <span>{topStatus}</span>
