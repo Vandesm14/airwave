@@ -27,7 +27,6 @@ use engine::{
 
 use crate::{
   airport::new_v_pattern,
-  config::Config,
   job::{JobQueue, JobReq},
   ring::RingBuffer,
   signal_gen::SignalGenerator,
