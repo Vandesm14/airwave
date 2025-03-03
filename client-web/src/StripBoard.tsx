@@ -4,6 +4,7 @@ import {
   isAircraftFlying,
   isAircraftLanding,
   isAircraftParked,
+  smallFlightSegment,
 } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
@@ -182,6 +183,8 @@ function Strip({ strip }: StripProps) {
   } else if (isAircraftParked(strip.state)) {
     topStatus = 'PARK';
     bottomStatus = strip.state.value.at.name;
+  } else {
+    topStatus = smallFlightSegment(strip.segment).toUpperCase();
   }
 
   let distance = calculateDistance(
