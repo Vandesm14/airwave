@@ -693,7 +693,7 @@ export default function Canvas() {
 
     ctx.fillStyle = 'red';
     ctx.beginPath();
-    ctx.arc(pos[0], pos[1], 5, 0, Math.PI * 2);
+    ctx.arc(pos[0], pos[1], scaleFeetToPixels(50), 0, Math.PI * 2);
     ctx.fill();
 
     let fontSize = 16;
