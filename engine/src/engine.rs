@@ -199,7 +199,7 @@ impl Engine {
         })
         .find(|a| a.name == gate.id && a.value == gate.pos);
 
-      gate.available = aircraft.is_some();
+      gate.available = aircraft.is_none();
     }
   }
 
