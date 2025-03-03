@@ -52,9 +52,9 @@ export default function Canvas() {
   let [frequency] = useAtom(frequencyAtom);
   let fontSize = createMemo(() => 16);
   let isGround = createMemo(() => radar().scale > groundScale);
-  let [aircraftTrails, _setAircraftTrails] = createSignal<
-    Map<string, Array<{ pos: Vec2; now: number }>>
-  >(new Map());
+  // let [aircraftTrails, setAircraftTrails] = createSignal<
+  //   Map<string, Array<{ pos: Vec2; now: number }>>
+  // >(new Map());
   let [mod, setMod] = createSignal(false);
 
   let renderRate = createMemo(() => (isGround() ? 1000 * 0.5 : 1000 * 4));
@@ -490,35 +490,37 @@ export default function Canvas() {
       aircraft.state.value.state !== 'before-turn';
 
     const isAccepted = aircraft.accepted;
+    const isTcas = aircraft.tcas !== 'idle';
+    const isTcasTaRa = aircraft.tcas === 'climb' || aircraft.tcas === 'descend';
 
     // Draw trail
-    let trail = aircraftTrails().get(aircraft.id);
-    if (trail) {
-      const dotSize = Math.max(2, scaleFeetToPixels(750));
+    // let trail = aircraftTrails().get(aircraft.id);
+    // if (trail) {
+    //   const dotSize = Math.max(2, scaleFeetToPixels(750));
 
-      // If selected
-      if (selectedAircraft() == aircraft.id) {
-        ctx.fillStyle = colors.text_yellow;
-        // If colliding
-      } else if (aircraft.is_colliding) {
-        ctx.fillStyle = colors.text_red;
-        // If departure
-      } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
-        ctx.fillStyle = colors.line_blue;
-      } else {
-        // Else, arrival
-        ctx.fillStyle = colors.line_green;
-      }
+    //   // If selected
+    //   if (selectedAircraft() == aircraft.id) {
+    //     ctx.fillStyle = colors.text_yellow;
+    //     // If colliding
+    //   } else if (isTcas) {
+    //     ctx.fillStyle = colors.text_red;
+    //     // If departure
+    //   } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
+    //     ctx.fillStyle = colors.line_blue;
+    //   } else {
+    //     // Else, arrival
+    //     ctx.fillStyle = colors.line_green;
+    //   }
 
-      for (let point of trail) {
-        ctx.fillRect(
-          scalePoint(point.pos)[0] - dotSize * 0.5,
-          scalePoint(point.pos)[1] - dotSize * 0.5,
-          dotSize,
-          dotSize
-        );
-      }
-    }
+    //   for (let point of trail) {
+    //     ctx.fillRect(
+    //       scalePoint(point.pos)[0] - dotSize * 0.5,
+    //       scalePoint(point.pos)[1] - dotSize * 0.5,
+    //       dotSize,
+    //       dotSize
+    //     );
+    //   }
+    // }
 
     // Draw waypoints
     let pos = scalePoint(aircraft.pos);
@@ -545,12 +547,12 @@ export default function Canvas() {
     if (isSelected) {
       ctx.fillStyle = colors.line_yellow;
       ctx.strokeStyle = colors.line_yellow;
+    } else if (isTcasTaRa) {
+      ctx.fillStyle = colors.line_red;
+      ctx.strokeStyle = colors.line_red;
     } else if (!isAccepted) {
       ctx.fillStyle = colors.text_dark_grey;
       ctx.strokeStyle = colors.text_dark_grey;
-    } else if (aircraft.is_colliding) {
-      ctx.fillStyle = colors.line_red;
-      ctx.strokeStyle = colors.line_red;
     } else {
       ctx.fillStyle = colors.line_green;
       ctx.strokeStyle = colors.line_green;
@@ -597,18 +599,24 @@ export default function Canvas() {
 
     if (isSelected) {
       ctx.fillStyle = colors.text_yellow;
+    } else if (isTcasTaRa) {
+      ctx.fillStyle = colors.text_red;
     } else if (!isAccepted) {
       ctx.fillStyle = colors.text_dark_grey;
     } else if (aircraft.frequency !== frequency()) {
       ctx.fillStyle = colors.text_grey;
-    } else if (aircraft.is_colliding) {
-      ctx.fillStyle = colors.text_red;
     } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
       ctx.fillStyle = colors.line_blue;
     }
 
     // Draw callsign
-    ctx.fillText(aircraft.id, pos[0] + spacing, pos[1] - spacing);
+    let callsign = aircraft.id;
+    if (isTcasTaRa) {
+      callsign += ' TA/RA';
+    } else if (isTcas) {
+      callsign += ' TA';
+    }
+    ctx.fillText(callsign, pos[0] + spacing, pos[1] - spacing);
 
     if (isLanding && !isSelected) {
       return;
@@ -622,17 +630,30 @@ export default function Canvas() {
       altitudeIcon = '⬊';
     }
 
-    // TODO: hide target altitude if landing
+    let targetAltitude =
+      aircraft.target.altitude !== aircraft.altitude
+        ? altitudeIcon +
+          Math.round(aircraft.target.altitude / 100)
+            .toString()
+            .padStart(3, '0')
+        : '';
+
+    if (aircraft.tcas === 'climb') {
+      targetAltitude = '⬈' + 'CLB';
+    } else if (aircraft.tcas === 'descend') {
+      targetAltitude = '⬊' + 'DES';
+    } else if (aircraft.tcas === 'warning') {
+      targetAltitude = '⬌' + 'HLD';
+    }
+
+    if (isLanding) {
+      targetAltitude = '';
+    }
+
     ctx.fillText(
       Math.round(aircraft.altitude / 100)
         .toString()
-        .padStart(3, '0') +
-        (aircraft.target.altitude !== aircraft.altitude
-          ? altitudeIcon +
-            Math.round(aircraft.target.altitude / 100)
-              .toString()
-              .padStart(3, '0')
-          : ''),
+        .padStart(3, '0') + targetAltitude,
       pos[0] + spacing,
       pos[1] - spacing + fontSize()
     );

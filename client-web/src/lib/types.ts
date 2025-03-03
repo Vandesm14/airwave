@@ -108,6 +108,8 @@ export function smallFlightSegment(segment: FlightSegment): string {
   }
 }
 
+export type TCAS = 'idle' | 'warning' | 'climb' | 'descend';
+
 export type Aircraft = {
   id: string;
   is_colliding: boolean;
@@ -129,6 +131,7 @@ export type Aircraft = {
     /** In Feet */
     altitude: number;
   };
+  tcas: TCAS;
   flight_plan: {
     departing: string;
     arriving: string;

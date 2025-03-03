@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use internment::Intern;
 use itertools::Itertools;
@@ -18,10 +18,11 @@ use crate::{
       events::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
       },
-      Aircraft, AircraftState, TaxiingState,
+      Aircraft, AircraftState, TaxiingState, TCAS,
     },
     world::{Game, World},
   },
+  KNOT_TO_FEET_PER_SECOND,
 };
 
 #[derive(Debug)]
@@ -105,6 +106,10 @@ impl EngineConfig {
   pub fn run_collisions(&self) -> bool {
     matches!(self, EngineConfig::Full)
   }
+
+  pub fn show_logs(&self) -> bool {
+    matches!(self, EngineConfig::Full)
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -123,10 +128,10 @@ impl Engine {
   ) -> Vec<Event> {
     self.compute_available_gates(&game.aircraft, world);
     if self.config.run_collisions() {
-      self.handle_collisions(&mut game.aircraft);
+      self.handle_tcas(&mut game.aircraft);
     }
 
-    if !self.events.is_empty() && self.config != EngineConfig::Minimal {
+    if self.config.show_logs() && !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
 
@@ -159,7 +164,7 @@ impl Engine {
     }
 
     // Capture the left over events and actions for next time
-    if !bundle.events.is_empty() && self.config != EngineConfig::Minimal {
+    if self.config.show_logs() && !bundle.events.is_empty() {
       tracing::info!("new events: {:?}", bundle.events);
     }
 
@@ -191,41 +196,52 @@ impl Engine {
     }
   }
 
-  pub fn handle_collisions(&mut self, _aircrafts: &mut [Aircraft]) {
-    // TODO: Collisions are disabled for now
-    // let mut collisions: HashSet<Intern<String>> = HashSet::new();
-    // for pair in aircrafts.iter().combinations(2) {
-    //   let aircraft = pair.first().unwrap();
-    //   let other_aircraft = pair.last().unwrap();
+  pub fn handle_tcas(&mut self, aircrafts: &mut [Aircraft]) {
+    let mut collisions: HashMap<Intern<String>, TCAS> = HashMap::new();
+    for pair in aircrafts.iter().combinations(2) {
+      let aircraft = pair.first().unwrap();
+      let other_aircraft = pair.last().unwrap();
 
-    //   let distance = aircraft.pos.distance_squared(other_aircraft.pos);
-    //   let vertical_distance =
-    //     (aircraft.altitude - other_aircraft.altitude).abs();
+      let distance = aircraft.pos.distance_squared(other_aircraft.pos);
+      let vertical_distance =
+        (aircraft.altitude - other_aircraft.altitude).abs();
 
-    //   if matches!(aircraft.state, AircraftState::Flying { enroute: false, .. })
-    //     && matches!(
-    //       other_aircraft.state,
-    //       AircraftState::Flying { enroute: false, .. }
-    //     )
-    //     && aircraft.altitude > 1000.0
-    //     && distance <= (NAUTICALMILES_TO_FEET * 4.0).powf(2.0)
-    //     && vertical_distance < 1000.0
-    //   {
-    //     collisions.insert(aircraft.id);
-    //     collisions.insert(other_aircraft.id);
-    //   }
-    // }
+      let both_are_flying =
+        matches!(aircraft.state, AircraftState::Flying { .. })
+          && matches!(other_aircraft.state, AircraftState::Flying { .. });
+      let both_are_above =
+        aircraft.altitude > 1000.0 && other_aircraft.altitude > 1000.0;
 
-    // aircrafts.iter_mut().for_each(|aircraft| {
-    //   let is_colliding = collisions.contains(&aircraft.id);
+      if !both_are_flying || !both_are_above {
+        continue;
+      }
 
-    //   // TODO: Fire collision events
-    //   // if is_colliding && aircraft.is_colliding != is_colliding {
-    //   //   self.events.push();
-    //   // }
+      let a_feet_to_descend = (1000.0 / aircraft.dt_climb_speed(1.0))
+        * aircraft.speed
+        * KNOT_TO_FEET_PER_SECOND;
+      let b_feet_to_descend = (1000.0 / other_aircraft.dt_climb_speed(1.0))
+        * other_aircraft.speed
+        * KNOT_TO_FEET_PER_SECOND;
+      let total_distance = a_feet_to_descend + b_feet_to_descend;
 
-    //   aircraft.is_colliding = is_colliding;
-    // });
+      if distance <= (total_distance).powf(2.0) {
+        if vertical_distance < 1000.0 {
+          collisions.insert(aircraft.id, TCAS::Climb);
+          collisions.insert(other_aircraft.id, TCAS::Descend);
+        } else if vertical_distance < 2000.0 {
+          collisions.insert(aircraft.id, TCAS::Warning);
+          collisions.insert(other_aircraft.id, TCAS::Warning);
+        }
+      }
+    }
+
+    aircrafts.iter_mut().for_each(|aircraft| {
+      if let Some(tcas) = collisions.get(&aircraft.id) {
+        aircraft.tcas = *tcas;
+      } else {
+        aircraft.tcas = TCAS::Idle;
+      }
+    });
   }
 
   // FIXME: There's a bug here when aircraft land it spits out a ton of

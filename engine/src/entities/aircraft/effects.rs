@@ -14,7 +14,7 @@ use crate::{
 
 use super::{
   events::{AircraftEvent, EventKind},
-  Aircraft, AircraftState, FlightSegment, LandingState,
+  Aircraft, AircraftState, FlightSegment, LandingState, TCAS,
 };
 
 pub trait AircraftEffect {
@@ -37,9 +37,16 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     let mut heading = aircraft.heading;
     let mut speed = aircraft.speed;
 
+    let target_altitude = match aircraft.tcas {
+      TCAS::Idle => aircraft.target.altitude,
+      TCAS::Warning => aircraft.altitude,
+      TCAS::Climb => aircraft.altitude + 1000.0,
+      TCAS::Descend => aircraft.altitude - 1000.0,
+    };
+
     // Snap values if they're close enough
-    if (altitude - aircraft.target.altitude).abs() < climb_speed {
-      altitude = aircraft.target.altitude;
+    if (altitude - target_altitude).abs() < climb_speed {
+      altitude = target_altitude;
     }
     if (heading - aircraft.target.heading).abs() < turn_speed {
       heading = aircraft.target.heading;
@@ -49,8 +56,8 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
     }
 
     // Change if not equal
-    if altitude != aircraft.target.altitude {
-      if altitude < aircraft.target.altitude {
+    if altitude != target_altitude {
+      if altitude < target_altitude {
         altitude += climb_speed;
       } else {
         altitude -= climb_speed;

@@ -167,7 +167,7 @@ pub struct AircraftStats {
   pub seats: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AircraftKind {
   // Airbus
@@ -228,7 +228,7 @@ impl AircraftKind {
 /// This is simply a flag for denoting the segment of flight and does not
 /// contain any data or further information. [`AircraftState`] is the primary
 /// holder of state and data for an aircraft.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[repr(u8)]
 pub enum FlightSegment {
@@ -288,6 +288,16 @@ impl FlightSegment {
   }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TCAS {
+  #[default]
+  Idle,
+  Warning,
+  Climb,
+  Descend,
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Aircraft {
   pub id: Intern<String>,
@@ -300,6 +310,7 @@ pub struct Aircraft {
 
   pub state: AircraftState,
   pub target: AircraftTargets,
+  pub tcas: TCAS,
   pub flight_plan: FlightPlan,
 
   pub frequency: f32,
@@ -357,6 +368,7 @@ impl Aircraft {
         Intern::from(String::new()),
         Intern::from(String::new()),
       ),
+      tcas: TCAS::default(),
 
       frequency: airport.frequencies.ground,
       segment: FlightSegment::Parked,
