@@ -210,6 +210,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .pos
               .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 30.0);
 
+            // If the TOD is within the departure airspace, place it in the
+            // middle between the cruise route.
+            // This can happen if the two airspaces are closer than 55 NM,
+            // which is the minimum TOD for FL380.
             if transition_tod.distance_squared(transition_sid)
               < (NAUTICALMILES_TO_FEET * 55.0_f32).powf(2.0)
             {
