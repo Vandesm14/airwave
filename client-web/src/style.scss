@@ -301,6 +301,8 @@ input[type='button']:hover {
       border: 1px solid white;
 
       min-width: 300px;
+      // Make room for the frequency selector and the buttons.
+      max-height: 79vh;
 
       overflow-y: auto;
 
