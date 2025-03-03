@@ -9,11 +9,11 @@ use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 
 pub fn scale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
-  (point + offset) / scale
+  (point + offset) * scale
 }
 
 pub fn unscale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
-  point * scale - offset
+  (point / scale) - offset
 }
 
 new_key_type! { pub struct PointKey; }
@@ -31,7 +31,7 @@ impl WorldFile {
     test_point: Vec2,
     threshold: f32,
   ) -> Option<(PointKey, Vec2)> {
-    let mut smallest_distance = threshold;
+    let mut smallest_distance = threshold.powf(2.0);
     let mut point: Option<(PointKey, Vec2)> = None;
     for p in self.points.iter() {
       let distance = p.1.distance_squared(test_point);
@@ -110,8 +110,8 @@ impl Draw for Taxiway {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     draw
       .line()
-      .start(glam_to_geom(self.a * scale))
-      .end(glam_to_geom(self.b * scale))
+      .start(glam_to_geom(scale_point(self.a, offset, scale)))
+      .end(glam_to_geom(scale_point(self.b, offset, scale)))
       .weight(200.0 * scale)
       .color(color::rgb::<u8>(0x99, 0x99, 0x99));
   }
@@ -119,21 +119,21 @@ impl Draw for Taxiway {
 
 impl Draw for Runway {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
-    let scaled_start = glam_to_geom(self.start() * scale);
-    let scaled_end = glam_to_geom(self.end() * scale);
+    let scaled_start = glam_to_geom(self.start());
+    let scaled_end = glam_to_geom(self.end());
 
     draw
       .line()
       .start(scaled_start)
       .end(scaled_end)
-      .weight(250.0 * scale)
+      .weight(250.0)
       .color(color::rgb::<u8>(0x66, 0x66, 0x66));
 
     draw
       .ellipse()
       .x_y(scaled_start.x, scaled_start.y)
-      .width(200.0 * scale)
-      .height(200.0 * scale)
+      .width(200.0)
+      .height(200.0)
       .color(color::rgb::<u8>(0xff, 0x00, 0x00));
   }
 }
@@ -143,10 +143,10 @@ impl Draw for Terminal {
     draw
       .quad()
       .points(
-        glam_to_geom(self.a * scale),
-        glam_to_geom(self.b * scale),
-        glam_to_geom(self.c * scale),
-        glam_to_geom(self.d * scale),
+        glam_to_geom(self.a),
+        glam_to_geom(self.b),
+        glam_to_geom(self.c),
+        glam_to_geom(self.d),
       )
       .color(color::rgb::<u8>(0x99, 0x99, 0x99));
 
@@ -158,12 +158,12 @@ impl Draw for Terminal {
 
 impl Draw for Gate {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
-    let pos = self.pos * scale;
+    let pos = scale_point(self.pos, offset, scale);
     draw
       .ellipse()
       .x_y(pos.x, pos.y)
-      .width(200.0 * scale)
-      .height(200.0 * scale)
+      .width(200.0)
+      .height(200.0)
       .color(color::rgb::<u8>(0xff, 0x00, 0x00));
   }
 }
