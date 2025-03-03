@@ -215,6 +215,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .with_behavior(vec![
                 EventKind::SpeedAtOrBelow(180.0),
                 EventKind::AltitudeAtOrBelow(APPROACH_ALTITUDE),
+                EventKind::CalloutInAirspace,
               ]);
             let wp_aprt = new_vor(Intern::from_ref("APRT"), arrival.pos)
               .with_behavior(vec![EventKind::QuickArrive]);
@@ -347,25 +348,27 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let Some(airspace) =
           closest_airspace(&bundle.world.airspaces, aircraft.pos)
         {
-          let direction = heading_to_direction(angle_between_points(
-            airspace.pos,
-            aircraft.pos,
-          ))
-          .to_owned();
-          let command = CommandWithFreq::new(
-            Intern::to_string(&aircraft.id),
-            aircraft.frequency,
-            CommandReply::ArriveInAirspace {
-              direction,
-              altitude: aircraft.altitude,
-            },
-            Vec::new(),
-          );
+          if !airspace.auto {
+            let direction = heading_to_direction(angle_between_points(
+              airspace.pos,
+              aircraft.pos,
+            ))
+            .to_owned();
+            let command = CommandWithFreq::new(
+              Intern::to_string(&aircraft.id),
+              aircraft.frequency,
+              CommandReply::ArriveInAirspace {
+                direction,
+                altitude: aircraft.altitude,
+              },
+              Vec::new(),
+            );
 
-          bundle.events.push(Event::Aircraft(AircraftEvent::new(
-            aircraft.id,
-            EventKind::Callout(command),
-          )));
+            bundle.events.push(Event::Aircraft(AircraftEvent::new(
+              aircraft.id,
+              EventKind::Callout(command),
+            )));
+          }
         }
       }
 

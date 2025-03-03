@@ -241,7 +241,7 @@ impl Runner {
     }
   }
 
-  pub fn tick(&mut self) {
+  pub fn tick(&mut self) -> Vec<Event> {
     self.last_tick = Instant::now();
 
     let mut commands: Vec<CommandWithFreq> = Vec::new();
@@ -250,7 +250,7 @@ impl Runner {
     loop {
       let incoming = match self.get_queue.recv() {
         Ok(incoming) => incoming,
-        Err(TryRecvError::Disconnected) => return,
+        Err(TryRecvError::Disconnected) => return Vec::new(),
         Err(TryRecvError::Empty) => break,
       };
 
@@ -294,7 +294,7 @@ impl Runner {
     loop {
       let incoming = match self.post_queue.recv() {
         Ok(incoming) => incoming,
-        Err(TryRecvError::Disconnected) => return,
+        Err(TryRecvError::Disconnected) => return Vec::new(),
         Err(TryRecvError::Empty) => break,
       };
 
@@ -311,7 +311,7 @@ impl Runner {
     }
 
     if self.game.paused {
-      return;
+      return Vec::new();
     }
 
     for command in commands {
@@ -354,6 +354,8 @@ impl Runner {
     // TODO: self.save_world();
 
     self.tick_counter += 1;
+
+    events.clone()
   }
 
   pub fn quick_start(&mut self) -> usize {
@@ -367,7 +369,28 @@ impl Runner {
     let max_ticks = (max_time_secs * self.rate as f32).ceil() as usize;
 
     for _ in 0..max_ticks {
-      self.tick();
+      for event in self.tick().drain(..) {
+        if let Event::Aircraft(AircraftEvent {
+          id,
+          kind: EventKind::CalloutInAirspace,
+        }) = event
+        {
+          if let Some(aircraft) = self.game.aircraft.iter().find(|a| a.id == id)
+          {
+            if let Some(airspace) = self
+              .world
+              .airspaces
+              .iter()
+              .find(|a| a.id == aircraft.flight_plan.arriving)
+            {
+              if !airspace.auto {
+                tracing::info!("Quick start interrupted. Aircraft entered non-auto airspace.");
+                return self.tick_counter;
+              }
+            }
+          }
+        }
+      }
     }
 
     self.tick_counter
