@@ -44,7 +44,6 @@ pub enum EventKind {
   GoAround,
   Touchdown,
   Takeoff(Intern<String>),
-  FlipFlightPlan,
 
   // Taxiing
   Taxi(Vec<Node<()>>),
@@ -294,9 +293,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let AircraftState::Taxiing { .. } = aircraft.state {
           handle_takeoff_event(aircraft, bundle, *runway);
         }
-      }
-      EventKind::FlipFlightPlan => {
-        aircraft.flip_flight_plan();
       }
 
       // Taxiing
