@@ -151,8 +151,7 @@ impl Runner {
 
   pub fn generate_airspaces(&mut self, world_rng: &mut Rng) {
     let airspace_names = [
-      "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
-      "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
+      "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KATL", "KMCO", "KDTW",
     ];
 
     // Generate randomly positioned uncontrolled airspaces.
