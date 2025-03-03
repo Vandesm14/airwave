@@ -510,20 +510,17 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         }
       }
 
-      // If below transition altitude, set to arrival
+      // If in cruise and descending, set to arrival
       if FlightSegment::Cruise == aircraft.segment
-        && aircraft.altitude <= TRANSITION_ALTITUDE
+        && aircraft.target.altitude <= TRANSITION_ALTITUDE
+        && aircraft.altitude >= TRANSITION_ALTITUDE
       {
-        // FIXME: Aircraft leave their departure airspace before reaching
-        // trans altitude. This means that they are immediately categorized from
-        // Cruise to Arrival. What we need to define, is what an Arrival means
-        // rather than simple altitude or distance checks (Approach is within
-        // the arrival airspace)
-        //
-        // aircraft.segment = FlightSegment::Arrival;
+        // FIXME: This doesn't account for aircraft that didn't pass transition
+        // before reaching their TOD.
+        aircraft.segment = FlightSegment::Arrival;
 
         // If within arrival airspace, set to approach
-      } else {
+      } else if FlightSegment::Cruise == aircraft.segment {
         let arrival = bundle
           .world
           .airspaces
