@@ -641,26 +641,14 @@ export default function Canvas() {
       return;
     }
 
-    // Draw heading
-    let headingInfo =
-      aircraft.state.type === 'landing'
-        ? shortLandingState(aircraft.state.value.state)
-        : Math.round(aircraft.heading)
-            .toString()
-            .padStart(3, '0')
-            .replace('360', '000');
-    ctx.fillText(
-      headingInfo,
-      pos[0] + spacing,
-      pos[1] - spacing + fontSize() * 2
-    );
-
-    // Draw speed
-    ctx.fillText(
-      Math.round(aircraft.speed).toString(),
-      pos[0] + spacing,
-      pos[1] - spacing + fontSize() * 3
-    );
+    // Draw speed or ILS status
+    let text = '';
+    if (aircraft.state.type === 'landing') {
+      text = shortLandingState(aircraft.state.value.state);
+    } else {
+      text = Math.round(aircraft.speed).toString();
+    }
+    ctx.fillText(text, pos[0] + spacing, pos[1] - spacing + fontSize() * 2);
   }
 
   function drawTerminal(ctx: Ctx, terminal: Terminal) {
