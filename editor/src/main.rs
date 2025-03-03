@@ -43,6 +43,10 @@ struct Model {
   is_mouse_down: bool,
   is_over_ui: bool,
 
+  drag_anchor: Option<glam::Vec2>,
+  old_shift_pos: glam::Vec2,
+  shift_pos: glam::Vec2,
+
   held_keys: HeldKeys,
 }
 
@@ -74,6 +78,10 @@ fn model(app: &App) -> Model {
     selected: Vec::new(),
     is_mouse_down: false,
     is_over_ui: false,
+
+    drag_anchor: None,
+    old_shift_pos: glam::Vec2::default(),
+    shift_pos: glam::Vec2::default(),
 
     held_keys: HeldKeys {
       ctrl: false,
@@ -143,6 +151,8 @@ fn raw_window_event(
   } = event
   {
     if !model.is_over_ui {
+      model.is_mouse_down = true;
+
       let pos = real_mouse_pos(app, model);
       let closest = model.world_data.find_closest_point(pos, 100.0);
       match model.mode {
@@ -164,10 +174,8 @@ fn raw_window_event(
             model.selected.push(closest.0);
           } else {
             model.selected.clear();
-          }
-
-          if closest.is_some() {
-            model.is_mouse_down = true;
+            model.drag_anchor = Some(pos);
+            model.old_shift_pos = model.shift_pos;
           }
         }
       }
@@ -179,12 +187,15 @@ fn raw_window_event(
   } = event
   {
     model.is_mouse_down = false;
+
+    if model.drag_anchor.is_some() {
+      model.drag_anchor = None;
+    }
   }
 
   // Detect mouse move
   if let nannou::winit::event::WindowEvent::CursorMoved { .. } = event {
     let pos = real_mouse_pos(app, model);
-
     if model.is_mouse_down {
       if let Some(point) = model
         .selected
@@ -193,6 +204,8 @@ fn raw_window_event(
       {
         *point = pos;
         model.world_data.trigger_update();
+      } else if let Some(drag_anchor) = model.drag_anchor {
+        model.shift_pos = model.old_shift_pos + pos - drag_anchor;
       }
     }
   }
@@ -244,7 +257,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
   draw.background().color(BLACK);
 
-  model.world_data.airport.draw(&draw, 1.0);
+  model.world_data.airport.draw(&draw, 1.0, model.shift_pos);
 
   let pos = real_mouse_pos(app, model);
   let closest = world_file.find_closest_point(pos, 100.0);
@@ -261,9 +274,10 @@ fn view(app: &App, model: &Model, frame: Frame) {
       color
     };
 
+    let pos = point.1 + model.shift_pos;
     draw
       .ellipse()
-      .x_y(point.1.x, point.1.y)
+      .x_y(pos.x, pos.y)
       .w_h(10.0, 10.0)
       .color(color);
   }
