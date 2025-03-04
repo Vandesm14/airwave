@@ -97,7 +97,7 @@ impl Node<NodeVORData> {
     self
   }
 
-  pub fn with_behavior(mut self, behavior: Vec<EventKind>) -> Self {
+  pub fn with_actions(mut self, behavior: Vec<EventKind>) -> Self {
     self.value.then = behavior;
     self
   }

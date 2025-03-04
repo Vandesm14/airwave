@@ -37,7 +37,9 @@ pub enum EventKind {
   Altitude(f32),
   AltitudeAtOrBelow(f32),
   AltitudeAtOrAbove(f32),
-  ResumeOwnNavigation,
+  ResumeOwnNavigation {
+    diversion: bool,
+  },
 
   // Transitions
   Land(Intern<String>),
@@ -82,7 +84,9 @@ impl From<Task> for EventKind {
       Task::Ident => EventKind::Ident,
       Task::Land(x) => EventKind::Land(x),
       Task::NamedFrequency(x) => EventKind::NamedFrequency(x),
-      Task::ResumeOwnNavigation => EventKind::ResumeOwnNavigation,
+      Task::ResumeOwnNavigation => {
+        EventKind::ResumeOwnNavigation { diversion: false }
+      }
       Task::Speed(x) => EventKind::Speed(x),
       Task::Takeoff(x) => EventKind::Takeoff(x),
       Task::Taxi(x) => EventKind::Taxi(x),
@@ -166,7 +170,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       }
 
       // Flying
-      EventKind::ResumeOwnNavigation => {
+      EventKind::ResumeOwnNavigation { diversion } => {
         // TODO: Reimplement
         if let AircraftState::Flying { .. } = aircraft.state {
           let departure = bundle
@@ -228,7 +232,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let transition_vctr = transition_star.lerp(transition_iaf, 0.5);
 
             let wp_sid = new_vor(Intern::from_ref("SID"), transition_sid)
-              .with_behavior(vec![
+              .with_actions(vec![
                 EventKind::SpeedAtOrAbove(AircraftKind::A21N.stats().max_speed),
                 EventKind::AltitudeAtOrAbove(CRUISE_ALTITUDE),
                 EventKind::Frequency(
@@ -236,26 +240,36 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 ),
               ]);
             let wp_tod = new_vor(Intern::from_ref("TOD"), transition_tod)
-              .with_behavior(vec![
+              .with_actions(vec![
                 EventKind::SpeedAtOrBelow(300.0),
                 EventKind::AltitudeAtOrBelow(TRANSITION_ALTITUDE),
               ]);
             let wp_star = new_vor(Intern::from_ref("STAR"), transition_star)
-              .with_behavior(vec![
+              .with_actions(vec![
                 EventKind::SpeedAtOrBelow(250.0),
                 EventKind::AltitudeAtOrBelow(ARRIVAL_ALTITUDE),
                 EventKind::CalloutInAirspace,
               ]);
             let wp_vctr = new_vor(Intern::from_ref("VCTR"), transition_vctr)
-              .with_behavior(vec![
+              .with_actions(vec![
                 EventKind::SpeedAtOrBelow(180.0),
                 EventKind::AltitudeAtOrBelow(APPROACH_ALTITUDE),
                 EventKind::Land(runway.id),
               ]);
 
-            aircraft.state = AircraftState::Flying {
-              waypoints: vec![wp_vctr, wp_star, wp_tod, wp_sid],
-            };
+            let mut waypoints = vec![wp_vctr, wp_star, wp_tod];
+            if !diversion {
+              waypoints.push(wp_sid);
+            } else {
+              for event in wp_sid.value.then.iter() {
+                bundle.events.push(Event::Aircraft(AircraftEvent::new(
+                  aircraft.id,
+                  event.clone(),
+                )));
+              }
+            }
+
+            aircraft.state = AircraftState::Flying { waypoints };
           }
         }
       }
@@ -381,29 +395,49 @@ impl AircraftEventHandler for HandleAircraftEvent {
           aircraft.segment = FlightSegment::Approach;
 
           if !airspace.auto {
-            aircraft.frequency =
-              airspace.airports.first().unwrap().frequencies.approach;
-
             if aircraft.accepted {
-              let direction = heading_to_direction(angle_between_points(
-                airspace.pos,
-                aircraft.pos,
-              ))
-              .to_owned();
-              let command = CommandWithFreq::new(
-                Intern::to_string(&aircraft.id),
-                aircraft.frequency,
-                CommandReply::ArriveInAirspace {
-                  direction,
-                  altitude: aircraft.altitude,
-                },
-                Vec::new(),
-              );
+              aircraft.frequency =
+                airspace.airports.first().unwrap().frequencies.approach;
 
-              bundle.events.push(Event::Aircraft(AircraftEvent::new(
-                aircraft.id,
-                EventKind::Callout(command),
-              )));
+              if aircraft.accepted {
+                let direction = heading_to_direction(angle_between_points(
+                  airspace.pos,
+                  aircraft.pos,
+                ))
+                .to_owned();
+                let command = CommandWithFreq::new(
+                  Intern::to_string(&aircraft.id),
+                  aircraft.frequency,
+                  CommandReply::ArriveInAirspace {
+                    direction,
+                    altitude: aircraft.altitude,
+                  },
+                  Vec::new(),
+                );
+
+                bundle.events.push(Event::Aircraft(AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::Callout(command),
+                )));
+              }
+            } else {
+              // If not accepted, go to a random airspace.
+              let arrival = bundle
+                .rng
+                .sample_iter(bundle.world.airspaces.iter().filter(|a| a.auto))
+                .map(|a| a.id);
+              if let Some(arrival) = arrival {
+                // Use our old arrival as our departure.
+                aircraft.flip_flight_plan();
+                // Set our new arrival.
+                aircraft.flight_plan.arriving = arrival;
+
+                // Recompute waypoints.
+                bundle.events.push(Event::Aircraft(AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::ResumeOwnNavigation { diversion: true },
+                )));
+              }
             }
           }
         }
@@ -738,7 +772,7 @@ pub fn handle_takeoff_event(
         bundle.events.push(
           AircraftEvent {
             id: aircraft.id,
-            kind: EventKind::ResumeOwnNavigation,
+            kind: EventKind::ResumeOwnNavigation { diversion: false },
           }
           .into(),
         );
