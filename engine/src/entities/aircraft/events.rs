@@ -375,51 +375,55 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Callouts are handled outside of the engine.
       EventKind::Callout(..) => {}
       EventKind::CalloutInAirspace => {
-        if let Some(airspace) =
-          closest_airspace(&bundle.world.airspaces, aircraft.pos)
-        {
-          aircraft.segment = FlightSegment::Approach;
+        if aircraft.accepted {
+          if let Some(airspace) =
+            closest_airspace(&bundle.world.airspaces, aircraft.pos)
+          {
+            aircraft.segment = FlightSegment::Approach;
 
-          if !airspace.auto {
-            aircraft.frequency =
-              airspace.airports.first().unwrap().frequencies.approach;
+            if !airspace.auto {
+              aircraft.frequency =
+                airspace.airports.first().unwrap().frequencies.approach;
 
-            let direction = heading_to_direction(angle_between_points(
-              airspace.pos,
-              aircraft.pos,
-            ))
-            .to_owned();
-            let command = CommandWithFreq::new(
-              Intern::to_string(&aircraft.id),
-              aircraft.frequency,
-              CommandReply::ArriveInAirspace {
-                direction,
-                altitude: aircraft.altitude,
-              },
-              Vec::new(),
-            );
+              let direction = heading_to_direction(angle_between_points(
+                airspace.pos,
+                aircraft.pos,
+              ))
+              .to_owned();
+              let command = CommandWithFreq::new(
+                Intern::to_string(&aircraft.id),
+                aircraft.frequency,
+                CommandReply::ArriveInAirspace {
+                  direction,
+                  altitude: aircraft.altitude,
+                },
+                Vec::new(),
+              );
 
-            bundle.events.push(Event::Aircraft(AircraftEvent::new(
-              aircraft.id,
-              EventKind::Callout(command),
-            )));
+              bundle.events.push(Event::Aircraft(AircraftEvent::new(
+                aircraft.id,
+                EventKind::Callout(command),
+              )));
+            }
           }
         }
       }
       EventKind::CalloutTARA => {
-        let command = CommandWithFreq::new(
-          Intern::to_string(&aircraft.id),
-          aircraft.frequency,
-          CommandReply::TARAResolved {
-            assigned_alt: aircraft.target.altitude,
-          },
-          Vec::new(),
-        );
+        if aircraft.accepted {
+          let command = CommandWithFreq::new(
+            Intern::to_string(&aircraft.id),
+            aircraft.frequency,
+            CommandReply::TARAResolved {
+              assigned_alt: aircraft.target.altitude,
+            },
+            Vec::new(),
+          );
 
-        bundle.events.push(Event::Aircraft(AircraftEvent::new(
-          aircraft.id,
-          EventKind::Callout(command),
-        )));
+          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            aircraft.id,
+            EventKind::Callout(command),
+          )));
+        }
       }
 
       // Configuration and Automation
