@@ -390,6 +390,15 @@ export default function Canvas() {
     let pos = scalePoint(airspace.pos);
     ctx.strokeStyle = colors.special.airspace;
 
+    let aircraft = aircrafts.data.find((a) => a.id === selectedAircraft());
+    if (
+      aircraft &&
+      (aircraft.flight_plan.departing === airspace.id ||
+        aircraft.flight_plan.arriving === airspace.id)
+    ) {
+      ctx.strokeStyle = colors.line_yellow;
+    }
+
     ctx.beginPath();
     ctx.arc(pos[0], pos[1], scaleFeetToPixels(airspace.radius), 0, Math.PI * 2);
     ctx.stroke();
