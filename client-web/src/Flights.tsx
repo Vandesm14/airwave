@@ -11,10 +11,10 @@ import {
 } from './lib/lib';
 
 export function FlightItem({ flight }: { flight: Aircraft }) {
-  const acceptFlight = useAcceptFlight(flight.id);
+  const acceptFlight = useAcceptFlight();
 
   function handleAccept() {
-    acceptFlight.mutate();
+    acceptFlight.mutate(flight.id);
   }
 
   const [selected, setSelected] = useAtom(selectedAircraftAtom);
@@ -70,7 +70,7 @@ export default function Flights() {
   const world = useWorld();
   // TODO: Don't think this should be a memo, but it doesn't update the
   // mutation when selectedAircraft changes.
-  const acceptFlight = createMemo(() => useAcceptFlight(selectedAircraft()));
+  const acceptFlight = useAcceptFlight();
 
   const arrivals = createMemo(() =>
     sortByDistance(
@@ -89,8 +89,16 @@ export default function Flights() {
     )
   );
 
-  function handleSubmit() {
-    acceptFlight().mutate();
+  function acceptSelected() {
+    acceptFlight.mutate(selectedAircraft());
+  }
+
+  function acceptArrivals() {
+    arrivals().forEach((a) => acceptFlight.mutate(a.id));
+  }
+
+  function acceptDepartures() {
+    departures().forEach((a) => acceptFlight.mutate(a.id));
   }
 
   return (
@@ -102,8 +110,9 @@ export default function Flights() {
         <Show when={show()}>
           <button onClick={() => setShow(false)}>Close</button>
           <hr />
-          <button onClick={handleSubmit}>Accept Selected</button>
+          <button onClick={acceptSelected}>Accept Selected</button>
           <h2>Arrivals ({arrivals().length})</h2>
+          <button onClick={acceptArrivals}>Accept Arrivals</button>
           <div class="list">
             {arrivals().map((f) => (
               <FlightItem flight={f} />
@@ -111,6 +120,7 @@ export default function Flights() {
           </div>
           <hr />
           <h2>Departures ({departures().length})</h2>
+          <button onClick={acceptDepartures}>Accept Departures</button>
           <div class="list">
             {departures().map((f) => (
               <FlightItem flight={f} />

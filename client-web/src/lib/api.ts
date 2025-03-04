@@ -67,16 +67,16 @@ export function useAircraft() {
 
 export const postAcceptFlight = (id: string) =>
   `/api/game/aircraft/${id}/accept`;
-export function useAcceptFlight(id: string) {
+export function useAcceptFlight() {
   const client = useQueryClient();
 
   return createMutation(() => ({
-    mutationKey: [`/api/game/aircraft/${id}/accept`],
-    mutationFn: async () =>
+    mutationKey: [`/api/game/aircraft/accept`],
+    mutationFn: async (id: string) =>
       await fetch(`${baseAPIPath}${postAcceptFlight(id)}`, {
         method: 'POST',
       }),
-    onMutate: () =>
+    onMutate: (id: string) =>
       client.setQueryData<Array<Aircraft>>([getAircraft], (old) =>
         (old ?? []).map((a) => {
           if (a.id === id) {
