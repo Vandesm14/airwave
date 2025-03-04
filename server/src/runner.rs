@@ -33,9 +33,9 @@ use crate::{
   AUTO_TOWER_AIRSPACE_RADIUS, TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
 
-pub const SPAWN_RATE: Duration = Duration::from_secs(210);
-pub const PREP_SPAWN_RATE: Duration = Duration::from_secs(120);
-pub const SPAWN_LIMIT: usize = 34;
+pub const AIRPORT_SPAWN_CHANCE: f64 = 0.8;
+pub const NON_AUTO_SPAWN_CHANCE: f64 = 0.2;
+pub const SPAWN_RATE: usize = 75;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -138,7 +138,7 @@ impl Runner {
       tick_counter: 0,
 
       // Spawn rate is 60 + 15 seconds to make it less robotic.
-      spawns: SignalGenerator::new(rate * 75),
+      spawns: SignalGenerator::new(rate * SPAWN_RATE),
     }
   }
 
@@ -156,7 +156,10 @@ impl Runner {
     config_frequencies: &Frequencies,
   ) {
     let airspace_names = [
-      "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KATL", "KMCO", "KDTW",
+      // "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
+      // "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
+      "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
+      "EGKK", "EGHI",
     ];
 
     // Generate randomly positioned uncontrolled airspaces.
@@ -238,7 +241,12 @@ impl Runner {
             let mut aircraft =
               Aircraft::random_parked(gate.clone(), &mut self.rng, airport);
             aircraft.flight_plan.departing = airspace.id;
-            aircraft.flight_plan.arriving = airspace.id;
+            aircraft.flight_plan.arriving = self
+              .rng
+              .sample(&self.world.airspaces)
+              .filter(|a| a.auto && a.id != airspace.id)
+              .map(|a| a.id)
+              .unwrap_or_default();
 
             aircrafts.push(aircraft);
           }
@@ -356,7 +364,7 @@ impl Runner {
         .filter(|a| a.auto)
         .flat_map(|a| a.airports.iter());
       for airport in airports {
-        let chance = self.rng.chance(0.8);
+        let chance = self.rng.chance(AIRPORT_SPAWN_CHANCE);
         if !chance {
           continue;
         }
@@ -377,11 +385,15 @@ impl Runner {
 
           if let Some(aircraft) = aircraft {
             // Chance for a flight to go to a non-auto airspace.
-            let go_to_non_auto = self.rng.chance(0.1);
+            let go_to_non_auto = self.rng.chance(NON_AUTO_SPAWN_CHANCE);
             let destination =
               self
                 .rng
                 .sample_iter(self.world.airspaces.iter().filter(|a| {
+                  if a.id == aircraft.flight_plan.departing {
+                    return false;
+                  }
+
                   if go_to_non_auto {
                     !a.auto
                   } else {
