@@ -237,11 +237,20 @@ impl Engine {
         angle_between_points(other_aircraft.pos, aircraft.pos),
         other_aircraft.heading,
       );
-      let facing = a_angle.abs() < 90.0 || b_angle.abs() < 90.0;
 
-      // If they are in the threshold, provide a TA/RA.
-      if facing && vertical_distance < 1000.0 {
-        if distance <= (total_distance).powf(2.0) {
+      let a_facing = a_angle.abs() < 90.0;
+      let b_facing = b_angle.abs() < 90.0;
+      let facing = a_facing || b_facing;
+
+      let in_ta_threshold = vertical_distance < 2000.0
+        && distance <= (total_distance * 2.0).powf(2.0);
+      let in_ra_threshold =
+        vertical_distance < 1000.0 && distance <= (total_distance).powf(2.0);
+
+      // Class A: Facing
+      if facing {
+        // If they are in the RA threshold, provide an RA.
+        if in_ra_threshold {
           if aircraft.altitude < other_aircraft.altitude {
             collisions.insert(aircraft.id, TCAS::Descend);
             collisions.insert(other_aircraft.id, TCAS::Climb);
@@ -249,24 +258,21 @@ impl Engine {
             collisions.insert(aircraft.id, TCAS::Climb);
             collisions.insert(other_aircraft.id, TCAS::Descend);
           }
-        }
         // If they are outside the threshold, provide a TA.
-      } else if facing
-        && distance <= (total_distance * 2.0).powf(2.0)
-        && vertical_distance < 2000.0
-      {
-        // If we came from an RA, hold altitude until we are no longer facing.
-        // Else, display a TA.
-        if aircraft.tcas.is_ra() {
-          collisions.insert(aircraft.id, TCAS::Hold);
-        } else {
-          collisions.insert(aircraft.id, TCAS::Warning);
-        }
+        } else if in_ta_threshold {
+          // If we came from an RA, hold altitude until we are no longer facing.
+          // Else, display a TA.
+          if aircraft.tcas.is_ra() {
+            collisions.insert(aircraft.id, TCAS::Hold);
+          } else {
+            collisions.insert(aircraft.id, TCAS::Warning);
+          }
 
-        if other_aircraft.tcas.is_ra() {
-          collisions.insert(other_aircraft.id, TCAS::Hold);
-        } else {
-          collisions.insert(other_aircraft.id, TCAS::Warning);
+          if other_aircraft.tcas.is_ra() {
+            collisions.insert(other_aircraft.id, TCAS::Hold);
+          } else {
+            collisions.insert(other_aircraft.id, TCAS::Warning);
+          }
         }
       }
     }
