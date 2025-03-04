@@ -1,4 +1,9 @@
-import { useAcceptFlight, useAircraft, useWorld } from './lib/api';
+import {
+  useAcceptFlight,
+  useAircraft,
+  useRejectFlight,
+  useWorld,
+} from './lib/api';
 import './Flights.scss';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { selectedAircraftAtom } from './lib/atoms';
@@ -68,9 +73,8 @@ export default function Flights() {
 
   const aircrafts = useAircraft();
   const world = useWorld();
-  // TODO: Don't think this should be a memo, but it doesn't update the
-  // mutation when selectedAircraft changes.
   const acceptFlight = useAcceptFlight();
+  const rejectFlight = useRejectFlight();
 
   const arrivals = createMemo(() =>
     sortByDistance(
@@ -93,6 +97,10 @@ export default function Flights() {
     acceptFlight.mutate(selectedAircraft());
   }
 
+  function rejectSelected() {
+    rejectFlight.mutate(selectedAircraft());
+  }
+
   function acceptArrivals() {
     arrivals().forEach((a) => acceptFlight.mutate(a.id));
   }
@@ -111,6 +119,7 @@ export default function Flights() {
           <button onClick={() => setShow(false)}>Close</button>
           <hr />
           <button onClick={acceptSelected}>Accept Selected</button>
+          <button onClick={rejectSelected}>Reject Selected</button>
           <h2>Arrivals ({arrivals().length})</h2>
           <button onClick={acceptArrivals}>Accept Arrivals</button>
           <div class="list">
