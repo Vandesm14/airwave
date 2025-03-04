@@ -14,8 +14,8 @@ use crate::{
     display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
     NodeKind, Pathfinder,
   },
-  APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
-  TRANSITION_ALTITUDE,
+  APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
+  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE, WEST_CRUISE_ALTITUDE,
 };
 
 use super::{
@@ -185,7 +185,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             .find(|a| a.id == aircraft.flight_plan.arriving);
 
           if let Some((departure, arrival)) = departure.zip(arrival) {
-            let arrival_angle =
+            let main_course_heading =
               angle_between_points(departure.pos, arrival.pos);
             let runways =
               arrival.airports.first().map(|a| a.runways.iter()).unwrap();
@@ -193,7 +193,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let mut smallest_angle = f32::MAX;
             let mut closest = None;
             for runway in runways {
-              let diff = delta_angle(runway.heading, arrival_angle).abs();
+              let diff = delta_angle(runway.heading, main_course_heading).abs();
               if diff < smallest_angle {
                 smallest_angle = diff;
                 closest = Some(runway);
@@ -231,10 +231,15 @@ impl AircraftEventHandler for HandleAircraftEvent {
             );
             let transition_vctr = transition_star.lerp(transition_iaf, 0.5);
 
+            let cruise_alt = if (0.0..180.0).contains(&main_course_heading) {
+              EAST_CRUISE_ALTITUDE
+            } else {
+              WEST_CRUISE_ALTITUDE
+            };
             let wp_sid = new_vor(Intern::from_ref("SID"), transition_sid)
               .with_actions(vec![
                 EventKind::SpeedAtOrAbove(AircraftKind::A21N.stats().max_speed),
-                EventKind::AltitudeAtOrAbove(CRUISE_ALTITUDE),
+                EventKind::AltitudeAtOrAbove(cruise_alt),
                 EventKind::Frequency(
                   departure.airports.first().unwrap().frequencies.center,
                 ),
