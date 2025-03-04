@@ -310,11 +310,15 @@ export default function StripBoard() {
     setCollapse({ ...collapse(), [name]: !collapse()[name] });
   }
 
+  const allFlying = createMemo(
+    () => aircrafts.data.filter((a) => isAircraftFlying(a.state)).length
+  );
+
   return (
     <div id="stripboard">
       <div class="header">
         Yours: {aircrafts.data.length - strips().None.length} (All:{' '}
-        {aircrafts.data.length})
+        {allFlying()})
       </div>
       {strips().Colliding.length > 0 ? (
         <>
