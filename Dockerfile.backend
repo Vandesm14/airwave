@@ -6,6 +6,7 @@ WORKDIR /usr/src/airwave
 COPY engine engine
 COPY server server
 COPY serve serve
+COPY calculator calculator
 COPY Cargo.toml .
 COPY config.toml .
 

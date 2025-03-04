@@ -1,3 +1,7 @@
+# Backend
+
+target/
+
 # Frontend
 
 client-web/dist
