@@ -238,11 +238,7 @@ impl Runner {
             let mut aircraft =
               Aircraft::random_parked(gate.clone(), &mut self.rng, airport);
             aircraft.flight_plan.departing = airspace.id;
-            aircraft.flight_plan.arriving = self
-              .rng
-              .sample(&self.world.airspaces)
-              .map(|a| a.id)
-              .unwrap_or_default();
+            aircraft.flight_plan.arriving = airspace.id;
 
             aircrafts.push(aircraft);
           }
@@ -380,19 +376,22 @@ impl Runner {
           });
 
           if let Some(aircraft) = aircraft {
-            let go_to_non_auto = self.rng.chance(0.5);
+            // Chance for a flight to go to a non-auto airspace.
+            let go_to_non_auto = self.rng.chance(0.1);
             let destination =
               self
                 .rng
                 .sample_iter(self.world.airspaces.iter().filter(|a| {
                   if go_to_non_auto {
-                    a.auto
-                  } else {
                     !a.auto
+                  } else {
+                    a.auto
                   }
                 }));
             if let Some(destination) = destination {
               aircraft.flight_plan.arriving = destination.id;
+            } else {
+              tracing::warn!("No destination available for {:?}", aircraft.id);
             }
 
             self.engine.events.push(Event::Aircraft(AircraftEvent::new(

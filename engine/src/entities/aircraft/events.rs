@@ -439,7 +439,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .world
               .airspaces
               .iter()
-              .filter(|a| a.id != aircraft.flight_plan.departing),
+              .filter(|a| a.id == aircraft.flight_plan.arriving),
           );
           if let Some((departure, arrival)) = departure.zip(arrival) {
             let departure_angle =
@@ -462,9 +462,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
             // If an airport doesn't have a runway, we have other problems.
             let runway = closest.unwrap();
-
-            aircraft.flight_plan.arriving = arrival.id;
-            aircraft.segment = FlightSegment::Takeoff;
 
             aircraft.pos = runway.start();
             aircraft.heading = runway.heading;
