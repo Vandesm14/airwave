@@ -372,19 +372,19 @@ impl AircraftEventHandler for HandleAircraftEvent {
         );
       }
 
-      // Callouts are handled outside of the engine.
+      // Generic callouts are handled outside of the engine.
       EventKind::Callout(..) => {}
       EventKind::CalloutInAirspace => {
-        if aircraft.accepted {
-          if let Some(airspace) =
-            closest_airspace(&bundle.world.airspaces, aircraft.pos)
-          {
-            aircraft.segment = FlightSegment::Approach;
+        if let Some(airspace) =
+          closest_airspace(&bundle.world.airspaces, aircraft.pos)
+        {
+          aircraft.segment = FlightSegment::Approach;
 
-            if !airspace.auto {
-              aircraft.frequency =
-                airspace.airports.first().unwrap().frequencies.approach;
+          if !airspace.auto {
+            aircraft.frequency =
+              airspace.airports.first().unwrap().frequencies.approach;
 
+            if aircraft.accepted {
               let direction = heading_to_direction(angle_between_points(
                 airspace.pos,
                 aircraft.pos,
