@@ -254,14 +254,22 @@ impl Runner {
     }
 
     let mut waypoints = merge_points(&waypoints, min_distance);
-    let waypoints = waypoints.drain(..).enumerate().map(|(i, w)| {
-      Node::new(
-        Intern::from(i.to_string()),
-        NodeKind::VOR,
-        NodeBehavior::GoTo,
-        w,
-      )
-    });
+    let waypoints = waypoints
+      .drain(..)
+      .filter(|w| {
+        !self.world.airspaces.iter().any(|a| {
+          a.pos.distance_squared(*w) < AUTO_TOWER_AIRSPACE_RADIUS.powf(2.0)
+        })
+      })
+      .enumerate()
+      .map(|(i, w)| {
+        Node::new(
+          Intern::from(i.to_string()),
+          NodeKind::VOR,
+          NodeBehavior::GoTo,
+          w,
+        )
+      });
 
     self.world.waypoints = waypoints.collect();
   }
