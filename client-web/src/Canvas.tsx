@@ -570,8 +570,8 @@ export default function Canvas() {
       ctx.fillStyle = colors.line_red;
       ctx.strokeStyle = colors.line_red;
     } else if (!isAccepted) {
-      ctx.fillStyle = colors.text_dark_grey;
-      ctx.strokeStyle = colors.text_dark_grey;
+      ctx.fillStyle = colors.text_light_grey;
+      ctx.strokeStyle = colors.text_light_grey;
     } else {
       ctx.fillStyle = colors.line_green;
       ctx.strokeStyle = colors.line_green;
@@ -1012,7 +1012,7 @@ export default function Canvas() {
     }
 
     for (let waypoint of world.waypoints) {
-      drawWaypoint(ctx, waypoint.name, waypoint.value, colors.text_dark_grey);
+      drawWaypoint(ctx, waypoint.name, waypoint.value, colors.special.waypoint);
     }
 
     for (let aircraft of aircrafts.filter(

@@ -10,6 +10,7 @@ export default {
   text_orange: '#dd9904',
   text_yellow: '#ffe045',
   text_green: '#44ff44',
+  text_light_grey: '#999',
   text_grey: '#777',
   text_dark_grey: '#555',
 
@@ -19,9 +20,6 @@ export default {
     terminal: '#555',
     taxiway: '#555',
     airspace: '#555',
-
-    connection: {
-      inactive: '#111',
-    },
+    waypoint: '#333',
   },
 };
