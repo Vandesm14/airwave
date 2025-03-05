@@ -265,18 +265,39 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let mut waypoints = vec![wp_vctr, wp_star, wp_tod];
 
             // Generate track waypoints.
-            let cmp = departure.pos;
-            let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
-            if let Some(closest) = bundle
+            let min_wp_distance = NAUTICALMILES_TO_FEET * 60.0;
+            let mut cmp = departure.pos;
+
+            // while delta_angle(
+            //   angle_between_points(cmp, arrival.pos),
+            //   main_course_heading,
+            // )
+            // .abs()
+            //   < 90.0
+            while let Some(closest) = bundle
               .world
               .waypoints
               .iter()
               .filter(|w| {
-                w.value.distance_squared(cmp) <= min_wp_distance.powf(2.0)
+                w.value != cmp
+                  // Ensure the waypoint keeps us on course.
+                  && delta_angle(
+                    angle_between_points(cmp, w.value),
+                    main_course_heading,
+                  )
+                  .abs()
+                    <= 45.0
+                  // Ensure the waypoint doesn't take us too far.
+                  && delta_angle(
+                    angle_between_points(w.value, arrival.pos),
+                    main_course_heading,
+                  )
+                  .abs()
+                    <= 45.0
+                  // Ensure the waypoint is within minimum distance.
+                  && cmp.distance_squared(w.value) <= min_wp_distance.powf(2.0)
               })
               .min_by(|a, b| {
-                // let a = a.value.distance_squared(cmp);
-                // let b = b.value.distance_squared(cmp);
                 let a = angle_between_points(cmp, a.value);
                 let b = angle_between_points(cmp, b.value);
 
@@ -286,6 +307,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 a.partial_cmp(&b).unwrap()
               })
             {
+              cmp = closest.value;
               waypoints.push(new_vor(closest.name, closest.value));
             }
 
