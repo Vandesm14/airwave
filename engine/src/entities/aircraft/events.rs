@@ -265,15 +265,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let mut waypoints = vec![wp_vctr, wp_star, wp_tod];
 
             // Generate track waypoints.
-            let min_wp_distance = NAUTICALMILES_TO_FEET * 60.0;
-            let mut cmp = departure.pos;
-
-            // while delta_angle(
-            //   angle_between_points(cmp, arrival.pos),
-            //   main_course_heading,
-            // )
-            // .abs()
-            //   < 90.0
+            let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
+            let mut cmp = arrival.pos;
             while let Some(closest) = bundle
               .world
               .waypoints
@@ -283,14 +276,14 @@ impl AircraftEventHandler for HandleAircraftEvent {
                   // Ensure the waypoint keeps us on course.
                   && delta_angle(
                     angle_between_points(cmp, w.value),
-                    main_course_heading,
+                    inverse_degrees(main_course_heading),
                   )
                   .abs()
                     <= 45.0
                   // Ensure the waypoint doesn't take us too far.
                   && delta_angle(
-                    angle_between_points(w.value, arrival.pos),
-                    main_course_heading,
+                    angle_between_points(w.value, departure.pos),
+                    inverse_degrees(main_course_heading),
                   )
                   .abs()
                     <= 45.0
@@ -301,8 +294,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 let a = angle_between_points(cmp, a.value);
                 let b = angle_between_points(cmp, b.value);
 
-                let a = delta_angle(a, main_course_heading).abs();
-                let b = delta_angle(b, main_course_heading).abs();
+                let a =
+                  delta_angle(a, inverse_degrees(main_course_heading)).abs();
+                let b =
+                  delta_angle(b, inverse_degrees(main_course_heading)).abs();
 
                 a.partial_cmp(&b).unwrap()
               })
