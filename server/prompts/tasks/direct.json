@@ -1,0 +1,43 @@
+{
+  "prompt": [
+    "Direct commands are returned as a waypoint string."
+  ],
+  "examples": [
+    {
+      "user": "Direct to Sierra, Alpha, Yankee.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": "SAY"
+        }
+      ]
+    },
+    {
+      "user": "Direct to road.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": "ROAD"
+        }
+      ]
+    },
+    {
+      "user": "Direct to waypoint one seven five.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": "175"
+        }
+      ]
+    },
+    {
+      "user": "Direct to Alpha Seven.",
+      "assistant": [
+        {
+          "type": "direct",
+          "value": "A7"
+        }
+      ]
+    }
+  ]
+}

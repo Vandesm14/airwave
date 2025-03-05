@@ -324,7 +324,10 @@ impl AircraftUpdateFlyingEffect {
         }
       }
 
-      flight_plan.set_index(skip_amount);
+      // Only set if we are skipping new waypoints. Don't decrease the index.
+      if skip_amount > flight_plan.waypoint_index {
+        flight_plan.set_index(skip_amount);
+      }
     }
   }
 }
