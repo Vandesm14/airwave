@@ -3,7 +3,10 @@ use std::{path::PathBuf, sync::LazyLock};
 
 use clap::Parser;
 
-use engine::NAUTICALMILES_TO_FEET;
+use engine::{pathfinder::Node, NAUTICALMILES_TO_FEET};
+use glam::Vec2;
+use itertools::Itertools;
+use union_find::{QuickUnionUf, UnionByRank, UnionBySize, UnionFind};
 
 pub const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
 pub const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
@@ -38,4 +41,31 @@ pub struct Cli {
   /// The path to the config file.
   #[arg(short, long, default_value = None)]
   pub config_path: Option<PathBuf>,
+}
+
+pub fn merge_points(points: &[Vec2], min_distance: f32) -> Vec<Vec2> {
+  let n = points.len();
+  let mut uf = QuickUnionUf::<UnionBySize>::new(points.len());
+
+  // Group points that are within min_distance of each other.
+  for (i, j) in (0..n).tuple_combinations() {
+    if points[i].distance_squared(points[j]) < min_distance.powf(2.0) {
+      uf.union(i, j);
+    }
+  }
+
+  // Group points by their root representative.
+  let mut groups: std::collections::HashMap<usize, Vec<Vec2>> =
+    std::collections::HashMap::new();
+  for (i, point) in points.iter().enumerate() {
+    groups.entry(uf.find(i)).or_default().push(*point);
+  }
+
+  // Compute the centroid for each group.
+  groups
+    .values()
+    .map(|group| {
+      group.iter().fold(Vec2::ZERO, |acc, p| acc + *p) / (group.len() as f32)
+    })
+    .collect()
 }

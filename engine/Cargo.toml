@@ -21,4 +21,4 @@ internment.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 petgraph.workspace = true
-itertools = "0.13.0"
+itertools.workspace = true

@@ -231,24 +231,15 @@ export type Airspace = {
   auto: boolean;
 };
 
-export function DefaultAirspace(): Airspace {
-  return {
-    id: 'KSFO',
-    pos: [0, 0],
-    radius: 500,
-    airports: [],
-
-    auto: false,
-  };
-}
-
 export type World = {
   airspaces: Array<Airspace>;
+  waypoints: Array<NodeVec2>;
 };
 
 export function DefaultWorld(): World {
   return {
-    airspaces: [DefaultAirspace()],
+    airspaces: [],
+    waypoints: [],
   };
 }
 
