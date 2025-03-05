@@ -263,6 +263,32 @@ impl AircraftEventHandler for HandleAircraftEvent {
               ]);
 
             let mut waypoints = vec![wp_vctr, wp_star, wp_tod];
+
+            // Generate track waypoints.
+            let cmp = departure.pos;
+            let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
+            if let Some(closest) = bundle
+              .world
+              .waypoints
+              .iter()
+              .filter(|w| {
+                w.value.distance_squared(cmp) <= min_wp_distance.powf(2.0)
+              })
+              .min_by(|a, b| {
+                // let a = a.value.distance_squared(cmp);
+                // let b = b.value.distance_squared(cmp);
+                let a = angle_between_points(cmp, a.value);
+                let b = angle_between_points(cmp, b.value);
+
+                let a = delta_angle(a, main_course_heading).abs();
+                let b = delta_angle(b, main_course_heading).abs();
+
+                a.partial_cmp(&b).unwrap()
+              })
+            {
+              waypoints.push(new_vor(closest.name, closest.value));
+            }
+
             if !diversion {
               waypoints.push(wp_sid);
             } else {

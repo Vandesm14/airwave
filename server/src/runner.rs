@@ -238,8 +238,8 @@ impl Runner {
   }
 
   pub fn generate_waypoints(&mut self) {
-    let separation = NAUTICALMILES_TO_FEET * 60.0;
-    let min_distance = NAUTICALMILES_TO_FEET * 20.0;
+    let separation = NAUTICALMILES_TO_FEET * 30.0;
+    let min_distance = NAUTICALMILES_TO_FEET * 15.0;
 
     let mut waypoints: Vec<Vec2> = Vec::new();
     for airspace in self.world.airspaces.iter().combinations(2) {
