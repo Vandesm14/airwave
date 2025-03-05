@@ -1,10 +1,12 @@
 use std::{
+  ops::Div,
   path::PathBuf,
   time::{Duration, Instant},
 };
 
 use glam::Vec2;
 use internment::Intern;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::error::TryRecvError;
 use turborand::{rng::Rng, TurboRand};
@@ -22,12 +24,14 @@ use engine::{
     airspace::Airspace,
     world::{Game, World},
   },
+  pathfinder::{Node, NodeBehavior, NodeKind},
   Translate, NAUTICALMILES_TO_FEET,
 };
 
 use crate::{
   airport::new_v_pattern,
   job::{JobQueue, JobReq},
+  merge_points,
   ring::RingBuffer,
   signal_gen::SignalGenerator,
   AUTO_TOWER_AIRSPACE_RADIUS, TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
@@ -231,6 +235,35 @@ impl Runner {
 
       self.world.airspaces.push(airspace);
     }
+  }
+
+  pub fn generate_waypoints(&mut self) {
+    let separation = NAUTICALMILES_TO_FEET * 60.0;
+    let min_distance = NAUTICALMILES_TO_FEET * 20.0;
+
+    let mut waypoints: Vec<Vec2> = Vec::new();
+    for airspace in self.world.airspaces.iter().combinations(2) {
+      let first = airspace.first().unwrap();
+      let second = airspace.last().unwrap();
+      let count =
+        first.pos.distance(second.pos).div(separation).ceil() as usize - 1;
+      for i in 1..count {
+        waypoints
+          .push(first.pos.move_towards(second.pos, separation * i as f32));
+      }
+    }
+
+    let mut waypoints = merge_points(&waypoints, min_distance);
+    let waypoints = waypoints.drain(..).enumerate().map(|(i, w)| {
+      Node::new(
+        Intern::from(i.to_string()),
+        NodeKind::VOR,
+        NodeBehavior::GoTo,
+        w,
+      )
+    });
+
+    self.world.waypoints = waypoints.collect();
   }
 
   pub fn fill_gates(&mut self) {

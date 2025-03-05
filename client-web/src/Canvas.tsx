@@ -1011,6 +1011,10 @@ export default function Canvas() {
       }
     }
 
+    for (let waypoint of world.waypoints) {
+      drawWaypoint(ctx, waypoint.name, waypoint.value, colors.text_grey);
+    }
+
     for (let aircraft of aircrafts.filter(
       (a) => a.altitude >= 1000 && a.id !== selectedAircraft()
     )) {

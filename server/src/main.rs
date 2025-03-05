@@ -111,6 +111,7 @@ async fn main() {
   runner.world.airspaces.push(player_airspace);
 
   runner.generate_airspaces(&mut world_rng, &frequencies);
+  runner.generate_waypoints();
   runner.fill_gates();
 
   //

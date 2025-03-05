@@ -2,6 +2,8 @@ use glam::Vec2;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
+use crate::pathfinder::{Node, NodeVORData};
+
 use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
 
 pub fn find_random_airspace_with<'a>(
@@ -93,6 +95,7 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
+  pub waypoints: Vec<Node<Vec2>>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
