@@ -314,9 +314,12 @@ impl AircraftUpdateFlyingEffect {
         let a = wp.first().unwrap();
         let b = wp.last().unwrap();
 
+        // Distance between waypoint A and B
         let wp_distance = a.value.to.distance_squared(b.value.to);
+        // Distance between the aircraft and waypoint B
         let distance = aircraft.pos.distance_squared(b.value.to);
 
+        // If the aircraft is closer to B than A is to B, just go to B
         if distance < wp_distance {
           skip_amount = i + 1;
         }
