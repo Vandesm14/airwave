@@ -1012,7 +1012,7 @@ export default function Canvas() {
     }
 
     for (let waypoint of world.waypoints) {
-      drawWaypoint(ctx, waypoint.name, waypoint.value, colors.text_grey);
+      drawWaypoint(ctx, waypoint.name, waypoint.value, colors.text_dark_grey);
     }
 
     for (let aircraft of aircrafts.filter(
