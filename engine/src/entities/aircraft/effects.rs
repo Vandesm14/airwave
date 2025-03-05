@@ -302,14 +302,14 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 pub struct AircraftUpdateFlyingEffect;
 impl AircraftUpdateFlyingEffect {
   fn prune_waypoints(aircraft: &mut Aircraft) {
-    if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
-      if waypoints.len() < 2 {
+    if let AircraftState::Flying = &mut aircraft.state {
+      let flight_plan = &mut aircraft.flight_plan;
+      if flight_plan.waypoints.len() < 2 {
         return;
       }
 
-      let waypoints_new = waypoints.drain(..).rev().collect::<Vec<_>>();
       let mut skip_amount = 0;
-      for (i, wp) in waypoints_new.windows(2).enumerate() {
+      for (i, wp) in flight_plan.waypoints.windows(2).enumerate() {
         let a = wp.first().unwrap();
         let b = wp.last().unwrap();
 
@@ -324,7 +324,7 @@ impl AircraftUpdateFlyingEffect {
         }
       }
 
-      waypoints.extend(waypoints_new.into_iter().skip(skip_amount).rev());
+      flight_plan.set_index(skip_amount);
     }
   }
 }
@@ -340,8 +340,8 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
 
     AircraftUpdateFlyingEffect::prune_waypoints(aircraft);
 
-    if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
-      if let Some(current) = waypoints.last() {
+    if let AircraftState::Flying = &mut aircraft.state {
+      if let Some(current) = aircraft.flight_plan.waypoint() {
         let heading = angle_between_points(aircraft.pos, current.value.to);
 
         aircraft.target.heading = heading;
@@ -358,7 +358,7 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
               .push(AircraftEvent::new(aircraft.id, e.clone()).into());
           }
 
-          waypoints.pop();
+          aircraft.flight_plan.inc_index();
         }
       }
     }

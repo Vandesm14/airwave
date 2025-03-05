@@ -65,9 +65,7 @@ pub enum TaxiingState {
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
 pub enum AircraftState {
-  Flying {
-    waypoints: Vec<Node<NodeVORData>>,
-  },
+  Flying,
   Landing {
     runway: Runway,
     state: LandingState,
@@ -84,9 +82,7 @@ pub enum AircraftState {
 
 impl Default for AircraftState {
   fn default() -> Self {
-    Self::Flying {
-      waypoints: Vec::new(),
-    }
+    Self::Flying
   }
 }
 
@@ -96,7 +92,12 @@ pub struct FlightPlan {
   pub arriving: Intern<String>,
   pub departing: Intern<String>,
 
-  // IFR Clearance
+  pub waypoints: Vec<Node<NodeVORData>>,
+  pub waypoint_index: usize,
+
+  pub follow: bool,
+
+  // Initial Clearance
   pub speed: f32,
   pub altitude: f32,
 }
@@ -104,8 +105,13 @@ pub struct FlightPlan {
 impl Default for FlightPlan {
   fn default() -> Self {
     Self {
-      arriving: Intern::from_ref("arriving"),
-      departing: Intern::from_ref("departing"),
+      arriving: Intern::from_ref(""),
+      departing: Intern::from_ref(""),
+
+      waypoints: Vec::new(),
+      waypoint_index: 0,
+
+      follow: true,
 
       speed: 250.0,
       altitude: 7000.0,
@@ -119,6 +125,53 @@ impl FlightPlan {
       departing,
       arriving,
       ..Self::default()
+    }
+  }
+
+  pub fn clear_waypoints(&mut self) {
+    self.waypoints.clear();
+    self.waypoint_index = 0;
+    self.start_following();
+  }
+
+  pub fn waypoint(&self) -> Option<&Node<NodeVORData>> {
+    if self.follow {
+      self.waypoints.get(self.waypoint_index)
+    } else {
+      None
+    }
+  }
+
+  pub fn stop_following(&mut self) {
+    self.follow = false;
+  }
+
+  pub fn start_following(&mut self) {
+    self.follow = true;
+  }
+
+  pub fn inc_index(&mut self) {
+    self.set_index(self.waypoint_index + 1);
+    self.clamp_index();
+  }
+
+  pub fn dec_index(&mut self) {
+    self.set_index(self.waypoint_index + 1);
+    self.clamp_index();
+  }
+
+  pub fn set_index(&mut self, index: usize) {
+    self.start_following();
+    self.waypoint_index = index;
+    self.clamp_index();
+  }
+
+  pub fn clamp_index(&mut self) {
+    if self.waypoints.is_empty() {
+      self.waypoint_index = 0;
+    } else {
+      self.waypoint_index =
+        self.waypoint_index.clamp(0, self.waypoints.len() - 1);
     }
   }
 }

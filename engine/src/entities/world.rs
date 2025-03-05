@@ -2,7 +2,7 @@ use glam::Vec2;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::pathfinder::{Node, NodeVORData};
+use crate::pathfinder::Node;
 
 use super::{aircraft::Aircraft, airport::Airport, airspace::Airspace};
 

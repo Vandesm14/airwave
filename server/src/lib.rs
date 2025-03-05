@@ -3,10 +3,10 @@ use std::{path::PathBuf, sync::LazyLock};
 
 use clap::Parser;
 
-use engine::{pathfinder::Node, NAUTICALMILES_TO_FEET};
+use engine::NAUTICALMILES_TO_FEET;
 use glam::Vec2;
 use itertools::Itertools;
-use union_find::{QuickUnionUf, UnionByRank, UnionBySize, UnionFind};
+use union_find::{QuickUnionUf, UnionBySize, UnionFind};
 
 pub const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
 pub const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
