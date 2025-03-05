@@ -1,5 +1,6 @@
 use glam::Vec2;
 use internment::Intern;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use turborand::TurboRand;
 
@@ -40,6 +41,7 @@ pub enum EventKind {
   ResumeOwnNavigation {
     diversion: bool,
   },
+  Direct(Intern<String>),
 
   // Transitions
   Land(Intern<String>),
@@ -78,6 +80,7 @@ impl From<Task> for EventKind {
   fn from(value: Task) -> Self {
     match value {
       Task::Altitude(x) => EventKind::Altitude(x),
+      Task::Direct(s) => EventKind::Direct(s),
       Task::Frequency(x) => EventKind::Frequency(x),
       Task::GoAround => EventKind::GoAround,
       Task::Heading(x) => EventKind::Heading(x),
@@ -335,6 +338,16 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
             aircraft.flight_plan.waypoints = waypoints;
           }
+        }
+      }
+      EventKind::Direct(wp) => {
+        if let Some((index, _)) = aircraft
+          .flight_plan
+          .waypoints
+          .iter()
+          .find_position(|w| w.name == *wp)
+        {
+          aircraft.flight_plan.set_index(index);
         }
       }
 

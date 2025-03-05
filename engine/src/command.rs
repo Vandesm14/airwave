@@ -23,6 +23,7 @@ pub enum TaskWaypoint {
 #[serde(tag = "type", content = "value")]
 pub enum Task {
   Altitude(f32),
+  Direct(Intern<String>),
   Frequency(f32),
   GoAround,
   Heading(f32),
