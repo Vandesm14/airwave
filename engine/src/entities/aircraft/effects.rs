@@ -300,7 +300,6 @@ impl AircraftEffect for AircraftUpdateLandingEffect {
 }
 
 pub struct AircraftUpdateFlyingEffect;
-
 impl AircraftUpdateFlyingEffect {
   fn prune_waypoints(aircraft: &mut Aircraft) {
     if let AircraftState::Flying { waypoints, .. } = &mut aircraft.state {
