@@ -543,20 +543,28 @@ export default function Canvas() {
 
     // Draw waypoints
     let pos = scalePoint(aircraft.pos);
-    if (aircraft.state.type === 'flying' && selectedAircraft() == aircraft.id) {
+    if (
+      aircraft.state.type === 'flying' &&
+      aircraft.flight_plan.follow &&
+      selectedAircraft() == aircraft.id
+    ) {
       ctx.strokeStyle = '#ffff0033';
       ctx.lineWidth = 3;
 
       ctx.beginPath();
       ctx.moveTo(pos[0], pos[1]);
 
-      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+      for (let wp of aircraft.flight_plan.waypoints.slice(
+        aircraft.flight_plan.waypoint_index
+      )) {
         let pos = scalePoint(wp.value.to);
         ctx.lineTo(pos[0], pos[1]);
       }
       ctx.stroke();
 
-      for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
+      for (let wp of aircraft.flight_plan.waypoints.slice(
+        aircraft.flight_plan.waypoint_index
+      )) {
         drawWaypoint(ctx, wp.name, wp.value.to, colors.text_yellow);
       }
     }

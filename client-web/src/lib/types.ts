@@ -18,7 +18,7 @@ export type NodeVOR = {
 
 export type AircraftStateFlying = {
   type: 'flying';
-  value: { waypoints: Array<NodeVOR> };
+  value: undefined;
 };
 
 export type LandingState =
@@ -135,6 +135,11 @@ export type Aircraft = {
   flight_plan: {
     departing: string;
     arriving: string;
+
+    waypoints: Array<NodeVOR>;
+    waypoint_index: number;
+
+    follow: boolean;
 
     speed: number;
     altitude: number;

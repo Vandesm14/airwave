@@ -137,9 +137,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
           aircraft.target.heading = *heading;
 
           // Cancel waypoints
-          aircraft.state = AircraftState::Flying {
-            waypoints: Vec::new(),
-          };
+          aircraft.flight_plan.stop_following();
         } else if let AircraftState::Landing { .. } = &aircraft.state {
           aircraft.target.heading = *heading;
         }
@@ -262,13 +260,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 EventKind::Land(runway.id),
               ]);
 
-            let mut waypoints = vec![wp_vctr, wp_star];
-
             // Generate track waypoints.
             let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
             let mut cmp = departure.pos;
 
-            let mut route_wayopints = Vec::new();
+            let mut waypoints = Vec::new();
             while let Some(closest) = bundle
               .world
               .waypoints
@@ -303,10 +299,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
               })
             {
               cmp = closest.value;
-              route_wayopints.push(new_vor(closest.name, closest.value));
+              waypoints.push(new_vor(closest.name, closest.value));
             }
 
-            if let Some(wp) = route_wayopints
+            if let Some(wp) = waypoints
               .iter_mut()
               .filter(|w| {
                 w.value.to.distance_squared(arrival.pos)
@@ -324,10 +320,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
               wp.value.then = wp_tod.value.then.clone();
             }
 
-            waypoints.extend(route_wayopints.drain(..).rev());
+            waypoints.extend_from_slice(&[wp_star, wp_vctr]);
 
             if !diversion {
-              waypoints.push(wp_sid);
+              waypoints.insert(0, wp_sid);
             } else {
               for event in wp_sid.value.then.iter() {
                 bundle.events.push(Event::Aircraft(AircraftEvent::new(
@@ -337,7 +333,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
               }
             }
 
-            aircraft.state = AircraftState::Flying { waypoints };
+            aircraft.flight_plan.waypoints = waypoints;
           }
         }
       }
@@ -346,9 +342,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
       EventKind::Land(runway) => handle_land_event(aircraft, bundle, *runway),
       EventKind::GoAround => {
         if let AircraftState::Landing { .. } = aircraft.state {
-          aircraft.state = AircraftState::Flying {
-            waypoints: Vec::new(),
-          };
+          aircraft.state = AircraftState::Flying;
+          aircraft.flight_plan.stop_following();
           aircraft.sync_targets_to_vals();
 
           bundle.events.push(
@@ -833,9 +828,7 @@ pub fn handle_takeoff_event(
         aircraft.heading = runway.heading;
         aircraft.target.heading = runway.heading;
 
-        aircraft.state = AircraftState::Flying {
-          waypoints: Vec::new(),
-        };
+        aircraft.state = AircraftState::Flying;
 
         bundle.events.push(
           AircraftEvent {

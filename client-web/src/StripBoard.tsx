@@ -129,12 +129,10 @@ function Strip({ strip }: StripProps) {
 
   let sinceCreated = `--:--`;
   if (isAircraftFlying(strip.state)) {
-    if (strip.state.value.waypoints.length > 0) {
+    if (strip.flight_plan.follow) {
       let current = strip.pos;
       let distance = 0;
-      let waypoints = strip.state.value.waypoints.slice();
-      waypoints.reverse();
-      waypoints.forEach((waypoint) => {
+      strip.flight_plan.waypoints.forEach((waypoint) => {
         distance += calculateDistance(current, waypoint.value.to);
         current = waypoint.value.to;
       });
