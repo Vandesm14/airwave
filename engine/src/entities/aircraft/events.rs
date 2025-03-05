@@ -262,7 +262,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 EventKind::Land(runway.id),
               ]);
 
-            let mut waypoints = vec![wp_vctr];
+            let mut waypoints = vec![wp_vctr, wp_star];
 
             // Generate track waypoints.
             let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
@@ -304,11 +304,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
             {
               cmp = closest.value;
               route_wayopints.push(new_vor(closest.name, closest.value));
-            }
-
-            if let Some(wp) = route_wayopints.last_mut() {
-              wp.name = wp_star.name;
-              wp.value.then = wp_star.value.then.clone();
             }
 
             if let Some(wp) = route_wayopints
