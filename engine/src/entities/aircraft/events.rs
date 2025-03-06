@@ -336,6 +336,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
               }
             }
 
+            aircraft.flight_plan.clear_waypoints();
             aircraft.flight_plan.waypoints = waypoints;
           }
         }
