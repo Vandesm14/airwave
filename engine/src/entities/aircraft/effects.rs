@@ -328,6 +328,9 @@ impl AircraftUpdateFlyingEffect {
       if skip_amount > flight_plan.waypoint_index {
         flight_plan.set_index(skip_amount);
       }
+
+      // Update targets based on waypoint limits.
+      aircraft.target = aircraft.target_waypoint_limits();
     }
   }
 }

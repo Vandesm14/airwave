@@ -1,8 +1,11 @@
 pub mod effects;
 pub mod events;
 
+use std::ops::Sub;
+
 use glam::Vec2;
 use internment::Intern;
+use petgraph::matrix_graph::Zero;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
@@ -503,8 +506,8 @@ impl Aircraft {
     dt
   }
 
-  /// Outputs the distance (squared) in feet traveled until the current speed
-  /// matches the new speed.
+  /// Outputs the distance in feet traveled until the current speed matches
+  /// the new speed.
   pub fn distance_to_change_speed(&self, new_speed: f32) -> f32 {
     if self.speed == new_speed {
       return 0.0;
@@ -512,7 +515,7 @@ impl Aircraft {
 
     let mut distance = 0.0;
     let mut speed = self.speed;
-    while speed != new_speed {
+    while speed.sub(new_speed).abs() >= self.dt_speed_speed(1.0) {
       if speed > new_speed {
         speed -= self.dt_speed_speed(1.0);
       } else {
@@ -525,8 +528,8 @@ impl Aircraft {
     distance
   }
 
-  /// Outputs the distance (squared) in feet traveled until the current altitude
-  /// matches the new altitude.
+  /// Outputs the distance in feet traveled until the current altitude matches
+  /// the new altitude.
   pub fn distance_to_change_altitude(&self, new_altitude: f32) -> f32 {
     if self.altitude == new_altitude {
       return 0.0;
@@ -534,7 +537,7 @@ impl Aircraft {
 
     let mut distance = 0.0;
     let mut altitude = self.altitude;
-    while altitude != new_altitude {
+    while altitude.sub(new_altitude).abs() >= self.dt_climb_speed(1.0) {
       if altitude > new_altitude {
         altitude -= self.dt_climb_speed(1.0);
       } else {
@@ -545,5 +548,61 @@ impl Aircraft {
     }
 
     distance
+  }
+
+  pub fn target_waypoint_limits(&self) -> AircraftTargets {
+    if !self.flight_plan.follow {
+      return self.target.clone();
+    }
+
+    let mut altitude_target: Option<f32> = None;
+    let mut speed_target: Option<f32> = None;
+
+    let mut distance = 0.0;
+    let mut pos = self.pos;
+    for wp in self
+      .flight_plan
+      .waypoints
+      .iter()
+      .skip(self.flight_plan.waypoint_index)
+    {
+      distance += pos.distance(wp.data.pos);
+      pos = wp.data.pos;
+
+      if wp.data.limits.altitude.is_some() {
+        // Put a hold on the altitude limit so further ones don't take effect.
+        altitude_target = Some(self.target.altitude);
+
+        let delta = wp.data.limits.altitude.diff(self.altitude);
+        if delta != 0.0 {
+          let distance_to_change =
+            self.distance_to_change_altitude(self.altitude + delta);
+          if distance <= distance_to_change && altitude_target.is_none() {
+            tracing::info!("aircraft: {}", self.id);
+            altitude_target = Some(self.altitude + delta);
+          }
+        }
+      }
+
+      if wp.data.limits.speed.is_some() {
+        // Put a hold on the speed limit so further ones don't take effect.
+        speed_target = Some(self.target.speed);
+
+        let delta = wp.data.limits.speed.diff(self.speed);
+        if delta != 0.0 {
+          let distance_to_change =
+            self.distance_to_change_speed(self.speed + delta);
+          if distance <= distance_to_change && speed_target.is_none() {
+            speed_target = Some(self.speed + delta);
+          }
+        }
+      }
+    }
+
+    AircraftTargets {
+      altitude: altitude_target.unwrap_or(self.target.altitude),
+      speed: speed_target.unwrap_or(self.target.speed),
+      heading: self.target.heading,
+    }
   }
 }
