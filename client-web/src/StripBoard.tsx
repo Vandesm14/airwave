@@ -132,10 +132,12 @@ function Strip({ strip }: StripProps) {
     if (strip.flight_plan.follow) {
       let current = strip.pos;
       let distance = 0;
-      strip.flight_plan.waypoints.forEach((waypoint) => {
-        distance += calculateDistance(current, waypoint.data.pos);
-        current = waypoint.data.pos;
-      });
+      strip.flight_plan.waypoints
+        .slice(strip.flight_plan.waypoint_index)
+        .forEach((waypoint) => {
+          distance += calculateDistance(current, waypoint.data.pos);
+          current = waypoint.data.pos;
+        });
 
       let distanceInNm = distance / nauticalMilesToFeet;
       let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
