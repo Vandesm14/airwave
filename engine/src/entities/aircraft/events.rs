@@ -16,7 +16,7 @@ use crate::{
     NodeKind, Pathfinder, VORLimit, VORLimits,
   },
   APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE, WEST_CRUISE_ALTITUDE,
+  NAUTICALMILES_TO_FEET, WEST_CRUISE_ALTITUDE,
 };
 
 use super::{
@@ -232,13 +232,10 @@ impl AircraftEventHandler for HandleAircraftEvent {
               ]);
 
             let wp_star = new_vor(Intern::from_ref("STAR"), transition_star)
-              .with_actions(vec![
-                EventKind::AltitudeAtOrBelow(ARRIVAL_ALTITUDE),
-                EventKind::CalloutInAirspace,
-              ])
+              .with_actions(vec![EventKind::CalloutInAirspace])
               .with_limits(
                 VORLimits::new()
-                  .with_altitude(VORLimit::AtOrBelow(TRANSITION_ALTITUDE))
+                  .with_altitude(VORLimit::AtOrBelow(ARRIVAL_ALTITUDE))
                   .with_speed(VORLimit::AtOrBelow(250.0)),
               );
             let wp_vctr = new_vor(Intern::from_ref("VCTR"), transition_vctr)
