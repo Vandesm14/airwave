@@ -6,7 +6,10 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
-use crate::pathfinder::{Node, NodeVORData};
+use crate::{
+  pathfinder::{Node, VORData, VORLimits},
+  KNOT_TO_FEET_PER_SECOND,
+};
 
 use super::airport::{Airport, Gate, Runway};
 
@@ -92,7 +95,7 @@ pub struct FlightPlan {
   pub arriving: Intern<String>,
   pub departing: Intern<String>,
 
-  pub waypoints: Vec<Node<NodeVORData>>,
+  pub waypoints: Vec<Node<VORData>>,
   pub waypoint_index: usize,
 
   pub follow: bool,
@@ -134,7 +137,7 @@ impl FlightPlan {
     self.start_following();
   }
 
-  pub fn waypoint(&self) -> Option<&Node<NodeVORData>> {
+  pub fn waypoint(&self) -> Option<&Node<VORData>> {
     if self.follow {
       self.waypoints.get(self.waypoint_index)
     } else {
@@ -498,5 +501,49 @@ impl Aircraft {
 
   pub fn dt_enroute(&self, dt: f32) -> f32 {
     dt
+  }
+
+  /// Outputs the distance (squared) in feet traveled until the current speed
+  /// matches the new speed.
+  pub fn distance_to_change_speed(&self, new_speed: f32) -> f32 {
+    if self.speed == new_speed {
+      return 0.0;
+    }
+
+    let mut distance = 0.0;
+    let mut speed = self.speed;
+    while speed != new_speed {
+      if speed > new_speed {
+        speed -= self.dt_speed_speed(1.0);
+      } else {
+        speed += self.dt_speed_speed(1.0);
+      }
+
+      distance += speed * KNOT_TO_FEET_PER_SECOND;
+    }
+
+    distance
+  }
+
+  /// Outputs the distance (squared) in feet traveled until the current altitude
+  /// matches the new altitude.
+  pub fn distance_to_change_altitude(&self, new_altitude: f32) -> f32 {
+    if self.altitude == new_altitude {
+      return 0.0;
+    }
+
+    let mut distance = 0.0;
+    let mut altitude = self.altitude;
+    while altitude != new_altitude {
+      if altitude > new_altitude {
+        altitude -= self.dt_climb_speed(1.0);
+      } else {
+        altitude += self.dt_climb_speed(1.0);
+      }
+
+      distance += self.speed * KNOT_TO_FEET_PER_SECOND;
+    }
+
+    distance
   }
 }

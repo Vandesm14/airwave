@@ -38,24 +38,103 @@ pub enum NodeBehavior {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct NodeVORData {
-  pub to: Vec2,
-  #[serde(skip)]
-  pub then: Vec<EventKind>,
+pub enum VORLimit {
+  #[default]
+  None,
+
+  At(f32),
+  AtOrAbove(f32),
+  AtOrBelow(f32),
 }
 
-impl NodeVORData {
-  pub fn new(to: Vec2) -> Self {
-    Self { to, then: vec![] }
+impl VORLimit {
+  pub fn test(&self, value: f32) -> bool {
+    match self {
+      Self::None => true,
+      Self::At(limit) => value == *limit,
+      Self::AtOrAbove(limit) => value > *limit,
+      Self::AtOrBelow(limit) => value < *limit,
+    }
+  }
+
+  pub fn diff(&self, value: f32) -> f32 {
+    match self {
+      Self::None => 0.0,
+      Self::At(limit) => *limit - value,
+      Self::AtOrAbove(limit) => {
+        if value >= *limit {
+          0.0
+        } else {
+          *limit - value
+        }
+      }
+      Self::AtOrBelow(limit) => {
+        if value <= *limit {
+          0.0
+        } else {
+          value - *limit
+        }
+      }
+    }
+  }
+
+  pub fn is_none(&self) -> bool {
+    matches!(self, Self::None)
+  }
+
+  pub fn is_some(&self) -> bool {
+    !self.is_none()
   }
 }
 
-pub fn new_vor(name: Intern<String>, to: Vec2) -> Node<NodeVORData> {
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct VORLimits {
+  pub altitude: VORLimit,
+  pub speed: VORLimit,
+}
+
+impl VORLimits {
+  pub fn new() -> Self {
+    Self {
+      altitude: VORLimit::None,
+      speed: VORLimit::None,
+    }
+  }
+
+  pub fn is_none(&self) -> bool {
+    self.altitude.is_none() && self.speed.is_none()
+  }
+
+  pub fn is_some(&self) -> bool {
+    !self.is_none()
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct VORData {
+  pub pos: Vec2,
+  #[serde(skip)]
+  pub events: Vec<EventKind>,
+  #[serde(skip)]
+  pub limits: VORLimits,
+}
+
+impl VORData {
+  pub fn new(to: Vec2) -> Self {
+    Self {
+      pos: to,
+      events: vec![],
+      limits: VORLimits::default(),
+    }
+  }
+}
+
+pub fn new_vor(name: Intern<String>, to: Vec2) -> Node<VORData> {
   Node {
     name,
     kind: NodeKind::VOR,
     behavior: NodeBehavior::GoTo,
-    value: NodeVORData::new(to),
+    data: VORData::new(to),
   }
 }
 
@@ -66,7 +145,7 @@ pub struct Node<T> {
   pub behavior: NodeBehavior,
 
   #[serde(default)]
-  pub value: T,
+  pub data: T,
 }
 
 impl<T> Node<T> {
@@ -80,7 +159,7 @@ impl<T> Node<T> {
       name,
       kind,
       behavior,
-      value,
+      data: value,
     }
   }
 }
@@ -91,14 +170,14 @@ impl<T> Node<T> {
   }
 }
 
-impl Node<NodeVORData> {
+impl Node<VORData> {
   pub fn with_name(mut self, name: Intern<String>) -> Self {
     self.name = name;
     self
   }
 
   pub fn with_actions(mut self, behavior: Vec<EventKind>) -> Self {
-    self.value.then = behavior;
+    self.data.events = behavior;
     self
   }
 }
@@ -109,7 +188,7 @@ impl From<Gate> for Node<Vec2> {
       name: value.id,
       kind: NodeKind::Gate,
       behavior: NodeBehavior::Park,
-      value: value.pos,
+      data: value.pos,
     }
   }
 }
@@ -120,7 +199,7 @@ impl From<Gate> for Node<Line> {
       name: value.id,
       kind: NodeKind::Gate,
       behavior: NodeBehavior::Park,
-      value: Line::new(value.pos, value.pos),
+      data: Line::new(value.pos, value.pos),
     }
   }
 }
@@ -173,19 +252,19 @@ impl From<Object> for Node<Line> {
         name: value.id,
         kind: NodeKind::Taxiway,
         behavior: NodeBehavior::GoTo,
-        value: value.into(),
+        data: value.into(),
       },
       Object::Runway(value) => Node {
         name: value.id,
         kind: NodeKind::Runway,
         behavior: NodeBehavior::GoTo,
-        value: value.into(),
+        data: value.into(),
       },
       Object::Terminal(value) => Node {
         name: value.id,
         kind: NodeKind::Apron,
         behavior: NodeBehavior::GoTo,
-        value: value.into(),
+        data: value.into(),
       },
     }
   }
@@ -195,8 +274,8 @@ pub fn total_distance_squared(path: &[Node<Vec2>], current_pos: Vec2) -> f32 {
   let mut distance = 0.0;
   let mut first = current_pos;
   for next in path.iter() {
-    distance += first.distance_squared(next.value);
-    first = next.value;
+    distance += first.distance_squared(next.data);
+    first = next.data;
   }
 
   distance
@@ -359,12 +438,12 @@ impl Pathfinder {
             name: from.name,
             kind: from.kind,
             behavior: from.behavior,
-            value: pos,
+            data: pos,
           };
           for wp in path.iter() {
-            let angle = angle_between_points(pos, wp.value);
+            let angle = angle_between_points(pos, wp.data);
 
-            pos = first.value;
+            pos = first.data;
             heading = angle;
             first = wp;
           }
@@ -384,10 +463,10 @@ impl Pathfinder {
             name: from.name,
             kind: from.kind,
             behavior: from.behavior,
-            value: pos,
+            data: pos,
           };
           for wp in path.path.iter() {
-            let angle = angle_between_points(pos, wp.value);
+            let angle = angle_between_points(pos, wp.data);
             // If our waypoint is not a gate and we are not heading towards it,
             // don't use this path.
             //
@@ -404,7 +483,7 @@ impl Pathfinder {
               return false;
             }
 
-            pos = first.value;
+            pos = first.data;
             heading = angle;
 
             first = wp;
@@ -488,7 +567,7 @@ mod tests {
           name: Intern::from_ref("B"),
           kind: NodeKind::Apron,
           behavior: NodeBehavior::GoTo,
-          value: b
+          data: b
         }],
         a
       ),
@@ -516,19 +595,19 @@ mod tests {
             name: Intern::from_ref("B"),
             kind: NodeKind::Apron,
             behavior: NodeBehavior::GoTo,
-            value: b
+            data: b
           },
           Node {
             name: Intern::from_ref("C"),
             kind: NodeKind::Apron,
             behavior: NodeBehavior::GoTo,
-            value: c
+            data: c
           },
           Node {
             name: Intern::from_ref("D"),
             kind: NodeKind::Apron,
             behavior: NodeBehavior::GoTo,
-            value: d
+            data: d
           }
         ],
         a
@@ -566,13 +645,13 @@ mod tests {
           name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
-          value: (),
+          data: (),
         },
         Node {
           name: Intern::from_ref("B"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
-          value: (),
+          data: (),
         },
         Vec2::new(0.0, 0.0),
         90.0,
@@ -582,7 +661,7 @@ mod tests {
       if let Some(path) = path {
         assert_eq!(path.path.len(), 1);
         assert_eq!(path.path[0].name, Intern::from_ref("B"));
-        assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
+        assert_eq!(path.path[0].data, Vec2::new(5.0, 0.0));
       }
     }
 
@@ -612,13 +691,13 @@ mod tests {
           name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
-          value: (),
+          data: (),
         },
         Node {
           name: Intern::from_ref("B"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
-          value: (),
+          data: (),
         },
         Vec2::new(2.0, 0.0),
         90.0,
@@ -628,7 +707,7 @@ mod tests {
       if let Some(path) = path {
         assert_eq!(path.path.len(), 1);
         assert_eq!(path.path[0].name, Intern::from_ref("B"));
-        assert_eq!(path.path[0].value, Vec2::new(5.0, 0.0));
+        assert_eq!(path.path[0].data, Vec2::new(5.0, 0.0));
       }
     }
 
@@ -659,13 +738,13 @@ mod tests {
           name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
-          value: (),
+          data: (),
         },
         Node {
           name: Intern::from_ref("36"),
           kind: NodeKind::Runway,
           behavior: NodeBehavior::GoTo,
-          value: (),
+          data: (),
         },
         Vec2::new(2.0, 0.0),
         90.0,
@@ -711,13 +790,13 @@ mod tests {
           name: Intern::from_ref("A"),
           kind: NodeKind::Taxiway,
           behavior: NodeBehavior::GoTo,
-          value: (),
+          data: (),
         },
         Node {
           name: Intern::from_ref("36"),
           kind: NodeKind::Runway,
           behavior: NodeBehavior::HoldShort,
-          value: (),
+          data: (),
         },
         Vec2::new(2.0, 0.0),
         90.0,
