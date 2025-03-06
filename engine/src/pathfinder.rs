@@ -52,8 +52,8 @@ impl VORLimit {
     match self {
       Self::None => true,
       Self::At(limit) => value == *limit,
-      Self::AtOrAbove(limit) => value > *limit,
-      Self::AtOrBelow(limit) => value < *limit,
+      Self::AtOrAbove(limit) => value >= *limit,
+      Self::AtOrBelow(limit) => value <= *limit,
     }
   }
 

@@ -5,13 +5,12 @@ use std::ops::Sub;
 
 use glam::Vec2;
 use internment::Intern;
-use petgraph::matrix_graph::Zero;
 use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
-  pathfinder::{Node, VORData, VORLimits},
-  KNOT_TO_FEET_PER_SECOND,
+  pathfinder::{Node, VORData},
+  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
 };
 
 use super::airport::{Airport, Gate, Runway};
@@ -120,7 +119,7 @@ impl Default for FlightPlan {
       follow: true,
 
       speed: 250.0,
-      altitude: 7000.0,
+      altitude: TRANSITION_ALTITUDE,
     }
   }
 }
@@ -570,24 +569,22 @@ impl Aircraft {
       pos = wp.data.pos;
 
       if wp.data.limits.altitude.is_some() {
-        // Put a hold on the altitude limit so further ones don't take effect.
-        altitude_target = Some(self.target.altitude);
-
         let delta = wp.data.limits.altitude.diff(self.altitude);
         if delta != 0.0 {
           let distance_to_change =
             self.distance_to_change_altitude(self.altitude + delta);
           if distance <= distance_to_change && altitude_target.is_none() {
-            tracing::info!("aircraft: {}", self.id);
             altitude_target = Some(self.altitude + delta);
           }
+        }
+
+        // Put a hold on the altitude limit so further ones don't take effect.
+        if altitude_target.is_none() {
+          altitude_target = Some(self.target.altitude);
         }
       }
 
       if wp.data.limits.speed.is_some() {
-        // Put a hold on the speed limit so further ones don't take effect.
-        speed_target = Some(self.target.speed);
-
         let delta = wp.data.limits.speed.diff(self.speed);
         if delta != 0.0 {
           let distance_to_change =
@@ -595,6 +592,11 @@ impl Aircraft {
           if distance <= distance_to_change && speed_target.is_none() {
             speed_target = Some(self.speed + delta);
           }
+        }
+
+        // Put a hold on the speed limit so further ones don't take effect.
+        if speed_target.is_none() {
+          speed_target = Some(self.target.speed);
         }
       }
     }
