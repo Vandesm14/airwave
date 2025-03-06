@@ -242,13 +242,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
                   .with_speed(VORLimit::AtOrBelow(250.0)),
               );
             let wp_vctr = new_vor(Intern::from_ref("VCTR"), transition_vctr)
-              .with_actions(vec![
-                EventKind::SpeedAtOrBelow(180.0),
-                EventKind::Land(runway.id),
-              ])
+              .with_actions(vec![EventKind::Land(runway.id)])
               .with_limits(
                 VORLimits::new()
-                  .with_altitude(VORLimit::AtOrBelow(APPROACH_ALTITUDE)),
+                  .with_altitude(VORLimit::AtOrBelow(APPROACH_ALTITUDE))
+                  .with_speed(VORLimit::AtOrBelow(180.0)),
               );
 
             // Generate track waypoints.
