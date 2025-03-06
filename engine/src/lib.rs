@@ -36,7 +36,7 @@ pub const HARD_CODED_AIRPORT: &str = "KSFO";
 pub const EAST_CRUISE_ALTITUDE: f32 = 37000.0;
 pub const WEST_CRUISE_ALTITUDE: f32 = 38000.0;
 pub const TRANSITION_ALTITUDE: f32 = 18000.0;
-pub const ARRIVAL_ALTITUDE: f32 = 7000.0;
+pub const ARRIVAL_ALTITUDE: f32 = 10000.0;
 pub const APPROACH_ALTITUDE: f32 = 3000.0;
 
 pub fn duration_now() -> Duration {
