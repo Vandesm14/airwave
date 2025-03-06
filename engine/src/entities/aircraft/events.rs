@@ -273,27 +273,27 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .waypoints
               .iter()
               .filter(|w| {
-                w.value != cmp
+                w.data != cmp
                   // Ensure the waypoint keeps us on course.
                   && delta_angle(
-                    angle_between_points(cmp, w.value),
+                    angle_between_points(cmp, w.data),
                     main_course_heading,
                   )
                   .abs()
                     <= 45.0
                   // Ensure the waypoint doesn't take us too far.
                   && delta_angle(
-                    angle_between_points(w.value, arrival.pos),
+                    angle_between_points(w.data, arrival.pos),
                     main_course_heading,
                   )
                   .abs()
                     <= 45.0
                   // Ensure the waypoint is within minimum distance.
-                  && cmp.distance_squared(w.value) <= min_wp_distance.powf(2.0)
+                  && cmp.distance_squared(w.data) <= min_wp_distance.powf(2.0)
               })
               .min_by(|a, b| {
-                let a = angle_between_points(cmp, a.value);
-                let b = angle_between_points(cmp, b.value);
+                let a = angle_between_points(cmp, a.data);
+                let b = angle_between_points(cmp, b.data);
 
                 let a = delta_angle(a, main_course_heading).abs();
                 let b = delta_angle(b, main_course_heading).abs();
@@ -301,26 +301,26 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 a.partial_cmp(&b).unwrap()
               })
             {
-              cmp = closest.value;
-              waypoints.push(new_vor(closest.name, closest.value));
+              cmp = closest.data;
+              waypoints.push(new_vor(closest.name, closest.data));
             }
 
             if let Some(wp) = waypoints
               .iter_mut()
               .filter(|w| {
-                w.value.to.distance_squared(arrival.pos)
+                w.data.pos.distance_squared(arrival.pos)
                   >= transition_tod.distance_squared(arrival.pos)
               })
               .min_by(|a, b| {
-                a.value
-                  .to
+                a.data
+                  .pos
                   .distance_squared(transition_tod)
-                  .partial_cmp(&b.value.to.distance_squared(transition_tod))
+                  .partial_cmp(&b.data.pos.distance_squared(transition_tod))
                   .unwrap()
               })
             {
               wp.name = wp_tod.name;
-              wp.value.then = wp_tod.value.then.clone();
+              wp.data.events = wp_tod.data.events.clone();
             }
 
             waypoints.extend_from_slice(&[wp_star, wp_vctr]);
@@ -328,7 +328,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             if !diversion {
               waypoints.insert(0, wp_sid);
             } else {
-              for event in wp_sid.value.then.iter() {
+              for event in wp_sid.data.events.iter() {
                 bundle.events.push(Event::Aircraft(AircraftEvent::new(
                   aircraft.id,
                   event.clone(),
@@ -703,7 +703,7 @@ pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
       name: runway.id,
       kind: NodeKind::Runway,
       behavior: NodeBehavior::GoTo,
-      value: aircraft.pos,
+      data: aircraft.pos,
     },
     waypoints: Vec::new(),
     state: TaxiingState::Override,
@@ -741,7 +741,7 @@ pub fn handle_taxi_event(
           name: curr.name,
           kind: curr.kind,
           behavior: curr.behavior,
-          value: (),
+          data: (),
         },
         destination.clone(),
         pos,

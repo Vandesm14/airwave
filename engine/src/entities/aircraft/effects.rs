@@ -314,9 +314,9 @@ impl AircraftUpdateFlyingEffect {
         let b = wp.last().unwrap();
 
         // Distance between waypoint A and B
-        let wp_distance = a.value.to.distance_squared(b.value.to);
+        let wp_distance = a.data.pos.distance_squared(b.data.pos);
         // Distance between the aircraft and waypoint B
-        let distance = aircraft.pos.distance_squared(b.value.to);
+        let distance = aircraft.pos.distance_squared(b.data.pos);
 
         // If the aircraft is closer to B than A is to B, just go to B
         if distance < wp_distance {
@@ -345,17 +345,17 @@ impl AircraftEffect for AircraftUpdateFlyingEffect {
 
     if let AircraftState::Flying = &mut aircraft.state {
       if let Some(current) = aircraft.flight_plan.waypoint() {
-        let heading = angle_between_points(aircraft.pos, current.value.to);
+        let heading = angle_between_points(aircraft.pos, current.data.pos);
 
         aircraft.target.heading = heading;
 
-        let distance = aircraft.pos.distance_squared(current.value.to);
+        let distance = aircraft.pos.distance_squared(current.data.pos);
         let movement_speed = speed_in_feet.powf(2.0);
 
         if movement_speed >= distance {
-          aircraft.pos = current.value.to;
+          aircraft.pos = current.data.pos;
 
-          for e in current.value.then.iter() {
+          for e in current.data.events.iter() {
             bundle
               .events
               .push(AircraftEvent::new(aircraft.id, e.clone()).into());
@@ -378,12 +378,12 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
     {
       let waypoint = waypoints.last().cloned();
       if let Some(waypoint) = waypoint {
-        let heading = angle_between_points(aircraft.pos, waypoint.value);
+        let heading = angle_between_points(aircraft.pos, waypoint.data);
 
         aircraft.heading = heading;
         aircraft.target.heading = heading;
 
-        let distance = aircraft.pos.distance_squared(waypoint.value);
+        let distance = aircraft.pos.distance_squared(waypoint.data);
         let movement_speed = speed_in_feet.powf(2.0);
 
         if movement_speed >= distance {
@@ -445,7 +445,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
     if let AircraftState::Taxiing { waypoints, .. } = &aircraft.state {
       let waypoint = waypoints.last();
       if let Some(waypoint) = waypoint {
-        let distance = aircraft.pos.distance_squared(waypoint.value);
+        let distance = aircraft.pos.distance_squared(waypoint.data);
 
         match waypoint.behavior {
           NodeBehavior::GoTo => {}
