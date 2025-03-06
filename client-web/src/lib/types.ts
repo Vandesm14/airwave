@@ -6,14 +6,14 @@ export type NodeVec2 = {
   name: string;
   kind: 'taxiway' | 'gate' | 'apron' | 'runway';
   behavior: 'goto' | 'holdshort' | 'park';
-  value: Vec2;
+  data: Vec2;
 };
 
 export type NodeVOR = {
   name: string;
   kind: 'vor';
   behavior: 'goto' | 'holdshort';
-  value: { to: Vec2; then: Array<unknown> };
+  data: { pos: Vec2 };
 };
 
 export type AircraftStateFlying = {

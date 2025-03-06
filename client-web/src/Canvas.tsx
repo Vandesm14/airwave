@@ -557,7 +557,7 @@ export default function Canvas() {
       for (let wp of aircraft.flight_plan.waypoints.slice(
         aircraft.flight_plan.waypoint_index
       )) {
-        let pos = scalePoint(wp.value.to);
+        let pos = scalePoint(wp.data.pos);
         ctx.lineTo(pos[0], pos[1]);
       }
       ctx.stroke();
@@ -565,7 +565,7 @@ export default function Canvas() {
       for (let wp of aircraft.flight_plan.waypoints.slice(
         aircraft.flight_plan.waypoint_index
       )) {
-        drawWaypoint(ctx, wp.name, wp.value.to, colors.text_yellow);
+        drawWaypoint(ctx, wp.name, wp.data.pos, colors.text_yellow);
       }
     }
 
@@ -852,7 +852,7 @@ export default function Canvas() {
       ctx.beginPath();
       ctx.moveTo(pos[0], pos[1]);
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let pos = scalePoint(wp.value);
+        let pos = scalePoint(wp.data);
         ctx.lineTo(pos[0], pos[1]);
       }
       ctx.stroke();
@@ -868,7 +868,7 @@ export default function Canvas() {
         } else {
           ctx.fillStyle = colors.line_yellow;
         }
-        let pos = scalePoint(wp.value);
+        let pos = scalePoint(wp.data);
         ctx.beginPath();
         ctx.arc(pos[0], pos[1], scaleFeetToPixels(40), 0, Math.PI * 2);
         ctx.fill();
@@ -886,7 +886,7 @@ export default function Canvas() {
         } else if (wp.behavior === 'holdshort') {
           ctx.fillStyle = colors.line_red;
         }
-        let pos = scalePoint(wp.value);
+        let pos = scalePoint(wp.data);
         ctx.beginPath();
         ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
         ctx.fill();
@@ -1020,7 +1020,7 @@ export default function Canvas() {
     }
 
     for (let waypoint of world.waypoints) {
-      drawWaypoint(ctx, waypoint.name, waypoint.value, colors.special.waypoint);
+      drawWaypoint(ctx, waypoint.name, waypoint.data, colors.special.waypoint);
     }
 
     for (let aircraft of aircrafts.filter(

@@ -133,8 +133,8 @@ function Strip({ strip }: StripProps) {
       let current = strip.pos;
       let distance = 0;
       strip.flight_plan.waypoints.forEach((waypoint) => {
-        distance += calculateDistance(current, waypoint.value.to);
-        current = waypoint.value.to;
+        distance += calculateDistance(current, waypoint.data.pos);
+        current = waypoint.data.pos;
       });
 
       let distanceInNm = distance / nauticalMilesToFeet;
