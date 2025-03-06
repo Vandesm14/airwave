@@ -13,7 +13,7 @@ use crate::{
   heading_to_direction, inverse_degrees, move_point,
   pathfinder::{
     display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
-    NodeKind, Pathfinder,
+    NodeKind, Pathfinder, VORLimit, VORLimits,
   },
   APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
   NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE, WEST_CRUISE_ALTITUDE,
@@ -207,24 +207,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let transition_sid = departure
               .pos
               .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 30.0);
-            let mut transition_tod = arrival.pos.move_towards(
-              departure.pos,
-              NAUTICALMILES_TO_FEET * (30.0 + 55.0),
-            );
             let transition_star = arrival
               .pos
               .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 30.0);
-
-            // If the TOD is within the departure airspace, place it in the
-            // middle between the cruise route.
-            // This can happen if the two airspaces are closer than 55 NM,
-            // which is the minimum TOD for FL380.
-            if transition_tod.distance_squared(transition_sid)
-              < (NAUTICALMILES_TO_FEET * 55.0_f32).powf(2.0)
-            {
-              transition_tod = transition_star.midpoint(transition_sid);
-            }
-
             let transition_iaf = move_point(
               runway.start(),
               inverse_degrees(runway.heading),
@@ -245,23 +230,26 @@ impl AircraftEventHandler for HandleAircraftEvent {
                   departure.airports.first().unwrap().frequencies.center,
                 ),
               ]);
-            let wp_tod = new_vor(Intern::from_ref("TOD"), transition_tod)
-              .with_actions(vec![
-                EventKind::SpeedAtOrBelow(300.0),
-                EventKind::AltitudeAtOrBelow(TRANSITION_ALTITUDE),
-              ]);
+
             let wp_star = new_vor(Intern::from_ref("STAR"), transition_star)
               .with_actions(vec![
-                EventKind::SpeedAtOrBelow(250.0),
                 EventKind::AltitudeAtOrBelow(ARRIVAL_ALTITUDE),
                 EventKind::CalloutInAirspace,
-              ]);
+              ])
+              .with_limits(
+                VORLimits::new()
+                  .with_altitude(VORLimit::AtOrBelow(TRANSITION_ALTITUDE))
+                  .with_speed(VORLimit::AtOrBelow(250.0)),
+              );
             let wp_vctr = new_vor(Intern::from_ref("VCTR"), transition_vctr)
               .with_actions(vec![
                 EventKind::SpeedAtOrBelow(180.0),
-                EventKind::AltitudeAtOrBelow(APPROACH_ALTITUDE),
                 EventKind::Land(runway.id),
-              ]);
+              ])
+              .with_limits(
+                VORLimits::new()
+                  .with_altitude(VORLimit::AtOrBelow(APPROACH_ALTITUDE)),
+              );
 
             // Generate track waypoints.
             let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
@@ -303,24 +291,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
             {
               cmp = closest.data;
               waypoints.push(new_vor(closest.name, closest.data));
-            }
-
-            if let Some(wp) = waypoints
-              .iter_mut()
-              .filter(|w| {
-                w.data.pos.distance_squared(arrival.pos)
-                  >= transition_tod.distance_squared(arrival.pos)
-              })
-              .min_by(|a, b| {
-                a.data
-                  .pos
-                  .distance_squared(transition_tod)
-                  .partial_cmp(&b.data.pos.distance_squared(transition_tod))
-                  .unwrap()
-              })
-            {
-              wp.name = wp_tod.name;
-              wp.data.events = wp_tod.data.events.clone();
             }
 
             waypoints.extend_from_slice(&[wp_star, wp_vctr]);

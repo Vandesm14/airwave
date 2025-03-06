@@ -72,7 +72,7 @@ impl VORLimit {
         if value <= *limit {
           0.0
         } else {
-          value - *limit
+          *limit - value
         }
       }
     }
@@ -99,6 +99,16 @@ impl VORLimits {
       altitude: VORLimit::None,
       speed: VORLimit::None,
     }
+  }
+
+  pub fn with_altitude(mut self, altitude: VORLimit) -> Self {
+    self.altitude = altitude;
+    self
+  }
+
+  pub fn with_speed(mut self, speed: VORLimit) -> Self {
+    self.speed = speed;
+    self
   }
 
   pub fn is_none(&self) -> bool {
@@ -178,6 +188,11 @@ impl Node<VORData> {
 
   pub fn with_actions(mut self, behavior: Vec<EventKind>) -> Self {
     self.data.events = behavior;
+    self
+  }
+
+  pub fn with_limits(mut self, limits: VORLimits) -> Self {
+    self.data.limits = limits;
     self
   }
 }
