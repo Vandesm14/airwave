@@ -243,4 +243,23 @@ impl Prompter {
       Err(Error::NoResult(prompt))
     }
   }
+
+  /// This is a debug function to dump the prompts into a file for each mode.
+  pub fn export_prompts() {
+    use std::path::Path;
+
+    let prompt = Prompter::load_prompt_as_string(
+      Path::new("server/prompts/air.json").into(),
+    )
+    .unwrap();
+
+    std::fs::write("prompt.air.txt", prompt).unwrap();
+
+    let prompt = Prompter::load_prompt_as_string(
+      Path::new("server/prompts/ground.json").into(),
+    )
+    .unwrap();
+
+    std::fs::write("prompt.ground.txt", prompt).unwrap();
+  }
 }

@@ -5,6 +5,10 @@ edition.workspace = true
 publish.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "dump_prompts"
+path = "src/dump_prompts.rs"
+
 [dependencies]
 engine = { path = "../engine" }
 
