@@ -835,16 +835,12 @@ export default function Canvas() {
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
-    let taxi_color =
-      selectedAircraft() == aircraft.id ? colors.text_yellow : '#ffffff';
+    let taxi_color = isSelected ? colors.text_yellow : '#ffffff';
     let callsign_color =
       aircraft.frequency !== frequency() ? colors.text_grey : taxi_color;
 
     // Draw taxi waypoints
-    if (
-      aircraft.state.type === 'taxiing' &&
-      selectedAircraft() == aircraft.id
-    ) {
+    if (aircraft.state.type === 'taxiing' && isSelected) {
       ctx.strokeStyle = '#ffff0088';
       ctx.lineWidth = scaleFeetToPixels(50);
 
@@ -915,7 +911,7 @@ export default function Canvas() {
     ctx.lineTo(endPos[0], endPos[1]);
     ctx.stroke();
 
-    if (aircraft.state.type === 'parked') {
+    if (aircraft.state.type === 'parked' && !isSelected) {
       return;
     }
 
