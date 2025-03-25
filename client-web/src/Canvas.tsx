@@ -831,11 +831,14 @@ export default function Canvas() {
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     const isSelected = selectedAircraft() === aircraft.id;
+    const isAccepted = aircraft.accepted;
 
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
-    let taxi_color = isSelected ? colors.text_yellow : '#ffffff';
+    let taxi_color = isAccepted ? '#ffffff' : colors.text_light_grey;
+    taxi_color = isSelected ? colors.text_yellow : taxi_color;
+
     let callsign_color =
       aircraft.frequency !== frequency() ? colors.text_grey : taxi_color;
 
