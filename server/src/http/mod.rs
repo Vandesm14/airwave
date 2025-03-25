@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use shared::{AppState, GetSender, PostSender};
 
 use engine::engine::UICommand;
-use tower_http::cors::CorsLayer;
+use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
 pub async fn run(
   address: SocketAddr,
@@ -45,6 +45,7 @@ pub async fn run(
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
       .with_state(AppState::new(get_sender, post_sender, openai_api_key))
+      .layer(CompressionLayer::new())
       .layer(cors),
   );
 

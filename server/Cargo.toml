@@ -20,7 +20,12 @@ tokio.workspace = true
 tokio-tungstenite = "0.23.1"
 
 async-openai = "0.23.4"
-tower-http = { version = "0.5.2", features = ["cors", "fs", "trace"] }
+tower-http = { version = "0.5.2", features = [
+  "cors",
+  "fs",
+  "trace",
+  "compression-br",
+] }
 
 futures-util = "0.3.30"
 async-channel.workspace = true
