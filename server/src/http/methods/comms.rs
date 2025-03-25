@@ -53,15 +53,14 @@ async fn complete_atc_request(
         .await;
         match res {
           Ok(ResKind::OneAircraft(Some(aircraft))) => {
-            // TODO: remove if we don't need this later
-            // if !aircraft.active() {
-            //   // Prevent inactive aircraft from receiving commands.
-            //   tracing::warn!(
-            //     "Inactive aircraft \"{}\" received command",
-            //     aircraft.id
-            //   );
-            //   continue;
-            // }
+            if !aircraft.accepted {
+              // Prevent rejected aircraft from receiving commands.
+              tracing::warn!(
+                "Rejected aircraft \"{}\" received command",
+                aircraft.id
+              );
+              continue;
+            }
 
             // Parse the command from the message.
             let (tasks, readback) = tokio::join!(
@@ -70,12 +69,18 @@ async fn complete_atc_request(
             );
             match (tasks, readback) {
               // Return the command.
-              (Ok(tasks), Ok(readback)) => messages.push(CommandWithFreq::new(
-                aircraft.id.to_string(),
-                frequency,
-                CommandReply::WithCallsign { text: readback },
-                tasks,
-              )),
+              (Ok(tasks), Ok(readback)) => {
+                tracing::info!(
+                  "Completed request for aircraft {}",
+                  aircraft.id
+                );
+                messages.push(CommandWithFreq::new(
+                  aircraft.id.to_string(),
+                  frequency,
+                  CommandReply::WithCallsign { text: readback },
+                  tasks,
+                ))
+              }
               (Err(err), _) => {
                 tracing::error!("Unable to parse command: {}", err);
               }
