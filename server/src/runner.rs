@@ -497,7 +497,8 @@ impl Runner {
           kind: EventKind::CalloutInAirspace,
         }) = event
         {
-          if let Some(aircraft) = self.game.aircraft.iter().find(|a| a.id == id)
+          if let Some(aircraft) =
+            self.game.aircraft.iter_mut().find(|a| a.id == id)
           {
             if let Some(airspace) = self
               .world
@@ -507,6 +508,9 @@ impl Runner {
             {
               if !airspace.auto {
                 tracing::info!("Quick start interrupted. Aircraft entered non-auto airspace.");
+
+                aircraft.accepted = true;
+
                 return self.tick_counter;
               }
             }
