@@ -166,7 +166,8 @@ impl Engine {
 
     // Capture the left over events and actions for next time
     if self.config.show_logs() && !bundle.events.is_empty() {
-      tracing::info!("new events: {:?}", bundle.events);
+      // TODO: decide if we want to keep this or discard this.
+      // tracing::info!("new events: {:?}", bundle.events);
     }
 
     self.events = core::mem::take(&mut bundle.events);
