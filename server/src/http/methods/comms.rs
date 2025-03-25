@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use async_openai::error::OpenAIError;
 use axum::{
@@ -39,6 +39,8 @@ async fn complete_atc_request(
       if split.is_empty() {
         tracing::warn!("Received empty request");
         return Vec::new();
+      } else {
+        tracing::info!("Split request for {} aircraft", split.len());
       }
 
       let mut messages: Vec<CommandWithFreq> = Vec::new();
@@ -113,6 +115,8 @@ pub async fn comms_text(
   Query(query): Query<CommsFrequencyQuery>,
   text: String,
 ) {
+  let time = Instant::now();
+
   tracing::info!("Received comms text request: {} chars", text.len());
 
   let _ = JobReq::send(
@@ -140,7 +144,11 @@ pub async fn comms_text(
     .await;
   }
 
-  tracing::info!("Replied to text request");
+  let duration = time.elapsed();
+  tracing::info!(
+    "Replied to text request in {:.2} seconds",
+    duration.as_secs_f32()
+  );
 }
 
 fn write_wav_data(bytes: &Bytes) {
@@ -217,6 +225,8 @@ pub async fn comms_voice(
   Query(query): Query<CommsFrequencyQuery>,
   bytes: Bytes,
 ) {
+  let time = Instant::now();
+
   tracing::info!("Received comms voice request: {} bytes", bytes.len());
 
   match transcribe_voice(bytes, state.openai_api_key.clone()).await {
@@ -255,7 +265,11 @@ pub async fn comms_voice(
           .await;
         }
 
-        tracing::info!("Replied to voice request");
+        let duration = time.elapsed();
+        tracing::info!(
+          "Replied to voice request in {:.2} seconds",
+          duration.as_secs_f32()
+        );
       }
     }
     Err(e) => tracing::error!("Transcription failed: {}", e),

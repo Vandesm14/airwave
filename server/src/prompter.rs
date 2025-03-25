@@ -8,6 +8,7 @@ use async_openai::{
     CreateChatCompletionRequest,
   },
 };
+use internment::Intern;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use thiserror::Error;
