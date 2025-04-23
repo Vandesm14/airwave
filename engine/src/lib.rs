@@ -6,7 +6,9 @@ use std::{
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
+use internment::Intern;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use turborand::{rng::Rng, TurboRand};
 
 pub mod engine;
@@ -40,6 +42,11 @@ pub const TRANSITION_ALTITUDE: f32 = 18000.0;
 pub const ARRIVAL_ALTITUDE: f32 = 10000.0;
 pub const APPROACH_ALTITUDE: f32 = 3000.0;
 
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename = "Vec2")]
+pub struct ExportedVec2(f32, f32);
+
 pub fn duration_now() -> Duration {
   SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
 }
@@ -52,8 +59,14 @@ pub trait Translate {
   fn translate(&mut self, offset: Vec2) -> &mut Self;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
-pub struct Line(pub Vec2, pub Vec2);
+#[derive(
+  Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize, TS,
+)]
+#[ts(export)]
+pub struct Line(
+  #[ts(as = "(f32, f32)")] pub Vec2,
+  #[ts(as = "(f32, f32)")] pub Vec2,
+);
 
 impl Translate for Line {
   fn translate(&mut self, offset: Vec2) -> &mut Self {

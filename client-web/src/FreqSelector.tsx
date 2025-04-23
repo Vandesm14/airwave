@@ -2,9 +2,9 @@ import { useAtom } from 'solid-jotai';
 import { frequencyAtom } from './lib/atoms';
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
-import { Frequencies } from './lib/types';
 import { useWorld } from './lib/api';
 import { hardcodedAirport } from './lib/lib';
+import { Frequencies } from '../bindings/Frequencies';
 
 export default function FreqSelector() {
   let [frequency, setFrequency] = useAtom(frequencyAtom);

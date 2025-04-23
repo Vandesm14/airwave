@@ -1,5 +1,6 @@
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use turborand::{rng::Rng, TurboRand};
 
 use crate::pathfinder::Node;
@@ -92,9 +93,11 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
   }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
+  #[ts(as = "Vec<Node<(f32, f32)>>")]
   pub waypoints: Vec<Node<Vec2>>,
 }
 

@@ -8,12 +8,13 @@ import './Flights.scss';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { selectedAircraftAtom } from './lib/atoms';
 import { useAtom } from 'solid-jotai';
-import { Aircraft, World } from './lib/types';
 import {
   calculateSquaredDistance,
   HARD_CODED_AIRPORT,
   hardcodedAirspace,
 } from './lib/lib';
+import { Aircraft } from '../bindings/Aircraft';
+import { World } from '../bindings/World';
 
 export function FlightItem({ flight }: { flight: Aircraft }) {
   const acceptFlight = useAcceptFlight();

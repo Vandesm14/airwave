@@ -4,8 +4,10 @@ import {
   useQueryClient,
 } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
-import { Aircraft, RadioMessage, World } from './types';
+import { RadioMessage } from './types';
 import fastDeepEqual from 'fast-deep-equal';
+import { Aircraft } from '../../bindings/Aircraft';
+import { World } from '../../bindings/World';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);

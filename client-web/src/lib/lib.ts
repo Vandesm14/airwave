@@ -1,12 +1,10 @@
-import {
-  Airport,
-  Airspace,
-  LandingState,
-  Runway,
-  TaxiingState,
-  Vec2,
-  World,
-} from './types';
+import { Airport } from '../../bindings/Airport';
+import { Airspace } from '../../bindings/Airspace';
+import { LandingState } from '../../bindings/LandingState';
+import { Runway } from '../../bindings/Runway';
+import { TaxiingState } from '../../bindings/TaxiingState';
+import { Vec2 } from '../../bindings/Vec2';
+import { World } from '../../bindings/World';
 
 export const timeScale = 1;
 

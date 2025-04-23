@@ -1,11 +1,5 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
-import {
-  Aircraft,
-  isAircraftFlying,
-  isAircraftLanding,
-  isAircraftParked,
-  smallFlightSegment,
-} from './lib/types';
+import { smallFlightSegment } from './lib/types';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
@@ -17,6 +11,7 @@ import {
 } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, useWorld } from './lib/api';
+import { Aircraft } from '../bindings/Aircraft';
 
 type Strips = {
   Selected: Array<Aircraft>;
@@ -128,7 +123,7 @@ function Strip({ strip }: StripProps) {
   }
 
   let sinceCreated = `--:--`;
-  if (isAircraftFlying(strip.state)) {
+  if (strip.state.type === 'flying') {
     if (strip.flight_plan.follow) {
       let current = strip.pos;
       let distance = 0;
@@ -143,7 +138,7 @@ function Strip({ strip }: StripProps) {
       let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
       sinceCreated = formatTime(time);
     }
-  } else if (isAircraftLanding(strip.state)) {
+  } else if (strip.state.type === 'landing') {
     let distance = calculateDistance(
       strip.pos,
       runwayInfo(strip.state.value.runway).start
@@ -163,7 +158,7 @@ function Strip({ strip }: StripProps) {
       (sinceCreated.startsWith('-') && sinceCreated !== '--:--')
   );
 
-  if (isAircraftLanding(strip.state)) {
+  if (strip.state.type === 'landing') {
     topStatus = 'ILS';
     bottomStatus = strip.state.value.runway.id;
   } else if (strip.state.type === 'taxiing') {
@@ -179,7 +174,7 @@ function Strip({ strip }: StripProps) {
     }
 
     bottomStatus = current.name;
-  } else if (isAircraftParked(strip.state)) {
+  } else if (strip.state.type === 'parked') {
     topStatus = 'PARK';
     bottomStatus = strip.state.value.at.name;
   } else {
@@ -192,7 +187,7 @@ function Strip({ strip }: StripProps) {
   );
   let distanceText = '';
 
-  if (isAircraftFlying(strip.state) || isAircraftLanding(strip.state)) {
+  if (strip.state.type === 'flying' || strip.state.type === 'landing') {
     distanceText = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
 
     if (distanceText.endsWith('.')) {
@@ -311,7 +306,7 @@ export default function StripBoard() {
   }
 
   const allFlying = createMemo(
-    () => aircrafts.data.filter((a) => isAircraftFlying(a.state)).length
+    () => aircrafts.data.filter((a) => a.state.type === 'flying').length
   );
 
   return (

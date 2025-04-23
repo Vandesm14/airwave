@@ -5,16 +5,7 @@ import {
   renderAtom,
   selectedAircraftAtom,
 } from './lib/atoms';
-import {
-  Aircraft,
-  Airspace,
-  Gate,
-  Runway,
-  Taxiway,
-  Terminal,
-  Vec2,
-  World,
-} from './lib/types';
+import { Vec2 } from '../bindings/Vec2';
 import {
   createEffect,
   createMemo,
@@ -37,6 +28,13 @@ import {
 } from './lib/lib';
 import colors from './lib/colors';
 import { useAircraftWithRate, useWorld } from './lib/api';
+import { Airspace } from '../bindings/Airspace';
+import { Runway } from '../bindings/Runway';
+import { Aircraft } from '../bindings/Aircraft';
+import { Terminal } from '../bindings/Terminal';
+import { Gate } from '../bindings/Gate';
+import { Taxiway } from '../bindings/Taxiway';
+import { World } from '../bindings/World';
 
 const groundScale = 5.0;
 

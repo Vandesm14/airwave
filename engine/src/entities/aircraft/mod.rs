@@ -6,6 +6,7 @@ use std::ops::Sub;
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
@@ -15,14 +16,18 @@ use crate::{
 
 use super::airport::{Airport, Gate, Runway};
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct AircraftTargets {
   pub heading: f32,
   pub speed: f32,
   pub altitude: f32,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(
+  Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
+)]
+#[ts(export)]
 #[serde(rename_all = "kebab-case")]
 pub enum LandingState {
   #[default]
@@ -48,7 +53,10 @@ pub enum LandingState {
   GoAround,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(
+  Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
+)]
+#[ts(export)]
 #[serde(rename_all = "lowercase")]
 pub enum TaxiingState {
   /// Normal operation, will stop if a collision is detected.
@@ -66,9 +74,10 @@ pub enum TaxiingState {
   Holding,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type", content = "value")]
+#[ts(export)]
 pub enum AircraftState {
   Flying,
   Landing {
@@ -76,11 +85,14 @@ pub enum AircraftState {
     state: LandingState,
   },
   Taxiing {
+    #[ts(as = "Node<(f32, f32)>")]
     current: Node<Vec2>,
+    #[ts(as = "Vec<Node<(f32, f32)>>")]
     waypoints: Vec<Node<Vec2>>,
     state: TaxiingState,
   },
   Parked {
+    #[ts(as = "Node<(f32, f32)>")]
     at: Node<Vec2>,
   },
 }
@@ -91,10 +103,13 @@ impl Default for AircraftState {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct FlightPlan {
   // To and From
+  #[ts(as = "String")]
   pub arriving: Intern<String>,
+  #[ts(as = "String")]
   pub departing: Intern<String>,
 
   pub waypoints: Vec<Node<VORData>>,
@@ -286,9 +301,12 @@ impl AircraftKind {
 /// This is simply a flag for denoting the segment of flight and does not
 /// contain any data or further information. [`AircraftState`] is the primary
 /// holder of state and data for an aircraft.
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[derive(
+  Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize, TS,
+)]
 #[serde(rename_all = "kebab-case")]
 #[repr(u8)]
+#[ts(export)]
 pub enum FlightSegment {
   #[default]
   /// Parked and motionless.
@@ -346,8 +364,11 @@ impl FlightSegment {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[derive(
+  Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize, TS,
+)]
 #[serde(rename_all = "kebab-case")]
+#[ts(export)]
 pub enum TCAS {
   #[default]
   Idle,
@@ -371,11 +392,14 @@ impl TCAS {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Aircraft {
+  #[ts(as = "String")]
   pub id: Intern<String>,
   pub is_colliding: bool,
 
+  #[ts(as = "(f32, f32)")]
   pub pos: Vec2,
   pub speed: f32,
   pub heading: f32,

@@ -1,6 +1,7 @@
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::{
   inverse_degrees, move_point,
@@ -8,7 +9,8 @@ use crate::{
   Line, Translate,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Frequencies {
   pub approach: f32,
   pub departure: f32,
@@ -43,11 +45,14 @@ impl Frequencies {
   }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Airport {
+  #[ts(as = "String")]
   pub id: Intern<String>,
   pub frequencies: Frequencies,
 
+  #[ts(as = "(f32, f32)")]
   pub center: Vec2,
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
@@ -111,9 +116,11 @@ impl Airport {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
 pub struct Runway {
+  #[ts(as = "String")]
   pub id: Intern<String>,
+  #[ts(as = "(f32, f32)")]
   pub pos: Vec2,
   pub heading: f32,
   pub length: f32,
@@ -136,10 +143,14 @@ impl Runway {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Taxiway {
+  #[ts(as = "String")]
   pub id: Intern<String>,
+  #[ts(as = "(f32, f32)")]
   pub a: Vec2,
+  #[ts(as = "(f32, f32)")]
   pub b: Vec2,
 }
 
@@ -164,9 +175,12 @@ impl Taxiway {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Gate {
+  #[ts(as = "String")]
   pub id: Intern<String>,
+  #[ts(as = "(f32, f32)")]
   pub pos: Vec2,
   pub heading: f32,
   pub available: bool,
@@ -179,12 +193,18 @@ impl Translate for Gate {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Terminal {
+  #[ts(as = "String")]
   pub id: Intern<String>,
+  #[ts(as = "(f32, f32)")]
   pub a: Vec2,
+  #[ts(as = "(f32, f32)")]
   pub b: Vec2,
+  #[ts(as = "(f32, f32)")]
   pub c: Vec2,
+  #[ts(as = "(f32, f32)")]
   pub d: Vec2,
 
   pub gates: Vec<Gate>,

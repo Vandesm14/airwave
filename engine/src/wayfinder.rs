@@ -1,6 +1,7 @@
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::{
   entities::aircraft::events::EventKind,
@@ -90,8 +91,10 @@ impl VORLimits {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct VORData {
+  #[ts(as = "(f32, f32)")]
   pub pos: Vec2,
   #[serde(skip)]
   pub events: Vec<EventKind>,

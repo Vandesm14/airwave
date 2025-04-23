@@ -1,14 +1,18 @@
 use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use turborand::{rng::Rng, TurboRand};
 
 use super::airport::Airport;
 
 // TODO: Support non-circular (regional) airspaces
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Airspace {
+  #[ts(as = "String")]
   pub id: Intern<String>,
+  #[ts(as = "(f32, f32)")]
   pub pos: Vec2,
   pub radius: f32,
   pub airports: Vec<Airport>,

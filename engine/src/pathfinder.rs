@@ -4,6 +4,7 @@ use petgraph::{
   algo::simple_paths, visit::IntoNodeReferences, Graph, Undirected,
 };
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
@@ -11,8 +12,9 @@ use crate::{
   find_line_intersection, Line,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
+#[ts(export)]
 pub enum NodeKind {
   Taxiway,
   Runway,
@@ -22,8 +24,9 @@ pub enum NodeKind {
   VOR,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
+#[ts(export)]
 pub enum NodeBehavior {
   GoTo,
   Park,
@@ -34,8 +37,10 @@ pub enum NodeBehavior {
   LineUp,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Node<T> {
+  #[ts(as = "String")]
   pub name: Intern<String>,
   pub kind: NodeKind,
   pub behavior: NodeBehavior,
