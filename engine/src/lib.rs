@@ -14,6 +14,7 @@ pub mod pathfinder;
 
 pub mod command;
 pub mod entities;
+pub mod wayfinder;
 pub mod wordify;
 
 pub const TIME_SCALE: f32 = 1.0;

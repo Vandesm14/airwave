@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 use turborand::{rng::Rng, TurboRand};
 
 use crate::{
-  pathfinder::{Node, VORData},
-  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
+  pathfinder::Node, wayfinder::VORData, KNOT_TO_FEET_PER_SECOND,
+  TRANSITION_ALTITUDE,
 };
 
 use super::airport::{Airport, Gate, Runway};

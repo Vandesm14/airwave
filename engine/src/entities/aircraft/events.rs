@@ -12,9 +12,10 @@ use crate::{
   entities::world::{closest_airport, closest_airspace},
   heading_to_direction, inverse_degrees, move_point,
   pathfinder::{
-    display_node_vec2, display_vec_node_vec2, new_vor, Node, NodeBehavior,
-    NodeKind, Pathfinder, VORLimit, VORLimits,
+    display_node_vec2, display_vec_node_vec2, Node, NodeBehavior, NodeKind,
+    Pathfinder,
   },
+  wayfinder::{new_vor, VORLimit, VORLimits},
   APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
   NAUTICALMILES_TO_FEET, WEST_CRUISE_ALTITUDE,
 };
