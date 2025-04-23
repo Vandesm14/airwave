@@ -19,8 +19,60 @@ pub fn unscale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
 new_key_type! { pub struct PointKey; }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Point {
+  pub pos: Vec2,
+  pub transforms: PointTransform,
+}
+
+impl From<Vec2> for Point {
+  fn from(value: Vec2) -> Self {
+    Self::new(value)
+  }
+}
+
+impl Point {
+  pub fn new(pos: Vec2) -> Self {
+    Self {
+      pos,
+      ..Default::default()
+    }
+  }
+
+  pub fn transformed_pos(&self, points: &PointMap) -> Vec2 {
+    self.transforms.transform_pos(self.pos, points)
+  }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PointTransform {
+  pub translate: Vec2,
+  pub rotate: f32,
+  pub reference: Option<PointKey>,
+}
+
+impl PointTransform {
+  pub fn transform_pos(&self, pos: Vec2, points: &PointMap) -> Vec2 {
+    if let Some(target) = &self.reference.and_then(|key| points.get(key)) {
+      let target_pos = target.transformed_pos(points);
+
+      let new_pos = target_pos + self.translate;
+      // let target_pos = move_point(target_pos, self.rot, length);
+
+      new_pos
+    } else {
+      let new_pos = pos + self.translate;
+      // let target_pos = move_point(target_pos, self.rot, length);
+
+      new_pos
+    }
+  }
+}
+
+type PointMap = SlotMap<PointKey, Point>;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WorldFile {
-  pub points: SlotMap<PointKey, Vec2>,
+  pub points: PointMap,
   pub meta_airport: MetaAirport,
   pub airport: Airport,
 }
@@ -30,14 +82,14 @@ impl WorldFile {
     &self,
     test_point: Vec2,
     threshold: f32,
-  ) -> Option<(PointKey, Vec2)> {
+  ) -> Option<(PointKey, &Point)> {
     let mut smallest_distance = threshold.powf(2.0);
-    let mut point: Option<(PointKey, Vec2)> = None;
+    let mut point: Option<(PointKey, &Point)> = None;
     for p in self.points.iter() {
-      let distance = p.1.distance_squared(test_point);
+      let distance = p.1.pos.distance_squared(test_point);
       if distance < smallest_distance {
         smallest_distance = distance;
-        point = Some((p.0, *p.1));
+        point = Some((p.0, p.1));
       }
     }
 
@@ -83,22 +135,22 @@ pub struct MetaAirport {
 }
 
 impl MetaAirport {
-  pub fn into_airport(self, points: &SlotMap<PointKey, Vec2>) -> Airport {
+  pub fn into_airport(self, points: &SlotMap<PointKey, Point>) -> Airport {
     let mut airport = Airport::default();
     for t in self.taxiways.into_iter() {
-      let a = points.get(t.a).unwrap();
-      let b = points.get(t.b).unwrap();
-      airport.add_taxiway(Taxiway::new(Intern::from(t.name), *a, *b));
+      let a = points.get(t.a).unwrap().transformed_pos(points);
+      let b = points.get(t.b).unwrap().transformed_pos(points);
+      airport.add_taxiway(Taxiway::new(Intern::from(t.name), a, b));
     }
 
     for r in self.runways.into_iter() {
-      let a = points.get(r.a).unwrap();
-      let b = points.get(r.b).unwrap();
+      let a = points.get(r.a).unwrap().transformed_pos(points);
+      let b = points.get(r.b).unwrap().transformed_pos(points);
       airport.add_runway(Runway {
         id: Intern::from(r.name),
-        heading: angle_between_points(*a, *b),
-        length: a.distance(*b),
-        pos: a.midpoint(*b),
+        heading: angle_between_points(a, b),
+        length: a.distance(b),
+        pos: a.midpoint(b),
       });
     }
 

@@ -116,6 +116,22 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         // TODO: show toast
       }
     }
+
+    if let Some(point) = model
+      .selected
+      .first()
+      .and_then(|key| model.world_data.points.get_mut(*key))
+    {
+      ui.label("Offset:");
+      ui.horizontal(|ui| {
+        ui.label("X:");
+        ui.add(egui::DragValue::new(&mut point.transforms.translate.x));
+      });
+      ui.horizontal(|ui| {
+        ui.label("Y:");
+        ui.add(egui::DragValue::new(&mut point.transforms.translate.y));
+      });
+    }
   });
 
   model.is_over_ui = side_panel.response.hovered();
@@ -177,7 +193,7 @@ fn raw_window_event(
         .find_closest_point(scaled_pos, 30.0 / model.scale);
       match model.mode {
         PointMode::Add => {
-          model.world_data.points.insert(scaled_pos);
+          model.world_data.points.insert(scaled_pos.into());
           model.world_data.trigger_update();
         }
         PointMode::Remove => {
@@ -220,7 +236,7 @@ fn raw_window_event(
         .first()
         .and_then(|s| model.world_data.points.get_mut(*s))
       {
-        *point = scaled_pos;
+        point.pos = scaled_pos;
         model.world_data.trigger_update();
       } else if let Some(drag_anchor) = model.drag_anchor {
         model.shift_pos =
@@ -297,7 +313,11 @@ fn view(app: &App, model: &Model, frame: Frame) {
       color
     };
 
-    let pos = scale_point(*point.1, model.shift_pos, model.scale);
+    let pos = scale_point(
+      point.1.transformed_pos(&model.world_data.points),
+      model.shift_pos,
+      model.scale,
+    );
     draw
       .ellipse()
       .x_y(pos.x, pos.y)
