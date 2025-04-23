@@ -4,10 +4,10 @@ import {
   useQueryClient,
 } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
-import { RadioMessage } from './types';
 import fastDeepEqual from 'fast-deep-equal';
 import { Aircraft } from '../../bindings/Aircraft';
 import { World } from '../../bindings/World';
+import { OutgoingCommandReply } from '../../bindings/OutgoingCommandReply';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
@@ -134,7 +134,7 @@ export function useWorld() {
 
 export const getMessages = '/api/messages';
 export function useMessages() {
-  return createQuery<Array<RadioMessage>>(() => ({
+  return createQuery<Array<OutgoingCommandReply>>(() => ({
     queryKey: [getMessages],
     queryFn: async () => {
       const result = await fetch(`${baseAPIPath}${getMessages}`);

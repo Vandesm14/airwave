@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
-import { smallFlightSegment } from './lib/types';
+import { smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {

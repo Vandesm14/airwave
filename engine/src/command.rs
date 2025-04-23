@@ -3,9 +3,11 @@ use std::time::Duration;
 
 use internment::Intern;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::{
   abbreviate_altitude, duration_now, pathfinder::Node, wordify::wordify,
+  ExportedDuration,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -61,11 +63,13 @@ pub struct CommandWithFreq {
   pub created: Duration,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct OutgoingCommandReply {
   pub id: String,
   pub frequency: f32,
   pub reply: String,
+  #[ts(as = "ExportedDuration")]
   pub created: Duration,
 }
 

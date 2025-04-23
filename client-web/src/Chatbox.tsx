@@ -6,9 +6,9 @@ import {
   useTTSAtom,
 } from './lib/atoms';
 import { createEffect, createSignal, onMount, onCleanup } from 'solid-js';
-import { RadioMessage } from './lib/types';
 import { useStorageAtom } from './lib/hooks';
 import { useMessages } from './lib/api';
+import { OutgoingCommandReply } from '../bindings/OutgoingCommandReply';
 
 export default function Chatbox({
   sendMessage,
@@ -33,7 +33,7 @@ export default function Chatbox({
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 
-  function speak(message: RadioMessage) {
+  function speak(message: OutgoingCommandReply) {
     if (
       useTTS() &&
       'speechSynthesis' in window &&

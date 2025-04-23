@@ -6,7 +6,6 @@ use std::{
 
 use entities::airport::{Runway, Taxiway, Terminal};
 use glam::Vec2;
-use internment::Intern;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use turborand::{rng::Rng, TurboRand};
@@ -46,6 +45,14 @@ pub const APPROACH_ALTITUDE: f32 = 3000.0;
 #[ts(export)]
 #[serde(rename = "Vec2")]
 pub struct ExportedVec2(f32, f32);
+
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename = "Duration")]
+pub struct ExportedDuration {
+  secs: f32,
+  nanos: f32,
+}
 
 pub fn duration_now() -> Duration {
   SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
