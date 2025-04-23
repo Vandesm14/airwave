@@ -123,25 +123,27 @@ fn update(_app: &App, model: &mut Model, update: Update) {
       .first()
       .and_then(|key| model.world_data.points.get_mut(*key))
     {
-      ui.label("Offset:");
-      ui.horizontal(|ui| {
-        ui.label("X:");
-        if ui
-          .add(egui::DragValue::new(&mut point.transforms.translate.x))
-          .changed()
-        {
-          trigger_update = true;
-        }
-      });
-      ui.horizontal(|ui| {
-        ui.label("Y:");
-        if ui
-          .add(egui::DragValue::new(&mut point.transforms.translate.y))
-          .changed()
-        {
-          trigger_update = true;
-        }
-      });
+      if point.transforms.reference.is_none() {
+        ui.label("Offset:");
+        ui.horizontal(|ui| {
+          ui.label("X:");
+          if ui
+            .add(egui::DragValue::new(&mut point.transforms.translate.x))
+            .changed()
+          {
+            trigger_update = true;
+          }
+        });
+        ui.horizontal(|ui| {
+          ui.label("Y:");
+          if ui
+            .add(egui::DragValue::new(&mut point.transforms.translate.y))
+            .changed()
+          {
+            trigger_update = true;
+          }
+        });
+      }
     }
 
     if trigger_update {

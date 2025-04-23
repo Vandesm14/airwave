@@ -60,10 +60,7 @@ impl PointTransform {
 
       new_pos
     } else {
-      let new_pos = pos + self.translate;
-      // let target_pos = move_point(target_pos, self.rot, length);
-
-      new_pos
+      pos
     }
   }
 }
@@ -86,7 +83,10 @@ impl WorldFile {
     let mut smallest_distance = threshold.powf(2.0);
     let mut point: Option<(PointKey, &Point)> = None;
     for p in self.points.iter() {
-      let distance = p.1.pos.distance_squared(test_point);
+      let distance = p
+        .1
+        .transformed_pos(&self.points)
+        .distance_squared(test_point);
       if distance < smallest_distance {
         smallest_distance = distance;
         point = Some((p.0, p.1));
