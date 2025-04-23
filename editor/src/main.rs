@@ -117,6 +117,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
       }
     }
 
+    let mut trigger_update = false;
     if let Some(point) = model
       .selected
       .first()
@@ -125,12 +126,26 @@ fn update(_app: &App, model: &mut Model, update: Update) {
       ui.label("Offset:");
       ui.horizontal(|ui| {
         ui.label("X:");
-        ui.add(egui::DragValue::new(&mut point.transforms.translate.x));
+        if ui
+          .add(egui::DragValue::new(&mut point.transforms.translate.x))
+          .changed()
+        {
+          trigger_update = true;
+        }
       });
       ui.horizontal(|ui| {
         ui.label("Y:");
-        ui.add(egui::DragValue::new(&mut point.transforms.translate.y));
+        if ui
+          .add(egui::DragValue::new(&mut point.transforms.translate.y))
+          .changed()
+        {
+          trigger_update = true;
+        }
       });
+    }
+
+    if trigger_update {
+      model.world_data.trigger_update();
     }
   });
 
