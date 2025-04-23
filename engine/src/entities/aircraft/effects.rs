@@ -492,7 +492,7 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
     // Land
     // TaxiArr
 
-    if let AircraftState::Flying { .. } = &aircraft.state {
+    if let AircraftState::Flying = &aircraft.state {
       // If taking off and off the ground, set to departure
       if FlightSegment::Takeoff == aircraft.segment && aircraft.altitude > 0.0 {
         aircraft.segment = FlightSegment::Departure;

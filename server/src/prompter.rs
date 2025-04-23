@@ -212,7 +212,7 @@ impl Prompter {
   ) -> Result<Tasks, Error> {
     let mode = if matches!(
       aircraft.state,
-      AircraftState::Flying { .. } | AircraftState::Landing { .. }
+      AircraftState::Flying | AircraftState::Landing { .. }
     ) {
       "air"
     } else if matches!(

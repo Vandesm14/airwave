@@ -137,7 +137,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
         }
       }
       EventKind::Heading(heading) => {
-        if let AircraftState::Flying { .. } = aircraft.state {
+        if let AircraftState::Flying = aircraft.state {
           aircraft.target.heading = *heading;
 
           // Cancel waypoints
@@ -174,7 +174,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Flying
       EventKind::ResumeOwnNavigation { diversion } => {
         // TODO: Reimplement
-        if let AircraftState::Flying { .. } = aircraft.state {
+        if let AircraftState::Flying = aircraft.state {
           let departure = bundle
             .world
             .airspaces
@@ -628,7 +628,7 @@ pub fn handle_land_event(
   bundle: &mut Bundle,
   runway_id: Intern<String>,
 ) {
-  if let AircraftState::Flying { .. } = aircraft.state {
+  if let AircraftState::Flying = aircraft.state {
     if let Some(runway) = closest_airport(&bundle.world.airspaces, aircraft.pos)
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {

@@ -212,9 +212,8 @@ impl Engine {
       let vertical_distance =
         (aircraft.altitude - other_aircraft.altitude).abs();
 
-      let both_are_flying =
-        matches!(aircraft.state, AircraftState::Flying { .. })
-          && matches!(other_aircraft.state, AircraftState::Flying { .. });
+      let both_are_flying = matches!(aircraft.state, AircraftState::Flying)
+        && matches!(other_aircraft.state, AircraftState::Flying);
       let both_are_above =
         aircraft.altitude > 2000.0 && other_aircraft.altitude > 2000.0;
 

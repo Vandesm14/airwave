@@ -7,13 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   angle_between_points, closest_point_on_line, delta_angle,
-  entities::{
-    aircraft::events::EventKind,
-    airport::{Gate, Runway, Taxiway, Terminal},
-  },
-  find_line_intersection,
-  wayfinder::{VORData, VORLimits},
-  Line,
+  entities::airport::{Gate, Runway, Taxiway, Terminal},
+  find_line_intersection, Line,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
