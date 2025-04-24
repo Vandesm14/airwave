@@ -63,7 +63,7 @@ pub fn normalize_angle(angle: f32) -> f32 {
 }
 
 pub trait Translate {
-  fn translate(&mut self, offset: Vec2) -> &mut Self;
+  fn translate(&mut self, offset: Vec2);
 }
 
 #[derive(

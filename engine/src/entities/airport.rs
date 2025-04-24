@@ -63,7 +63,7 @@ pub struct Airport {
 }
 
 impl Translate for Airport {
-  fn translate(&mut self, offset: Vec2) -> &mut Self {
+  fn translate(&mut self, offset: Vec2) {
     self.center += offset;
 
     for runway in self.runways.iter_mut() {
@@ -77,8 +77,6 @@ impl Translate for Airport {
     for terminal in self.terminals.iter_mut() {
       terminal.translate(offset);
     }
-
-    self
   }
 }
 
@@ -127,9 +125,8 @@ pub struct Runway {
 }
 
 impl Translate for Runway {
-  fn translate(&mut self, offset: Vec2) -> &mut Self {
+  fn translate(&mut self, offset: Vec2) {
     self.pos += offset;
-    self
   }
 }
 
@@ -148,28 +145,30 @@ impl Runway {
 pub struct Taxiway {
   #[ts(as = "String")]
   pub id: Intern<String>,
-  #[ts(as = "(f32, f32)")]
-  pub a: Vec2,
-  #[ts(as = "(f32, f32)")]
-  pub b: Vec2,
+  pub segments: Vec<Line>,
 }
 
 impl Translate for Taxiway {
-  fn translate(&mut self, offset: Vec2) -> &mut Self {
-    self.a += offset;
-    self.b += offset;
-    self
+  fn translate(&mut self, offset: Vec2) {
+    self.segments.iter_mut().for_each(|s| {
+      s.translate(offset);
+    })
   }
 }
 
 impl Taxiway {
-  pub fn new(id: Intern<String>, a: Vec2, b: Vec2) -> Self {
-    Self { id, a, b }
+  pub fn new(id: Intern<String>, line: Line) -> Self {
+    Self {
+      id,
+      segments: vec![line],
+    }
   }
 
   pub fn extend_ends_by(mut self, padding: f32) -> Self {
-    self.a = self.a.move_towards(self.b, -padding);
-    self.b = self.b.move_towards(self.a, -padding);
+    for segment in self.segments.iter_mut() {
+      segment.0 = segment.0.move_towards(segment.1, -padding);
+      segment.1 = segment.1.move_towards(segment.0, -padding);
+    }
 
     self
   }
@@ -187,9 +186,8 @@ pub struct Gate {
 }
 
 impl Translate for Gate {
-  fn translate(&mut self, offset: Vec2) -> &mut Self {
+  fn translate(&mut self, offset: Vec2) {
     self.pos += offset;
-    self
   }
 }
 
@@ -212,7 +210,7 @@ pub struct Terminal {
 }
 
 impl Translate for Terminal {
-  fn translate(&mut self, offset: Vec2) -> &mut Self {
+  fn translate(&mut self, offset: Vec2) {
     self.a += offset;
     self.b += offset;
     self.c += offset;
@@ -221,7 +219,5 @@ impl Translate for Terminal {
     for gate in self.gates.iter_mut() {
       gate.translate(offset);
     }
-
-    self
   }
 }
