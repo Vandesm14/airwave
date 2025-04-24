@@ -22,4 +22,4 @@ We're always excited to welcome new contributors! Here's how you can help:
 
 Airwave is licensed under the [GNU AGPLv3 license](./LICENSE).
 
-Copyright (C) 2024 the Airwave contributors
+Copyright (C) 2025 the Airwave contributors
