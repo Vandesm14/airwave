@@ -1,5 +1,5 @@
 modules = ["rust-stable", "nodejs-20", "web"]
-run = "pnpm i && pnpm client-web:build && cargo run --release -p server -- --config-path prod-config.toml & cargo run --release -p serve -- --address 0.0.0.0:80"
+run = "pnpm i && pnpm engine:bindings && pnpm client-web:build && cargo run --release --bin server -- --config-path prod-config.toml & cargo run --release --bin serve -- --address 0.0.0.0:80"
 
 [nix]
 channel = "stable-24_05"
