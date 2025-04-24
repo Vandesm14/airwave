@@ -1,7 +1,9 @@
 use glam::Vec2;
 use internment::Intern;
+use itertools::Itertools;
 use petgraph::{
-  algo::simple_paths, visit::IntoNodeReferences, Graph, Undirected,
+  algo::simple_paths, graph::NodeIndex, visit::IntoNodeReferences, Graph,
+  Undirected,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -223,44 +225,50 @@ impl Pathfinder {
     }
   }
 
-  pub fn calculate(&mut self, mut segments: Vec<Object>) {
+  pub fn calculate(&mut self, mut objects: Vec<Object>) {
     let mut graph = WaypointGraph::new_undirected();
-    if segments.is_empty() || segments.len() < 2 {
+    if objects.is_empty() || objects.len() < 2 {
       tracing::error!("No segments to calculate path for");
       return;
     }
 
-    while let Some(current) = segments.pop() {
-      let current_node = graph
-        .node_references()
-        .find(|(_, n)| **n == Node::from(current.clone()))
-        .map(|(i, _)| i)
-        .unwrap_or_else(|| graph.add_node(current.clone().into()));
+    while let Some(object) = objects.pop() {
+      let nodes = Vec::<Node<Line>>::from(object.clone());
+      for node in nodes {
+        let existing_node = graph
+          .node_references()
+          .find(|(_, n)| **n == node)
+          .map(|(i, _)| i)
+          .unwrap_or_else(|| graph.add_node(node));
 
-      for segment in segments.iter() {
-        let line: Line = segment.into();
+        if let Object::Terminal(ref terminal) = object {
+          for gate in terminal.gates.iter() {
+            let gate_node = graph.add_node(gate.clone().into());
+            let intersection = closest_point_on_line(
+              gate.pos,
+              terminal.apron.0,
+              terminal.apron.1,
+            );
 
-        let intersection = find_line_intersection(line, current.clone().into());
-        if let Some(intersection) = intersection {
-          let segment_node = graph
-            .node_references()
-            .find(|(_, n)| **n == Node::from(segment.clone()))
-            .map(|(i, _)| i)
-            .unwrap_or_else(|| graph.add_node(segment.clone().into()));
-
-          graph.add_edge(current_node, segment_node, intersection);
+            graph.add_edge(existing_node, gate_node, intersection);
+          }
         }
       }
+    }
 
-      if let Object::Terminal(terminal) = current {
-        for gate in terminal.gates.iter() {
-          let gate_node = graph.add_node(gate.clone().into());
-          let intersection =
-            closest_point_on_line(gate.pos, terminal.apron.0, terminal.apron.1);
+    let mut edges: Vec<(NodeIndex, NodeIndex, Vec2)> = Vec::new();
+    for node in graph.node_references().combinations(2) {
+      let (a_index, a) = node.first().unwrap();
+      let (b_index, b) = node.last().unwrap();
 
-          graph.add_edge(current_node, gate_node, intersection);
-        }
+      let intersection = find_line_intersection(a.data, b.data);
+      if let Some(intersection) = intersection {
+        edges.push((*a_index, *b_index, intersection));
       }
+    }
+
+    for edge in edges {
+      graph.add_edge(edge.0, edge.1, edge.2);
     }
 
     self.graph = graph;

@@ -76,10 +76,9 @@ pub struct Line(
 );
 
 impl Translate for Line {
-  fn translate(&mut self, offset: Vec2) -> &mut Self {
+  fn translate(&mut self, offset: Vec2) {
     self.0 += offset;
     self.1 += offset;
-    self
   }
 }
 
@@ -110,9 +109,9 @@ impl From<Runway> for Line {
   }
 }
 
-impl From<Taxiway> for Line {
+impl From<Taxiway> for Vec<Line> {
   fn from(value: Taxiway) -> Self {
-    Line::new(value.a, value.b)
+    value.segments
   }
 }
 
