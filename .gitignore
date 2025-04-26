@@ -16,7 +16,4 @@ client-web/bindings/
 .env
 assets/
 recordings/
-config.toml
-
-# From Replit
-.cargo
+/config.toml
