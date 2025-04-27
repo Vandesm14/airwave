@@ -111,9 +111,11 @@ function statusOfAircraft(
 
 type StripProps = {
   strip: Strip;
+  onmousedown?: () => void;
+  onmousemove?: () => void;
 };
 
-function Strip({ strip }: StripProps) {
+function Strip({ strip, onmousedown, onmousemove }: StripProps) {
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
@@ -123,7 +125,15 @@ function Strip({ strip }: StripProps) {
   let world = useWorld();
 
   if (strip.type === StripType.Header) {
-    return <div class="header">{strip.name}</div>;
+    return (
+      <div
+        class="header"
+        onmousedown={() => onmousedown?.()}
+        onmousemove={() => onmousemove?.()}
+      >
+        {strip.name}
+      </div>
+    );
   } else if (strip.type === StripType.Aircraft && airspace()) {
     let found = world.data?.airspaces.find((a) => a.id === airspace());
     if (!found) {
@@ -132,6 +142,7 @@ function Strip({ strip }: StripProps) {
 
     const handleMouseDown = () => {
       setSelectedAircraft(strip.callsign);
+      onmousedown?.();
     };
 
     let dimmer = createMemo(
@@ -149,6 +160,7 @@ function Strip({ strip }: StripProps) {
           departure: airspace() === strip.departing,
         }}
         onmousedown={handleMouseDown}
+        onmousemove={() => onmousemove?.()}
       >
         <div class="vertical">
           <span class="callsign">{strip.callsign}</span>
@@ -256,7 +268,11 @@ function aircraftToStrip(
   return data;
 }
 
+const Separator = () => <div class="separator"></div>;
+
 export default function StripBoard() {
+  let [dragged, setDragged] = createSignal<number | null>(null);
+  let [separator, setSeparator] = createSignal<number | null>(null);
   let [strips, setStrips] = createSignal<Strips>([], {
     equals: false,
   });
@@ -266,12 +282,12 @@ export default function StripBoard() {
     initialData: [],
   }));
   const query = useWorld();
-
   const [selectedAircraft] = useAtom(selectedAircraftAtom);
 
   // Prefill the strips with default headers.
   createEffect(() => {
     const airport = hardcodedAirport(query.data!);
+
     if (
       aircrafts.data.length > 0 &&
       airport !== undefined &&
@@ -289,10 +305,10 @@ export default function StripBoard() {
   createEffect(() => {
     const airspace = hardcodedAirspace(query.data!);
     const selected = selectedAircraft();
-
     const existing = strips()
       .filter((s) => s.type === StripType.Aircraft)
       .map((s) => s.callsign);
+
     if (airspace && strips().length > 0) {
       const newStrips: AircraftStrip[] = [];
       for (const aircraft of aircrafts.data) {
@@ -336,14 +352,98 @@ export default function StripBoard() {
     }
   });
 
+  function handleMouseDown(index: number) {
+    setDragged(index);
+  }
+
+  function handleMouseUp() {
+    if (separator() !== null) {
+      setStrips((strips) => {
+        let fromIndex = dragged();
+        let toIndex = separator();
+
+        if (fromIndex !== null && fromIndex !== 0) {
+          const newStrips: Strip[] = [];
+          for (let i = 0; i < strips.length; i++) {
+            if (i !== fromIndex) {
+              const strip = strips[i];
+              if (strip) {
+                newStrips.push(strip);
+              }
+            }
+
+            if (i === toIndex) {
+              const strip = strips[fromIndex];
+              if (strip) {
+                newStrips.push(strip);
+              }
+            }
+          }
+
+          return newStrips;
+        } else {
+          return strips;
+        }
+      });
+    }
+
+    resetDrag();
+  }
+
+  function handleMouseMove(index: number) {
+    if (dragged()) {
+      setSeparator(index);
+    }
+  }
+
+  function resetDrag() {
+    setDragged(null);
+    setSeparator(null);
+  }
+
   const allYours = createMemo(
     () => strips().filter((s) => s.type === StripType.Aircraft).length
   );
 
   return (
-    <div id="stripboard">
+    <div
+      id="stripboard"
+      onmouseleave={() => resetDrag()}
+      onmouseup={() => handleMouseUp()}
+    >
       Total: {allYours()}
-      <For each={strips()}>{(strip, _) => <Strip strip={strip} />}</For>
+      <For each={strips()}>
+        {(strip, index) => {
+          if (index() === 0) {
+            return (
+              <>
+                <Strip
+                  strip={strip}
+                  onmousemove={() => {
+                    handleMouseMove(index());
+                  }}
+                />
+                {index() === separator() ? <Separator /> : null}
+              </>
+            );
+          } else {
+            return (
+              <>
+                <Strip
+                  strip={strip}
+                  onmousedown={() => {
+                    handleMouseDown(index());
+                  }}
+                  onmousemove={() => {
+                    handleMouseMove(index());
+                  }}
+                />
+                {index() === separator() ? <Separator /> : null}
+              </>
+            );
+          }
+        }}
+      </For>
     </div>
   );
 }
