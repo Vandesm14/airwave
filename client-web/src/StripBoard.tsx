@@ -1,5 +1,5 @@
-import { createEffect, createMemo, createSignal, Show } from 'solid-js';
-import { smallFlightSegment } from './lib/lib';
+import { createEffect, createMemo, createSignal, For } from 'solid-js';
+import { hardcodedAirport, smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
@@ -12,58 +12,62 @@ import {
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, useWorld } from './lib/api';
 import { Aircraft } from '../bindings/Aircraft';
+import { World } from '../bindings/World';
+import { Airspace } from '../bindings/Airspace';
 
-type Strips = {
-  Selected: Array<Aircraft>;
-  Colliding: Array<Aircraft>;
-  Inbound: Array<Aircraft>;
-  Approach: Array<Aircraft>;
-  Landing: Array<Aircraft>;
-  Departure: Array<Aircraft>;
-  Outbound: Array<Aircraft>;
-  Parked: Array<Aircraft>;
-  Ground: Array<Aircraft>;
-  Takeoff: Array<Aircraft>;
-  None: Array<Aircraft>;
+enum StripType {
+  Header = 1,
+  Aircraft,
+}
+
+type HeaderStrip = {
+  type: StripType.Header;
+  name: string;
+  collapsed: boolean;
 };
 
-const newStrips = (): Strips => ({
-  Selected: [],
-  Colliding: [],
-  Inbound: [],
-  Approach: [],
-  Landing: [],
-  Departure: [],
-  Outbound: [],
-  Parked: [],
-  Ground: [],
-  Takeoff: [],
-  None: [],
-});
+type StripStatus =
+  | 'Parked'
+  | 'Ground'
+  | 'Takeoff'
+  | 'Departure'
+  | 'Outbound'
+  | 'Landing'
+  | 'Approach'
+  | 'Inbound'
+  | 'Selected'
+  | 'None';
 
-type Collapse = {
-  [key: string]: boolean;
+type AircraftStrip = {
+  type: StripType.Aircraft;
+  callsign: string;
+  distance: string;
+  arriving: string;
+  departing: string;
+  topStatus: string;
+  bottomStatus: string;
+  frequency: number;
+  timer: string;
+  status: StripStatus;
 };
 
-const newCollapse = (): Collapse => {
-  const strips = newStrips();
-  let collapse: Collapse = {};
-  Object.keys(strips).forEach((key) => {
-    collapse[key] = false;
-  });
+type Strip = HeaderStrip | AircraftStrip;
 
-  return collapse;
-};
+function newHeader(name: string): Strip {
+  return {
+    type: StripType.Header,
+    name,
+    collapsed: false,
+  };
+}
 
-type StripProps = {
-  strip: Aircraft;
-};
+type Strips = Array<Strip>;
 
-function assignAircraftToStrips(
+function statusOfAircraft(
   aircraft: Aircraft,
   ourAirspace: string,
   selectedAircraft: string
-): keyof Strips {
+): StripStatus {
   const isSelected = aircraft.id === selectedAircraft;
   const isAccepted = aircraft.accepted;
 
@@ -81,10 +85,6 @@ function assignAircraftToStrips(
   const isLanding = aircraft.segment === 'land';
   const isApproach = aircraft.segment === 'approach';
   const isInbound = true;
-
-  if (aircraft.is_colliding) {
-    return 'Colliding';
-  }
 
   if (isAccepted) {
     if (isOurs) {
@@ -110,6 +110,10 @@ function assignAircraftToStrips(
   return 'None';
 }
 
+type StripProps = {
+  strip: Strip;
+};
+
 function Strip({ strip }: StripProps) {
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
@@ -117,239 +121,189 @@ function Strip({ strip }: StripProps) {
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
 
-  const query = useWorld();
-  if (!query.data) {
-    return null;
-  }
+  if (strip.type === StripType.Header) {
+    return <div class="header">{strip.name}</div>;
+  } else if (strip.type === StripType.Aircraft && airspace()) {
+    const handleMouseDown = () => {
+      setSelectedAircraft(strip.callsign);
+    };
 
-  let sinceCreated = `--:--`;
-  if (strip.state.type === 'flying') {
-    if (strip.flight_plan.follow) {
-      let current = strip.pos;
-      let distance = 0;
-      strip.flight_plan.waypoints
-        .slice(strip.flight_plan.waypoint_index)
-        .forEach((waypoint) => {
-          distance += calculateDistance(current, waypoint.data.pos);
-          current = waypoint.data.pos;
-        });
-
-      let distanceInNm = distance / nauticalMilesToFeet;
-      let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
-      sinceCreated = formatTime(time);
-    }
-  } else if (strip.state.type === 'landing') {
-    let distance = calculateDistance(
-      strip.pos,
-      runwayInfo(strip.state.value.runway).start
+    let dimmer = createMemo(
+      () =>
+        strip.frequency !== ourFrequency() ||
+        (strip.timer.startsWith('-') && strip.timer !== '--:--')
     );
 
-    let distanceInNm = distance / nauticalMilesToFeet;
-    let time = (distanceInNm / strip.speed) * 1000 * 60 * 60;
-
-    sinceCreated = formatTime(time);
-  }
-
-  let topStatus = '';
-  let bottomStatus = '';
-  let dimmer = createMemo(
-    () =>
-      strip.frequency !== ourFrequency() ||
-      (sinceCreated.startsWith('-') && sinceCreated !== '--:--')
-  );
-
-  if (strip.state.type === 'landing') {
-    topStatus = 'ILS';
-    bottomStatus = strip.state.value.runway.id;
-  } else if (strip.state.type === 'taxiing') {
-    let current = strip.state.value.current;
-    if (current.kind === 'gate') {
-      topStatus = 'GATE';
-    } else if (current.kind === 'runway') {
-      topStatus = 'RNWY';
-    } else if (current.kind === 'taxiway') {
-      topStatus = 'TXWY';
-    } else if (current.kind === 'apron') {
-      topStatus = 'APRN';
-    }
-
-    bottomStatus = current.name;
-  } else if (strip.state.type === 'parked') {
-    topStatus = 'PARK';
-    bottomStatus = strip.state.value.at.name;
+    return (
+      <div
+        classList={{
+          strip: true,
+          theirs: dimmer(),
+          selected: selectedAircraft() === strip.callsign,
+          departure: airspace() === strip.departing,
+        }}
+        onmousedown={handleMouseDown}
+      >
+        <div class="vertical">
+          <span class="callsign">{strip.callsign}</span>
+          <span>{strip.distance}</span>
+        </div>
+        <div class="vertical">
+          <span>{strip.departing}</span>
+          <span>{strip.arriving}</span>
+        </div>
+        <div class="vertical">
+          <span>{strip.topStatus}</span>
+          <span>{strip.bottomStatus}</span>
+        </div>
+        <div class="vertical">
+          <span class="frequency">{strip.frequency}</span>
+          <span class="timer">{strip.timer}</span>
+        </div>
+      </div>
+    );
   } else {
-    topStatus = smallFlightSegment(strip.segment).toUpperCase();
+    return null;
   }
+}
 
-  let distance = calculateDistance(
-    strip.pos,
-    hardcodedAirspace(query.data)!.pos
-  );
-  let distanceText = '';
+function aircraftToStrips(
+  aircrafts: Aircraft[],
+  airspace: Airspace,
+  selectedAircraft: string
+): AircraftStrip[] {
+  let strips: AircraftStrip[] = [];
 
-  if (strip.state.type === 'flying' || strip.state.type === 'landing') {
-    distanceText = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
+  for (const aircraft of aircrafts) {
+    const strip: AircraftStrip = {
+      type: StripType.Aircraft,
+      callsign: aircraft.id,
+      distance: '',
+      arriving: aircraft.flight_plan.arriving,
+      departing: aircraft.flight_plan.departing,
+      topStatus: '',
+      bottomStatus: '',
+      frequency: aircraft.frequency,
+      timer: '--:--',
+      status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
+    };
 
-    if (distanceText.endsWith('.')) {
-      distanceText = distanceText.replace('.', ' ');
+    if (aircraft.state.type === 'flying') {
+      if (aircraft.flight_plan.follow) {
+        let current = aircraft.pos;
+        let distance = 0;
+        aircraft.flight_plan.waypoints
+          .slice(aircraft.flight_plan.waypoint_index)
+          .forEach((waypoint) => {
+            distance += calculateDistance(current, waypoint.data.pos);
+            current = waypoint.data.pos;
+          });
+
+        let distanceInNm = distance / nauticalMilesToFeet;
+        let time = (distanceInNm / aircraft.speed) * 1000 * 60 * 60;
+        strip.timer = formatTime(time);
+      }
+    } else if (aircraft.state.type === 'landing') {
+      let distance = calculateDistance(
+        aircraft.pos,
+        runwayInfo(aircraft.state.value.runway).start
+      );
+
+      let distanceInNm = distance / nauticalMilesToFeet;
+      let time = (distanceInNm / aircraft.speed) * 1000 * 60 * 60;
+
+      strip.timer = formatTime(time);
     }
 
-    distanceText = `${distanceText} NM`;
+    if (aircraft.state.type === 'landing') {
+      strip.topStatus = 'ILS';
+      strip.bottomStatus = aircraft.state.value.runway.id;
+    } else if (aircraft.state.type === 'taxiing') {
+      let current = aircraft.state.value.current;
+      if (current.kind === 'gate') {
+        strip.topStatus = 'GATE';
+      } else if (current.kind === 'runway') {
+        strip.topStatus = 'RNWY';
+      } else if (current.kind === 'taxiway') {
+        strip.topStatus = 'TXWY';
+      } else if (current.kind === 'apron') {
+        strip.topStatus = 'APRN';
+      }
+
+      strip.bottomStatus = current.name;
+    } else if (aircraft.state.type === 'parked') {
+      strip.topStatus = 'PARK';
+      strip.bottomStatus = aircraft.state.value.at.name;
+    } else {
+      strip.topStatus = smallFlightSegment(aircraft.segment).toUpperCase();
+    }
+
+    let distance = calculateDistance(aircraft.pos, airspace.pos);
+
+    if (aircraft.state.type === 'flying' || aircraft.state.type === 'landing') {
+      strip.distance = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
+
+      if (strip.distance.endsWith('.')) {
+        strip.distance = strip.distance.replace('.', ' ');
+      }
+
+      strip.distance = `${strip.distance} NM`;
+    }
+
+    strips.push(strip);
   }
 
-  function handleMouseDown() {
-    setSelectedAircraft(strip.id);
-  }
-
-  return (
-    <div
-      classList={{
-        strip: true,
-        theirs: dimmer(),
-        colliding: strip.is_colliding,
-        selected: selectedAircraft() === strip.id,
-        departure: airspace() === strip.flight_plan.departing,
-      }}
-      onmousedown={handleMouseDown}
-    >
-      <div class="vertical">
-        <span class="callsign">{strip.id}</span>
-        <span>{distanceText}</span>
-      </div>
-      <div class="vertical">
-        <span>{strip.flight_plan.departing}</span>
-        <span>{strip.flight_plan.arriving}</span>
-      </div>
-      <div class="vertical">
-        <span>{topStatus}</span>
-        <span>{bottomStatus}</span>
-      </div>
-      <div class="vertical">
-        <span class="frequency">{strip.frequency}</span>
-        <span class="timer">{sinceCreated}</span>
-      </div>
-    </div>
-  );
+  return strips;
 }
 
 export default function StripBoard() {
-  let [strips, setStrips] = createSignal<Strips>(newStrips(), {
+  let [strips, setStrips] = createSignal<Strips>([], {
     equals: false,
   });
 
-  let stripEntries = createMemo(() => Object.entries(strips()));
   let [selectedAircraft] = useAtom(selectedAircraftAtom);
-
-  let [control] = useAtom(controlAtom);
-  let [airspace] = useAtom(control().airspace);
-  let [collapse, setCollapse] = createSignal<Collapse>(newCollapse());
 
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: [getAircraft],
     initialData: [],
   }));
-
   const query = useWorld();
 
   createEffect(() => {
-    const found = hardcodedAirspace(query.data!);
-    if (!found) {
-      return;
-    }
+    const airport = hardcodedAirport(query.data!);
+    const airspace = hardcodedAirspace(query.data!);
+    if (
+      aircrafts.data.length > 0 &&
+      airport !== undefined &&
+      airspace !== undefined &&
+      strips().length === 0
+    ) {
+      let newStrips = aircraftToStrips(
+        aircrafts.data,
+        airspace,
+        selectedAircraft()
+      );
 
-    // This is to prevent initial loading state from removing saved strips.
-    //
-    // When we first load, aircrafts() will be blank, since they havent been
-    // loaded from the server yet. So, when we run the purge function to clean
-    // up nonexistent callsigns from the strips, all are cleaned up.
-    if (aircrafts.data.length > 0) {
-      let strips: Strips = newStrips();
-
-      for (let aircraft of aircrafts.data) {
-        let category = assignAircraftToStrips(
-          aircraft,
-          airspace(),
-          selectedAircraft()
-        );
-        strips[category].push(aircraft);
-      }
-
-      const nameSorter = (a: Aircraft, b: Aircraft) =>
-        ('' + a.id).localeCompare(b.id);
-      const distanteToAirportSorter =
-        (rev: boolean) => (a: Aircraft, b: Aircraft) => {
-          let distance_a = calculateDistance(a.pos, found.pos);
-          let distance_b = calculateDistance(b.pos, found.pos);
-
-          if (rev) {
-            return distance_a - distance_b;
-          } else {
-            return distance_b - distance_a;
-          }
-        };
-
-      Object.entries(strips).forEach(([key, list]) => {
-        list.sort(distanteToAirportSorter(false));
-        setStrips({ ...strips, [key]: list });
-      });
-      strips.Departure.sort(distanteToAirportSorter(true));
-      strips.Outbound.sort(distanteToAirportSorter(true));
-      strips.Parked.sort(nameSorter);
-      strips.Ground.sort(nameSorter);
-
-      setStrips(strips);
+      setStrips([
+        newHeader('Inbox'),
+        ...newStrips.filter((s) => s.status !== 'None'),
+        newHeader('Approach'),
+        ...airport.runways.map((r) => newHeader(`Landing ${r.id}`)),
+      ]);
     }
   });
 
-  function onClickHeader(name: keyof Strips) {
-    setCollapse({ ...collapse(), [name]: !collapse()[name] });
-  }
-
+  const allYours = createMemo(
+    () => strips().filter((s) => s.type === StripType.Aircraft).length
+  );
   const allFlying = createMemo(
     () => aircrafts.data.filter((a) => a.state.type === 'flying').length
   );
 
   return (
     <div id="stripboard">
-      <div class="header">
-        Yours: {aircrafts.data.length - strips().None.length} (All:{' '}
-        {allFlying()})
-      </div>
-      {strips().Colliding.length > 0 ? (
-        <>
-          <div class="header">Colliding</div>
-          {strips().Colliding.map((strip) => (
-            <Strip strip={strip}></Strip>
-          ))}
-        </>
-      ) : null}
-      {strips().Selected.length > 0 ? (
-        <>
-          <div class="header">Selected</div>
-          {strips().Selected.map((strip) => (
-            <Strip strip={strip}></Strip>
-          ))}
-        </>
-      ) : null}
-      {stripEntries().map(([key, list]) =>
-        key !== 'None' && key !== 'Selected' && key !== 'Colliding' ? (
-          <>
-            <div
-              class="header"
-              onClick={() => onClickHeader(key as keyof Strips)}
-            >
-              {collapse()[key] ? '- ' : list.length == 0 ? '□ ' : '■ '}
-              {key}
-              {list.length > 0 ? ` (${list.length})` : ''}
-            </div>
-            <Show when={!collapse()[key]}>
-              {list.map((strip) => (
-                <Strip strip={strip}></Strip>
-              ))}
-            </Show>
-          </>
-        ) : null
-      )}
+      Yours: {allYours()} (All: {allFlying()})
+      <For each={strips()}>{(strip, _) => <Strip strip={strip} />}</For>
     </div>
   );
 }
