@@ -40,15 +40,7 @@ type StripStatus =
 
 type AircraftStrip = {
   type: StripType.Aircraft;
-  callsign: string;
-  distance: string;
-  arriving: string;
-  departing: string;
-  topStatus: string;
-  bottomStatus: string;
-  frequency: number;
-  timer: string;
-  status: StripStatus;
+  data: Aircraft;
 };
 
 type Strip = HeaderStrip | AircraftStrip;
@@ -121,17 +113,26 @@ function Strip({ strip }: StripProps) {
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
 
+  let world = useWorld();
+
   if (strip.type === StripType.Header) {
     return <div class="header">{strip.name}</div>;
   } else if (strip.type === StripType.Aircraft && airspace()) {
+    let found = world.data?.airspaces.find((a) => a.id === airspace());
+    if (!found) {
+      return null;
+    }
+
+    const data = aircraftToStripData(strip.data, found, selectedAircraft());
+
     const handleMouseDown = () => {
-      setSelectedAircraft(strip.callsign);
+      setSelectedAircraft(data.callsign);
     };
 
     let dimmer = createMemo(
       () =>
-        strip.frequency !== ourFrequency() ||
-        (strip.timer.startsWith('-') && strip.timer !== '--:--')
+        data.frequency !== ourFrequency() ||
+        (data.timer.startsWith('-') && data.timer !== '--:--')
     );
 
     return (
@@ -139,26 +140,26 @@ function Strip({ strip }: StripProps) {
         classList={{
           strip: true,
           theirs: dimmer(),
-          selected: selectedAircraft() === strip.callsign,
-          departure: airspace() === strip.departing,
+          selected: selectedAircraft() === data.callsign,
+          departure: airspace() === data.departing,
         }}
         onmousedown={handleMouseDown}
       >
         <div class="vertical">
-          <span class="callsign">{strip.callsign}</span>
-          <span>{strip.distance}</span>
+          <span class="callsign">{data.callsign}</span>
+          <span>{data.distance}</span>
         </div>
         <div class="vertical">
-          <span>{strip.departing}</span>
-          <span>{strip.arriving}</span>
+          <span>{data.departing}</span>
+          <span>{data.arriving}</span>
         </div>
         <div class="vertical">
-          <span>{strip.topStatus}</span>
-          <span>{strip.bottomStatus}</span>
+          <span>{data.topStatus}</span>
+          <span>{data.bottomStatus}</span>
         </div>
         <div class="vertical">
-          <span class="frequency">{strip.frequency}</span>
-          <span class="timer">{strip.timer}</span>
+          <span class="frequency">{data.frequency}</span>
+          <span class="timer">{data.timer}</span>
         </div>
       </div>
     );
@@ -167,93 +168,86 @@ function Strip({ strip }: StripProps) {
   }
 }
 
-function aircraftToStrips(
-  aircrafts: Aircraft[],
+function aircraftToStripData(
+  aircraft: Aircraft,
   airspace: Airspace,
   selectedAircraft: string
-): AircraftStrip[] {
-  let strips: AircraftStrip[] = [];
+) {
+  const data = {
+    callsign: aircraft.id,
+    distance: '',
+    arriving: aircraft.flight_plan.arriving,
+    departing: aircraft.flight_plan.departing,
+    topStatus: '',
+    bottomStatus: '',
+    frequency: aircraft.frequency,
+    timer: '--:--',
+    status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
+  };
 
-  for (const aircraft of aircrafts) {
-    const strip: AircraftStrip = {
-      type: StripType.Aircraft,
-      callsign: aircraft.id,
-      distance: '',
-      arriving: aircraft.flight_plan.arriving,
-      departing: aircraft.flight_plan.departing,
-      topStatus: '',
-      bottomStatus: '',
-      frequency: aircraft.frequency,
-      timer: '--:--',
-      status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
-    };
-
-    if (aircraft.state.type === 'flying') {
-      if (aircraft.flight_plan.follow) {
-        let current = aircraft.pos;
-        let distance = 0;
-        aircraft.flight_plan.waypoints
-          .slice(aircraft.flight_plan.waypoint_index)
-          .forEach((waypoint) => {
-            distance += calculateDistance(current, waypoint.data.pos);
-            current = waypoint.data.pos;
-          });
-
-        let distanceInNm = distance / nauticalMilesToFeet;
-        let time = (distanceInNm / aircraft.speed) * 1000 * 60 * 60;
-        strip.timer = formatTime(time);
-      }
-    } else if (aircraft.state.type === 'landing') {
-      let distance = calculateDistance(
-        aircraft.pos,
-        runwayInfo(aircraft.state.value.runway).start
-      );
+  if (aircraft.state.type === 'flying') {
+    if (aircraft.flight_plan.follow) {
+      let current = aircraft.pos;
+      let distance = 0;
+      aircraft.flight_plan.waypoints
+        .slice(aircraft.flight_plan.waypoint_index)
+        .forEach((waypoint) => {
+          distance += calculateDistance(current, waypoint.data.pos);
+          current = waypoint.data.pos;
+        });
 
       let distanceInNm = distance / nauticalMilesToFeet;
       let time = (distanceInNm / aircraft.speed) * 1000 * 60 * 60;
-
-      strip.timer = formatTime(time);
+      data.timer = formatTime(time);
     }
+  } else if (aircraft.state.type === 'landing') {
+    let distance = calculateDistance(
+      aircraft.pos,
+      runwayInfo(aircraft.state.value.runway).start
+    );
 
-    if (aircraft.state.type === 'landing') {
-      strip.topStatus = 'ILS';
-      strip.bottomStatus = aircraft.state.value.runway.id;
-    } else if (aircraft.state.type === 'taxiing') {
-      let current = aircraft.state.value.current;
-      if (current.kind === 'gate') {
-        strip.topStatus = 'GATE';
-      } else if (current.kind === 'runway') {
-        strip.topStatus = 'RNWY';
-      } else if (current.kind === 'taxiway') {
-        strip.topStatus = 'TXWY';
-      } else if (current.kind === 'apron') {
-        strip.topStatus = 'APRN';
-      }
+    let distanceInNm = distance / nauticalMilesToFeet;
+    let time = (distanceInNm / aircraft.speed) * 1000 * 60 * 60;
 
-      strip.bottomStatus = current.name;
-    } else if (aircraft.state.type === 'parked') {
-      strip.topStatus = 'PARK';
-      strip.bottomStatus = aircraft.state.value.at.name;
-    } else {
-      strip.topStatus = smallFlightSegment(aircraft.segment).toUpperCase();
-    }
-
-    let distance = calculateDistance(aircraft.pos, airspace.pos);
-
-    if (aircraft.state.type === 'flying' || aircraft.state.type === 'landing') {
-      strip.distance = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
-
-      if (strip.distance.endsWith('.')) {
-        strip.distance = strip.distance.replace('.', ' ');
-      }
-
-      strip.distance = `${strip.distance} NM`;
-    }
-
-    strips.push(strip);
+    data.timer = formatTime(time);
   }
 
-  return strips;
+  if (aircraft.state.type === 'landing') {
+    data.topStatus = 'ILS';
+    data.bottomStatus = aircraft.state.value.runway.id;
+  } else if (aircraft.state.type === 'taxiing') {
+    let current = aircraft.state.value.current;
+    if (current.kind === 'gate') {
+      data.topStatus = 'GATE';
+    } else if (current.kind === 'runway') {
+      data.topStatus = 'RNWY';
+    } else if (current.kind === 'taxiway') {
+      data.topStatus = 'TXWY';
+    } else if (current.kind === 'apron') {
+      data.topStatus = 'APRN';
+    }
+
+    data.bottomStatus = current.name;
+  } else if (aircraft.state.type === 'parked') {
+    data.topStatus = 'PARK';
+    data.bottomStatus = aircraft.state.value.at.name;
+  } else {
+    data.topStatus = smallFlightSegment(aircraft.segment).toUpperCase();
+  }
+
+  let distance = calculateDistance(aircraft.pos, airspace.pos);
+
+  if (aircraft.state.type === 'flying' || aircraft.state.type === 'landing') {
+    data.distance = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
+
+    if (data.distance.endsWith('.')) {
+      data.distance = data.distance.replace('.', ' ');
+    }
+
+    data.distance = `${data.distance} NM`;
+  }
+
+  return data;
 }
 
 export default function StripBoard() {
@@ -261,13 +255,13 @@ export default function StripBoard() {
     equals: false,
   });
 
-  let [selectedAircraft] = useAtom(selectedAircraftAtom);
-
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: [getAircraft],
     initialData: [],
   }));
   const query = useWorld();
+
+  const [selectedAircraft] = useAtom(selectedAircraftAtom);
 
   createEffect(() => {
     const airport = hardcodedAirport(query.data!);
@@ -275,21 +269,38 @@ export default function StripBoard() {
     if (
       aircrafts.data.length > 0 &&
       airport !== undefined &&
-      airspace !== undefined &&
       strips().length === 0
     ) {
-      let newStrips = aircraftToStrips(
-        aircrafts.data,
-        airspace,
-        selectedAircraft()
-      );
-
       setStrips([
         newHeader('Inbox'),
-        ...newStrips.filter((s) => s.status !== 'None'),
         newHeader('Approach'),
         ...airport.runways.map((r) => newHeader(`Landing ${r.id}`)),
       ]);
+    }
+
+    const existing = strips()
+      .filter((s) => s.type === StripType.Aircraft)
+      .map((s) => s.data.id);
+    if (airspace && strips().length > 0) {
+      const selected = selectedAircraft();
+
+      const newStrips: AircraftStrip[] = [];
+      for (const aircraft of aircrafts.data) {
+        if (
+          !existing.includes(aircraft.id) &&
+          statusOfAircraft(aircraft, airspace.id, selected) !== 'None'
+        ) {
+          newStrips.push({ type: StripType.Aircraft, data: aircraft });
+        }
+      }
+
+      if (newStrips.length > 0) {
+        setStrips((strips) => {
+          strips.splice(1, 0, ...newStrips);
+
+          return strips;
+        });
+      }
     }
   });
 
