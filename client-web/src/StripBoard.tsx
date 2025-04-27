@@ -271,9 +271,10 @@ function aircraftToStrip(
 const Separator = () => <div class="separator"></div>;
 
 export default function StripBoard() {
-  let [dragged, setDragged] = createSignal<number | null>(null);
-  let [separator, setSeparator] = createSignal<number | null>(null);
-  let [strips, setStrips] = createSignal<Strips>([], {
+  const [lenAtDrag, setLenAtDrag] = createSignal<number>(0);
+  const [dragged, setDragged] = createSignal<number | null>(null);
+  const [separator, setSeparator] = createSignal<number | null>(null);
+  const [strips, setStrips] = createSignal<Strips>([], {
     equals: false,
   });
 
@@ -352,8 +353,16 @@ export default function StripBoard() {
     }
   });
 
+  // Cancel drag if length changes.
+  createEffect(() => {
+    if (dragged() !== null && strips().length !== lenAtDrag()) {
+      setDragged(null);
+    }
+  });
+
   function handleMouseDown(index: number) {
     setDragged(index);
+    setLenAtDrag(strips().length);
   }
 
   function handleMouseUp() {
