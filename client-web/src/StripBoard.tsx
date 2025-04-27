@@ -12,7 +12,6 @@ import {
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, useWorld } from './lib/api';
 import { Aircraft } from '../bindings/Aircraft';
-import { World } from '../bindings/World';
 import { Airspace } from '../bindings/Airspace';
 
 enum StripType {
@@ -40,7 +39,15 @@ type StripStatus =
 
 type AircraftStrip = {
   type: StripType.Aircraft;
-  data: Aircraft;
+  callsign: string;
+  distance: string;
+  arriving: string;
+  departing: string;
+  topStatus: string;
+  bottomStatus: string;
+  frequency: number;
+  timer: string;
+  status: StripStatus;
 };
 
 type Strip = HeaderStrip | AircraftStrip;
@@ -123,16 +130,14 @@ function Strip({ strip }: StripProps) {
       return null;
     }
 
-    const data = aircraftToStripData(strip.data, found, selectedAircraft());
-
     const handleMouseDown = () => {
-      setSelectedAircraft(data.callsign);
+      setSelectedAircraft(strip.callsign);
     };
 
     let dimmer = createMemo(
       () =>
-        data.frequency !== ourFrequency() ||
-        (data.timer.startsWith('-') && data.timer !== '--:--')
+        strip.frequency !== ourFrequency() ||
+        (strip.timer.startsWith('-') && strip.timer !== '--:--')
     );
 
     return (
@@ -140,26 +145,26 @@ function Strip({ strip }: StripProps) {
         classList={{
           strip: true,
           theirs: dimmer(),
-          selected: selectedAircraft() === data.callsign,
-          departure: airspace() === data.departing,
+          selected: selectedAircraft() === strip.callsign,
+          departure: airspace() === strip.departing,
         }}
         onmousedown={handleMouseDown}
       >
         <div class="vertical">
-          <span class="callsign">{data.callsign}</span>
-          <span>{data.distance}</span>
+          <span class="callsign">{strip.callsign}</span>
+          <span>{strip.distance}</span>
         </div>
         <div class="vertical">
-          <span>{data.departing}</span>
-          <span>{data.arriving}</span>
+          <span>{strip.departing}</span>
+          <span>{strip.arriving}</span>
         </div>
         <div class="vertical">
-          <span>{data.topStatus}</span>
-          <span>{data.bottomStatus}</span>
+          <span>{strip.topStatus}</span>
+          <span>{strip.bottomStatus}</span>
         </div>
         <div class="vertical">
-          <span class="frequency">{data.frequency}</span>
-          <span class="timer">{data.timer}</span>
+          <span class="frequency">{strip.frequency}</span>
+          <span class="timer">{strip.timer}</span>
         </div>
       </div>
     );
@@ -168,12 +173,13 @@ function Strip({ strip }: StripProps) {
   }
 }
 
-function aircraftToStripData(
+function aircraftToStrip(
   aircraft: Aircraft,
   airspace: Airspace,
   selectedAircraft: string
 ) {
-  const data = {
+  const data: AircraftStrip = {
+    type: StripType.Aircraft,
     callsign: aircraft.id,
     distance: '',
     arriving: aircraft.flight_plan.arriving,
@@ -263,9 +269,9 @@ export default function StripBoard() {
 
   const [selectedAircraft] = useAtom(selectedAircraftAtom);
 
+  // Prefill the strips with default headers.
   createEffect(() => {
     const airport = hardcodedAirport(query.data!);
-    const airspace = hardcodedAirspace(query.data!);
     if (
       aircrafts.data.length > 0 &&
       airport !== undefined &&
@@ -277,20 +283,24 @@ export default function StripBoard() {
         ...airport.runways.map((r) => newHeader(`Landing ${r.id}`)),
       ]);
     }
+  });
+
+  // Create strips for aircraft that are our responsibility.
+  createEffect(() => {
+    const airspace = hardcodedAirspace(query.data!);
+    const selected = selectedAircraft();
 
     const existing = strips()
       .filter((s) => s.type === StripType.Aircraft)
-      .map((s) => s.data.id);
+      .map((s) => s.callsign);
     if (airspace && strips().length > 0) {
-      const selected = selectedAircraft();
-
       const newStrips: AircraftStrip[] = [];
       for (const aircraft of aircrafts.data) {
         if (
           !existing.includes(aircraft.id) &&
           statusOfAircraft(aircraft, airspace.id, selected) !== 'None'
         ) {
-          newStrips.push({ type: StripType.Aircraft, data: aircraft });
+          newStrips.push(aircraftToStrip(aircraft, airspace, selected));
         }
       }
 
@@ -304,16 +314,35 @@ export default function StripBoard() {
     }
   });
 
+  // Update aircraft strips.
+  createEffect(() => {
+    const airspace = hardcodedAirspace(query.data!);
+    const selected = selectedAircraft();
+
+    if (airspace && aircrafts.data.length > 0) {
+      setStrips((strips) =>
+        strips.map((strip) => {
+          if (strip.type === StripType.Aircraft) {
+            const callsign = strip.callsign;
+            const aircraft = aircrafts.data.find((a) => a.id === callsign);
+            if (aircraft) {
+              strip = aircraftToStrip(aircraft, airspace, selected);
+            }
+          }
+
+          return strip;
+        })
+      );
+    }
+  });
+
   const allYours = createMemo(
     () => strips().filter((s) => s.type === StripType.Aircraft).length
-  );
-  const allFlying = createMemo(
-    () => aircrafts.data.filter((a) => a.state.type === 'flying').length
   );
 
   return (
     <div id="stripboard">
-      Yours: {allYours()} (All: {allFlying()})
+      Total: {allYours()}
       <For each={strips()}>{(strip, _) => <Strip strip={strip} />}</For>
     </div>
   );
