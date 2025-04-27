@@ -371,7 +371,7 @@ export default function StripBoard() {
         let fromIndex = dragged();
         let toIndex = separator();
 
-        if (fromIndex !== null && fromIndex !== 0) {
+        if (fromIndex !== null) {
           const newStrips: Strip[] = [];
           for (let i = 0; i < strips.length; i++) {
             if (i !== fromIndex) {
