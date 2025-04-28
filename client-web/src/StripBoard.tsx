@@ -1,4 +1,11 @@
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  JSX,
+  Show,
+} from 'solid-js';
 import { hardcodedAirport, smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
@@ -15,6 +22,7 @@ import { Aircraft } from '../bindings/Aircraft';
 import { Airspace } from '../bindings/Airspace';
 
 import './StripBoard.scss';
+import { makePersisted } from '@solid-primitives/storage';
 
 enum StripType {
   Header = 1,
@@ -116,6 +124,7 @@ type StripProps = {
   onmousedown?: () => void;
   onmousemove?: () => void;
   ondelete?: () => void;
+  onedit?: (name: string) => void;
 
   deletable?: boolean;
 };
@@ -125,17 +134,50 @@ function Strip({
   onmousedown,
   onmousemove,
   ondelete,
+  onedit,
   deletable,
 }: StripProps) {
+  let input!: HTMLInputElement;
+
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
   let [control] = useAtom(controlAtom);
   let [airspace] = useAtom(control().airspace);
+  let [editing, setEditing] = createSignal(false);
 
   let world = useWorld();
 
   if (strip.type === StripType.Header) {
+    const handleDoubleClick: JSX.EventHandlerUnion<
+      HTMLSpanElement,
+      MouseEvent
+    > = (e) => {
+      e.stopPropagation();
+      setEditing(true);
+
+      if (input) {
+        input.focus();
+      }
+    };
+
+    const handleKeyDown: JSX.EventHandlerUnion<
+      HTMLInputElement,
+      KeyboardEvent
+    > = (e) => {
+      if (e.key === 'Enter') {
+        onedit?.((e.target as HTMLInputElement).value);
+        setEditing(false);
+      }
+    };
+
+    const handleBlur: JSX.EventHandlerUnion<HTMLInputElement, FocusEvent> = (
+      e
+    ) => {
+      onedit?.((e.target as HTMLInputElement).value);
+      setEditing(false);
+    };
+
     return (
       <div
         class="header"
@@ -143,7 +185,18 @@ function Strip({
         onmousemove={() => onmousemove?.()}
       >
         <div class="vertical">
-          <span>{strip.name}</span>
+          <Show when={editing()}>
+            <input
+              type="text"
+              onkeydown={handleKeyDown}
+              onblur={handleBlur}
+              value={strip.name}
+              ref={input}
+            />
+          </Show>
+          <Show when={!editing()}>
+            <span ondblclick={handleDoubleClick}>{strip.name}</span>
+          </Show>
         </div>
         <Show when={deletable}>
           <div class="vertical end">
@@ -307,9 +360,11 @@ export default function StripBoard() {
   const [lenAtDrag, setLenAtDrag] = createSignal<number>(0);
   const [dragged, setDragged] = createSignal<number | null>(null);
   const [separator, setSeparator] = createSignal<number | null>(null);
-  const [strips, setStrips] = createSignal<Strips>([], {
-    equals: false,
-  });
+  const [strips, setStrips] = makePersisted(
+    createSignal<Strips>([], {
+      equals: false,
+    })
+  );
 
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: [getAircraft],
@@ -462,6 +517,16 @@ export default function StripBoard() {
     }
   }
 
+  function handleEdit(index: number, name: string) {
+    setStrips((strips) =>
+      strips.map((strip, i) =>
+        i === index && strip.type === StripType.Header
+          ? { ...strip, name }
+          : strip
+      )
+    );
+  }
+
   function resetDrag() {
     setDragged(null);
     setSeparator(null);
@@ -506,6 +571,7 @@ export default function StripBoard() {
                   onmousedown={() => handleMouseDown(index())}
                   onmousemove={() => handleMouseMove(index())}
                   ondelete={() => handleDelete(index())}
+                  onedit={(name) => handleEdit(index(), name)}
                   deletable
                 />
                 {index() === separator() ? <Separator /> : null}
