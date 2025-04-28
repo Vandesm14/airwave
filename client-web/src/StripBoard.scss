@@ -1,0 +1,103 @@
+@import 'styles/vars.scss';
+
+#stripboard {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+
+  position: relative;
+  background-color: $transparent-black;
+
+  border: 1px solid white;
+
+  min-width: 300px;
+  // Make room for the frequency selector and the buttons.
+  max-height: 79vh;
+
+  overflow-y: auto;
+
+  color: white;
+
+  .delete {
+    color: #df3232;
+    font-weight: bold;
+    width: min-content;
+    height: min-content;
+  }
+
+  .header {
+    @extend .strip;
+
+    padding: 2px 10px !important;
+    color: white;
+    font-weight: bold;
+    border-bottom: 1px solid white;
+    cursor: default !important;
+  }
+
+  .separator {
+    border: 1px solid green;
+  }
+
+  .strip {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    border: 1px solid grey;
+    padding: 5px 10px;
+
+    gap: 15px;
+
+    cursor: pointer;
+    user-select: none;
+
+    .vertical {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+
+      flex: 1;
+
+      &.end {
+        max-width: min-content;
+      }
+    }
+
+    .intention,
+    .timer {
+      color: #fffa;
+    }
+
+    .callsign {
+      color: #00dd00;
+    }
+
+    &.theirs {
+      opacity: 0.5;
+    }
+
+    &.departure {
+      .callsign {
+        color: #3087f2;
+      }
+    }
+
+    &.colliding {
+      border: 1px solid #ff2222;
+
+      .callsign {
+        color: #ff2222;
+        font-weight: bold;
+      }
+    }
+
+    &.selected {
+      .callsign {
+        color: #ffe045;
+        font-weight: bold;
+      }
+    }
+  }
+}

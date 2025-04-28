@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, For } from 'solid-js';
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
 import { hardcodedAirport, smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
@@ -13,6 +13,8 @@ import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, useWorld } from './lib/api';
 import { Aircraft } from '../bindings/Aircraft';
 import { Airspace } from '../bindings/Airspace';
+
+import './StripBoard.scss';
 
 enum StripType {
   Header = 1,
@@ -113,9 +115,18 @@ type StripProps = {
   strip: Strip;
   onmousedown?: () => void;
   onmousemove?: () => void;
+  ondelete?: () => void;
+
+  deletable?: boolean;
 };
 
-function Strip({ strip, onmousedown, onmousemove }: StripProps) {
+function Strip({
+  strip,
+  onmousedown,
+  onmousemove,
+  ondelete,
+  deletable,
+}: StripProps) {
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
@@ -131,7 +142,16 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
         onmousedown={() => onmousedown?.()}
         onmousemove={() => onmousemove?.()}
       >
-        {strip.name}
+        <div class="vertical">
+          <span>{strip.name}</span>
+        </div>
+        <Show when={deletable}>
+          <div class="vertical end">
+            <button class="delete" onclick={() => ondelete?.()}>
+              X
+            </button>
+          </div>
+        </Show>
       </div>
     );
   } else if (strip.type === StripType.Aircraft && airspace()) {
@@ -178,6 +198,17 @@ function Strip({ strip, onmousedown, onmousemove }: StripProps) {
           <span class="frequency">{strip.frequency}</span>
           <span class="timer">{strip.timer}</span>
         </div>
+        <Show when={deletable}>
+          <div class="vertical end">
+            <button
+              class="delete"
+              onclick={() => ondelete?.()}
+              onmousedown={(e) => e.stopPropagation()}
+            >
+              X
+            </button>
+          </div>
+        </Show>
       </div>
     );
   } else {
@@ -303,7 +334,6 @@ export default function StripBoard() {
         newHeader('Parked'),
         newHeader('Ground'),
         newHeader('Takeoff'),
-        newHeader(DELETE),
         // ...airport.runways.map((r) => newHeader(`Landing ${r.id}`)),
       ]);
     }
@@ -370,19 +400,24 @@ export default function StripBoard() {
     }
   });
 
-  // Remove strips under DELETE.
-  createEffect(() => {
-    const last = strips().at(-1);
-    if (strips().length > 0 && last && last.type !== StripType.Header) {
-      if (selectedAircraft() === last.callsign) {
+  function handleDelete(index: number) {
+    const strip = strips().at(index);
+    if (strip) {
+      // Deselect aircraft if deleting selected strip.
+      if (
+        strip.type === StripType.Aircraft &&
+        selectedAircraft() === strip.callsign
+      ) {
         setSelectedAircraft('');
       }
 
       setStrips((strips) => {
-        return strips.slice(0, -1);
+        return [...strips.slice(0, index), ...strips.slice(index + 1)];
       });
     }
-  });
+  }
+
+  createEffect(() => console.log(selectedAircraft()));
 
   function handleMouseDown(index: number) {
     setDragged(index);
@@ -447,6 +482,7 @@ export default function StripBoard() {
       Total: {allYours()}
       <For each={strips()}>
         {(strip, index) => {
+          // Prevent the inbox from being deleted or moved
           if (
             index() === 0 ||
             (strip.type === StripType.Header && strip.name === DELETE)
@@ -455,9 +491,8 @@ export default function StripBoard() {
               <>
                 <Strip
                   strip={strip}
-                  onmousemove={() => {
-                    handleMouseMove(index());
-                  }}
+                  onmousemove={() => handleMouseMove(index())}
+                  deletable={false}
                 />
                 {index() === separator() ? <Separator /> : null}
               </>
@@ -467,12 +502,10 @@ export default function StripBoard() {
               <>
                 <Strip
                   strip={strip}
-                  onmousedown={() => {
-                    handleMouseDown(index());
-                  }}
-                  onmousemove={() => {
-                    handleMouseMove(index());
-                  }}
+                  onmousedown={() => handleMouseDown(index())}
+                  onmousemove={() => handleMouseMove(index())}
+                  ondelete={() => handleDelete(index())}
+                  deletable
                 />
                 {index() === separator() ? <Separator /> : null}
               </>
