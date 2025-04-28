@@ -41,6 +41,15 @@ export function hardcodedAirport(
   return undefined;
 }
 
+export function dbg<T>(a: T, note?: string): T {
+  if (note) {
+    console.log(note, a);
+  } else {
+    console.log(a);
+  }
+  return a;
+}
+
 export function isSome<T>(value: T): value is NonNullable<T> {
   return value !== undefined && value !== null;
 }
