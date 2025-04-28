@@ -354,7 +354,7 @@ function aircraftToStrip(
 
 const Separator = () => <div class="separator"></div>;
 
-const DELETE = 'DELETE';
+const IBNOX = 'Inbox';
 
 export default function StripBoard() {
   const [lenAtDrag, setLenAtDrag] = createSignal<number>(0);
@@ -548,11 +548,8 @@ export default function StripBoard() {
       Total: {allYours()} (All: {allFlying()})
       <For each={strips()}>
         {(strip, index) => {
-          // Prevent the inbox from being deleted or moved
-          if (
-            index() === 0 ||
-            (strip.type === StripType.Header && strip.name === DELETE)
-          ) {
+          // Prevent the inbox from being deleted or moved.
+          if (strip.type === StripType.Header && strip.name === IBNOX) {
             return (
               <>
                 <Strip
