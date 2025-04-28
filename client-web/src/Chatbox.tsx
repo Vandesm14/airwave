@@ -86,8 +86,9 @@ export default function Chatbox({
       chatboxInput instanceof HTMLInputElement &&
       document.activeElement !== chatboxInput
     ) {
-      chatboxInput.focus();
-      e.preventDefault();
+      // TODO: this conflicts with pressing "t" in the stripboard.
+      // chatboxInput.focus();
+      // e.preventDefault();
     } else if (e.key === 'Escape') {
       chatboxInput.blur();
       e.preventDefault();
