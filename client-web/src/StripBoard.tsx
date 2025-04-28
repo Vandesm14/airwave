@@ -285,7 +285,7 @@ export default function StripBoard() {
     initialData: [],
   }));
   const query = useWorld();
-  const [selectedAircraft] = useAtom(selectedAircraftAtom);
+  const [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
   // Prefill the strips with default headers.
   createEffect(() => {
@@ -372,7 +372,12 @@ export default function StripBoard() {
 
   // Remove strips under DELETE.
   createEffect(() => {
-    if (strips().length > 0 && strips().at(-1)?.type !== StripType.Header) {
+    const last = strips().at(-1);
+    if (strips().length > 0 && last && last.type !== StripType.Header) {
+      if (selectedAircraft() === last.callsign) {
+        setSelectedAircraft('');
+      }
+
       setStrips((strips) => {
         return strips.slice(0, -1);
       });
