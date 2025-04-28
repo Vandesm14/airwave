@@ -19,6 +19,12 @@
 
   color: white;
 
+  .horizontal {
+    display: flex;
+    justify-content: space-between;
+    padding-left: 2px;
+  }
+
   .delete {
     color: #df3232;
     font-weight: bold;
