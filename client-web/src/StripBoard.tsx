@@ -395,19 +395,20 @@ function createStrips() {
     return strips().find((s) => s.id === stripId);
   }
 
-  function swap(fromId: number, toId: number) {
+  function move(fromId: number, toId: number) {
     const fromStrip = strip(fromId);
     const toStrip = strip(toId);
+
     if (fromStrip !== undefined && toStrip !== undefined) {
       setStrips((strips) => {
-        for (let i = 0; i < strips.length; i++) {
-          if (strips[i]!.id === fromId) {
-            strips[i]! = toStrip;
-          }
+        const fromIndex = strips.findIndex((s) => s.id === fromId);
+        if (fromIndex !== -1) {
+          strips.splice(fromIndex, 1);
+        }
 
-          if (strips[i]!.id === toId) {
-            strips[i]! = fromStrip;
-          }
+        const toIndex = strips.findIndex((s) => s.id === toId);
+        if (toIndex !== -1) {
+          strips.splice(toIndex + 1, 0, fromStrip);
         }
 
         return strips;
@@ -439,7 +440,7 @@ function createStrips() {
 
     addHeader,
     addAircraft,
-    swap,
+    move,
     strip,
     update,
     remove,
@@ -545,8 +546,8 @@ export default function StripBoard() {
 
   createEffect(() => console.log(board.strips()));
 
-  function handleDelete(index: number) {
-    const strip = board.strip(index);
+  function handleDelete(stripId: number) {
+    const strip = board.strip(stripId);
     if (strip) {
       // Deselect aircraft if deleting selected strip.
       if (
@@ -560,8 +561,8 @@ export default function StripBoard() {
     }
   }
 
-  function handleMouseDown(index: number) {
-    setDragged(index);
+  function handleMouseDown(stripId: number) {
+    setDragged(stripId);
     setLenAtDrag(board.length());
   }
 
@@ -569,22 +570,22 @@ export default function StripBoard() {
     let fromId = dragged();
     let toId = separator();
     if (toId !== null && fromId !== null) {
-      board.swap(fromId, toId);
+      board.move(fromId, toId);
     }
 
     resetDrag();
   }
 
-  function handleMouseMove(index: number) {
+  function handleMouseMove(stripId: number) {
     if (dragged()) {
-      setSeparator(index);
+      setSeparator(stripId);
     }
   }
 
-  function handleEdit(index: number, name: string) {
-    const strip = board.strip(index);
+  function handleEdit(stripId: number, name: string) {
+    const strip = board.strip(stripId);
     if (strip && strip.type === StripType.Header) {
-      board.update({ ...strip, name }, index);
+      board.update({ ...strip, name }, stripId);
     }
   }
 
@@ -619,8 +620,7 @@ export default function StripBoard() {
       <For each={board.strips()}>
         {(strip, index) => {
           // Prevent the inbox from being deleted or moved.
-          const s = strip;
-          if (s.type === StripType.Header && s.name === IBNOX) {
+          if (strip.type === StripType.Header && strip.name === IBNOX) {
             return (
               <>
                 <Strip
