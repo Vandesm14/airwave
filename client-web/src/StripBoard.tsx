@@ -4,6 +4,7 @@ import {
   createMemo,
   createSignal,
   For,
+  Index,
   JSX,
   Show,
 } from 'solid-js';
@@ -51,6 +52,43 @@ type StripStatus =
   | 'Inbound'
   | 'Selected'
   | 'None';
+
+type CreateOn = {
+  inbound: boolean;
+  outbound: boolean;
+  approach: boolean;
+  departure: boolean;
+  landing: boolean;
+  takeoff: boolean;
+  ground: boolean;
+  parked: boolean;
+};
+
+function newCreateOn(): CreateOn {
+  return {
+    inbound: false,
+    outbound: false,
+    approach: true,
+    departure: false,
+    landing: false,
+    takeoff: false,
+    ground: false,
+    parked: false,
+  };
+}
+
+function testStatus(createOn: CreateOn, status: StripStatus) {
+  return (
+    (createOn.inbound && status === 'Inbound') ||
+    (createOn.outbound && status === 'Outbound') ||
+    (createOn.approach && status === 'Approach') ||
+    (createOn.departure && status === 'Departure') ||
+    (createOn.landing && status === 'Landing') ||
+    (createOn.takeoff && status === 'Takeoff') ||
+    (createOn.ground && status === 'Ground') ||
+    (createOn.parked && status === 'Parked')
+  );
+}
 
 type AircraftStrip = {
   id: number;
@@ -458,6 +496,11 @@ export default function StripBoard() {
   const [separator, setSeparator] = createSignal<number | null>(null);
   const board = createStrips();
 
+  const [showOpts, setShowOpts] = createSignal(false);
+  const [createOn, setCreateOn] = makePersisted(
+    createSignal<CreateOn>(newCreateOn())
+  );
+
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: [getAircraft],
     initialData: [],
@@ -501,7 +544,10 @@ export default function StripBoard() {
       for (const aircraft of aircrafts.data) {
         if (
           !existing.includes(aircraft.id) &&
-          statusOfAircraft(aircraft, airspace.id, selected) !== 'None'
+          testStatus(
+            createOn(),
+            statusOfAircraft(aircraft, airspace.id, selected)
+          )
         ) {
           newStrips.push(aircraftToStrip(aircraft, airspace, selected));
         }
@@ -600,6 +646,13 @@ export default function StripBoard() {
     setSeparator(null);
   }
 
+  function toggleCreateOn(prop: keyof CreateOn) {
+    setCreateOn((createOn) => {
+      createOn[prop] = !createOn[prop];
+      return createOn;
+    });
+  }
+
   const allYours = createMemo(
     () => board.strips().filter((s) => s.type === StripType.Aircraft).length
   );
@@ -617,8 +670,23 @@ export default function StripBoard() {
         <span>
           Total: {allYours()} (All: {allFlying()})
         </span>
+        <button onclick={() => setShowOpts((x) => !x)}>Opts</button>
         <button onclick={handleAdd}>Add</button>
       </div>
+      <Show when={showOpts()}>
+        <For each={Object.entries(createOn())}>
+          {(item) => (
+            <label>
+              {item[0]}{' '}
+              <input
+                type="checkbox"
+                checked={item[1]}
+                onclick={() => toggleCreateOn(item[0] as keyof CreateOn)}
+              />
+            </label>
+          )}
+        </For>
+      </Show>
       <For each={board.strips()}>
         {(strip, index) => {
           // Prevent the inbox from being deleted or moved.
