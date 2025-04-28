@@ -1,5 +1,6 @@
 import { Airport } from '../../bindings/Airport';
 import { Airspace } from '../../bindings/Airspace';
+import { FlightSegment } from '../../bindings/FlightSegment';
 import { LandingState } from '../../bindings/LandingState';
 import { Runway } from '../../bindings/Runway';
 import { TaxiingState } from '../../bindings/TaxiingState';
@@ -210,18 +211,6 @@ export function shortTaxiingState(state: TaxiingState): string {
       return 'UKN';
   }
 }
-
-export type FlightSegment =
-  | 'parked'
-  | 'taxi-dep'
-  | 'takeoff'
-  | 'departure'
-  | 'cruise'
-  | 'arrival'
-  | 'approach'
-  | 'land'
-  | 'touchdown'
-  | 'taxi-arr';
 
 export function smallFlightSegment(segment: FlightSegment): string {
   switch (segment) {
