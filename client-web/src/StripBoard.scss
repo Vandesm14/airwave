@@ -39,11 +39,11 @@
     color: white;
     font-weight: bold;
     border-bottom: 1px solid white;
-    cursor: default !important;
+    cursor: n-resize !important;
   }
 
   .separator {
-    border: 1px solid green;
+    border: 1px solid #ffe045;
   }
 
   .strip {
@@ -104,6 +104,10 @@
         color: #ffe045;
         font-weight: bold;
       }
+    }
+
+    &.dragged {
+      border-color: #ffe045;
     }
   }
 }

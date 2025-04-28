@@ -1,4 +1,5 @@
 import {
+  Accessor,
   createEffect,
   createMemo,
   createSignal,
@@ -130,6 +131,7 @@ type StripProps = {
   onmousemove?: () => void;
   ondelete?: () => void;
   onedit?: (name: string) => void;
+  dragged?: Accessor<number | null>;
 
   deletable?: boolean;
 };
@@ -140,6 +142,7 @@ function Strip({
   onmousemove,
   ondelete,
   onedit,
+  dragged,
   deletable,
 }: StripProps) {
   let input!: HTMLInputElement;
@@ -183,7 +186,11 @@ function Strip({
 
     return (
       <div
-        class="header"
+        classList={{
+          strip: true,
+          header: true,
+          dragged: dragged?.() === strip.id,
+        }}
         onmousedown={() => onmousedown?.()}
         onmousemove={() => onmousemove?.()}
       >
@@ -222,6 +229,7 @@ function Strip({
       <div
         classList={{
           strip: true,
+          dragged: dragged?.() === strip.id,
           theirs: dimmer(),
           selected: selectedAircraft() === strip.callsign,
           departure: airspace() === strip.departing,
@@ -389,6 +397,8 @@ function createStrips() {
   }
 
   function move(fromId: number, toId: number) {
+    if (fromId === toId) return;
+
     const fromStrip = strip(fromId);
     const toStrip = strip(toId);
 
@@ -633,6 +643,7 @@ export default function StripBoard() {
                   onmousemove={() => handleMouseMove(strip.id)}
                   ondelete={() => handleDelete(strip.id)}
                   onedit={(name) => handleEdit(strip.id, name)}
+                  dragged={() => (separator() !== null ? dragged() : null)}
                   deletable
                 />
                 {strip.id === separator() ? <Separator /> : null}
