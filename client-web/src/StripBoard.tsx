@@ -3,11 +3,10 @@ import {
   createMemo,
   createSignal,
   For,
-  Index,
   JSX,
   Show,
 } from 'solid-js';
-import { dbg, hardcodedAirport, smallFlightSegment } from './lib/lib';
+import { hardcodedAirport, smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
