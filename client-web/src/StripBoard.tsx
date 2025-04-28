@@ -26,6 +26,8 @@ import './StripBoard.scss';
 import { makePersisted } from '@solid-primitives/storage';
 import { FlightSegment } from '../bindings/FlightSegment';
 
+const INBOX_ID = 0;
+
 enum StripType {
   Header = 1,
   Aircraft,
@@ -159,6 +161,8 @@ function Strip({
       HTMLSpanElement,
       MouseEvent
     > = (e) => {
+      if (strip.id === INBOX_ID) return;
+
       e.stopPropagation();
       setEditing(true);
 
@@ -360,9 +364,6 @@ function aircraftToStrip(
 }
 
 const Separator = () => <div class="separator"></div>;
-
-const IBNOX = 'Inbox';
-const INBOX_ID = 0;
 
 function createStrips() {
   const [_, setNextId] = makePersisted(createSignal(0));
@@ -621,7 +622,7 @@ export default function StripBoard() {
       <For each={board.strips()}>
         {(strip, index) => {
           // Prevent the inbox from being deleted or moved.
-          if (strip.type === StripType.Header && strip.name === IBNOX) {
+          if (strip.type === StripType.Header && strip.id === INBOX_ID) {
             return (
               <>
                 <Strip
