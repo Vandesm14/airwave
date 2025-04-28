@@ -507,7 +507,7 @@ impl Runner {
               .find(|a| a.id == aircraft.flight_plan.arriving)
             {
               if !airspace.auto {
-                tracing::info!("Quick start interrupted. Aircraft entered non-auto airspace.");
+                tracing::info!("Quick start interrupted by {}. Aircraft entered non-auto airspace.", aircraft.id);
 
                 aircraft.accepted = true;
 

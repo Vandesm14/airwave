@@ -434,34 +434,40 @@ impl AircraftEventHandler for HandleAircraftEvent {
         if let Some(airspace) =
           closest_airspace(&bundle.world.airspaces, aircraft.pos)
         {
+          // TODO: This ensures that the flight is in the right segment, though
+          // we might be better off using more concrete logic in the effect
+          // instead of relying on this in case that logic fails.
           aircraft.segment = FlightSegment::Approach;
+          aircraft.frequency =
+            airspace.airports.first().unwrap().frequencies.approach;
 
           if !airspace.auto {
             if aircraft.accepted {
-              aircraft.frequency =
-                airspace.airports.first().unwrap().frequencies.approach;
+              // TODO: This clears all waypoints to force the player to deal
+              // with the approach rather than use its automated routing.
+              // This might break future implementations of routing and
+              // waypoints so please check this TODO when that happens.
+              aircraft.flight_plan.clear_waypoints();
 
-              if aircraft.accepted {
-                let direction = heading_to_direction(angle_between_points(
-                  airspace.pos,
-                  aircraft.pos,
-                ))
-                .to_owned();
-                let command = CommandWithFreq::new(
-                  Intern::to_string(&aircraft.id),
-                  aircraft.frequency,
-                  CommandReply::ArriveInAirspace {
-                    direction,
-                    altitude: aircraft.altitude,
-                  },
-                  Vec::new(),
-                );
+              let direction = heading_to_direction(angle_between_points(
+                airspace.pos,
+                aircraft.pos,
+              ))
+              .to_owned();
+              let command = CommandWithFreq::new(
+                Intern::to_string(&aircraft.id),
+                aircraft.frequency,
+                CommandReply::ArriveInAirspace {
+                  direction,
+                  altitude: aircraft.altitude,
+                },
+                Vec::new(),
+              );
 
-                bundle.events.push(Event::Aircraft(AircraftEvent::new(
-                  aircraft.id,
-                  EventKind::Callout(command),
-                )));
-              }
+              bundle.events.push(Event::Aircraft(AircraftEvent::new(
+                aircraft.id,
+                EventKind::Callout(command),
+              )));
             } else {
               // If not accepted, go to a random airspace.
               let arrival = bundle
