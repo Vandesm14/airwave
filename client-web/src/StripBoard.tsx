@@ -544,10 +544,11 @@ export default function StripBoard() {
       for (const aircraft of aircrafts.data) {
         if (
           !existing.includes(aircraft.id) &&
-          testStatus(
-            createOn(),
-            statusOfAircraft(aircraft, airspace.id, selected)
-          )
+          (aircraft.id === selected ||
+            testStatus(
+              createOn(),
+              statusOfAircraft(aircraft, airspace.id, selected)
+            ))
         ) {
           newStrips.push(aircraftToStrip(aircraft, airspace, selected));
         }
