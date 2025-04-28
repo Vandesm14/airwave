@@ -470,6 +470,9 @@ export default function StripBoard() {
   const allYours = createMemo(
     () => strips().filter((s) => s.type === StripType.Aircraft).length
   );
+  const allFlying = createMemo(
+    () => aircrafts.data.filter((a) => a.state.type === 'flying').length
+  );
 
   return (
     <div
@@ -477,7 +480,7 @@ export default function StripBoard() {
       onmouseleave={() => resetDrag()}
       onmouseup={() => handleMouseUp()}
     >
-      Total: {allYours()}
+      Total: {allYours()} (All: {allFlying()})
       <For each={strips()}>
         {(strip, index) => {
           // Prevent the inbox from being deleted or moved
