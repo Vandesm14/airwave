@@ -270,6 +270,8 @@ function aircraftToStrip(
 
 const Separator = () => <div class="separator"></div>;
 
+const DELETE = 'DELETE';
+
 export default function StripBoard() {
   const [lenAtDrag, setLenAtDrag] = createSignal<number>(0);
   const [dragged, setDragged] = createSignal<number | null>(null);
@@ -297,7 +299,12 @@ export default function StripBoard() {
       setStrips([
         newHeader('Inbox'),
         newHeader('Approach'),
-        ...airport.runways.map((r) => newHeader(`Landing ${r.id}`)),
+        newHeader('Landing'),
+        newHeader('Parked'),
+        newHeader('Ground'),
+        newHeader('Takeoff'),
+        newHeader(DELETE),
+        // ...airport.runways.map((r) => newHeader(`Landing ${r.id}`)),
       ]);
     }
   });
@@ -357,6 +364,18 @@ export default function StripBoard() {
   createEffect(() => {
     if (dragged() !== null && strips().length !== lenAtDrag()) {
       setDragged(null);
+    } else if (dragged() === null) {
+      // Ensure that initial length is correct before the first drag.
+      setLenAtDrag(strips().length);
+    }
+  });
+
+  // Remove strips under DELETE.
+  createEffect(() => {
+    if (strips().length > 0 && strips().at(-1)?.type !== StripType.Header) {
+      setStrips((strips) => {
+        return strips.slice(0, -1);
+      });
     }
   });
 
@@ -423,7 +442,10 @@ export default function StripBoard() {
       Total: {allYours()}
       <For each={strips()}>
         {(strip, index) => {
-          if (index() === 0) {
+          if (
+            index() === 0 ||
+            (strip.type === StripType.Header && strip.name === DELETE)
+          ) {
             return (
               <>
                 <Strip
