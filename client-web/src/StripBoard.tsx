@@ -23,6 +23,7 @@ import { Aircraft } from '../bindings/Aircraft';
 import { Airspace } from '../bindings/Airspace';
 
 import './StripBoard.scss';
+import { makePersisted } from '@solid-primitives/storage';
 
 enum StripType {
   Header = 1,
@@ -121,6 +122,8 @@ function statusOfAircraft(
 }
 
 type StripProps = {
+  key: unknown;
+
   strip: Strip;
   onmousedown?: () => void;
   onmousemove?: () => void;
@@ -360,74 +363,95 @@ const Separator = () => <div class="separator"></div>;
 const IBNOX = 'Inbox';
 const INBOX_ID = 0;
 
-class Strips {
-  nextId = 0;
-  strips: Strip[] = [];
+function createStrips() {
+  const [_, setNextId] = makePersisted(createSignal(0));
+  const [strips, setStrips] = makePersisted(
+    createSignal<Strip[]>([], { equals: false })
+  );
 
-  constructor() {}
-
-  addHeader(name: string) {
-    this.strips.push(newHeader(name, this.nextId++));
+  function addHeader(name: string) {
+    setNextId((nextId) => {
+      setStrips((strips) => {
+        strips.push(newHeader(name, nextId++));
+        return strips;
+      });
+      return nextId;
+    });
   }
-  addAircraft(strip: AircraftStrip, headerId: number) {
-    const index = this.strips.findIndex((s) => s.id === headerId);
+  function addAircraft(strip: AircraftStrip, headerId: number) {
+    const index = strips().findIndex((s) => s.id === headerId);
     if (index !== -1) {
-      this.strips.splice(1, 0, strip);
+      setNextId((nextId) => {
+        setStrips((strips) => {
+          strips.splice(index + 1, 0, { ...strip, id: nextId++ });
+          return strips;
+        });
+        return nextId;
+      });
     }
   }
 
-  swap(fromId: number, toId: number) {
-    const fromStrip = this.strip(fromId);
-    const toStrip = this.strip(toId);
+  function strip(stripId: number) {
+    return strips().find((s) => s.id === stripId);
+  }
+
+  function swap(fromId: number, toId: number) {
+    const fromStrip = strip(fromId);
+    const toStrip = strip(toId);
     if (fromStrip !== undefined && toStrip !== undefined) {
-      for (let i = 0; i < this.strips.length; i++) {
-        if (this.strips[i]!.id === fromId) {
-          this.strips[i]! = toStrip;
+      setStrips((strips) => {
+        for (let i = 0; i < strips.length; i++) {
+          if (strips[i]!.id === fromId) {
+            strips[i]! = toStrip;
+          }
+
+          if (strips[i]!.id === toId) {
+            strips[i]! = fromStrip;
+          }
         }
 
-        if (this.strips[i]!.id === toId) {
-          this.strips[i]! = fromStrip;
-        }
-      }
+        return strips;
+      });
     }
   }
 
-  strip(stripId: number) {
-    return this.strips.find((s) => s.id === stripId);
+  function update(strip: Strip, stripId: number) {
+    setStrips((strips) => strips.map((s) => (s.id === stripId ? strip : s)));
   }
 
-  update(strip: Strip, stripId: number) {
-    this.strips = this.strips.map((s) => (s.id === stripId ? strip : s));
+  function remove(stripId: number) {
+    const index = strips().findIndex((s) => s.id === stripId);
+    if (index !== -1) {
+      setStrips((strips) => {
+        strips.splice(index, 1);
+        return strips;
+      });
+    }
   }
 
-  remove(stripId: number) {
-    this.strips.splice(stripId, 1);
+  function length(): number {
+    return strips().length;
   }
 
-  get length(): number {
-    return this.strips.length;
-  }
+  return {
+    strips,
+    setStrips,
 
-  serialize(): { nextId: number; strips: Strip[] } {
-    return {
-      nextId: this.nextId,
-      strips: this.strips,
-    };
-  }
-
-  static deserialize(data: { nextId: number; strips: Strip[] }): Strips {
-    const strips = new Strips();
-    strips.nextId = data.nextId;
-    strips.strips = data.strips;
-    return strips;
-  }
+    addHeader,
+    addAircraft,
+    swap,
+    strip,
+    update,
+    remove,
+    length,
+  };
 }
 
 export default function StripBoard() {
   const [lenAtDrag, setLenAtDrag] = createSignal<number>(0);
   const [dragged, setDragged] = createSignal<number | null>(null);
   const [separator, setSeparator] = createSignal<number | null>(null);
-  const [strips, setStrips] = createSignal(new Strips(), { equals: false });
+  const board = createStrips();
 
   const aircrafts = createQuery<Aircraft[]>(() => ({
     queryKey: [getAircraft],
@@ -441,7 +465,7 @@ export default function StripBoard() {
     const airport = hardcodedAirport(query.data!);
 
     if (
-      strips().length === 0 &&
+      board.length() === 0 &&
       aircrafts.data.length > 0 &&
       airport !== undefined
     ) {
@@ -454,10 +478,7 @@ export default function StripBoard() {
         'Takeoff',
       ];
 
-      setStrips((strips) => {
-        defaultHeaders.forEach((h) => strips.addHeader(h));
-        return strips;
-      });
+      defaultHeaders.forEach((h) => board.addHeader(h));
     }
   });
 
@@ -465,11 +486,12 @@ export default function StripBoard() {
   createEffect(() => {
     const airspace = hardcodedAirspace(query.data!);
     const selected = selectedAircraft();
-    const existing = strips()
-      .strips.filter((s) => s.type === StripType.Aircraft)
+    const existing = board
+      .strips()
+      .filter((s) => s.type === StripType.Aircraft)
       .map((s) => s.callsign);
 
-    if (airspace && strips().length > 0) {
+    if (airspace && board.length() > 0) {
       const newStrips: AircraftStrip[] = [];
       for (const aircraft of aircrafts.data) {
         if (
@@ -481,11 +503,7 @@ export default function StripBoard() {
       }
 
       if (newStrips.length > 0) {
-        setStrips((strips) => {
-          newStrips.forEach((a) => strips.addAircraft(a, INBOX_ID));
-
-          return strips;
-        });
+        newStrips.forEach((a) => board.addAircraft(a, INBOX_ID));
       }
     }
   });
@@ -496,13 +514,13 @@ export default function StripBoard() {
     const selected = selectedAircraft();
 
     if (airspace && aircrafts.data.length > 0) {
-      setStrips((strips) => {
-        strips.strips.forEach((strip) => {
+      board.setStrips((strips) => {
+        strips.forEach((strip) => {
           if (strip.type === StripType.Aircraft) {
             const callsign = strip.callsign;
             const aircraft = aircrafts.data.find((a) => a.id === callsign);
             if (aircraft) {
-              strips.update(
+              board.update(
                 aircraftToStrip(aircraft, airspace, selected),
                 strip.id
               );
@@ -517,16 +535,18 @@ export default function StripBoard() {
 
   // Cancel drag if length changes.
   createEffect(() => {
-    if (dragged() !== null && strips().length !== lenAtDrag()) {
+    if (dragged() !== null && board.length() !== lenAtDrag()) {
       setDragged(null);
     } else if (dragged() === null) {
       // Ensure that initial length is correct before the first drag.
-      setLenAtDrag(strips().length);
+      setLenAtDrag(board.length());
     }
   });
 
+  createEffect(() => console.log(board.strips()));
+
   function handleDelete(index: number) {
-    const strip = strips().strip(index);
+    const strip = board.strip(index);
     if (strip) {
       // Deselect aircraft if deleting selected strip.
       if (
@@ -536,26 +556,20 @@ export default function StripBoard() {
         setSelectedAircraft('');
       }
 
-      setStrips((strips) => {
-        strips.remove(strip.id);
-        return strips;
-      });
+      board.remove(strip.id);
     }
   }
 
   function handleMouseDown(index: number) {
     setDragged(index);
-    setLenAtDrag(strips().length);
+    setLenAtDrag(board.length());
   }
 
   function handleMouseUp() {
     let fromId = dragged();
     let toId = separator();
     if (toId !== null && fromId !== null) {
-      setStrips((strips) => {
-        strips.swap(fromId, toId);
-        return strips;
-      });
+      board.swap(fromId, toId);
     }
 
     resetDrag();
@@ -568,20 +582,14 @@ export default function StripBoard() {
   }
 
   function handleEdit(index: number, name: string) {
-    const strip = strips().strip(index);
+    const strip = board.strip(index);
     if (strip && strip.type === StripType.Header) {
-      setStrips((strips) => {
-        strips.update({ ...strip, name }, index);
-        return strips;
-      });
+      board.update({ ...strip, name }, index);
     }
   }
 
   function handleAdd() {
-    setStrips((strips) => {
-      strips.addHeader('New Header');
-      return strips;
-    });
+    board.addHeader('New Header');
   }
 
   function resetDrag() {
@@ -590,7 +598,7 @@ export default function StripBoard() {
   }
 
   const allYours = createMemo(
-    () => strips().strips.filter((s) => s.type === StripType.Aircraft).length
+    () => board.strips().filter((s) => s.type === StripType.Aircraft).length
   );
   const allFlying = createMemo(
     () => aircrafts.data.filter((a) => a.state.type === 'flying').length
@@ -608,36 +616,40 @@ export default function StripBoard() {
         </span>
         <button onclick={handleAdd}>Add</button>
       </div>
-      {strips().strips.map((strip) => {
-        // Prevent the inbox from being deleted or moved.
-        const s = strip;
-        if (s.type === StripType.Header && s.name === IBNOX) {
-          return (
-            <>
-              <Strip
-                strip={strip}
-                onmousemove={() => handleMouseMove(strip.id)}
-                deletable={false}
-              />
-              {strip.id === separator() ? <Separator /> : null}
-            </>
-          );
-        } else {
-          return (
-            <>
-              <Strip
-                strip={strip}
-                onmousedown={() => handleMouseDown(strip.id)}
-                onmousemove={() => handleMouseMove(strip.id)}
-                ondelete={() => handleDelete(strip.id)}
-                onedit={(name) => handleEdit(strip.id, name)}
-                deletable
-              />
-              {strip.id === separator() ? <Separator /> : null}
-            </>
-          );
-        }
-      })}
+      <For each={board.strips()}>
+        {(strip, index) => {
+          // Prevent the inbox from being deleted or moved.
+          const s = strip;
+          if (s.type === StripType.Header && s.name === IBNOX) {
+            return (
+              <>
+                <Strip
+                  key={index()}
+                  strip={strip}
+                  onmousemove={() => handleMouseMove(strip.id)}
+                  deletable={false}
+                />
+                {strip.id === separator() ? <Separator /> : null}
+              </>
+            );
+          } else {
+            return (
+              <>
+                <Strip
+                  key={index()}
+                  strip={strip}
+                  onmousedown={() => handleMouseDown(strip.id)}
+                  onmousemove={() => handleMouseMove(strip.id)}
+                  ondelete={() => handleDelete(strip.id)}
+                  onedit={(name) => handleEdit(strip.id, name)}
+                  deletable
+                />
+                {strip.id === separator() ? <Separator /> : null}
+              </>
+            );
+          }
+        }}
+      </For>
     </div>
   );
 }
