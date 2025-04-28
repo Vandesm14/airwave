@@ -527,6 +527,10 @@ export default function StripBoard() {
     );
   }
 
+  function handleAdd() {
+    setStrips((strips) => [...strips, newHeader('New Strip')]);
+  }
+
   function resetDrag() {
     setDragged(null);
     setSeparator(null);
@@ -545,7 +549,12 @@ export default function StripBoard() {
       onmouseleave={() => resetDrag()}
       onmouseup={() => handleMouseUp()}
     >
-      Total: {allYours()} (All: {allFlying()})
+      <div class="horizontal">
+        <span>
+          Total: {allYours()} (All: {allFlying()})
+        </span>
+        <button onclick={handleAdd}>Add</button>
+      </div>
       <For each={strips()}>
         {(strip, index) => {
           // Prevent the inbox from being deleted or moved.
