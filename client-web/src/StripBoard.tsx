@@ -4,7 +4,6 @@ import {
   createMemo,
   createSignal,
   For,
-  Index,
   JSX,
   Show,
 } from 'solid-js';
