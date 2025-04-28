@@ -210,12 +210,7 @@ function Strip({
         </Show>
       </div>
     );
-  } else if (strip.type === StripType.Aircraft && airspace()) {
-    let found = world.data?.airspaces.find((a) => a.id === airspace());
-    if (!found) {
-      return null;
-    }
-
+  } else if (strip.type === StripType.Aircraft) {
     const handleMouseDown = () => {
       setSelectedAircraft(strip.callsign);
       onmousedown?.();
@@ -514,22 +509,22 @@ export default function StripBoard() {
     const selected = selectedAircraft();
 
     if (airspace && aircrafts.data.length > 0) {
-      board.setStrips((strips) => {
-        strips.forEach((strip) => {
+      board.setStrips((strips) =>
+        strips.map((strip) => {
           if (strip.type === StripType.Aircraft) {
             const callsign = strip.callsign;
             const aircraft = aircrafts.data.find((a) => a.id === callsign);
             if (aircraft) {
-              board.update(
-                aircraftToStrip(aircraft, airspace, selected),
-                strip.id
-              );
+              return {
+                ...aircraftToStrip(aircraft, airspace, selected),
+                id: strip.id,
+              };
             }
           }
-        });
 
-        return strips;
-      });
+          return strip;
+        })
+      );
     }
   });
 
@@ -542,8 +537,6 @@ export default function StripBoard() {
       setLenAtDrag(board.length());
     }
   });
-
-  createEffect(() => console.log(board.strips()));
 
   function handleDelete(stripId: number) {
     const strip = board.strip(stripId);
