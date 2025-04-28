@@ -535,7 +535,9 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         aircraft.segment = FlightSegment::Arrival;
 
         // If within arrival airspace, set to approach
-      } else if FlightSegment::Cruise == aircraft.segment {
+      } else if FlightSegment::Cruise == aircraft.segment
+        || FlightSegment::Arrival == aircraft.segment
+      {
         let arrival = bundle
           .world
           .airspaces
@@ -545,6 +547,14 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
           let distance = aircraft.pos.distance_squared(arrival.pos);
           if distance <= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
             aircraft.segment = FlightSegment::Approach;
+
+            bundle.events.push(
+              AircraftEvent {
+                id: aircraft.id,
+                kind: EventKind::CalloutInAirspace,
+              }
+              .into(),
+            );
           }
         }
       }

@@ -233,7 +233,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
               ]);
 
             let wp_star = new_vor(Intern::from_ref("STAR"), transition_star)
-              .with_actions(vec![EventKind::CalloutInAirspace])
               .with_limits(
                 VORLimits::new()
                   .with_altitude(VORLimit::AtOrBelow(ARRIVAL_ALTITUDE))
