@@ -23,6 +23,7 @@ import { Airspace } from '../bindings/Airspace';
 
 import './StripBoard.scss';
 import { makePersisted } from '@solid-primitives/storage';
+import { FlightSegment } from '../bindings/FlightSegment';
 
 enum StripType {
   Header = 1,
@@ -60,6 +61,7 @@ type AircraftStrip = {
   frequency: number;
   timer: string;
   status: StripStatus;
+  segment: FlightSegment;
 };
 
 type Strip = HeaderStrip | AircraftStrip;
@@ -149,8 +151,6 @@ function Strip({
   let [airspace] = useAtom(control().airspace);
   let [editing, setEditing] = createSignal(false);
 
-  let world = useWorld();
-
   if (strip.type === StripType.Header) {
     const handleDoubleClick: JSX.EventHandlerUnion<
       HTMLSpanElement,
@@ -216,11 +216,7 @@ function Strip({
       onmousedown?.();
     };
 
-    let dimmer = createMemo(
-      () =>
-        strip.frequency !== ourFrequency() ||
-        (strip.timer.startsWith('-') && strip.timer !== '--:--')
-    );
+    let dimmer = createMemo(() => strip.frequency !== ourFrequency());
 
     return (
       <div
@@ -247,7 +243,9 @@ function Strip({
         </div>
         <div class="vertical">
           <span class="frequency">{strip.frequency}</span>
-          <span class="timer">{strip.timer}</span>
+          <span class="timer">
+            {smallFlightSegment(strip.segment).toUpperCase()}
+          </span>
         </div>
         <Show when={deletable}>
           <div class="vertical end">
@@ -285,6 +283,7 @@ function aircraftToStrip(
     frequency: aircraft.frequency,
     timer: '--:--',
     status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
+    segment: aircraft.segment,
   };
 
   if (aircraft.state.type === 'flying') {
@@ -334,7 +333,7 @@ function aircraftToStrip(
     data.topStatus = 'PARK';
     data.bottomStatus = aircraft.state.value.at.name;
   } else {
-    data.topStatus = smallFlightSegment(aircraft.segment).toUpperCase();
+    data.topStatus = '----';
   }
 
   let distance = calculateDistance(aircraft.pos, airspace.pos);
