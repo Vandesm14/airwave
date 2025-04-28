@@ -417,8 +417,6 @@ export default function StripBoard() {
     }
   }
 
-  createEffect(() => console.log(selectedAircraft()));
-
   function handleMouseDown(index: number) {
     setDragged(index);
     setLenAtDrag(strips().length);
