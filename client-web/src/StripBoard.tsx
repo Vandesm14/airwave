@@ -627,6 +627,12 @@ export default function StripBoard() {
     });
   }
 
+  function handleClear() {
+    board.setStrips((strips) =>
+      strips.filter((s) => s.type !== StripType.Aircraft)
+    );
+  }
+
   const allYours = createMemo(
     () => board.strips().filter((s) => s.type === StripType.Aircraft).length
   );
@@ -642,10 +648,13 @@ export default function StripBoard() {
     >
       <div class="horizontal">
         <span>
-          Total: {allYours()} (All: {allFlying()})
+          Tracking: {allYours()} of {allFlying()}
         </span>
         <button onclick={() => setShowOpts((x) => !x)}>Opts</button>
         <button onclick={handleAdd}>Add</button>
+        <button class="delete" onclick={handleClear}>
+          Clr
+        </button>
       </div>
       <Show when={showOpts()}>
         <For each={Object.entries(createOn())}>
