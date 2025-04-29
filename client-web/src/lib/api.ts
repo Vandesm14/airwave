@@ -1,9 +1,16 @@
-import { createQuery } from '@tanstack/solid-query';
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
 import fastDeepEqual from 'fast-deep-equal';
 import { Aircraft } from '../../bindings/Aircraft';
 import { World } from '../../bindings/World';
 import { OutgoingCommandReply } from '../../bindings/OutgoingCommandReply';
+import { ArrivalStatus } from '../../bindings/ArrivalStatus';
+import { DepartureStatus } from '../../bindings/DepartureStatus';
+import { AirspaceStatus } from '../../bindings/AirspaceStatus';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
@@ -27,7 +34,7 @@ export function usePing() {
     refetchInterval: 2000,
     refetchOnMount: 'always',
     refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
+    throwOnError: true,
   }));
 }
 
@@ -46,7 +53,7 @@ export function useAircraftWithRate(renderRate: Accessor<number>) {
     refetchInterval: renderRate(),
     refetchOnMount: 'always',
     refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
+    throwOnError: true,
   }));
 }
 export function useAircraft() {
@@ -73,7 +80,7 @@ export function useWorld() {
     },
     staleTime: Infinity,
     refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
+    throwOnError: true,
   }));
 }
 
@@ -104,6 +111,83 @@ export function useMessages() {
     refetchInterval: 500,
     refetchOnMount: 'always',
     refetchOnReconnect: 'always',
-    throwOnError: true, // Throw an error if the query fails
+    throwOnError: true,
+  }));
+}
+
+export const getAirspaceStatusKey = `/api/status`;
+export const getAirspaceStatus = (id: string) =>
+  `${getAirspaceStatusKey}/${id}`;
+export function useAirspaceStatus(id: string) {
+  return createQuery<AirspaceStatus>(() => ({
+    queryKey: [getAirspaceStatusKey],
+    queryFn: async () => {
+      const result = await fetch(`${baseAPIPath}${getAirspaceStatus(id)}`);
+      if (!result.ok) return [];
+      return result.json();
+    },
+    initialData: {
+      arrival: 'normal',
+      departure: 'normal',
+    } as AirspaceStatus,
+    staleTime: 2000,
+    refetchInterval: 2000,
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
+    throwOnError: true,
+  }));
+}
+
+export const postArrivalStatusKey = `/api/status/arrival`;
+export const postArrivalStatus = (id: string, status: ArrivalStatus) =>
+  `${postArrivalStatusKey}/${id}/${status}`;
+export function useArrivalStatus() {
+  const client = useQueryClient();
+
+  return createMutation(() => ({
+    mutationKey: [postArrivalStatusKey],
+    mutationFn: async ({ id, status }: { id: string; status: ArrivalStatus }) =>
+      await fetch(`${baseAPIPath}${postArrivalStatus(id, status)}`, {
+        method: 'POST',
+      }),
+    onMutate: ({ status }: { id: string; status: ArrivalStatus }) =>
+      client.setQueryData<AirspaceStatus>([getAirspaceStatusKey], (old) => {
+        if (old) {
+          old.arrival = status;
+        }
+        return old;
+      }),
+    onSettled: () =>
+      client.invalidateQueries({ queryKey: [getAirspaceStatusKey] }),
+  }));
+}
+
+export const postDepartureStatusKey = `/api/status/departure`;
+export const postDepartureStatus = (id: string, status: DepartureStatus) =>
+  `${postArrivalStatusKey}/${id}/${status}`;
+export function useDepartureStatus() {
+  const client = useQueryClient();
+
+  return createMutation(() => ({
+    mutationKey: [postArrivalStatusKey],
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: DepartureStatus;
+    }) =>
+      await fetch(`${baseAPIPath}${postDepartureStatus(id, status)}`, {
+        method: 'POST',
+      }),
+    onMutate: ({ status }: { id: string; status: DepartureStatus }) =>
+      client.setQueryData<AirspaceStatus>([getAirspaceStatusKey], (old) => {
+        if (old) {
+          old.departure = status;
+        }
+        return old;
+      }),
+    onSettled: () =>
+      client.invalidateQueries({ queryKey: [getAirspaceStatusKey] }),
   }));
 }
