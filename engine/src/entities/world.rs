@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use glam::Vec2;
+use internment::Intern;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use turborand::{rng::Rng, TurboRand};
@@ -93,12 +96,48 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
   }
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum ArrivalStatus {
+  #[default]
+  Normal,
+  Divert,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum DepartureStatus {
+  #[default]
+  Normal,
+  Delay,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct AirspaceStatus {
+  pub arrival: ArrivalStatus,
+  pub departure: DepartureStatus,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct World {
   pub airspaces: Vec<Airspace>,
   #[ts(as = "Vec<Node<(f32, f32)>>")]
   pub waypoints: Vec<Node<Vec2>>,
+  #[ts(as = "HashMap<String, AirspaceStatus>")]
+  pub airspace_statuses: HashMap<Intern<String>, AirspaceStatus>,
+}
+
+impl World {
+  pub fn reset_statuses(&mut self) {
+    self.airspace_statuses.clear();
+    for airspace in self.airspaces.iter() {
+      self
+        .airspace_statuses
+        .insert(airspace.id, AirspaceStatus::default());
+    }
+  }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

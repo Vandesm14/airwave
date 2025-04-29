@@ -412,8 +412,6 @@ pub struct Aircraft {
 
   pub frequency: f32,
   pub segment: FlightSegment,
-
-  pub accepted: bool,
 }
 
 // Helper methods
@@ -469,8 +467,6 @@ impl Aircraft {
 
       frequency: airport.frequencies.ground,
       segment: FlightSegment::Parked,
-
-      accepted: false,
     }
     .with_synced_targets()
   }
@@ -478,12 +474,6 @@ impl Aircraft {
   pub fn flip_flight_plan(&mut self) {
     let d = self.flight_plan.departing;
     let a = self.flight_plan.arriving;
-
-    // TODO: Is this the best place to put this change?
-    //
-    // If a flight plan is flipped, it does mean its a new flight, so that's
-    // why I put it here.
-    self.accepted = false;
 
     self.flight_plan.departing = a;
     self.flight_plan.arriving = d;

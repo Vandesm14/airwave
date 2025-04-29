@@ -47,37 +47,3 @@ pub async fn get_one_aircraft(
     Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
 }
-
-pub async fn accept_flight(
-  State(mut state): State<AppState>,
-  Path(id): Path<String>,
-) -> Result<(), http::StatusCode> {
-  let res = JobReq::send(
-    TinyReqKind::AcceptFlight(Intern::from(id)),
-    &mut state.tiny_sender,
-  )
-  .recv()
-  .await;
-  if let Ok(ResKind::Any) = res {
-    Ok(())
-  } else {
-    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
-  }
-}
-
-pub async fn reject_flight(
-  State(mut state): State<AppState>,
-  Path(id): Path<String>,
-) -> Result<(), http::StatusCode> {
-  let res = JobReq::send(
-    TinyReqKind::RejectFlight(Intern::from(id)),
-    &mut state.tiny_sender,
-  )
-  .recv()
-  .await;
-  if let Ok(ResKind::Any) = res {
-    Ok(())
-  } else {
-    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
-  }
-}

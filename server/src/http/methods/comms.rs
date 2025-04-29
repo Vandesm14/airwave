@@ -55,15 +55,6 @@ async fn complete_atc_request(
         .await;
         match res {
           Ok(ResKind::OneAircraft(Some(aircraft))) => {
-            if !aircraft.accepted {
-              // Prevent rejected aircraft from receiving commands.
-              tracing::warn!(
-                "Rejected aircraft \"{}\" received command",
-                aircraft.id
-              );
-              continue;
-            }
-
             // Parse the command from the message.
             let (tasks, readback) = tokio::join!(
               Prompter::parse_into_tasks(req.clone(), &aircraft),

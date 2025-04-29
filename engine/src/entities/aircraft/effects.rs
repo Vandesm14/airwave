@@ -411,9 +411,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             aircraft.state = AircraftState::Parked {
               at: current.clone(),
             };
-
             aircraft.segment = FlightSegment::Parked;
-            aircraft.accepted = false;
 
             aircraft.flip_flight_plan();
           }

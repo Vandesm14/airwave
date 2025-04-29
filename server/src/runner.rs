@@ -22,7 +22,7 @@ use engine::{
     },
     airport::{Airport, Frequencies},
     airspace::Airspace,
-    world::{Game, World},
+    world::{ArrivalStatus, DepartureStatus, Game, World},
   },
   pathfinder::{Node, NodeBehavior, NodeKind},
   Translate, NAUTICALMILES_TO_FEET,
@@ -63,8 +63,8 @@ pub enum TinyReqKind {
   // Aircraft
   Aircraft,
   OneAircraft(Intern<String>),
-  AcceptFlight(Intern<String>),
-  RejectFlight(Intern<String>),
+  ArrivalStatus(Intern<String>, ArrivalStatus),
+  DepartureStatus(Intern<String>, DepartureStatus),
 
   // Other State
   Messages,
@@ -329,25 +329,29 @@ impl Runner {
             self.game.aircraft.iter().find(|a| a.id == *id).cloned();
           incoming.reply(ResKind::OneAircraft(aircraft));
         }
-        TinyReqKind::AcceptFlight(id) => {
-          let aircraft = self.game.aircraft.iter_mut().find(|a| a.id == *id);
-          if let Some(aircraft) = aircraft {
-            aircraft.accepted = true;
+        TinyReqKind::ArrivalStatus(id, status) => {
+          // let aircraft = self.game.aircraft.iter_mut().find(|a| a.id == *id);
+          // if let Some(aircraft) = aircraft {
+          //   aircraft.accepted = true;
 
-            incoming.reply(ResKind::Any);
-          } else {
-            incoming.reply(ResKind::Err);
-          }
+          //   incoming.reply(ResKind::Any);
+          // } else {
+          //   incoming.reply(ResKind::Err);
+          // }
+
+          todo!()
         }
-        TinyReqKind::RejectFlight(id) => {
-          let aircraft = self.game.aircraft.iter_mut().find(|a| a.id == *id);
-          if let Some(aircraft) = aircraft {
-            aircraft.accepted = false;
+        TinyReqKind::DepartureStatus(id, status) => {
+          // let aircraft = self.game.aircraft.iter_mut().find(|a| a.id == *id);
+          // if let Some(aircraft) = aircraft {
+          //   aircraft.accepted = false;
 
-            incoming.reply(ResKind::Any);
-          } else {
-            incoming.reply(ResKind::Err);
-          }
+          //   incoming.reply(ResKind::Any);
+          // } else {
+          //   incoming.reply(ResKind::Err);
+          // }
+
+          todo!()
         }
 
         // Other State
@@ -508,9 +512,6 @@ impl Runner {
             {
               if !airspace.auto {
                 tracing::info!("Quick start interrupted by {}. Aircraft entered non-auto airspace.", aircraft.id);
-
-                aircraft.accepted = true;
-
                 return self.tick_counter;
               }
             }
