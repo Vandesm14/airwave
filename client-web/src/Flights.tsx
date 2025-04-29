@@ -1,47 +1,21 @@
 import './Flights.scss';
 import { createSignal, Show } from 'solid-js';
+import {
+  useAirspaceStatus,
+  useArrivalStatus,
+  useDepartureStatus,
+} from './lib/api';
+import { HARD_CODED_AIRPORT } from './lib/lib';
+import { ArrivalStatus } from '../bindings/ArrivalStatus';
+import { DepartureStatus } from '../bindings/DepartureStatus';
 
 export default function Flights() {
   const [show, setShow] = createSignal(false);
-  // const [selectedAircraft] = useAtom(selectedAircraftAtom);
 
-  // const aircrafts = useAircraft();
-  // const world = useWorld();
-  // const acceptFlight = useAcceptFlight();
-  // const rejectFlight = useRejectFlight();
+  const airspaceStatus = useAirspaceStatus(HARD_CODED_AIRPORT);
 
-  // const arrivals = createMemo(() =>
-  //   sortByDistance(
-  //     aircrafts.data.filter(
-  //       (a) =>
-  //         !a.accepted &&
-  //         a.flight_plan.arriving === HARD_CODED_AIRPORT &&
-  //         a.segment !== 'parked'
-  //     ),
-  //     world.data
-  //   )
-  // );
-  // const departures = createMemo(() =>
-  //   aircrafts.data.filter(
-  //     (a) => !a.accepted && a.flight_plan.departing === HARD_CODED_AIRPORT
-  //   )
-  // );
-
-  // function acceptSelected() {
-  //   acceptFlight.mutate(selectedAircraft());
-  // }
-
-  // function rejectSelected() {
-  //   rejectFlight.mutate(selectedAircraft());
-  // }
-
-  // function acceptArrivals() {
-  //   arrivals().forEach((a) => acceptFlight.mutate(a.id));
-  // }
-
-  // function acceptDepartures() {
-  //   departures().forEach((a) => acceptFlight.mutate(a.id));
-  // }
+  const setArrivalStatus = useArrivalStatus();
+  const setDepartureStatus = useDepartureStatus();
 
   return (
     <div class="container border">
@@ -51,24 +25,37 @@ export default function Flights() {
         </Show>
         <Show when={show()}>
           <button onClick={() => setShow(false)}>Close</button>
-          {/* <hr />
-          <button onClick={acceptSelected}>Accept Selected</button>
-          <button onClick={rejectSelected}>Reject Selected</button>
-          <h2>Arrivals ({arrivals().length})</h2>
-          <button onClick={acceptArrivals}>Accept Arrivals</button>
-          <div class="list">
-            {arrivals().map((f) => (
-              <FlightItem flight={f} />
-            ))}
-          </div>
           <hr />
-          <h2>Departures ({departures().length})</h2>
-          <button onClick={acceptDepartures}>Accept Departures</button>
-          <div class="list">
-            {departures().map((f) => (
-              <FlightItem flight={f} />
-            ))}
-          </div> */}
+          <div class="row">
+            <h2>Arrivals:</h2>
+            <select
+              value={airspaceStatus.data.arrival}
+              onchange={(e) =>
+                setArrivalStatus.mutate({
+                  id: HARD_CODED_AIRPORT,
+                  status: e.target.value as ArrivalStatus,
+                })
+              }
+            >
+              <option value="normal">Normal</option>
+              <option value="divert">Divert</option>
+            </select>
+          </div>
+          <div class="row">
+            <h2>Departures:</h2>
+            <select
+              value={airspaceStatus.data.departure}
+              onchange={(e) =>
+                setDepartureStatus.mutate({
+                  id: HARD_CODED_AIRPORT,
+                  status: e.target.value as DepartureStatus,
+                })
+              }
+            >
+              <option value="normal">Normal</option>
+              <option value="delay">Delay</option>
+            </select>
+          </div>
         </Show>
       </div>
     </div>
