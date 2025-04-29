@@ -43,3 +43,27 @@ export function useStorageAtom<T>(
     },
   ];
 }
+
+import { onCleanup, onMount } from 'solid-js';
+
+export function useGlobalShortcuts(callback: (event: KeyboardEvent) => void) {
+  const handler = (event: KeyboardEvent) => {
+    const el = document.activeElement;
+    const tag = el?.tagName?.toLowerCase();
+    const isInput = tag === 'input' || tag === 'textarea';
+
+    if (isInput) return; // Ignore when typing
+
+    callback(event);
+  };
+
+  onMount(() => {
+    window.addEventListener('keydown', handler);
+  });
+
+  onCleanup(() => {
+    window.removeEventListener('keydown', handler);
+  });
+}
+
+export default useGlobalShortcuts;

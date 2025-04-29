@@ -1,0 +1,44 @@
+#freq-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  pointer-events: none;
+
+  gap: 5px;
+
+  .row {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    width: min-content;
+
+    color: white;
+
+    gap: 5px;
+
+    pointer-events: auto;
+
+    &.selected {
+      input {
+        border-color: red !important;
+      }
+    }
+  }
+
+  input {
+    max-width: 80px;
+    flex-grow: 1;
+    padding: 10px;
+    font-size: inherit;
+  }
+
+  select {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: inherit;
+
+    width: 30px;
+  }
+}
