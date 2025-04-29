@@ -5,10 +5,8 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  For,
   Index,
   onMount,
-  Setter,
 } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
 import useGlobalShortcuts from './lib/hooks';
