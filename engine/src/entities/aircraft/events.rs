@@ -325,6 +325,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
           aircraft.flight_plan.stop_following();
           aircraft.sync_targets_to_vals();
 
+          // TODO: Is it okay if we set the segment here?
+          aircraft.segment = FlightSegment::Approach;
+
           bundle.events.push(
             AircraftEvent {
               id: aircraft.id,
