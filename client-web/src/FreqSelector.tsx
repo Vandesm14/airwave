@@ -1,127 +1,60 @@
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom } from './lib/atoms';
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { Accessor, createSignal, For, Index, Setter } from 'solid-js';
 import { makePersisted } from '@solid-primitives/storage';
-import { useWorld } from './lib/api';
-import { hardcodedAirport } from './lib/lib';
-import { Frequencies } from '../bindings/Frequencies';
+
+type FreqRowProps = {
+  freq: number;
+  setFreq: (freq: number) => void;
+};
+
+function FreqRow({ freq, setFreq }: FreqRowProps) {
+  return (
+    <div class="row">
+      <input
+        type="number"
+        value={freq}
+        class="live"
+        onchange={(e) => setFreq(parseFloat(e.target.value))}
+        step=".1"
+      />
+    </div>
+  );
+}
 
 export default function FreqSelector() {
-  let [frequency, setFrequency] = useAtom(frequencyAtom);
-  let [secondary, setSecondary] = makePersisted(createSignal(frequency()));
-  let [key, setKey] = createSignal<keyof Frequencies>('approach');
-  const query = useWorld();
-
-  function updateKeyByFreqChange() {
-    const found = hardcodedAirport(query.data!);
-    if (!found) {
-      return;
-    }
-
-    let newKey = Object.entries(found.frequencies).find(
-      ([, v]) => v === frequency()
-    ) as [keyof Frequencies, number];
-
-    if (newKey) {
-      setKey(newKey[0]);
-    }
-  }
-
-  createEffect(() => updateKeyByFreqChange());
-
-  function changeViaKey(key: keyof Frequencies) {
-    setKey(key as keyof Frequencies);
-
-    const found = hardcodedAirport(query.data!);
-    if (!found) {
-      return;
-    }
-
-    if (found?.frequencies && key in found?.frequencies) {
-      setFrequency(found?.frequencies[key]);
-    }
-  }
-
-  function changeViaValue(value: number) {
-    setFrequency(value);
-
-    const found = hardcodedAirport(query.data!);
-    if (!found) {
-      return;
-    }
-
-    if (found.frequencies) {
-      // TODO: Remove uses of as keyof Frequencies.
-      setKey(
-        Object.keys(found.frequencies).find(
-          (k) => found.frequencies[k as keyof Frequencies] === value
-        ) as keyof Frequencies
-      );
-    }
-  }
-
-  function swap() {
-    let swapFreq = frequency();
-    changeViaValue(secondary());
-    setSecondary(swapFreq);
-  }
-
-  function oninput(e: InputEvent) {
-    if (e.target instanceof HTMLInputElement) {
-      changeViaValue(parseFloat(e.target.value));
-    }
-  }
-
-  function onBackslash(e: KeyboardEvent) {
-    if (e.key === '\\') {
-      swap();
-    }
-  }
-
-  onMount(() => {
-    document.addEventListener('keydown', onBackslash);
-  });
-
-  onCleanup(() => {
-    document.removeEventListener('keydown', onBackslash);
-  });
+  const [frequency, setFrequency] = useAtom(frequencyAtom);
+  const [selected, setSelected] = createSignal(0);
+  const [slots, setSlots] = makePersisted(
+    createSignal<number[]>([
+      118.5, 118.5, 118.5, 118.5, 118.5, 118.5, 118.5, 118.5, 118.5, 118.5,
+    ])
+  );
+  const [count, setCount] = makePersisted(createSignal(2));
 
   return (
     <div id="freq-selector">
       <div class="row">
-        <select
-          name="frequency"
-          onchange={(e) => changeViaKey(e.target.value as keyof Frequencies)}
-          value={key()}
-        >
-          {query.data && hardcodedAirport(query.data)?.frequencies
-            ? // TODO: Remove uses of as keyof Frequencies.
-              Object.entries(
-                query.data && hardcodedAirport(query.data)!.frequencies
-              ).map(([k, v]) => (
-                <option value={k}>
-                  {k} - {v}
-                </option>
-              ))
-            : null}
-        </select>
         <input
           type="number"
-          value={frequency()}
+          value={count()}
           class="live"
-          oninput={oninput}
-          step=".1"
+          onchange={(e) => setCount(parseInt(e.target.value))}
+          step="1"
+          min="1"
+          max="10"
         />
       </div>
-      <div class="row">
-        <input type="button" value="Swap" onClick={swap} />
-        <input
-          type="number"
-          value={secondary()}
-          oninput={(e) => setSecondary(parseFloat(e.target.value))}
-          step=".1"
-        />
-      </div>
+      <Index each={slots().slice(0, count())}>
+        {(slot, index) => (
+          <FreqRow
+            freq={slot()}
+            setFreq={(freq) =>
+              setSlots((slots) => slots.map((s, i) => (i === index ? freq : s)))
+            }
+          />
+        )}
+      </Index>
     </div>
   );
 }
