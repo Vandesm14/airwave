@@ -112,6 +112,7 @@ async fn main() {
 
   runner.generate_airspaces(&mut world_rng, &frequencies);
   runner.generate_waypoints();
+  runner.world.reset_statuses();
   runner.fill_gates();
 
   //
