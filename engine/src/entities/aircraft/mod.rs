@@ -1,10 +1,7 @@
 pub mod effects;
 pub mod events;
 
-use std::{
-  ops::Sub,
-  time::{Duration, SystemTime},
-};
+use std::{ops::Sub, time::Duration};
 
 use glam::Vec2;
 use internment::Intern;

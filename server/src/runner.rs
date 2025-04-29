@@ -465,23 +465,33 @@ impl Runner {
                   }
                 }));
             if let Some(destination) = destination {
-              aircraft.flight_plan.arriving = destination.id;
+              if !auto
+                && matches!(
+                  self.world.airspace_statuses.get(&airport.id),
+                  Some(AirspaceStatus {
+                    departure: DepartureStatus::Normal,
+                    ..
+                  })
+                )
+              {
+                aircraft.flight_plan.arriving = destination.id;
 
-              if auto {
-                aircraft.timer = Some(
-                  SystemTime::now()
-                    .duration_since(
-                      // Set the timer a few minutes into the future.
-                      SystemTime::UNIX_EPOCH,
-                    )
-                    .unwrap(),
-                );
-              } else {
                 aircraft.timer = Some(
                   SystemTime::now()
                     .duration_since(
                       // Set the timer a few minutes into the future.
                       SystemTime::UNIX_EPOCH - Duration::from_secs(60 * 2),
+                    )
+                    .unwrap(),
+                );
+              } else if auto {
+                aircraft.flight_plan.arriving = destination.id;
+
+                aircraft.timer = Some(
+                  SystemTime::now()
+                    .duration_since(
+                      // Set the timer a few minutes into the future.
+                      SystemTime::UNIX_EPOCH,
                     )
                     .unwrap(),
                 );
