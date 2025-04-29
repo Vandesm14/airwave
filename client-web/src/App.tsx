@@ -112,7 +112,7 @@ export default function App() {
         <div class="container left">
           <Flights />
           <div class="spacer"></div>
-          <div class="row">
+          <div class="row" id="bottom-left-panel">
             <Chatbox sendMessage={sendTextMessage}></Chatbox>
             <div id="game-buttons">
               <button
