@@ -121,7 +121,6 @@ function statusOfAircraft(
   selectedAircraft: string
 ): StripStatus {
   const isSelected = aircraft.id === selectedAircraft;
-  const isAccepted = aircraft.accepted;
 
   const isOurArrival = ourAirspace === aircraft.flight_plan.arriving;
   const isOurDeparture = ourAirspace === aircraft.flight_plan.departing;
@@ -138,23 +137,21 @@ function statusOfAircraft(
   const isApproach = aircraft.segment === 'approach';
   const isInbound = true;
 
-  if (isAccepted) {
-    if (isOurs) {
-      if (isParked) return 'Parked';
-      if (isGround) return 'Ground';
-    }
+  if (isOurs) {
+    if (isParked) return 'Parked';
+    if (isGround) return 'Ground';
+  }
 
-    if (isOurDeparture) {
-      if (isTakeoff) return 'Takeoff';
-      if (isDeparture) return 'Departure';
-      if (isOutbound) return 'Outbound';
-    }
+  if (isOurDeparture) {
+    if (isTakeoff) return 'Takeoff';
+    if (isDeparture) return 'Departure';
+    if (isOutbound) return 'Outbound';
+  }
 
-    if (isOurArrival) {
-      if (isLanding) return 'Landing';
-      if (isApproach) return 'Approach';
-      if (isInbound) return 'Inbound';
-    }
+  if (isOurArrival) {
+    if (isLanding) return 'Landing';
+    if (isApproach) return 'Approach';
+    if (isInbound) return 'Inbound';
   }
 
   if (isSelected) return 'Selected';

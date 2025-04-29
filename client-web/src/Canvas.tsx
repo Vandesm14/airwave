@@ -503,7 +503,6 @@ export default function Canvas() {
       aircraft.state.type === 'landing' &&
       aircraft.state.value.state !== 'before-turn';
 
-    const isAccepted = aircraft.accepted;
     const isTcas = aircraft.tcas !== 'idle';
     const isTcasTaRa =
       aircraft.tcas === 'climb' ||
@@ -575,9 +574,11 @@ export default function Canvas() {
     } else if (isTcasTaRa) {
       ctx.fillStyle = colors.line_red;
       ctx.strokeStyle = colors.line_red;
-    } else if (!isAccepted) {
-      ctx.fillStyle = colors.text_light_grey;
-      ctx.strokeStyle = colors.text_light_grey;
+      // TODO: We should find a nice way of maybe hiding flights that aren't on
+      // the stripboard? Just so EVERY flight isn't visible.
+      // } else if (!isAccepted) {
+      //   ctx.fillStyle = colors.text_light_grey;
+      //   ctx.strokeStyle = colors.text_light_grey;
     } else {
       ctx.fillStyle = colors.line_green;
       ctx.strokeStyle = colors.line_green;
@@ -605,7 +606,8 @@ export default function Canvas() {
       ctx.stroke();
     }
 
-    if (!isAccepted && !isSelected) return;
+    // TODO: Same as above.
+    // if (!isAccepted && !isSelected) return;
 
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
@@ -626,8 +628,9 @@ export default function Canvas() {
       ctx.fillStyle = colors.text_yellow;
     } else if (isTcasTaRa) {
       ctx.fillStyle = colors.text_red;
-    } else if (!isAccepted) {
-      ctx.fillStyle = colors.text_dark_grey;
+      // TODO: Same as above.
+      // } else if (!isAccepted) {
+      //   ctx.fillStyle = colors.text_dark_grey;
     } else if (aircraft.frequency !== frequency()) {
       ctx.fillStyle = colors.text_grey;
     } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
@@ -829,7 +832,9 @@ export default function Canvas() {
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     const isSelected = selectedAircraft() === aircraft.id;
-    const isAccepted = aircraft.accepted;
+    // TODO: Once we have creation time, implement this as hiding flights that
+    // haven't been activated yet.
+    const isAccepted = true;
 
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);

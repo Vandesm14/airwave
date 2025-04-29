@@ -241,5 +241,6 @@ export function DefaultWorld(): World {
   return {
     airspaces: [],
     waypoints: [],
+    airspace_statuses: {},
   };
 }

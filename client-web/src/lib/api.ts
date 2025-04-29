@@ -1,8 +1,4 @@
-import {
-  createMutation,
-  createQuery,
-  useQueryClient,
-} from '@tanstack/solid-query';
+import { createQuery } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
 import fastDeepEqual from 'fast-deep-equal';
 import { Aircraft } from '../../bindings/Aircraft';
@@ -62,57 +58,6 @@ export function useAircraft() {
       return result.json();
     },
     initialData: [],
-  }));
-}
-
-// Flights
-export const postAcceptFlight = (id: string) =>
-  `/api/game/aircraft/${id}/accept`;
-export function useAcceptFlight() {
-  const client = useQueryClient();
-
-  return createMutation(() => ({
-    mutationKey: [`/api/game/aircraft/accept`],
-    mutationFn: async (id: string) =>
-      await fetch(`${baseAPIPath}${postAcceptFlight(id)}`, {
-        method: 'POST',
-      }),
-    onMutate: (id: string) =>
-      client.setQueryData<Array<Aircraft>>([getAircraft], (old) =>
-        (old ?? []).map((a) => {
-          if (a.id === id) {
-            a.accepted = true;
-          }
-
-          return a;
-        })
-      ),
-    onSettled: () => client.invalidateQueries({ queryKey: [getAircraft] }),
-  }));
-}
-
-export const postRejectFlight = (id: string) =>
-  `/api/game/aircraft/${id}/reject`;
-export function useRejectFlight() {
-  const client = useQueryClient();
-
-  return createMutation(() => ({
-    mutationKey: [`/api/game/aircraft/reject`],
-    mutationFn: async (id: string) =>
-      await fetch(`${baseAPIPath}${postRejectFlight(id)}`, {
-        method: 'POST',
-      }),
-    onMutate: (id: string) =>
-      client.setQueryData<Array<Aircraft>>([getAircraft], (old) =>
-        (old ?? []).map((a) => {
-          if (a.id === id) {
-            a.accepted = false;
-          }
-
-          return a;
-        })
-      ),
-    onSettled: () => client.invalidateQueries({ queryKey: [getAircraft] }),
   }));
 }
 
