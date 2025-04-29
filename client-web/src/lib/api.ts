@@ -164,12 +164,12 @@ export function useArrivalStatus() {
 
 export const postDepartureStatusKey = `/api/status/departure`;
 export const postDepartureStatus = (id: string, status: DepartureStatus) =>
-  `${postArrivalStatusKey}/${id}/${status}`;
+  `${postDepartureStatusKey}/${id}/${status}`;
 export function useDepartureStatus() {
   const client = useQueryClient();
 
   return createMutation(() => ({
-    mutationKey: [postArrivalStatusKey],
+    mutationKey: [postDepartureStatusKey],
     mutationFn: async ({
       id,
       status,
