@@ -38,8 +38,10 @@ use crate::{
 };
 
 pub const AIRPORT_SPAWN_CHANCE: f64 = 0.8;
-pub const NON_AUTO_SPAWN_CHANCE: f64 = 0.2;
-pub const SPAWN_RATE: usize = 75;
+// TODO: Remove this since it's 100%?
+pub const NON_AUTO_DEPARTURE_CHANCE: f64 = 1.0;
+pub const ARRIVE_TO_NON_AUTO_CHANCE: f64 = 0.2;
+pub const SPAWN_RATE_SECONDS: usize = 75;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -106,6 +108,8 @@ pub struct Runner {
   pub engine: Engine,
   pub messages: RingBuffer<CommandWithFreq>,
 
+  pub preparing: bool,
+
   pub get_queue: JobQueue<TinyReqKind, ResKind>,
   pub post_queue: JobQueue<ArgReqKind, ResKind>,
 
@@ -134,6 +138,8 @@ impl Runner {
       engine: Engine::default(),
       messages: RingBuffer::new(30),
 
+      preparing: false,
+
       get_queue: JobQueue::new(get_rcv),
       post_queue: JobQueue::new(post_rcv),
 
@@ -145,7 +151,7 @@ impl Runner {
       tick_counter: 0,
 
       // Spawn rate is 60 + 15 seconds to make it less robotic.
-      spawns: SignalGenerator::new(rate * SPAWN_RATE),
+      spawns: SignalGenerator::new(rate * SPAWN_RATE_SECONDS),
     }
   }
 
@@ -428,8 +434,15 @@ impl Runner {
         .iter()
         .flat_map(|a| a.airports.iter().map(|ar| (a.auto, ar)));
       for (auto, airport) in airports {
-        let chance = self.rng.chance(AIRPORT_SPAWN_CHANCE);
-        if !chance {
+        let do_spawn = self.rng.chance(AIRPORT_SPAWN_CHANCE);
+        if !do_spawn {
+          continue;
+        }
+
+        let do_non_auto_spawn = self.rng.chance(NON_AUTO_DEPARTURE_CHANCE);
+        // Only use dedicated spawn rate for manual airspaces if we are
+        // preparing via `self.quick_start()`.
+        if !auto && self.preparing && !do_non_auto_spawn {
           continue;
         }
 
@@ -449,7 +462,7 @@ impl Runner {
 
           if let Some(aircraft) = aircraft {
             // Chance for a flight to go to a non-auto airspace.
-            let go_to_non_auto = self.rng.chance(NON_AUTO_SPAWN_CHANCE);
+            let go_to_non_auto = self.rng.chance(ARRIVE_TO_NON_AUTO_CHANCE);
             let destination =
               self
                 .rng
@@ -476,11 +489,14 @@ impl Runner {
               {
                 aircraft.flight_plan.arriving = destination.id;
 
+                let min_time_seconds = if self.preparing { 0 } else { 60 };
+                let max_time_seconds = 60 * 5;
+                let delay = self.rng.u64(min_time_seconds..=max_time_seconds);
                 aircraft.timer = Some(
                   SystemTime::now()
                     .duration_since(
                       // Set the timer a few minutes into the future.
-                      SystemTime::UNIX_EPOCH - Duration::from_secs(60 * 2),
+                      SystemTime::UNIX_EPOCH - Duration::from_secs(delay),
                     )
                     .unwrap(),
                 );
@@ -489,10 +505,7 @@ impl Runner {
 
                 aircraft.timer = Some(
                   SystemTime::now()
-                    .duration_since(
-                      // Set the timer a few minutes into the future.
-                      SystemTime::UNIX_EPOCH,
-                    )
+                    .duration_since(SystemTime::UNIX_EPOCH)
                     .unwrap(),
                 );
               }
@@ -525,6 +538,8 @@ impl Runner {
   }
 
   pub fn quick_start(&mut self) -> usize {
+    self.preparing = true;
+
     self.engine.config = EngineConfig::Minimal;
 
     let size_nm = (WORLD_RADIUS) / NAUTICALMILES_TO_FEET;
@@ -559,6 +574,8 @@ impl Runner {
         }
       }
     }
+
+    self.preparing = false;
 
     self.tick_counter
   }
@@ -637,39 +654,4 @@ impl Runner {
       }
     }
   }
-
-  // pub fn prepare(&mut self) {
-  //   self.spawn_inbound();
-
-  //   let mut i = 0;
-  //   let mut last_spawn = 0.0;
-  //   loop {
-  //     let realtime = i as f32 * 1.0 / self.rate as f32;
-  //     if Duration::from_secs_f32(realtime - last_spawn) >= PREP_SPAWN_RATE
-  //       && self.game.aircraft.len() < SPAWN_LIMIT
-  //     {
-  //       self.spawn_inbound();
-  //       last_spawn = realtime;
-  //     }
-
-  //     let dt = 1.0 / self.rate as f32;
-  //     let events =
-  //       self
-  //         .engine
-  //         .tick(&self.world, &mut self.game, &mut self.rng, dt);
-
-  //     self.cleanup(events.iter());
-
-  //     if self.game.aircraft.iter().any(|aircraft| {
-  //       aircraft.altitude != 0.0
-  //         && aircraft.pos.distance_squared(self.world.airspace.pos)
-  //           <= MANUAL_TOWER_AIRSPACE_RADIUS.powf(2.0)
-  //     }) {
-  //       tracing::info!("Done ({} simulated seconds).", realtime.round());
-  //       return;
-  //     }
-
-  //     i += 1;
-  //   }
-  // }
 }
