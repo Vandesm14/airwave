@@ -1,4 +1,9 @@
-use axum::{extract::State, http};
+use axum::{
+  extract::{Path, State},
+  http,
+};
+use engine::entities::world::{ArrivalStatus, DepartureStatus};
+use internment::Intern;
 
 use crate::{
   http::shared::AppState,
@@ -35,6 +40,61 @@ pub async fn get_world(
     } else {
       Err(http::StatusCode::BAD_REQUEST)
     }
+  } else {
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+  }
+}
+
+pub async fn get_airspace_status(
+  State(mut state): State<AppState>,
+  Path(id): Path<String>,
+) -> Result<String, http::StatusCode> {
+  let res = JobReq::send(
+    TinyReqKind::AirspaceStatus(Intern::from(id)),
+    &mut state.tiny_sender,
+  )
+  .recv()
+  .await;
+  if let Ok(ResKind::AirspaceStatus(status)) = res {
+    if let Ok(string) = serde_json::to_string(&status) {
+      Ok(string)
+    } else {
+      Err(http::StatusCode::BAD_REQUEST)
+    }
+  } else {
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+  }
+}
+
+pub async fn post_arrival_status(
+  State(mut state): State<AppState>,
+  Path((id, status)): Path<(String, ArrivalStatus)>,
+) -> Result<(), http::StatusCode> {
+  let res = JobReq::send(
+    TinyReqKind::ArrivalStatus(Intern::from(id), status),
+    &mut state.tiny_sender,
+  )
+  .recv()
+  .await;
+  if let Ok(ResKind::Any) = res {
+    Ok(())
+  } else {
+    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+  }
+}
+
+pub async fn post_departure_status(
+  State(mut state): State<AppState>,
+  Path((id, status)): Path<(String, DepartureStatus)>,
+) -> Result<(), http::StatusCode> {
+  let res = JobReq::send(
+    TinyReqKind::DepartureStatus(Intern::from(id), status),
+    &mut state.tiny_sender,
+  )
+  .recv()
+  .await;
+  if let Ok(ResKind::Any) = res {
+    Ok(())
   } else {
     Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }

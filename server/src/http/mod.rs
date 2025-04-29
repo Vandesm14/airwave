@@ -11,7 +11,10 @@ use methods::{
   aircraft::{get_aircraft, get_one_aircraft},
   comms::{comms_text, comms_voice},
   misc::{ping_pong, post_pause},
-  state::{get_messages, get_world},
+  state::{
+    get_airspace_status, get_messages, get_world, post_arrival_status,
+    post_departure_status,
+  },
 };
 use serde::{Deserialize, Serialize};
 use shared::{AppState, GetSender, PostSender};
@@ -42,6 +45,9 @@ pub async fn run(
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
+      .route("/status/:id", get(get_airspace_status))
+      .route("/status/arrival/:id/:status", post(post_arrival_status))
+      .route("/status/departure/:id/:status", post(post_departure_status))
       .with_state(AppState::new(get_sender, post_sender, openai_api_key))
       .layer(CompressionLayer::new())
       .layer(cors),

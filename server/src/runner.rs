@@ -22,7 +22,7 @@ use engine::{
     },
     airport::{Airport, Frequencies},
     airspace::Airspace,
-    world::{ArrivalStatus, DepartureStatus, Game, World},
+    world::{AirspaceStatus, ArrivalStatus, DepartureStatus, Game, World},
   },
   pathfinder::{Node, NodeBehavior, NodeKind},
   Translate, NAUTICALMILES_TO_FEET,
@@ -63,12 +63,13 @@ pub enum TinyReqKind {
   // Aircraft
   Aircraft,
   OneAircraft(Intern<String>),
-  ArrivalStatus(Intern<String>, ArrivalStatus),
-  DepartureStatus(Intern<String>, DepartureStatus),
 
   // Other State
   Messages,
   World,
+  AirspaceStatus(Intern<String>),
+  DepartureStatus(Intern<String>, DepartureStatus),
+  ArrivalStatus(Intern<String>, ArrivalStatus),
 }
 
 #[derive(Debug, Clone)]
@@ -95,6 +96,7 @@ pub enum ResKind {
   // Other State
   Messages(Vec<OutgoingCommandReply>),
   World(World),
+  AirspaceStatus(AirspaceStatus),
 }
 
 #[derive(Debug)]
@@ -329,29 +331,35 @@ impl Runner {
             self.game.aircraft.iter().find(|a| a.id == *id).cloned();
           incoming.reply(ResKind::OneAircraft(aircraft));
         }
+        TinyReqKind::AirspaceStatus(id) => {
+          let status = self.world.airspace_statuses.get(id);
+          if let Some(status) = status {
+            incoming.reply(ResKind::AirspaceStatus(*status))
+          } else {
+            incoming.reply(ResKind::Err);
+          }
+        }
         TinyReqKind::ArrivalStatus(id, status) => {
-          // let aircraft = self.game.aircraft.iter_mut().find(|a| a.id == *id);
-          // if let Some(aircraft) = aircraft {
-          //   aircraft.accepted = true;
+          if let Some(airspace_status) =
+            self.world.airspace_statuses.get_mut(id)
+          {
+            airspace_status.arrival = *status;
 
-          //   incoming.reply(ResKind::Any);
-          // } else {
-          //   incoming.reply(ResKind::Err);
-          // }
-
-          todo!()
+            incoming.reply(ResKind::Any);
+          } else {
+            incoming.reply(ResKind::Err);
+          }
         }
         TinyReqKind::DepartureStatus(id, status) => {
-          // let aircraft = self.game.aircraft.iter_mut().find(|a| a.id == *id);
-          // if let Some(aircraft) = aircraft {
-          //   aircraft.accepted = false;
+          if let Some(airspace_status) =
+            self.world.airspace_statuses.get_mut(id)
+          {
+            airspace_status.departure = *status;
 
-          //   incoming.reply(ResKind::Any);
-          // } else {
-          //   incoming.reply(ResKind::Err);
-          // }
-
-          todo!()
+            incoming.reply(ResKind::Any);
+          } else {
+            incoming.reply(ResKind::Err);
+          }
         }
 
         // Other State

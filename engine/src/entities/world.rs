@@ -96,23 +96,31 @@ pub fn calculate_airport_waypoints(airspaces: &mut [Airspace]) {
   }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[derive(
+  Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
+)]
 #[ts(export)]
+#[serde(rename_all = "kebab-case")]
 pub enum ArrivalStatus {
   #[default]
   Normal,
   Divert,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[derive(
+  Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
+)]
 #[ts(export)]
+#[serde(rename_all = "kebab-case")]
 pub enum DepartureStatus {
   #[default]
   Normal,
   Delay,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[derive(
+  Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
+)]
 #[ts(export)]
 pub struct AirspaceStatus {
   pub arrival: ArrivalStatus,
