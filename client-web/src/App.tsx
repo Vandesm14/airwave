@@ -112,14 +112,9 @@ export default function App() {
         <div class="container left">
           <Flights />
           <div class="spacer"></div>
-          <Chatbox sendMessage={sendTextMessage}></Chatbox>
-        </div>
-        <div id="radar">
-          <Canvas></Canvas>
-          <div class="right">
-            <StripBoard></StripBoard>
-            <FreqSelector></FreqSelector>
-            <div class="bottom-right-buttons">
+          <div class="row">
+            <Chatbox sendMessage={sendTextMessage}></Chatbox>
+            <div id="game-buttons">
               <button
                 classList={{ 'tts-toggle': true, enabled: useTTS() }}
                 onClick={toggleTTS}
@@ -140,6 +135,13 @@ export default function App() {
                 Pause
               </button>
             </div>
+          </div>
+        </div>
+        <div id="radar">
+          <Canvas></Canvas>
+          <div class="right">
+            <StripBoard></StripBoard>
+            <FreqSelector></FreqSelector>
           </div>
         </div>
       </Show>
