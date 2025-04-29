@@ -503,6 +503,7 @@ export default function Canvas() {
       aircraft.state.type === 'landing' &&
       aircraft.state.value.state !== 'before-turn';
 
+    const isActive = aircraft.timer !== null;
     const isTcas = aircraft.tcas !== 'idle';
     const isTcasTaRa =
       aircraft.tcas === 'climb' ||
@@ -574,11 +575,9 @@ export default function Canvas() {
     } else if (isTcasTaRa) {
       ctx.fillStyle = colors.line_red;
       ctx.strokeStyle = colors.line_red;
-      // TODO: We should find a nice way of maybe hiding flights that aren't on
-      // the stripboard? Just so EVERY flight isn't visible.
-      // } else if (!isAccepted) {
-      //   ctx.fillStyle = colors.text_light_grey;
-      //   ctx.strokeStyle = colors.text_light_grey;
+    } else if (!isActive) {
+      ctx.fillStyle = colors.text_light_grey;
+      ctx.strokeStyle = colors.text_light_grey;
     } else {
       ctx.fillStyle = colors.line_green;
       ctx.strokeStyle = colors.line_green;
@@ -606,8 +605,7 @@ export default function Canvas() {
       ctx.stroke();
     }
 
-    // TODO: Same as above.
-    // if (!isAccepted && !isSelected) return;
+    if (!isActive && !isSelected) return;
 
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
@@ -628,9 +626,8 @@ export default function Canvas() {
       ctx.fillStyle = colors.text_yellow;
     } else if (isTcasTaRa) {
       ctx.fillStyle = colors.text_red;
-      // TODO: Same as above.
-      // } else if (!isAccepted) {
-      //   ctx.fillStyle = colors.text_dark_grey;
+    } else if (!isActive) {
+      ctx.fillStyle = colors.text_dark_grey;
     } else if (aircraft.frequency !== frequency()) {
       ctx.fillStyle = colors.text_grey;
     } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
@@ -834,12 +831,12 @@ export default function Canvas() {
     const isSelected = selectedAircraft() === aircraft.id;
     // TODO: Once we have creation time, implement this as hiding flights that
     // haven't been activated yet.
-    const isAccepted = true;
+    const isActive = aircraft.timer !== null;
 
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
-    let taxi_color = isAccepted ? '#ffffff' : colors.text_light_grey;
+    let taxi_color = isActive ? '#ffffff' : colors.text_light_grey;
     taxi_color = isSelected ? colors.text_yellow : taxi_color;
 
     let callsign_color =

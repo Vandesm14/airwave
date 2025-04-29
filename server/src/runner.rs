@@ -1,7 +1,7 @@
 use std::{
   ops::Div,
   path::PathBuf,
-  time::{Duration, Instant},
+  time::{Duration, Instant, SystemTime},
 };
 
 use glam::Vec2;
@@ -420,14 +420,14 @@ impl Runner {
         .cloned(),
     );
 
+    // If spawn tick, do spawns.
     if self.spawns.tick(self.tick_counter) {
       let airports = self
         .world
         .airspaces
         .iter()
-        .filter(|a| a.auto)
-        .flat_map(|a| a.airports.iter());
-      for airport in airports {
+        .flat_map(|a| a.airports.iter().map(|ar| (a.auto, ar)));
+      for (auto, airport) in airports {
         let chance = self.rng.chance(AIRPORT_SPAWN_CHANCE);
         if !chance {
           continue;
@@ -466,14 +466,36 @@ impl Runner {
                 }));
             if let Some(destination) = destination {
               aircraft.flight_plan.arriving = destination.id;
+
+              if auto {
+                aircraft.timer = Some(
+                  SystemTime::now()
+                    .duration_since(
+                      // Set the timer a few minutes into the future.
+                      SystemTime::UNIX_EPOCH,
+                    )
+                    .unwrap(),
+                );
+              } else {
+                aircraft.timer = Some(
+                  SystemTime::now()
+                    .duration_since(
+                      // Set the timer a few minutes into the future.
+                      SystemTime::UNIX_EPOCH - Duration::from_secs(60 * 2),
+                    )
+                    .unwrap(),
+                );
+              }
             } else {
               tracing::warn!("No destination available for {:?}", aircraft.id);
             }
 
-            self.engine.events.push(Event::Aircraft(AircraftEvent::new(
-              aircraft.id,
-              EventKind::QuickDepart,
-            )));
+            if auto {
+              self.engine.events.push(Event::Aircraft(AircraftEvent::new(
+                aircraft.id,
+                EventKind::QuickDepart,
+              )));
+            }
           }
         } else {
           tracing::warn!(
