@@ -9,7 +9,9 @@ use crate::{
   command::{CommandReply, CommandWithFreq, Task},
   delta_angle,
   engine::{Bundle, Event},
-  entities::world::{closest_airport, closest_airspace, ArrivalStatus},
+  entities::world::{
+    closest_airport, closest_airspace, AirspaceStatus, ArrivalStatus,
+  },
   heading_to_direction, inverse_degrees, move_point,
   pathfinder::{
     display_node_vec2, display_vec_node_vec2, Node, NodeBehavior, NodeKind,
@@ -445,36 +447,39 @@ impl AircraftEventHandler for HandleAircraftEvent {
             airspace.airports.first().unwrap().frequencies.approach;
 
           if !airspace.auto {
-            if let Some(status) =
-              bundle.world.airspace_statuses.get(&airspace.id)
-            {
-              if status.arrival == ArrivalStatus::Normal {
-                // TODO: This clears all waypoints to force the player to deal
-                // with the approach rather than use its automated routing.
-                // This might break future implementations of routing and
-                // waypoints so please check this TODO when that happens.
-                aircraft.flight_plan.clear_waypoints();
+            if matches!(
+              bundle.world.airspace_statuses.get(&airspace.id),
+              Some(AirspaceStatus {
+                // If airspace is accepting inbounds.
+                arrival: ArrivalStatus::Normal,
+                ..
+              })
+            ) {
+              // TODO: This clears all waypoints to force the player to deal
+              // with the approach rather than use its automated routing.
+              // This might break future implementations of routing and
+              // waypoints so please check this TODO when that happens.
+              aircraft.flight_plan.clear_waypoints();
 
-                let direction = heading_to_direction(angle_between_points(
-                  airspace.pos,
-                  aircraft.pos,
-                ))
-                .to_owned();
-                let command = CommandWithFreq::new(
-                  Intern::to_string(&aircraft.id),
-                  aircraft.frequency,
-                  CommandReply::ArriveInAirspace {
-                    direction,
-                    altitude: aircraft.altitude,
-                  },
-                  Vec::new(),
-                );
+              let direction = heading_to_direction(angle_between_points(
+                airspace.pos,
+                aircraft.pos,
+              ))
+              .to_owned();
+              let command = CommandWithFreq::new(
+                Intern::to_string(&aircraft.id),
+                aircraft.frequency,
+                CommandReply::ArriveInAirspace {
+                  direction,
+                  altitude: aircraft.altitude,
+                },
+                Vec::new(),
+              );
 
-                bundle.events.push(Event::Aircraft(AircraftEvent::new(
-                  aircraft.id,
-                  EventKind::Callout(command),
-                )));
-              }
+              bundle.events.push(Event::Aircraft(AircraftEvent::new(
+                aircraft.id,
+                EventKind::Callout(command),
+              )));
             } else {
               // If not accepted, go to a random airspace.
               let arrival = bundle
@@ -486,6 +491,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 aircraft.flip_flight_plan();
                 // Set our new arrival.
                 aircraft.flight_plan.arriving = arrival;
+                aircraft.segment = FlightSegment::Cruise;
 
                 // Recompute waypoints.
                 bundle.events.push(Event::Aircraft(AircraftEvent::new(
