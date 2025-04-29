@@ -503,7 +503,7 @@ export default function Canvas() {
       aircraft.state.type === 'landing' &&
       aircraft.state.value.state !== 'before-turn';
 
-    const isActive = aircraft.timer !== null;
+    const isActive = aircraft.frequency === frequency();
     const isTcas = aircraft.tcas !== 'idle';
     const isTcasTaRa =
       aircraft.tcas === 'climb' ||
