@@ -62,7 +62,7 @@ type CreateOn = {
 
 function newCreateOn(): CreateOn {
   return {
-    inbound: true,
+    inbound: false,
     approach: true,
     departure: true,
     landing: true,
