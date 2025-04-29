@@ -114,6 +114,9 @@ export default function FreqSelector() {
   return (
     <div id="freq-selector">
       <div class="row">
+        <span class="frequency">{frequency()}</span>
+      </div>
+      <div class="row">
         Slots
         <input
           type="number"
@@ -137,9 +140,6 @@ export default function FreqSelector() {
           />
         )}
       </Index>
-      <div class="row">
-        <span class="frequency">{frequency()}</span>
-      </div>
     </div>
   );
 }

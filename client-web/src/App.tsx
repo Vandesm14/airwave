@@ -139,10 +139,10 @@ export default function App() {
         </div>
         <div id="radar">
           <Canvas></Canvas>
-          <div class="right">
-            <StripBoard></StripBoard>
-            <FreqSelector></FreqSelector>
-          </div>
+        </div>
+        <div id="right-panel">
+          <StripBoard></StripBoard>
+          <FreqSelector></FreqSelector>
         </div>
       </Show>
       <Show when={!query.data}>

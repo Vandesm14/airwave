@@ -646,15 +646,17 @@ export default function StripBoard() {
       onmouseleave={() => resetDrag()}
       onmouseup={() => handleMouseUp()}
     >
-      <div class="horizontal">
+      <div class="row top-buttons">
         <span>
-          Tracking: {allYours()} of {allFlying()}
+          Yours: {allYours()} of {allFlying()}
         </span>
-        <button onclick={() => setShowOpts((x) => !x)}>Opts</button>
-        <button onclick={handleAdd}>Add</button>
-        <button class="delete" onclick={handleClear}>
-          Clr
-        </button>
+        <div class="row">
+          <button onclick={handleAdd}>Add</button>
+          <button onclick={() => setShowOpts((x) => !x)}>Opts</button>
+          <button class="delete" onclick={handleClear}>
+            Clr
+          </button>
+        </div>
       </div>
       <Show when={showOpts()}>
         <For each={Object.entries(createOn())}>
