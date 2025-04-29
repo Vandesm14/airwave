@@ -44,7 +44,6 @@ type StripStatus =
   | 'Ground'
   | 'Takeoff'
   | 'Departure'
-  | 'Outbound'
   | 'Landing'
   | 'Approach'
   | 'Inbound'
@@ -53,7 +52,6 @@ type StripStatus =
 
 type CreateOn = {
   inbound: boolean;
-  outbound: boolean;
   approach: boolean;
   departure: boolean;
   landing: boolean;
@@ -64,21 +62,19 @@ type CreateOn = {
 
 function newCreateOn(): CreateOn {
   return {
-    inbound: false,
-    outbound: false,
+    inbound: true,
     approach: true,
-    departure: false,
-    landing: false,
-    takeoff: false,
-    ground: false,
-    parked: false,
+    departure: true,
+    landing: true,
+    takeoff: true,
+    ground: true,
+    parked: true,
   };
 }
 
 function testStatus(createOn: CreateOn, status: StripStatus) {
   return (
     (createOn.inbound && status === 'Inbound') ||
-    (createOn.outbound && status === 'Outbound') ||
     (createOn.approach && status === 'Approach') ||
     (createOn.departure && status === 'Departure') ||
     (createOn.landing && status === 'Landing') ||
@@ -131,11 +127,10 @@ function statusOfAircraft(
 
   const isTakeoff = aircraft.segment === 'takeoff';
   const isDeparture = aircraft.segment === 'departure';
-  const isOutbound = aircraft.segment === 'cruise';
+  const isArriving = aircraft.segment === 'arrival';
 
   const isLanding = aircraft.segment === 'land';
   const isApproach = aircraft.segment === 'approach';
-  const isInbound = true;
 
   if (isActive) {
     if (isOurs) {
@@ -146,13 +141,12 @@ function statusOfAircraft(
     if (isOurDeparture) {
       if (isTakeoff) return 'Takeoff';
       if (isDeparture) return 'Departure';
-      if (isOutbound) return 'Outbound';
     }
 
     if (isOurArrival) {
       if (isLanding) return 'Landing';
       if (isApproach) return 'Approach';
-      if (isInbound) return 'Inbound';
+      if (isArriving) return 'Inbound';
     }
 
     if (isSelected) return 'Selected';
