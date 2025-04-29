@@ -15,7 +15,6 @@ import {
   formatTime,
   hardcodedAirspace,
   nauticalMilesToFeet,
-  runwayInfo,
 } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, useWorld } from './lib/api';
@@ -128,6 +127,7 @@ function statusOfAircraft(
 
   const isParked = aircraft.segment === 'parked';
   const isGround = aircraft.segment.startsWith('taxi-');
+  const isActive = !!aircraft.timer;
 
   const isTakeoff = aircraft.segment === 'takeoff';
   const isDeparture = aircraft.segment === 'departure';
@@ -137,24 +137,26 @@ function statusOfAircraft(
   const isApproach = aircraft.segment === 'approach';
   const isInbound = true;
 
-  if (isOurs) {
-    if (isParked) return 'Parked';
-    if (isGround) return 'Ground';
-  }
+  if (isActive) {
+    if (isOurs) {
+      if (isParked) return 'Parked';
+      if (isGround) return 'Ground';
+    }
 
-  if (isOurDeparture) {
-    if (isTakeoff) return 'Takeoff';
-    if (isDeparture) return 'Departure';
-    if (isOutbound) return 'Outbound';
-  }
+    if (isOurDeparture) {
+      if (isTakeoff) return 'Takeoff';
+      if (isDeparture) return 'Departure';
+      if (isOutbound) return 'Outbound';
+    }
 
-  if (isOurArrival) {
-    if (isLanding) return 'Landing';
-    if (isApproach) return 'Approach';
-    if (isInbound) return 'Inbound';
-  }
+    if (isOurArrival) {
+      if (isLanding) return 'Landing';
+      if (isApproach) return 'Approach';
+      if (isInbound) return 'Inbound';
+    }
 
-  if (isSelected) return 'Selected';
+    if (isSelected) return 'Selected';
+  }
 
   return 'None';
 }
@@ -261,7 +263,15 @@ function Strip({
       onmousedown?.();
     };
 
-    let dimmer = createMemo(() => strip.frequency !== ourFrequency());
+    let dimmer = createMemo(
+      () => strip.frequency !== ourFrequency() || strip.timer.startsWith('-')
+    );
+
+    const timer = createMemo(() => {
+      return strip.segment === 'parked'
+        ? strip.timer
+        : smallFlightSegment(strip.segment).toUpperCase();
+    });
 
     return (
       <div
@@ -289,9 +299,7 @@ function Strip({
         </div>
         <div class="vertical">
           <span class="frequency">{strip.frequency}</span>
-          <span class="timer">
-            {smallFlightSegment(strip.segment).toUpperCase()}
-          </span>
+          <span class="timer">{timer()}</span>
         </div>
         <Show when={deletable}>
           <div class="vertical end">
@@ -327,37 +335,12 @@ function aircraftToStrip(
     topStatus: '',
     bottomStatus: '',
     frequency: aircraft.frequency,
-    timer: '--:--',
+    timer: aircraft.timer
+      ? formatTime(Date.now() - aircraft.timer.secs * 1000)
+      : '--:--',
     status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
     segment: aircraft.segment,
   };
-
-  if (aircraft.state.type === 'flying') {
-    if (aircraft.flight_plan.follow) {
-      let current = aircraft.pos;
-      let distance = 0;
-      aircraft.flight_plan.waypoints
-        .slice(aircraft.flight_plan.waypoint_index)
-        .forEach((waypoint) => {
-          distance += calculateDistance(current, waypoint.data.pos);
-          current = waypoint.data.pos;
-        });
-
-      let distanceInNm = distance / nauticalMilesToFeet;
-      let time = (distanceInNm / aircraft.speed) * 1000 * 60 * 60;
-      data.timer = formatTime(time);
-    }
-  } else if (aircraft.state.type === 'landing') {
-    let distance = calculateDistance(
-      aircraft.pos,
-      runwayInfo(aircraft.state.value.runway).start
-    );
-
-    let distanceInNm = distance / nauticalMilesToFeet;
-    let time = (distanceInNm / aircraft.speed) * 1000 * 60 * 60;
-
-    data.timer = formatTime(time);
-  }
 
   if (aircraft.state.type === 'landing') {
     data.topStatus = 'ILS';
