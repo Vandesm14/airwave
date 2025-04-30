@@ -521,10 +521,11 @@ impl Runner {
             }
           }
         } else {
-          tracing::warn!(
-            "No departures available for {:?} (gates are empty)",
-            airport.id
-          );
+          // TODO: Do we want to keep this for vis or remove?
+          // tracing::warn!(
+          //   "No departures available for {:?} (gates are empty)",
+          //   airport.id
+          // );
         }
       }
     }
