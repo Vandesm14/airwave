@@ -7,6 +7,7 @@ use async_openai::{
   error::OpenAIError,
   types::{
     ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
+    ChatCompletionRequestSystemMessageContent,
     ChatCompletionRequestUserMessage, ChatCompletionRequestUserMessageContent,
     CreateChatCompletionRequest,
   },
@@ -31,7 +32,9 @@ pub async fn send_chatgpt_request(
     messages: vec![
       ChatCompletionRequestMessage::System(
         ChatCompletionRequestSystemMessage {
-          content: prompt.clone(),
+          content: ChatCompletionRequestSystemMessageContent::Text(
+            prompt.clone(),
+          ),
           name: None,
         },
       ),

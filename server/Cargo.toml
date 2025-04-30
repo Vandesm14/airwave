@@ -14,7 +14,6 @@ engine = { path = "../engine" }
 
 async-broadcast.workspace = true
 async-channel.workspace = true
-async-openai = "0.23.4"
 clap.workspace = true
 glam.workspace = true
 internment.workspace = true
@@ -26,6 +25,7 @@ tracing-subscriber.workspace = true
 tracing.workspace = true
 turborand.workspace = true
 
+async-openai = "0.28.1"
 axum = { version = "0.7.5", features = ["macros"] }
 dotenv = "0.15.0"
 futures-util = "0.3.30"
