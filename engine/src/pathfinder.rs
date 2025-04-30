@@ -12,10 +12,13 @@ use crate::{
   find_line_intersection, Line,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+#[derive(
+  Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize, TS,
+)]
 #[serde(rename_all = "lowercase")]
 #[ts(export)]
 pub enum NodeKind {
+  #[default]
   Taxiway,
   Runway,
   Gate,
@@ -24,10 +27,13 @@ pub enum NodeKind {
   VOR,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+#[derive(
+  Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize, TS,
+)]
 #[serde(rename_all = "lowercase")]
 #[ts(export)]
 pub enum NodeBehavior {
+  #[default]
   GoTo,
   Park,
   HoldShort,
@@ -62,6 +68,35 @@ impl<T> Node<T> {
       behavior,
       data: value,
     }
+  }
+
+  pub fn build(data: T) -> Self {
+    Self {
+      name: Intern::from_ref(""),
+      kind: NodeKind::default(),
+      behavior: NodeBehavior::default(),
+      data,
+    }
+  }
+
+  pub fn with_name(mut self, name: Intern<String>) -> Self {
+    self.name = name;
+    self
+  }
+
+  pub fn with_kind(mut self, kind: NodeKind) -> Self {
+    self.kind = kind;
+    self
+  }
+
+  pub fn with_behavior(mut self, behavior: NodeBehavior) -> Self {
+    self.behavior = behavior;
+    self
+  }
+
+  pub fn with_data(mut self, data: T) -> Self {
+    self.data = data;
+    self
   }
 }
 

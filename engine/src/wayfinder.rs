@@ -122,11 +122,6 @@ pub fn new_vor(name: Intern<String>, to: Vec2) -> Node<VORData> {
 }
 
 impl Node<VORData> {
-  pub fn with_name(mut self, name: Intern<String>) -> Self {
-    self.name = name;
-    self
-  }
-
   pub fn with_actions(mut self, behavior: Vec<EventKind>) -> Self {
     self.data.events = behavior;
     self

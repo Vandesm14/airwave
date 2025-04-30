@@ -1,6 +1,9 @@
 use std::slice::Iter;
 
-use engine::command::Task;
+use engine::{
+  command::Task,
+  pathfinder::{Node, NodeBehavior, NodeKind},
+};
 use internment::Intern;
 
 fn parse_altitude(mut parts: Iter<&str>) -> Option<Task> {
@@ -111,7 +114,69 @@ fn parse_speed(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["tx", "taxi"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    todo!("parse taxi")
+    // Flags.
+    let mut via = false;
+    let mut gate = false;
+    let mut short = false;
+
+    let mut waypoints: Vec<Node<()>> = Vec::new();
+
+    for part in parts {
+      if part == &"via" {
+        via = true;
+        continue;
+      } else if part == &"gate" {
+        gate = true;
+        continue;
+      } else if part == &"short" {
+        short = true;
+        continue;
+      }
+
+      let behavior = if short {
+        short = false;
+
+        NodeBehavior::HoldShort
+      } else {
+        NodeBehavior::GoTo
+      };
+
+      if gate {
+        gate = false;
+
+        waypoints.push(Node::new(
+          Intern::from_ref(part.to_owned()),
+          NodeKind::Gate,
+          behavior,
+          (),
+        ));
+      } else {
+        let runway = part.chars().next().and_then(|c| c.to_digit(10)).is_some();
+        if runway {
+          waypoints.push(Node::new(
+            Intern::from_ref(part.to_owned()),
+            NodeKind::Runway,
+            behavior,
+            (),
+          ));
+        } else {
+          waypoints.push(Node::new(
+            Intern::from_ref(part.to_owned()),
+            NodeKind::Taxiway,
+            behavior,
+            (),
+          ));
+        }
+      }
+    }
+
+    // Logic: A via B C = B C A.
+    if via {
+      let first = waypoints.remove(0);
+      waypoints.push(first);
+    }
+
+    return Some(Task::Taxi(waypoints));
   }
 
   None
@@ -367,7 +432,93 @@ mod tests {
   }
 
   #[test]
-  fn parse_taxi() {}
+  fn parse_taxi() {
+    assert_eq!(
+      parse("tx A"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("A"))
+      ])]
+    );
+    assert_eq!(
+      parse("tx 27L"),
+      vec![Task::Taxi(vec![Node::build(())
+        .with_name(Intern::from_ref("27L"))
+        .with_kind(NodeKind::Runway)])]
+    );
+
+    // Flags.
+    // Flags - Gate.
+    assert_eq!(
+      parse("tx B gate A1"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("B")),
+        Node::build(())
+          .with_name(Intern::from_ref("A1"))
+          .with_kind(NodeKind::Gate),
+      ])]
+    );
+
+    // Flags - Via.
+    assert_eq!(
+      parse("tx short 27L via A B"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("A")),
+        Node::build(()).with_name(Intern::from_ref("B")),
+        Node::build(())
+          .with_name(Intern::from_ref("27L"))
+          .with_kind(NodeKind::Runway)
+          .with_behavior(NodeBehavior::HoldShort)
+      ])]
+    );
+
+    // Flags - Short.
+    assert_eq!(
+      parse("tx short 27L"),
+      vec![Task::Taxi(vec![Node::build(())
+        .with_name(Intern::from_ref("27L"))
+        .with_kind(NodeKind::Runway)
+        .with_behavior(NodeBehavior::HoldShort)])]
+    );
+    assert_eq!(
+      parse("tx A short B"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("A")),
+        Node::build(())
+          .with_name(Intern::from_ref("B"))
+          .with_behavior(NodeBehavior::HoldShort),
+      ])]
+    );
+
+    // Integration.
+    assert_eq!(
+      parse("tx A via B C"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("B")),
+        Node::build(()).with_name(Intern::from_ref("C")),
+        Node::build(()).with_name(Intern::from_ref("A")),
+      ])]
+    );
+    assert_eq!(
+      parse("tx A B C"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("A")),
+        Node::build(()).with_name(Intern::from_ref("B")),
+        Node::build(()).with_name(Intern::from_ref("C")),
+      ])]
+    );
+    assert_eq!(
+      parse("tx short 27L via A1 B2 C"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("A1")),
+        Node::build(()).with_name(Intern::from_ref("B2")),
+        Node::build(()).with_name(Intern::from_ref("C")),
+        Node::build(())
+          .with_name(Intern::from_ref("27L"))
+          .with_kind(NodeKind::Runway)
+          .with_behavior(NodeBehavior::HoldShort),
+      ])]
+    );
+  }
 
   #[test]
   fn parse_taxi_continue() {
