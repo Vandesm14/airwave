@@ -18,8 +18,9 @@ use thiserror::Error;
 use engine::{
   command::Tasks,
   entities::aircraft::{Aircraft, AircraftState},
-  parser::parse,
 };
+
+use crate::parser::parse;
 
 pub async fn send_chatgpt_request(
   prompt: String,

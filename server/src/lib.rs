@@ -17,6 +17,7 @@ pub mod airport;
 pub mod config;
 pub mod http;
 pub mod job;
+pub mod parser;
 pub mod prompter;
 pub mod ring;
 pub mod runner;
