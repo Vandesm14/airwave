@@ -75,7 +75,7 @@ async fn complete_atc_request(
                 ))
               }
               (Err(err), _) => {
-                tracing::error!("Unable to parse command: {}", err);
+                tracing::error!("Unable to parse tasks: {}", err);
               }
               (_, Err(err)) => {
                 tracing::error!("Unable to generate readback: {}", err);
@@ -91,7 +91,7 @@ async fn complete_atc_request(
       messages
     }
     Err(e) => {
-      tracing::error!("Unable to parse command: {}", e);
+      tracing::error!("Unable to split command: {}", e);
       Vec::new()
     }
   }

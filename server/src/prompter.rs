@@ -1,4 +1,7 @@
-use std::{fs, path::PathBuf};
+use std::{
+  fs,
+  path::{Path, PathBuf},
+};
 
 use async_openai::{
   error::OpenAIError,
@@ -15,6 +18,7 @@ use thiserror::Error;
 use engine::{
   command::Tasks,
   entities::aircraft::{Aircraft, AircraftState},
+  parser::parse,
 };
 
 pub async fn send_chatgpt_request(
@@ -124,8 +128,8 @@ pub struct PromptObject {
 
 #[derive(Error, Debug)]
 pub enum LoadPromptError {
-  #[error("failed to deserialize: {0}")]
-  Deserialize(serde_json::Error, String),
+  #[error("failed to deserialize ({0}): {1}")]
+  Deserialize(serde_json::Error, PathBuf, String),
   #[error("failed to load file: {0}")]
   FS(String),
 }
@@ -160,7 +164,7 @@ impl Prompter {
     let prompt = fs::read_to_string(path.clone())
       .map_err(|_| LoadPromptError::FS(path.to_str().unwrap().into()))?;
     let object: PromptObject = serde_json::from_str(&prompt)
-      .map_err(|e| LoadPromptError::Deserialize(e, prompt))?;
+      .map_err(|e| LoadPromptError::Deserialize(e, path, prompt))?;
     let mut full_prompt: Vec<String> = Vec::new();
 
     for path in object.imports {
@@ -187,7 +191,9 @@ impl Prompter {
     let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
       let json: Vec<CallsignAndRequest> = serde_json::from_str(&result)
-        .map_err(|e| LoadPromptError::Deserialize(e, result))?;
+        .map_err(|e| {
+          LoadPromptError::Deserialize(e, Path::new("").into(), result)
+        })?;
 
       Ok(json)
     } else {
@@ -232,12 +238,10 @@ impl Prompter {
     let result =
       send_chatgpt_request(prompt.clone(), split.request.clone()).await?;
     if let Some(result) = result {
-      let json: Tasks = serde_json::from_str(&result)
-        .map_err(|e| LoadPromptError::Deserialize(e, result))?;
+      let tasks: Tasks = parse(&result);
+      tracing::info!("prompt result ({}): {:?}", aircraft.id, tasks.clone());
 
-      tracing::info!("prompt result ({}): {:?}", aircraft.id, json.clone());
-
-      Ok(json.clone())
+      Ok(tasks.clone())
     } else {
       tracing::error!("no prompt result for: {}", aircraft.id);
       Err(Error::NoResult(prompt))
