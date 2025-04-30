@@ -24,40 +24,23 @@ pub enum TaskWaypoint {
 #[serde(rename_all = "kebab-case")]
 #[serde(tag = "type", content = "value")]
 pub enum Task {
-  // a, alt, altitude
   Altitude(f32),
-  // d, dt, direct
   Direct(Intern<String>),
-  // f, freq, frequency, tune, contact
   Frequency(f32),
-  // g, ga, go
   GoAround,
-  // h, heading, t, turn
   Heading(f32),
-  // i, id, ident
   Ident,
-  // l, land, cl
   Land(Intern<String>),
-  // Has the same aliases as frequency
   NamedFrequency(String),
-  // r, raf, resume, own
-  #[serde(rename = "resume")]
   ResumeOwnNavigation,
-  // s, spd, speed
   Speed(f32),
 
-  // tx
   Taxi(Vec<Node<()>>),
-  // tc, c
   TaxiContinue,
-  // th
   TaxiHold,
-  // ct, to, takeoff
   Takeoff(Intern<String>),
-  // lu. line, wait
   LineUp(Intern<String>),
 
-  // delete ,del
   Delete,
 }
 
