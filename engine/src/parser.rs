@@ -110,7 +110,7 @@ fn parse_speed(mut parts: Iter<&str>) -> Option<Task> {
 }
 
 fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
-  let aliases = ["tx"];
+  let aliases = ["tx", "taxi"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
     todo!("parse taxi")
   }
@@ -193,7 +193,7 @@ where
     parse_delete,
   ];
 
-  let commands = commands.as_ref().split(";");
+  let commands = commands.as_ref().split(",");
   for command in commands {
     let parts = command.trim().split(" ").collect::<Vec<_>>();
     for parser in parsers {
@@ -227,7 +227,7 @@ mod tests {
   fn parse_many() {
     // Test multiple commands
     assert_eq!(
-      parse("alt 250; alt 040; alt 40"),
+      parse("alt 250, alt 040, alt 40"),
       vec![
         Task::Altitude(25000.0),
         Task::Altitude(4000.0),
@@ -237,7 +237,7 @@ mod tests {
 
     // Test multiple commands with different parsers
     assert_eq!(
-      parse("alt 250; direct ABCD; f 123.4"),
+      parse("alt 250, direct ABCD, f 123.4"),
       vec![
         Task::Altitude(25000.0),
         Task::Direct(Intern::from_ref("ABCD")),
@@ -245,9 +245,9 @@ mod tests {
       ]
     );
 
-    // Test trailing semicolon
+    // Test trailing comma
     assert_eq!(
-      parse("alt 250; direct ABCD; f 123.4;"),
+      parse("alt 250, direct ABCD, f 123.4,"),
       vec![
         Task::Altitude(25000.0),
         Task::Direct(Intern::from_ref("ABCD")),
