@@ -206,7 +206,7 @@ function Strip({
       KeyboardEvent
     > = (e) => {
       if (e.key === 'Enter') {
-        onedit?.((e.target as HTMLInputElement).value);
+        onedit?.((e.target as HTMLInputElement).value.trim());
         setEditing(false);
       }
     };
@@ -214,7 +214,7 @@ function Strip({
     const handleBlur: JSX.EventHandlerUnion<HTMLInputElement, FocusEvent> = (
       e
     ) => {
-      onedit?.((e.target as HTMLInputElement).value);
+      onedit?.((e.target as HTMLInputElement).value.trim());
       setEditing(false);
     };
 

@@ -183,7 +183,7 @@ export default function Chatbox({
         <input
           type="text"
           value={text()}
-          oninput={(e) => setText(e.currentTarget.value)}
+          oninput={(e) => setText(e.currentTarget.value.trim())}
           onkeydown={(e) => e.key === 'Enter' && handleSendMessage(text())}
           ref={chatboxInput}
           placeholder="Type a message..."
