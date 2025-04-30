@@ -6,11 +6,11 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
-rust-embed = "8"
 clap.workspace = true
-
-tracing.workspace = true
 tracing-subscriber.workspace = true
+tracing.workspace = true
+
+rust-embed = "8"
 
 [dependencies.tokio]
 version = "1"

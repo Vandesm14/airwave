@@ -12,37 +12,29 @@ path = "src/dump_prompts.rs"
 [dependencies]
 engine = { path = "../engine" }
 
-clap.workspace = true
-
-axum = { version = "0.7.5", features = ["macros"] }
-reqwest = { version = "0.12.5", features = ["multipart"] }
-tokio.workspace = true
-tokio-tungstenite = "0.23.1"
-
-async-openai = "0.23.4"
-tower-http = { version = "0.5.2", features = [
-  "cors",
-  "fs",
-  "trace",
-  "compression-br",
-] }
-
-futures-util = "0.3.30"
-async-channel.workspace = true
 async-broadcast.workspace = true
-
+async-channel.workspace = true
+async-openai = "0.23.4"
+clap.workspace = true
 glam.workspace = true
+internment.workspace = true
+itertools.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true
 turborand.workspace = true
 
-serde.workspace = true
-serde_json = "1"
-internment.workspace = true
-
-thiserror.workspace = true
-itertools.workspace = true
-
-toml = "0.8.19"
+axum = { version = "0.7.5", features = ["macros"] }
 dotenv = "0.15.0"
-tracing.workspace = true
-tracing-subscriber.workspace = true
+futures-util = "0.3.30"
+reqwest = { version = "0.12.5", features = ["multipart"] }
+serde_json = "1"
+tokio-tungstenite = "0.23.1"
+toml = "0.8.19"
 union-find = "0.4.3"
+
+[dependencies.tower-http]
+version = "0.5.2"
+features = ["cors", "fs", "trace", "compression-br"]

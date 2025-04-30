@@ -6,20 +6,17 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
+async-broadcast.workspace = true
+async-channel.workspace = true
 glam.workspace = true
+internment.workspace = true
+itertools.workspace = true
+petgraph.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true
 turborand.workspace = true
 
-tokio.workspace = true
-
-async-channel.workspace = true
-async-broadcast.workspace = true
-
-serde.workspace = true
-serde_json.workspace = true
-internment.workspace = true
-
-tracing.workspace = true
-tracing-subscriber.workspace = true
-petgraph.workspace = true
-itertools.workspace = true
 ts-rs = "10.1.0"
