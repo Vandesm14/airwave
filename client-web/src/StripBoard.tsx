@@ -540,20 +540,28 @@ export default function StripBoard() {
 
     if (airspace && aircrafts.data.length > 0) {
       board.setStrips((strips) =>
-        strips.map((strip) => {
-          if (strip.type === StripType.Aircraft) {
-            const callsign = strip.callsign;
-            const aircraft = aircrafts.data.find((a) => a.id === callsign);
-            if (aircraft) {
-              return {
-                ...aircraftToStrip(aircraft, airspace, selected),
-                id: strip.id,
-              };
+        strips
+          // Update aircraft strips.
+          .map((strip) => {
+            if (strip.type === StripType.Aircraft) {
+              const callsign = strip.callsign;
+              const aircraft = aircrafts.data.find((a) => a.id === callsign);
+              if (aircraft) {
+                return {
+                  ...aircraftToStrip(aircraft, airspace, selected),
+                  id: strip.id,
+                };
+              }
             }
-          }
 
-          return strip;
-        })
+            return strip;
+          })
+          // Filter out aircraft that don't exist.
+          .filter((strip) =>
+            strip.type === StripType.Aircraft
+              ? !!aircrafts.data.find((a) => a.id === strip.callsign)
+              : true
+          )
       );
     }
   });
@@ -629,7 +637,9 @@ export default function StripBoard() {
 
   function handleClear() {
     board.setStrips((strips) =>
-      strips.filter((s) => s.type !== StripType.Aircraft)
+      strips.filter((s) =>
+        s.type === StripType.Aircraft ? testStatus(createOn(), s.status) : true
+      )
     );
   }
 
