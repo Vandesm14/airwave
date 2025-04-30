@@ -119,7 +119,7 @@ fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
 }
 
 fn parse_taxi_continue(mut parts: Iter<&str>) -> Option<Task> {
-  let aliases = ["c", "tc"];
+  let aliases = ["c", "tc", "continue"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
     return Some(Task::TaxiContinue);
   }
@@ -375,6 +375,7 @@ mod tests {
     // Alias variants.
     assert_eq!(parse("c"), vec![Task::TaxiContinue]);
     assert_eq!(parse("tc"), vec![Task::TaxiContinue]);
+    assert_eq!(parse("continue"), vec![Task::TaxiContinue]);
   }
 
   #[test]
