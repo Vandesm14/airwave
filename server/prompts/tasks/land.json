@@ -6,6 +6,10 @@
     {
       "user": "Cleared to land runway 18 left.",
       "assistant": "l 18L"
+    },
+    {
+      "user": "Cleared for the ILS approach, runway 27 right.",
+      "assistant": "l 27R"
     }
   ]
 }
