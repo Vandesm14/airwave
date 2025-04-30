@@ -26,11 +26,11 @@ pub enum TaskWaypoint {
 pub enum Task {
   // a, alt, altitude
   Altitude(f32),
-  // d, dt, cd
+  // d, dt, direct
   Direct(Intern<String>),
-  // f, freq, tune
+  // f, freq, frequency, tune
   Frequency(f32),
-  // g, ga, go around
+  // g, ga, go
   GoAround,
   // h, heading, t, turn
   Heading(f32),
