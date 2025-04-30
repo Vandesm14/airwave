@@ -241,7 +241,11 @@ impl Prompter {
     if let Some(result) = result {
       tracing::info!("prompt result ({}): {:?}", aircraft.id, result);
       let tasks: Tasks = parse(&result);
-      tracing::info!("prompt tasks ({}): {:?}", aircraft.id, tasks.clone());
+      if tasks.is_empty() {
+        tracing::warn!("prompt tasks ({}): empty", aircraft.id);
+      } else {
+        tracing::info!("prompt tasks ({}): {:?}", aircraft.id, tasks.clone());
+      }
 
       Ok(tasks.clone())
     } else {
