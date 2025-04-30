@@ -5,19 +5,11 @@
   "examples": [
     {
       "user": "Resume own navigation.",
-      "assistant": [
-        {
-          "type": "resume"
-        }
-      ]
+      "assistant": "r"
     },
     {
       "user": "Resume as filed.",
-      "assistant": [
-        {
-          "type": "resume"
-        }
-      ]
+      "assistant": "r"
     }
   ]
 }

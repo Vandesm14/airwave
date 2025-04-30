@@ -1,43 +1,23 @@
 {
   "prompt": [
-    "Frequency commands are returned as a numeric value in MHz. For named frequencies, use the 'named-frequency' type instead."
+    "Frequency commands are returned as a numeric value in MHz. Always use the frequency value if given, otherwise, default to the named frequency (e.g. \"approach\")."
   ],
   "examples": [
     {
       "user": "Tune to 123.4.",
-      "assistant": [
-        {
-          "type": "frequency",
-          "value": 123.4
-        }
-      ]
+      "assistant": "f 123.4"
     },
     {
       "user": "Contact approach on 123.4.",
-      "assistant": [
-        {
-          "type": "frequency",
-          "value": 123.4
-        }
-      ]
+      "assistant": "f 123.4"
     },
     {
       "user": "Contact approach.",
-      "assistant": [
-        {
-          "type": "named-frequency",
-          "value": "approach"
-        }
-      ]
+      "assistant": "f approach"
     },
     {
       "user": "Contact center.",
-      "assistant": [
-        {
-          "type": "named-frequency",
-          "value": "center"
-        }
-      ]
+      "assistant": "f center"
     }
   ]
 }

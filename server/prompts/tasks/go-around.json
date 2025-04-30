@@ -5,11 +5,7 @@
   "examples": [
     {
       "user": "Go around.",
-      "assistant": [
-        {
-          "type": "go-around"
-        }
-      ]
+      "assistant": "g"
     }
   ]
 }

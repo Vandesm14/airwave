@@ -7,174 +7,39 @@
   "examples": [
     {
       "user": "Taxi to runway 18 left via Alpha then Bravo.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "A",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "B",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "18L",
-              "kind": "runway",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
+      "assistant": "tx 18L via A B"
     },
     {
       "user": "Taxi to Golf, Victor, Charlie 5, and hold short of runway 20.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "A",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "B",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "20",
-              "kind": "runway",
-              "behavior": "holdshort"
-            }
-          ]
-        }
-      ]
+      "assistant": "tx G V C5 short 20"
     },
     {
       "user": "Taxi to gate Alpha 1 via Bravo, Charlie.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "B",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "C",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "A1",
-              "kind": "gate",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
+      "assistant": "tx gate A1 via B C"
     },
     {
       "user": "Taxi to ALPHA7.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "A7",
-              "kind": "taxiway",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
+      "assistant": "tx A7"
     },
     {
       "user": "Taxi to Echo 1.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "E1",
-              "kind": "taxiway",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
+      "assistant": "tx E1"
     },
     {
       "user": "Taxi to runway 14 via Delta, Juliet.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "D",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "J",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "14",
-              "kind": "runway",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
+      "assistant": "tx 14 via D J"
     },
     {
       "user": "Taxi to Wiskey via Uniform, Foxtrot 7.",
-      "assistant": [
-        {
-          "type": "taxi",
-          "value": [
-            {
-              "name": "W",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "U",
-              "kind": "taxiway",
-              "behavior": "goto"
-            },
-            {
-              "name": "F7",
-              "kind": "taxiway",
-              "behavior": "goto"
-            }
-          ]
-        }
-      ]
+      "assistant": "tx W via U F7"
     },
     {
       "user": "Hold position.",
-      "assistant": [
-        {
-          "type": "taxi-hold"
-        }
-      ]
+      "assistant": "th"
     },
     {
       "user": "Continue taxi.",
-      "assistant": [
-        {
-          "type": "taxi-continue"
-        }
-      ]
+      "assistant": "tc"
     }
   ]
 }

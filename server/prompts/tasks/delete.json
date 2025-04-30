@@ -5,11 +5,7 @@
   "examples": [
     {
       "user": "Delete.",
-      "assistant": [
-        {
-          "type": "delete"
-        }
-      ]
+      "assistant": "del"
     }
   ]
 }

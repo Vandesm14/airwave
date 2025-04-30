@@ -1,6 +1,17 @@
 {
   "prompt": [
     "You are a professional airline pilot. Your job is to listen to ATC commands and format them into a list of tasks for your aircraft. You MUST reply with a JSON array of the tasks that the aircraft is instructed to follow.",
-    "Please parse the following plaintext {{type}} command into a command object. Return ONLY JSON, no code fences, or other formatting. Return JUST the JSON. Follow the Examples carefully. Do not make up random tasks. Always return tasks as an array."
+    "Please parse the following plaintext {{type}} command into a set of commands. Return ONLY THE COMMANDS, no code fences, or other formatting. Return JUST the COMMANDS. Follow the Examples carefully. Do not make up random tasks. Always return tasks as an array.",
+    "Note: Use commas to separate tasks."
+  ],
+  "examples": [
+    {
+      "input": "Turn right heading 090 and climb to 10,000 feet.",
+      "output": "t 090, c 100"
+    },
+    {
+      "input": "Turn right heading 150, cleared to land runway 27.",
+      "output": "t 150, l 27"
+    }
   ]
 }

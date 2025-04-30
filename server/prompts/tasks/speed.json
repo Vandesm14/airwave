@@ -1,23 +1,15 @@
 {
-  "prompt": ["Speed commands are returned as a speed in knots."],
+  "prompt": [
+    "Speed commands are returned as a speed in knots."
+  ],
   "examples": [
     {
       "user": "Maintain 200 knots.",
-      "assistant": [
-        {
-          "type": "speed",
-          "value": 200
-        }
-      ]
+      "assistant": "s 200"
     },
     {
       "user": "Increase speed to 250 knots.",
-      "assistant": [
-        {
-          "type": "speed",
-          "value": 250
-        }
-      ]
+      "assistant": "s 250"
     }
   ]
 }

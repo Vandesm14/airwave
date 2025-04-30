@@ -1,23 +1,15 @@
 {
-  "prompt": ["Altitude commands are returned as an altitude in feet."],
+  "prompt": [
+    "Altitude commands are returned as an altitude in flight level."
+  ],
   "examples": [
     {
       "user": "Climb and maintain 2000 feet.",
-      "assistant": [
-        {
-          "type": "altitude",
-          "value": 2000
-        }
-      ]
+      "assistant": "a 020"
     },
     {
       "user": "Maintain flight level 130.",
-      "assistant": [
-        {
-          "type": "altitude",
-          "value": 13000
-        }
-      ]
+      "assistant": "a 130"
     }
   ]
 }

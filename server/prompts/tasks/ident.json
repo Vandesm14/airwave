@@ -5,19 +5,11 @@
   "examples": [
     {
       "user": "Ident.",
-      "assistant": [
-        {
-          "type": "ident"
-        }
-      ]
+      "assistant": "i"
     },
     {
       "user": "Identify.",
-      "assistant": [
-        {
-          "type": "ident"
-        }
-      ]
+      "assistant": "i"
     }
   ]
 }

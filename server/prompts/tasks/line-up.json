@@ -5,12 +5,7 @@
   "examples": [
     {
       "user": "Line up and wait, runway 18 left.",
-      "assistant": [
-        {
-          "type": "line-up",
-          "value": "18L"
-        }
-      ]
+      "assistant": "lu 18L"
     }
   ]
 }

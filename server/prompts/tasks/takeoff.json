@@ -5,12 +5,7 @@
   "examples": [
     {
       "user": "Cleared for takeoff, runway 18 left.",
-      "assistant": [
-        {
-          "type": "takeoff",
-          "value": "18L"
-        }
-      ]
+      "assistant": "to 18L"
     }
   ]
 }
