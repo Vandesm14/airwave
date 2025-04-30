@@ -137,7 +137,7 @@ pub async fn comms_text(
 
   let duration = time.elapsed();
   tracing::info!(
-    "Replied to text request in {:.2} seconds",
+    "Completed text request in {:.2} seconds",
     duration.as_secs_f32()
   );
 }
@@ -218,56 +218,51 @@ pub async fn comms_voice(
 ) {
   let time = Instant::now();
 
-  tracing::info!("Received comms voice request: {} bytes", bytes.len());
-
   match transcribe_voice(bytes, state.openai_api_key.clone()).await {
-    Ok(text) => {
-      tracing::info!("Transcribed request: {} chars", text.len());
-      match serde_json::from_str::<AudioResponse>(&text) {
-        Ok(reply) => {
+    Ok(text) => match serde_json::from_str::<AudioResponse>(&text) {
+      Ok(reply) => {
+        let _ = JobReq::send(
+          ArgReqKind::CommandATC(CommandWithFreq::new(
+            "ATC".to_string(),
+            query.frequency,
+            CommandReply::Blank {
+              text: reply.text.clone(),
+            },
+            Vec::new(),
+          )),
+          &mut state.big_sender,
+        )
+        .recv()
+        .await;
+
+        let commands = complete_atc_request(
+          &mut state.tiny_sender,
+          reply.text.clone(),
+          query.frequency,
+        )
+        .await;
+
+        for command in commands.iter() {
+          write_json_data(command);
+
           let _ = JobReq::send(
-            ArgReqKind::CommandATC(CommandWithFreq::new(
-              "ATC".to_string(),
-              query.frequency,
-              CommandReply::Blank {
-                text: reply.text.clone(),
-              },
-              Vec::new(),
-            )),
+            ArgReqKind::CommandReply(command.clone()),
             &mut state.big_sender,
           )
           .recv()
           .await;
-
-          let commands = complete_atc_request(
-            &mut state.tiny_sender,
-            reply.text.clone(),
-            query.frequency,
-          )
-          .await;
-
-          for command in commands.iter() {
-            write_json_data(command);
-
-            let _ = JobReq::send(
-              ArgReqKind::CommandReply(command.clone()),
-              &mut state.big_sender,
-            )
-            .recv()
-            .await;
-          }
-
-          let duration = time.elapsed();
-          tracing::info!(
-            "Replied to voice request in {:.2} seconds",
-            duration.as_secs_f32()
-          );
-        }
-        Err(e) => {
-          tracing::error!("Unable to parse audio response: {}: {:?}", e, text);
         }
       }
-    }
+      Err(e) => {
+        tracing::error!("Unable to parse audio response: {}: {:?}", e, text);
+      }
+    },
     Err(e) => tracing::error!("Transcription failed: {}", e),
   }
+
+  let duration = time.elapsed();
+  tracing::info!(
+    "Completed voice request in {:.2} seconds",
+    duration.as_secs_f32()
+  );
 }
