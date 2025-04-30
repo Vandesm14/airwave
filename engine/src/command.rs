@@ -28,19 +28,19 @@ pub enum Task {
   Altitude(f32),
   // d, dt, direct
   Direct(Intern<String>),
-  // f, freq, frequency, tune
+  // f, freq, frequency, tune, contact
   Frequency(f32),
   // g, ga, go
   GoAround,
   // h, heading, t, turn
   Heading(f32),
-  // i
+  // i, id, ident
   Ident,
   // l, land, cl
   Land(Intern<String>),
-  // fn
+  // Has the same aliases as frequency
   NamedFrequency(String),
-  // r, raf
+  // r, raf, resume, own
   #[serde(rename = "resume")]
   ResumeOwnNavigation,
   // s, spd, speed
@@ -54,7 +54,7 @@ pub enum Task {
   TaxiHold,
   // ct, to, takeoff
   Takeoff(Intern<String>),
-  // lu. line
+  // lu. line, wait
   LineUp(Intern<String>),
 
   // delete ,del
