@@ -26,8 +26,8 @@
       "assistant": "tx E1"
     },
     {
-      "user": "Taxi to runway 14 via Delta, Juliet.",
-      "assistant": "tx 14 via D J"
+      "user": "Taxi to and hold short of runway 14 via Delta, Juliet.",
+      "assistant": "tx short 14 via D J"
     },
     {
       "user": "Taxi to Wiskey via Uniform, Foxtrot 7.",
