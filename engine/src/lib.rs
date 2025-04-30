@@ -15,6 +15,7 @@ pub mod pathfinder;
 
 pub mod command;
 pub mod entities;
+pub mod parser;
 pub mod wayfinder;
 pub mod wordify;
 
