@@ -1,6 +1,6 @@
 {
   "prompt": [
-    "Takeoff commands are returned with the runway designation as a string."
+    "Takeoff commands are returned with the runway designation."
   ],
   "examples": [
     {

@@ -1,6 +1,6 @@
 {
   "prompt": [
-    "Line up and wait commands are returned with the runway designation as a string."
+    "Line up and wait commands are returned with the runway designation."
   ],
   "examples": [
     {

@@ -1,6 +1,6 @@
 {
   "prompt": [
-    "Delete commands are returned as a simple task with no additional value. "
+    "Delete commands are returned as a simple task with no additional value. ONLY USE THIS when the user says \"Delete\". Do not interpret any other commands as \"Delete\"."
   ],
   "examples": [
     {
