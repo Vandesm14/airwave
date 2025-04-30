@@ -2,9 +2,22 @@ use std::slice::Iter;
 
 use crate::command::Task;
 
+fn parse_altitude(mut parts: Iter<&str>) -> Option<Task> {
+  let aliases = ["a", "alt", "altitude"];
+  if parts.next().map(|f| aliases.contains(f)) == Some(true) {
+    return parts
+      .next()
+      .and_then(|a| a.parse::<f32>().ok())
+      .map(|a| a * 100.0)
+      .map(Task::Altitude);
+  }
+
+  None
+}
+
 fn parse_heading(mut parts: Iter<&str>) -> Option<Task> {
-  let first = parts.next();
-  if first == Some(&"turn") || first == Some(&"t") {
+  let aliases = ["t", "turn", "heading", "h"];
+  if parts.next().map(|f| aliases.contains(f)) == Some(true) {
     return parts
       .next()
       .and_then(|a| a.parse::<f32>().ok())
@@ -20,7 +33,7 @@ where
 {
   let mut tasks: Vec<Task> = Vec::new();
 
-  let parsers = [parse_heading];
+  let parsers = [parse_altitude, parse_heading];
 
   let commands = commands.as_ref().split(";");
   for command in commands {
@@ -41,15 +54,21 @@ mod tests {
   use super::*;
 
   #[test]
-  fn test_parse_heading() {
+  fn parse_heading() {
     assert_eq!(parse("turn 250"), vec![Task::Heading(250.0)]);
   }
 
   #[test]
-  fn test_parse_heading_many() {
+  fn parse_heading_many() {
     assert_eq!(
       parse("turn 250; turn 123"),
       vec![Task::Heading(250.0), Task::Heading(123.0)]
     );
+  }
+
+  #[test]
+  fn parse_altitude() {
+    assert_eq!(parse("alt 250"), vec![Task::Altitude(25000.0)]);
+    assert_eq!(parse("alt 040"), vec![Task::Altitude(4000.0)]);
   }
 }
