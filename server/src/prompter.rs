@@ -238,8 +238,9 @@ impl Prompter {
     let result =
       send_chatgpt_request(prompt.clone(), split.request.clone()).await?;
     if let Some(result) = result {
+      tracing::info!("prompt result ({}): {:?}", aircraft.id, result);
       let tasks: Tasks = parse(&result);
-      tracing::info!("prompt result ({}): {:?}", aircraft.id, tasks.clone());
+      tracing::info!("prompt tasks ({}): {:?}", aircraft.id, tasks.clone());
 
       Ok(tasks.clone())
     } else {
