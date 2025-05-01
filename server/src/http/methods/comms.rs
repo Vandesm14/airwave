@@ -1,6 +1,10 @@
-use std::{sync::Arc, time::Instant};
+use std::time::Instant;
 
-use async_openai::error::OpenAIError;
+use async_openai::{
+  error::OpenAIError,
+  types::{AudioInput, CreateTranscriptionRequest},
+  Audio,
+};
 use axum::{
   body::Bytes,
   extract::{Query, State},
@@ -10,14 +14,10 @@ use engine::{
   duration_now,
 };
 use internment::Intern;
-use reqwest::{header, multipart::Part, Client};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-  http::{
-    shared::{AppState, GetSender},
-    AudioResponse,
-  },
+  http::shared::{AppState, GetSender},
   job::JobReq,
   prompter::Prompter,
   runner::{ArgReqKind, ResKind, TinyReqKind},
@@ -155,34 +155,21 @@ fn write_wav_data(bytes: &Bytes) {
   }
 }
 
-async fn transcribe_voice(
-  bytes: Bytes,
-  openai_api_key: Arc<str>,
-) -> Result<String, OpenAIError> {
+async fn transcribe_voice(bytes: Bytes) -> Result<String, OpenAIError> {
   write_wav_data(&bytes);
 
-  let client = Client::new();
-  let form = reqwest::multipart::Form::new()
-    .part("file", Part::bytes(bytes.to_vec()).file_name("audio.wav"))
-    .text("model", "whisper-1".to_string());
+  let client = async_openai::Client::new();
+  let audio = Audio::new(&client);
 
-  let response = client
-    .post("https://api.openai.com/v1/audio/transcriptions")
-    .multipart(form)
-    .header(
-      header::AUTHORIZATION,
-      header::HeaderValue::from_str(&format!("Bearer {}", openai_api_key))
-        .unwrap(),
-    )
-    .header(
-      header::CONTENT_TYPE,
-      header::HeaderValue::from_str("multipart/form-data").unwrap(),
-    )
-    .send()
+  let response = audio
+    .transcribe(CreateTranscriptionRequest {
+      file: AudioInput::from_bytes("audio.wav".to_owned(), bytes),
+      model: "whisper-1".to_owned(),
+      ..Default::default()
+    })
     .await?;
 
-  let text = response.text().await?;
-  Ok(text)
+  Ok(response.text)
 }
 
 fn write_json_data(command: &CommandWithFreq) {
@@ -218,45 +205,38 @@ pub async fn comms_voice(
 ) {
   let time = Instant::now();
 
-  match transcribe_voice(bytes, state.openai_api_key.clone()).await {
-    Ok(text) => match serde_json::from_str::<AudioResponse>(&text) {
-      Ok(reply) => {
+  match transcribe_voice(bytes).await {
+    Ok(text) => {
+      let _ = JobReq::send(
+        ArgReqKind::CommandATC(CommandWithFreq::new(
+          "ATC".to_string(),
+          query.frequency,
+          CommandReply::Blank { text: text.clone() },
+          Vec::new(),
+        )),
+        &mut state.big_sender,
+      )
+      .recv()
+      .await;
+
+      let commands = complete_atc_request(
+        &mut state.tiny_sender,
+        text.clone(),
+        query.frequency,
+      )
+      .await;
+
+      for command in commands.iter() {
+        write_json_data(command);
+
         let _ = JobReq::send(
-          ArgReqKind::CommandATC(CommandWithFreq::new(
-            "ATC".to_string(),
-            query.frequency,
-            CommandReply::Blank {
-              text: reply.text.clone(),
-            },
-            Vec::new(),
-          )),
+          ArgReqKind::CommandReply(command.clone()),
           &mut state.big_sender,
         )
         .recv()
         .await;
-
-        let commands = complete_atc_request(
-          &mut state.tiny_sender,
-          reply.text.clone(),
-          query.frequency,
-        )
-        .await;
-
-        for command in commands.iter() {
-          write_json_data(command);
-
-          let _ = JobReq::send(
-            ArgReqKind::CommandReply(command.clone()),
-            &mut state.big_sender,
-          )
-          .recv()
-          .await;
-        }
       }
-      Err(e) => {
-        tracing::error!("Unable to parse audio response: {}: {:?}", e, text);
-      }
-    },
+    }
     Err(e) => tracing::error!("Transcription failed: {}", e),
   }
 

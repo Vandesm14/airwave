@@ -1,7 +1,7 @@
 pub mod methods;
 pub mod shared;
 
-use std::{net::SocketAddr, sync::Arc};
+use std::net::SocketAddr;
 
 use axum::{
   routing::{get, post},
@@ -26,7 +26,6 @@ pub async fn run(
   address: SocketAddr,
   get_sender: GetSender,
   post_sender: PostSender,
-  openai_api_key: Arc<str>,
 ) {
   let cors = CorsLayer::very_permissive();
   let app = Router::new().nest(
@@ -48,7 +47,7 @@ pub async fn run(
       .route("/status/:id", get(get_airspace_status))
       .route("/status/arrival/:id/:status", post(post_arrival_status))
       .route("/status/departure/:id/:status", post(post_departure_status))
-      .with_state(AppState::new(get_sender, post_sender, openai_api_key))
+      .with_state(AppState::new(get_sender, post_sender))
       .layer(CompressionLayer::new())
       .layer(cors),
   );

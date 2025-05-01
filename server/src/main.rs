@@ -27,8 +27,9 @@ async fn main() {
   if let Err(e) = dotenv::dotenv() {
     tracing::warn!(".env file was not provided: {}", e);
   }
-  let openai_api_key =
-    std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+
+  // Ensure that the API key is set.
+  let _ = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
 
   let Cli {
     address,
@@ -129,7 +130,5 @@ async fn main() {
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
-  let _ =
-    tokio::spawn(http::run(address, get_tx, post_tx, openai_api_key.into()))
-      .await;
+  let _ = tokio::spawn(http::run(address, get_tx, post_tx)).await;
 }
