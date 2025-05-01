@@ -83,7 +83,7 @@ async fn complete_atc_request(
             }
           }
           _ => {
-            tracing::error!("Unable to find aircraft for command");
+            tracing::error!("Unable to find aircraft \"{}\"", req.callsign);
           }
         }
       }
