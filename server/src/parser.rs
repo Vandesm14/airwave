@@ -294,8 +294,8 @@ where
         commands.push(CommandWithFreq::new(
           callsign.to_owned(),
           frequency,
-          command::CommandReply::WithCallsign {
-            text: item.to_owned(),
+          command::CommandReply::WithoutCallsign {
+            text: rest.to_owned(),
           },
           tasks,
         ));
