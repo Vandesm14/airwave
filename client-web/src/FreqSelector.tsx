@@ -101,10 +101,6 @@ export default function FreqSelector() {
   createEffect(() => {
     const freq = slots()[selected()];
     if (freq) {
-      console.log({
-        freq,
-        selected: selected(),
-      });
       setFrequency(freq);
     }
   });

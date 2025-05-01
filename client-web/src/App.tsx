@@ -102,10 +102,6 @@ export default function App() {
     setUseTTS((useTTS) => !useTTS);
   }
 
-  createEffect(() => {
-    console.log('connected?', query.data);
-  });
-
   return (
     <>
       <Show when={query.data}>
