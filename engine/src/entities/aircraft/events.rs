@@ -189,6 +189,8 @@ impl AircraftEventHandler for HandleAircraftEvent {
             .find(|a| a.id == aircraft.flight_plan.arriving);
 
           if let Some((departure, arrival)) = departure.zip(arrival) {
+            let auto_approach = arrival.auto;
+
             let main_course_heading =
               angle_between_points(departure.pos, arrival.pos);
             let runways =
@@ -290,7 +292,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
               waypoints.push(new_vor(closest.name, closest.data));
             }
 
-            waypoints.extend_from_slice(&[wp_star, wp_vctr]);
+            waypoints.push(wp_star);
+            // Only add auto-vectors if we are arriving at an auto airspace.
+            if auto_approach {
+              waypoints.push(wp_vctr);
+            }
 
             if !diversion {
               waypoints.insert(0, wp_sid);
