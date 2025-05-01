@@ -20,10 +20,10 @@ import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, useWorld } from './lib/api';
 import { Aircraft } from '../bindings/Aircraft';
 import { Airspace } from '../bindings/Airspace';
-
-import './StripBoard.scss';
 import { makePersisted } from '@solid-primitives/storage';
 import { FlightSegment } from '../bindings/FlightSegment';
+
+import './StripBoard.scss';
 
 const INBOX_ID = 0;
 
