@@ -100,20 +100,6 @@ impl CommandWithFreq {
   }
 }
 
-pub fn decode_callsign(callsign: &str) -> String {
-  let airline = callsign.chars().take(3).collect::<String>();
-  let fnumber = callsign.chars().skip(3).collect::<String>();
-
-  let airline_str = match airline.as_str() {
-    "AAL" => "American Airlines",
-    "SKW" => "Skywest",
-    "JBU" => "JetBlue",
-    _ => "Unknown",
-  };
-
-  format!("{airline_str} {fnumber}")
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CommandReply {
   Empty,
