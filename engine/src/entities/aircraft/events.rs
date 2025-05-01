@@ -339,7 +339,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
           bundle.events.push(
             AircraftEvent {
               id: aircraft.id,
-              kind: EventKind::AltitudeAtOrAbove(5000.0),
+              kind: EventKind::AltitudeAtOrAbove(3000.0),
             }
             .into(),
           );
