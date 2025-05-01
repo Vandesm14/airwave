@@ -436,7 +436,7 @@ impl Aircraft {
 
   pub fn random_callsign(rng: &mut Rng) -> String {
     let mut string = String::new();
-    let airlines = ["AAL", "SKW", "JBU"];
+    let airlines = ["AAL", "SKW", "JBU", "DAL", "UAL", "BAW", "SWA"];
 
     let airline = rng.sample(&airlines).unwrap();
 

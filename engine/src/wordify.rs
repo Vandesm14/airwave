@@ -3,6 +3,10 @@ pub fn wordify_airline<'a>(airline: String) -> &'a str {
     "AAL" => "American",
     "JBU" => "JetBlue",
     "SKW" => "SkyWest",
+    "DAL" => "Delta",
+    "UAL" => "United",
+    "BAW" => "Speedbird",
+    "SWA" => "Southwest",
     _ => "Unknown",
   }
 }

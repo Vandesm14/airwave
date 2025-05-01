@@ -20,7 +20,7 @@
       }
     ],
     "If \"break\" is not used, don't split the message into multiple JSON objects.",
-    "Available Callsigns: SKW (Skywest), AAL (\"American Airlines\" or \"American\"), JBU (Jet Blue)\"",
+    "Available Callsigns: SKW (Skywest), AAL (American), JBU (Jet Blue), DAL (Delta), UAL (United), BAW (Speedbird), SWA (Southwest).",
     "There might be artifacts from speech-to-text, so be mindful of that:",
     [
       {
