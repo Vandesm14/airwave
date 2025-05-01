@@ -2,7 +2,7 @@ import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from './whisper/WhisperSTT';
 import { frequencyAtom, isRecordingAtom, useTTSAtom } from './lib/atoms';
 import Chatbox from './Chatbox';
-import { createEffect, onMount, Show } from 'solid-js';
+import { onMount, Show } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
