@@ -414,6 +414,7 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             aircraft.segment = FlightSegment::Parked;
 
             aircraft.flip_flight_plan();
+            aircraft.timer = None;
           }
 
           // Runway specific
