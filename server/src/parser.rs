@@ -1,10 +1,11 @@
 use std::slice::Iter;
 
 use engine::{
-  command::Task,
+  command::{self, CommandWithFreq, Task},
   pathfinder::{Node, NodeBehavior, NodeKind},
 };
 use internment::Intern;
+use itertools::Itertools;
 
 fn parse_altitude(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["a", "alt", "altitude"];
@@ -233,7 +234,8 @@ fn parse_delete(mut parts: Iter<&str>) -> Option<Task> {
   None
 }
 
-pub fn parse<T>(commands: T) -> Vec<Task>
+/// Parses a set of tasks.
+pub fn parse_tasks<T>(tasks_str: T) -> Vec<Task>
 where
   T: AsRef<str>,
 {
@@ -257,9 +259,9 @@ where
     parse_delete,
   ];
 
-  let commands = commands.as_ref().split(",");
-  for command in commands {
-    let parts = command.trim().split(" ").collect::<Vec<_>>();
+  let items = tasks_str.as_ref().split(',');
+  for item in items {
+    let parts = item.trim().split(' ').collect::<Vec<_>>();
     for parser in parsers {
       if let Some(t) = parser(parts.iter()) {
         tasks.push(t);
@@ -271,6 +273,39 @@ where
   tasks
 }
 
+/// Parses full commands (callsign + tasks) addressed aircraft(s).
+pub fn parse_commands<T>(
+  commands_str: T,
+  frequency: f32,
+) -> Vec<CommandWithFreq>
+where
+  T: AsRef<str>,
+{
+  let mut commands: Vec<CommandWithFreq> = Vec::new();
+
+  let items = commands_str.as_ref().split(';');
+  for item in items {
+    let mut parts = item.split(' ');
+    if let Some(callsign) = parts.next() {
+      let rest = parts.join(" ");
+      let rest = rest.trim();
+      let tasks = parse_tasks(rest);
+      if !tasks.is_empty() {
+        commands.push(CommandWithFreq::new(
+          callsign.to_owned(),
+          frequency,
+          command::CommandReply::WithCallsign {
+            text: item.to_owned(),
+          },
+          tasks,
+        ));
+      }
+    }
+  }
+
+  commands
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -278,20 +313,20 @@ mod tests {
   #[test]
   fn parse_altitude() {
     // Alias variants.
-    assert_eq!(parse("a 250"), vec![Task::Altitude(25000.0)]);
-    assert_eq!(parse("alt 250"), vec![Task::Altitude(25000.0)]);
-    assert_eq!(parse("altitude 250"), vec![Task::Altitude(25000.0)]);
+    assert_eq!(parse_tasks("a 250"), vec![Task::Altitude(25000.0)]);
+    assert_eq!(parse_tasks("alt 250"), vec![Task::Altitude(25000.0)]);
+    assert_eq!(parse_tasks("altitude 250"), vec![Task::Altitude(25000.0)]);
 
     // Argument variants.
-    assert_eq!(parse("alt 250"), vec![Task::Altitude(25000.0)]);
-    assert_eq!(parse("alt 040"), vec![Task::Altitude(4000.0)]);
+    assert_eq!(parse_tasks("alt 250"), vec![Task::Altitude(25000.0)]);
+    assert_eq!(parse_tasks("alt 040"), vec![Task::Altitude(4000.0)]);
   }
 
   #[test]
   fn parse_many() {
     // Test multiple commands
     assert_eq!(
-      parse("alt 250, alt 040, alt 40"),
+      parse_tasks("alt 250, alt 040, alt 40"),
       vec![
         Task::Altitude(25000.0),
         Task::Altitude(4000.0),
@@ -301,7 +336,7 @@ mod tests {
 
     // Test multiple commands with different parsers
     assert_eq!(
-      parse("alt 250, direct ABCD, f 123.4"),
+      parse_tasks("alt 250, direct ABCD, f 123.4"),
       vec![
         Task::Altitude(25000.0),
         Task::Direct(Intern::from_ref("ABCD")),
@@ -311,7 +346,7 @@ mod tests {
 
     // Test trailing comma
     assert_eq!(
-      parse("alt 250, direct ABCD, f 123.4,"),
+      parse_tasks("alt 250, direct ABCD, f 123.4,"),
       vec![
         Task::Altitude(25000.0),
         Task::Direct(Intern::from_ref("ABCD")),
@@ -324,25 +359,25 @@ mod tests {
   fn parse_direct() {
     // Alias variants.
     assert_eq!(
-      parse("d ABCD"),
+      parse_tasks("d ABCD"),
       vec![Task::Direct(Intern::from_ref("ABCD"))]
     );
     assert_eq!(
-      parse("dt ABCD"),
+      parse_tasks("dt ABCD"),
       vec![Task::Direct(Intern::from_ref("ABCD"))]
     );
     assert_eq!(
-      parse("direct ABCD"),
+      parse_tasks("direct ABCD"),
       vec![Task::Direct(Intern::from_ref("ABCD"))]
     );
 
     // Argument variants.
     assert_eq!(
-      parse("direct ABCD"),
+      parse_tasks("direct ABCD"),
       vec![Task::Direct(Intern::from_ref("ABCD"))]
     );
     assert_eq!(
-      parse("direct abcd"),
+      parse_tasks("direct abcd"),
       vec![Task::Direct(Intern::from_ref("ABCD"))]
     );
   }
@@ -350,19 +385,19 @@ mod tests {
   #[test]
   fn parse_frequency() {
     // Alias variants.
-    assert_eq!(parse("f 123.4"), vec![Task::Frequency(123.4)]);
-    assert_eq!(parse("freq 123.4"), vec![Task::Frequency(123.4)]);
-    assert_eq!(parse("frequency 123.4"), vec![Task::Frequency(123.4)]);
-    assert_eq!(parse("tune 123.4"), vec![Task::Frequency(123.4)]);
-    assert_eq!(parse("contact 123.4"), vec![Task::Frequency(123.4)]);
+    assert_eq!(parse_tasks("f 123.4"), vec![Task::Frequency(123.4)]);
+    assert_eq!(parse_tasks("freq 123.4"), vec![Task::Frequency(123.4)]);
+    assert_eq!(parse_tasks("frequency 123.4"), vec![Task::Frequency(123.4)]);
+    assert_eq!(parse_tasks("tune 123.4"), vec![Task::Frequency(123.4)]);
+    assert_eq!(parse_tasks("contact 123.4"), vec![Task::Frequency(123.4)]);
 
     // Argument variants.
     assert_eq!(
-      parse("contact departure"),
+      parse_tasks("contact departure"),
       vec![Task::NamedFrequency("departure".to_owned())]
     );
     assert_eq!(
-      parse("contact DEPARTURE"),
+      parse_tasks("contact DEPARTURE"),
       vec![Task::NamedFrequency("departure".to_owned())]
     );
   }
@@ -370,77 +405,92 @@ mod tests {
   #[test]
   fn parse_go_around() {
     // Alias variants.
-    assert_eq!(parse("g"), vec![Task::GoAround]);
-    assert_eq!(parse("ga"), vec![Task::GoAround]);
-    assert_eq!(parse("go"), vec![Task::GoAround]);
-    assert_eq!(parse("go around"), vec![Task::GoAround]);
+    assert_eq!(parse_tasks("g"), vec![Task::GoAround]);
+    assert_eq!(parse_tasks("ga"), vec![Task::GoAround]);
+    assert_eq!(parse_tasks("go"), vec![Task::GoAround]);
+    assert_eq!(parse_tasks("go around"), vec![Task::GoAround]);
   }
 
   #[test]
   fn parse_heading() {
     // Alias variants.
-    assert_eq!(parse("t 250"), vec![Task::Heading(250.0)]);
-    assert_eq!(parse("turn 250"), vec![Task::Heading(250.0)]);
-    assert_eq!(parse("h 250"), vec![Task::Heading(250.0)]);
-    assert_eq!(parse("heading 250"), vec![Task::Heading(250.0)]);
+    assert_eq!(parse_tasks("t 250"), vec![Task::Heading(250.0)]);
+    assert_eq!(parse_tasks("turn 250"), vec![Task::Heading(250.0)]);
+    assert_eq!(parse_tasks("h 250"), vec![Task::Heading(250.0)]);
+    assert_eq!(parse_tasks("heading 250"), vec![Task::Heading(250.0)]);
 
     // Argument variants.
-    assert_eq!(parse("heading 250"), vec![Task::Heading(250.0)]);
-    assert_eq!(parse("heading 040"), vec![Task::Heading(40.0)]);
-    assert_eq!(parse("heading 040.0"), vec![Task::Heading(40.0)]);
+    assert_eq!(parse_tasks("heading 250"), vec![Task::Heading(250.0)]);
+    assert_eq!(parse_tasks("heading 040"), vec![Task::Heading(40.0)]);
+    assert_eq!(parse_tasks("heading 040.0"), vec![Task::Heading(40.0)]);
   }
 
   #[test]
   fn parse_ident() {
     // Alias variants.
-    assert_eq!(parse("i"), vec![Task::Ident]);
-    assert_eq!(parse("id"), vec![Task::Ident]);
-    assert_eq!(parse("ident"), vec![Task::Ident]);
+    assert_eq!(parse_tasks("i"), vec![Task::Ident]);
+    assert_eq!(parse_tasks("id"), vec![Task::Ident]);
+    assert_eq!(parse_tasks("ident"), vec![Task::Ident]);
   }
 
   #[test]
   fn parse_land() {
     // Alias variants.
-    assert_eq!(parse("l 27L"), vec![Task::Land(Intern::from_ref("27L"))]);
-    assert_eq!(parse("cl 27L"), vec![Task::Land(Intern::from_ref("27L"))]);
-    assert_eq!(parse("land 27L"), vec![Task::Land(Intern::from_ref("27L"))]);
+    assert_eq!(
+      parse_tasks("l 27L"),
+      vec![Task::Land(Intern::from_ref("27L"))]
+    );
+    assert_eq!(
+      parse_tasks("cl 27L"),
+      vec![Task::Land(Intern::from_ref("27L"))]
+    );
+    assert_eq!(
+      parse_tasks("land 27L"),
+      vec![Task::Land(Intern::from_ref("27L"))]
+    );
 
     // Argument variants.
-    assert_eq!(parse("land 27r"), vec![Task::Land(Intern::from_ref("27R"))]);
-    assert_eq!(parse("land 27l"), vec![Task::Land(Intern::from_ref("27L"))]);
+    assert_eq!(
+      parse_tasks("land 27r"),
+      vec![Task::Land(Intern::from_ref("27R"))]
+    );
+    assert_eq!(
+      parse_tasks("land 27l"),
+      vec![Task::Land(Intern::from_ref("27L"))]
+    );
   }
 
   #[test]
   fn parse_resume_own_navigation() {
     // Alias variants.
-    assert_eq!(parse("r"), vec![Task::ResumeOwnNavigation]);
-    assert_eq!(parse("raf"), vec![Task::ResumeOwnNavigation]);
-    assert_eq!(parse("resume"), vec![Task::ResumeOwnNavigation]);
-    assert_eq!(parse("own"), vec![Task::ResumeOwnNavigation]);
+    assert_eq!(parse_tasks("r"), vec![Task::ResumeOwnNavigation]);
+    assert_eq!(parse_tasks("raf"), vec![Task::ResumeOwnNavigation]);
+    assert_eq!(parse_tasks("resume"), vec![Task::ResumeOwnNavigation]);
+    assert_eq!(parse_tasks("own"), vec![Task::ResumeOwnNavigation]);
   }
 
   #[test]
   fn parse_speed() {
     // Alias variants.
-    assert_eq!(parse("s 250"), vec![Task::Speed(250.0)]);
-    assert_eq!(parse("spd 250"), vec![Task::Speed(250.0)]);
-    assert_eq!(parse("speed 250"), vec![Task::Speed(250.0)]);
+    assert_eq!(parse_tasks("s 250"), vec![Task::Speed(250.0)]);
+    assert_eq!(parse_tasks("spd 250"), vec![Task::Speed(250.0)]);
+    assert_eq!(parse_tasks("speed 250"), vec![Task::Speed(250.0)]);
 
     // Argument variants.
-    assert_eq!(parse("speed 250"), vec![Task::Speed(250.0)]);
-    assert_eq!(parse("speed 90"), vec![Task::Speed(90.0)]);
+    assert_eq!(parse_tasks("speed 250"), vec![Task::Speed(250.0)]);
+    assert_eq!(parse_tasks("speed 90"), vec![Task::Speed(90.0)]);
   }
 
   #[test]
   fn parse_taxi() {
     assert_eq!(
-      parse("tx A"),
+      parse_tasks("tx A"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("A"))
       ])]
     );
     assert_eq!(
-      parse("tx 27L"),
+      parse_tasks("tx 27L"),
       vec![Task::Taxi(vec![Node::build(())
         .with_name(Intern::from_ref("27L"))
         .with_kind(NodeKind::Runway)])]
@@ -449,7 +499,7 @@ mod tests {
     // Flags.
     // Flags - Gate.
     assert_eq!(
-      parse("tx B gate A1"),
+      parse_tasks("tx B gate A1"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("B")),
         Node::build(())
@@ -460,7 +510,7 @@ mod tests {
 
     // Flags - Via.
     assert_eq!(
-      parse("tx short 27L via A B"),
+      parse_tasks("tx short 27L via A B"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("A")),
         Node::build(()).with_name(Intern::from_ref("B")),
@@ -473,14 +523,14 @@ mod tests {
 
     // Flags - Short.
     assert_eq!(
-      parse("tx short 27L"),
+      parse_tasks("tx short 27L"),
       vec![Task::Taxi(vec![Node::build(())
         .with_name(Intern::from_ref("27L"))
         .with_kind(NodeKind::Runway)
         .with_behavior(NodeBehavior::HoldShort)])]
     );
     assert_eq!(
-      parse("tx A short B"),
+      parse_tasks("tx A short B"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("A")),
         Node::build(())
@@ -491,7 +541,7 @@ mod tests {
 
     // Integration.
     assert_eq!(
-      parse("tx A via B C"),
+      parse_tasks("tx A via B C"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("B")),
         Node::build(()).with_name(Intern::from_ref("C")),
@@ -499,7 +549,7 @@ mod tests {
       ])]
     );
     assert_eq!(
-      parse("tx A B C"),
+      parse_tasks("tx A B C"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("A")),
         Node::build(()).with_name(Intern::from_ref("B")),
@@ -507,7 +557,7 @@ mod tests {
       ])]
     );
     assert_eq!(
-      parse("tx short 27L via A1 B2 C"),
+      parse_tasks("tx short 27L via A1 B2 C"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("A1")),
         Node::build(()).with_name(Intern::from_ref("B2")),
@@ -523,42 +573,42 @@ mod tests {
   #[test]
   fn parse_taxi_continue() {
     // Alias variants.
-    assert_eq!(parse("c"), vec![Task::TaxiContinue]);
-    assert_eq!(parse("tc"), vec![Task::TaxiContinue]);
-    assert_eq!(parse("continue"), vec![Task::TaxiContinue]);
+    assert_eq!(parse_tasks("c"), vec![Task::TaxiContinue]);
+    assert_eq!(parse_tasks("tc"), vec![Task::TaxiContinue]);
+    assert_eq!(parse_tasks("continue"), vec![Task::TaxiContinue]);
   }
 
   #[test]
   fn parse_taxi_hold() {
     // Alias variants.
-    assert_eq!(parse("th"), vec![Task::TaxiHold]);
-    assert_eq!(parse("hold"), vec![Task::TaxiHold]);
-    assert_eq!(parse("stop"), vec![Task::TaxiHold]);
+    assert_eq!(parse_tasks("th"), vec![Task::TaxiHold]);
+    assert_eq!(parse_tasks("hold"), vec![Task::TaxiHold]);
+    assert_eq!(parse_tasks("stop"), vec![Task::TaxiHold]);
   }
 
   #[test]
   fn parse_takeoff() {
     // Alias variants.
     assert_eq!(
-      parse("ct 27L"),
+      parse_tasks("ct 27L"),
       vec![Task::Takeoff(Intern::from_ref("27L"))]
     );
     assert_eq!(
-      parse("to 27L"),
+      parse_tasks("to 27L"),
       vec![Task::Takeoff(Intern::from_ref("27L"))]
     );
     assert_eq!(
-      parse("takeoff 27L"),
+      parse_tasks("takeoff 27L"),
       vec![Task::Takeoff(Intern::from_ref("27L"))]
     );
 
     // Argument variants.
     assert_eq!(
-      parse("takeoff 27r"),
+      parse_tasks("takeoff 27r"),
       vec![Task::Takeoff(Intern::from_ref("27R"))]
     );
     assert_eq!(
-      parse("takeoff 27l"),
+      parse_tasks("takeoff 27l"),
       vec![Task::Takeoff(Intern::from_ref("27L"))]
     );
   }
@@ -566,23 +616,26 @@ mod tests {
   #[test]
   fn parse_line_up() {
     // Alias variants.
-    assert_eq!(parse("lu 27L"), vec![Task::LineUp(Intern::from_ref("27L"))]);
     assert_eq!(
-      parse("line 27L"),
+      parse_tasks("lu 27L"),
       vec![Task::LineUp(Intern::from_ref("27L"))]
     );
     assert_eq!(
-      parse("wait 27L"),
+      parse_tasks("line 27L"),
+      vec![Task::LineUp(Intern::from_ref("27L"))]
+    );
+    assert_eq!(
+      parse_tasks("wait 27L"),
       vec![Task::LineUp(Intern::from_ref("27L"))]
     );
 
     // Argument variants.
     assert_eq!(
-      parse("line 27r"),
+      parse_tasks("line 27r"),
       vec![Task::LineUp(Intern::from_ref("27R"))]
     );
     assert_eq!(
-      parse("line 27l"),
+      parse_tasks("line 27l"),
       vec![Task::LineUp(Intern::from_ref("27L"))]
     );
   }
@@ -590,7 +643,7 @@ mod tests {
   #[test]
   fn parse_delete() {
     // Alias variants.
-    assert_eq!(parse("delete"), vec![Task::Delete]);
-    assert_eq!(parse("del"), vec![Task::Delete]);
+    assert_eq!(parse_tasks("delete"), vec![Task::Delete]);
+    assert_eq!(parse_tasks("del"), vec![Task::Delete]);
   }
 }

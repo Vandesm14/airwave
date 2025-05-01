@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   http::shared::{AppState, GetSender},
   job::JobReq,
+  parser::parse_commands,
   prompter::Prompter,
   runner::{ArgReqKind, ResKind, TinyReqKind},
   CLI,
@@ -122,9 +123,13 @@ pub async fn comms_text(
   .recv()
   .await;
 
-  let commands =
+  let commands = parse_commands(text.clone(), query.frequency);
+  let commands = if commands.is_empty() {
     complete_atc_request(&mut state.tiny_sender, text.clone(), query.frequency)
-      .await;
+      .await
+  } else {
+    commands
+  };
 
   for command in commands.iter() {
     let _ = JobReq::send(

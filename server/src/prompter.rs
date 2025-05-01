@@ -21,7 +21,7 @@ use engine::{
   entities::aircraft::{Aircraft, AircraftState},
 };
 
-use crate::parser::parse;
+use crate::parser::parse_tasks;
 
 pub async fn send_chatgpt_request(
   prompt: String,
@@ -243,7 +243,7 @@ impl Prompter {
       send_chatgpt_request(prompt.clone(), split.request.clone()).await?;
     if let Some(result) = result {
       tracing::info!("prompt result ({}): {:?}", aircraft.id, result);
-      let tasks: Tasks = parse(&result);
+      let tasks: Tasks = parse_tasks(&result);
       if tasks.is_empty() {
         tracing::warn!("prompt tasks  ({}): empty", aircraft.id);
       } else {
