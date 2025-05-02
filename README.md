@@ -6,7 +6,7 @@ Airwave is a gamified airport simulator with airport management and realistic ai
 
 ## Status
 
-Airwave is under active development. However, the simulation system has been finalized, so if you're into a raw simulation, be our guest!
+Airwave is under active development. However, it's still fully usable as a simulator rather than a game, so if you're into that, be our guest!
 
 Here's how you can try it out: [Installation](./docs/src/getting-started/installation.md).
 
