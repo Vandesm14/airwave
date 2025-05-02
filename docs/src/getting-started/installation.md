@@ -75,10 +75,6 @@ cargo run --release --bin serve client-web/dist
 
 **Step 2:**
 
-Open your browser of choice and go to http://localhost:8080?ws=ip, where `ip` is the IP or hostname of the server you want to connect to.
+Open your browser of choice and go to http://localhost:8080?api=url, where `url` is the full URL of the server you want to connect to.
 
-Example: http://localhost:8080?ws=127.0.0.1 or http://localhost:8080?ws=my.server.com
-
-<!-- TODO: Remove this when we add SSL -->
-
-_Note: Currently, Airwave does not contain a self-signed certificate so either both the server and client need to mutually use HTTP or HTTPS. Mixing HTTP and HTTPS will prevent the websockets from connecting._
+Example: http://localhost:8080?ws=https://myserver.com:9001
