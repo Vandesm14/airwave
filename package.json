@@ -9,6 +9,7 @@
     "client-web:build": "pnpm --dir client-web build",
     "client-web:preview": "pnpm --dir client-web preview",
     "client-web:check": "pnpm --dir client-web check",
+    "docs:serve": "cd docs && mdbook serve",
     "engine:bindings": "cargo test export_bindings",
     "engine:dump-prompts": "cargo run --bin dump_prompts",
     "run-all": "zellij --layout zellij.kdl"
