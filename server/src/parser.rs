@@ -146,7 +146,7 @@ fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
         gate = false;
 
         waypoints.push(Node::new(
-          Intern::from_ref(part.to_owned()),
+          Intern::from(part.to_uppercase()),
           NodeKind::Gate,
           behavior,
           (),
@@ -155,14 +155,14 @@ fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
         let runway = part.chars().next().and_then(|c| c.to_digit(10)).is_some();
         if runway {
           waypoints.push(Node::new(
-            Intern::from_ref(part.to_owned()),
+            Intern::from(part.to_uppercase()),
             NodeKind::Runway,
             behavior,
             (),
           ));
         } else {
           waypoints.push(Node::new(
-            Intern::from_ref(part.to_owned()),
+            Intern::from(part.to_uppercase()),
             NodeKind::Taxiway,
             behavior,
             (),
@@ -485,6 +485,12 @@ mod tests {
   fn parse_taxi() {
     assert_eq!(
       parse_tasks("tx A"),
+      vec![Task::Taxi(vec![
+        Node::build(()).with_name(Intern::from_ref("A"))
+      ])]
+    );
+    assert_eq!(
+      parse_tasks("tx a"),
       vec![Task::Taxi(vec![
         Node::build(()).with_name(Intern::from_ref("A"))
       ])]
