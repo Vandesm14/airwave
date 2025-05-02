@@ -1,14 +1,10 @@
-use std::{ops::Div, path::PathBuf};
+use std::path::PathBuf;
 
 use clap::Parser;
-use editor::{
-  scale_point, unscale_point, Draw, MetaTaxiway, PointKey, WorldFile,
-};
-use nannou::{event::KeyboardInput, prelude::*};
-use nannou_egui::{
-  egui::{self, Id},
-  Egui,
-};
+use editor::Draw;
+use engine::entities::airport::Airport;
+use nannou::prelude::*;
+use nannou_egui::Egui;
 
 /// View and edit an Airwave world file
 #[derive(Parser, Debug)]
@@ -28,20 +24,10 @@ struct HeldKeys {
   alt: bool,
 }
 
-enum PointMode {
-  Add,
-  Remove,
-  Select,
-}
-
 struct Model {
   egui: Egui,
+  airport: Airport,
 
-  path: PathBuf,
-  world_data: WorldFile,
-
-  mode: PointMode,
-  selected: Vec<PointKey>,
   is_mouse_down: bool,
   is_over_ui: bool,
 
@@ -65,20 +51,17 @@ fn model(app: &App) -> Model {
   let egui = Egui::from_window(&window);
 
   let args = Cli::parse();
-  let world_file = if let Ok(world_file) = std::fs::read_to_string(&args.file) {
+  let airport = if let Ok(world_file) = std::fs::read_to_string(&args.file) {
     ron::from_str(&world_file).unwrap()
   } else {
-    WorldFile::default()
+    eprintln!("Failed to load world file: {:?}", args.file);
+    std::process::exit(1);
   };
 
   Model {
     egui,
+    airport,
 
-    path: args.file,
-    world_data: world_file,
-
-    mode: PointMode::Add,
-    selected: Vec::new(),
     is_mouse_down: false,
     is_over_ui: false,
 
@@ -97,61 +80,7 @@ fn model(app: &App) -> Model {
 
 fn update(_app: &App, model: &mut Model, update: Update) {
   model.egui.set_elapsed_time(update.since_start);
-  let ctx = model.egui.begin_frame();
-
-  let side_panel = egui::SidePanel::new(
-    egui::panel::Side::Left,
-    Id::new("side_panel"),
-  )
-  .show(&ctx, |ui| {
-    if ui.button("Add Taxiway").clicked() {
-      if model.selected.len() == 2 {
-        model.world_data.meta_airport.taxiways.push(MetaTaxiway {
-          name: "New Taxiway".to_string(),
-          a: model.selected[0],
-          b: model.selected[1],
-        });
-        model.world_data.trigger_update();
-      } else {
-        // TODO: show toast
-      }
-    }
-
-    let mut trigger_update = false;
-    if let Some(point) = model
-      .selected
-      .first()
-      .and_then(|key| model.world_data.points.get_mut(*key))
-    {
-      if point.transforms.reference.is_none() {
-        ui.label("Offset:");
-        ui.horizontal(|ui| {
-          ui.label("X:");
-          if ui
-            .add(egui::DragValue::new(&mut point.transforms.translate.x))
-            .changed()
-          {
-            trigger_update = true;
-          }
-        });
-        ui.horizontal(|ui| {
-          ui.label("Y:");
-          if ui
-            .add(egui::DragValue::new(&mut point.transforms.translate.y))
-            .changed()
-          {
-            trigger_update = true;
-          }
-        });
-      }
-    }
-
-    if trigger_update {
-      model.world_data.trigger_update();
-    }
-  });
-
-  model.is_over_ui = side_panel.response.hovered();
+  let _ = model.egui.begin_frame();
 }
 
 fn real_mouse_pos(app: &App, model: &Model) -> glam::Vec2 {
@@ -204,34 +133,8 @@ fn raw_window_event(
       model.is_mouse_down = true;
 
       let pos = real_mouse_pos(app, model);
-      let scaled_pos = unscale_point(pos, model.shift_pos, model.scale);
-      let closest = model
-        .world_data
-        .find_closest_point(scaled_pos, 30.0 / model.scale);
-      match model.mode {
-        PointMode::Add => {
-          model.world_data.points.insert(scaled_pos.into());
-          model.world_data.trigger_update();
-        }
-        PointMode::Remove => {
-          if let Some(closest) = closest {
-            model.world_data.points.remove(closest.0);
-            model.world_data.trigger_update();
-          }
-        }
-        PointMode::Select => {
-          if let Some(closest) = closest {
-            if !model.held_keys.shift {
-              model.selected.clear();
-            }
-            model.selected.push(closest.0);
-          } else {
-            model.selected.clear();
-            model.drag_anchor = Some(pos);
-            model.old_shift_pos = model.shift_pos;
-          }
-        }
-      }
+      model.drag_anchor = Some(pos);
+      model.old_shift_pos = model.shift_pos;
     }
   } else if let nannou::winit::event::WindowEvent::MouseInput {
     state: nannou::winit::event::ElementState::Released,
@@ -246,116 +149,20 @@ fn raw_window_event(
   // Detect mouse move
   if let nannou::winit::event::WindowEvent::CursorMoved { .. } = event {
     let pos = real_mouse_pos(app, model);
-    let scaled_pos = unscale_point(pos, model.shift_pos, model.scale);
     if model.is_mouse_down {
-      if let Some(point) = model
-        .selected
-        .first()
-        .and_then(|s| model.world_data.points.get_mut(*s))
-      {
-        point.pos = scaled_pos;
-        model.world_data.trigger_update();
-      } else if let Some(drag_anchor) = model.drag_anchor {
+      if let Some(drag_anchor) = model.drag_anchor {
         model.shift_pos =
           model.old_shift_pos + (pos - drag_anchor) / model.scale;
       }
     }
   }
-
-  // Detect Keyboard input
-  if let nannou::winit::event::WindowEvent::KeyboardInput {
-    input: KeyboardInput {
-      state,
-      virtual_keycode,
-      ..
-    },
-    ..
-  } = event
-  {
-    // If Ctrl+S is pressed, save the world file
-    if let (
-      Some(nannou::winit::event::VirtualKeyCode::S),
-      nannou::winit::event::ElementState::Pressed,
-    ) = (virtual_keycode, state)
-    {
-      if model.held_keys.ctrl {
-        if let Ok(world_file) = ron::to_string(&model.world_data) {
-          // This ensures that the airport is up-to-date before saving.
-          model.world_data.trigger_update();
-          std::fs::write(model.path.clone(), world_file).unwrap();
-        }
-      }
-    }
-
-    match virtual_keycode {
-      Some(nannou::winit::event::VirtualKeyCode::A) => {
-        model.mode = PointMode::Add;
-      }
-      Some(nannou::winit::event::VirtualKeyCode::D) => {
-        model.mode = PointMode::Remove;
-      }
-      Some(nannou::winit::event::VirtualKeyCode::S) => {
-        model.mode = PointMode::Select;
-      }
-
-      _ => {}
-    }
-  }
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-  let world_file = &model.world_data;
-
   let draw = app.draw();
   draw.background().color(BLACK);
 
-  model
-    .world_data
-    .airport
-    .draw(&draw, model.scale, model.shift_pos);
-
-  let pos =
-    unscale_point(real_mouse_pos(app, model), model.shift_pos, model.scale);
-  let closest = world_file.find_closest_point(pos, 30.0 / model.scale);
-
-  for point in world_file.points.iter() {
-    let color = if Some(point.0) == closest.map(|c| c.0) {
-      RED
-    } else {
-      WHITE
-    };
-    let color = if model.selected.contains(&point.0) {
-      GREEN
-    } else {
-      color
-    };
-
-    let pos = scale_point(
-      point.1.transformed_pos(&model.world_data.points),
-      model.shift_pos,
-      model.scale,
-    );
-    draw
-      .ellipse()
-      .x_y(pos.x, pos.y)
-      .w_h(10.0, 10.0)
-      .color(color);
-  }
-
-  // Draw mode at the bottom of the screen
-  let mode = match model.mode {
-    PointMode::Add => "Add",
-    PointMode::Remove => "Remove",
-    PointMode::Select => "Select",
-  };
-  let size = app.main_window().inner_size_points();
-  draw
-    .text(mode)
-    .x_y(-size.0.div(4.0), -size.1.div(4.0))
-    .color(WHITE)
-    .font_size(20)
-    .left_justify()
-    .align_text_bottom();
+  model.airport.draw(&draw, model.scale, model.shift_pos);
 
   draw.to_frame(app, &frame).unwrap();
   model.egui.draw_to_frame(&frame).unwrap();
