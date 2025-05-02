@@ -1,6 +1,6 @@
 [book]
-authors = ["Shane"]
+title = "Airwave"
+description = "Airwave is an open-source, gamified airport simulator with airport management and realistic air traffic control (ATC) powered by your voice. "
+author = "Shane"
 language = "en"
 multilingual = false
-src = "src"
-title = "Airwave"
