@@ -10,20 +10,6 @@ All commands should be prefixed with an aircraft's callsign, such as `SkyWest Tw
 
 ## Air
 
-### Turn
-
-**Normal Syntax:** `turn [direction] heading <heading>.`  
-**Shorthand Syntax:** `TODO`
-
-Changes the direction of the aircraft.
-
-### Speed
-
-**Normal Syntax:** `maintain <knots> knots`  
-**Shorthand Syntax:** `TODO`
-
-Changes the speed of the aircraft.
-
 ### Altitude
 
 **Normal Syntax:**
@@ -31,7 +17,7 @@ Changes the speed of the aircraft.
 - `<climb|descend> [and maintain|to] <feet> feet`
 - `<climb|descend> and maintain flight level <flight level>`
 
-**Shorthand Syntax:** `TODO`
+**Shorthand Syntax:** `a`, `alt`, `altitude`: `descend and maintain 4000 feet` = `a 040`
 
 Changes the altitude of the aircraft.
 
@@ -40,12 +26,33 @@ Changes the altitude of the aircraft.
 - `climb and maintain flight level one four zero`
 - `descend and maintain four thousand feet`
 
+### Turn
+
+**Normal Syntax:** `turn [direction] heading <heading>.`
+**Shorthand Syntax:** `t`, `turn`, `h`, `heading`: `turn right heading 360` = `t 360`
+
+Changes the direction of the aircraft.
+
+### Speed
+
+**Normal Syntax:** `maintain <knots> knots`
+**Shorthand Syntax:** `s`, `spd` `speed`: `maintain 250 knots` = `s 250`
+
+Changes the speed of the aircraft.
+
+### Direct
+
+**Normal Syntax:** `direct <waypoint>`
+**Shorthand Syntax:** `d`, `dt`, `direct`: `direct waypoint` = `d waypoint`
+
+Changes the aircraft's flight plan to fly directly to a waypoint (that is already in the flight plan).
+
 ## Frequency
 
 ### Contact Named Controller
 
-**Normal Syntax:** `contact <controller> [on] [frequency]`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `contact <controller> [on] [frequency]`
+**Shorthand Syntax:** `f`, `freq`, `frequency`, `tune`, `contact`: `contact departure` = `f departure`
 
 Changes the frequency the aircraft is tuned to, using the frequency configured for that controller in the server config.
 
@@ -60,7 +67,7 @@ Changes the frequency the aircraft is tuned to, using the frequency configured f
 - `contact <controller> on <frequency>`
 - `tune to <frequency>`
 
-**Shorthand Syntax:** `TODO`
+**Shorthand Syntax:** (same as above): `contact departure on 123.4` = `f 123.4`
 
 Changes the frequency the aircraft is tuned to, forcing a specific frequency.
 
@@ -78,7 +85,7 @@ Changes the frequency the aircraft is tuned to, forcing a specific frequency.
 - `cleared to land, runway <runway>`
 - `cleared ILS approach runway <runway>`
 
-**Shorthand Syntax:** `TODO`
+**Shorthand Syntax:** `l`, `cl`, `land`: `cleared to land runway 22L` = `l 22L`
 
 Clears the aircraft for ILS approach **and** landing.
 
@@ -89,8 +96,8 @@ Clears the aircraft for ILS approach **and** landing.
 
 ### Go Around
 
-**Normal Syntax:** `go around`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `go around`
+**Shorthand Syntax:** `g`, `ga`, `go`: `go around` = `g`
 
 Instructs the aircraft to abort their landing. Any further commands should follow after `go around`.
 
@@ -102,10 +109,10 @@ Instructs the aircraft to abort their landing. Any further commands should follo
 
 ## Taxi
 
-### Taxi to Runway
+### Taxi
 
-**Normal Syntax:** `taxi to [and hold short of] runway <runway> via <taxiway> then <taxiway> then...`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `taxi to [and hold short of] <runway|gate|taxiway> [via] <taxiway> [then] <taxiway> [then]...`
+**Shorthand Syntax:** `tx`, `taxi`: `taxi to and hold short of runway one two left via alpha then bravo` = `tx short 12L via a b`
 
 Instructs the aircraft to taxi to a runway via a list of taxiways.
 
@@ -113,29 +120,27 @@ Instructs the aircraft to taxi to a runway via a list of taxiways.
 
 - `taxi to and hold short of runway one two left via alpha then bravo then charlie`
 - `taxi to runway one two left via alpha`
+- `taxi to gate A1 via alpha bravo charlie`
+- `taxi to and hold short of alpha`
 
-### Taxi to Gate
+**Shorthand Examples:**
 
-**Normal Syntax:** `taxi to gate <gate> via <taxiway> then <taxiway> then...`  
-**Shorthand Syntax:** `TODO`
-
-Instructs the aircraft to taxi to a gate via a list of taxiways.
-
-**Examples:**
-
-- `taxi to gate alpha one via alpha then bravo`
+- `tx short 12L via a b c`
+- `tx short 12L via a`
+- `tx gate A1 via a b c`
+- `tx short a`
 
 ### Hold
 
-**Normal Syntax:** `hold position`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `hold position`
+**Shorthand Syntax:** `th`, `hold`, `stop`: `hold position` = `th`
 
 Instructs the aircraft to hold position.
 
 ### Continue
 
-**Normal Syntax:** `continue taxi`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `continue taxi`
+**Shorthand Syntax:** `c`, `tc`, `continue`: `continue taxi` = `c`
 
 Instructs the aircraft to continue taxiing.
 
@@ -145,27 +150,38 @@ Both takeoff and line-up clearances can be given while an aircraft is holding at
 
 ### Cleared for Takeoff
 
-**Normal Syntax:** `cleared for takeoff, runway <runway>`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `cleared for takeoff, runway <runway>`
+**Shorthand Syntax:** `ct`, `to`, `takeoff`: `cleared for takeoff runway 22L` = `ct 22L`
 
 Clears the aircraft for takeoff.
 
 ### Line Up and Wait
 
-**Normal Syntax:** `line up and wait, runway <runway>`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `line up and wait, runway <runway>`
+**Shorthand Syntax:** `lu`, `line`, `wait`: `line up and wait runway 22L` = `lu 22L`
 
 Tells the aircraft to taxi onto the runway, line up (to its heading), and wait (until instructed for takeoff).
 
 ## Departures
 
-### Resume Own Navigation
+### Resume As Filed
 
-**Normal Syntax:** `resume own navigation`  
-**Shorthand Syntax:** `TODO`
+**Normal Syntax:** `resume as filed`
+**Shorthand Syntax:** `r`, `raf`, `resume`, `own`: `resume as filed` = `r`
 
 Clears the aircraft (departure) to climb to their filed altitude and follow their departure waypoints.
 
 **Note:** This will happen automatically as an aircraft departs to save on workload, but can be overridden by changing its speed, heading, or altitude, and resumed by issuing this command.
 
+---
+
 [^1]: Airwave combines the clearence procedures for approaches and landings such that they are interchangable. Once an aircraft is cleared for approach, it does not need to be cleared to land. Thus, the phraseology can be used where "cleared to land runway 22L" and "cleared ILS approach runway 22L" will mean the same thing.
+
+## Miscellaneous
+
+### Ident
+
+**Normal Syntax:** `ident` or `identify`
+**Shorthand Syntax:** `i`, `id`, `ident`: `ident` = `i`
+
+Selects the aircraft on the client.
