@@ -202,7 +202,7 @@ fn parse_taxi_hold(mut parts: Iter<&str>) -> Option<Task> {
 }
 
 fn parse_takeoff(mut parts: Iter<&str>) -> Option<Task> {
-  let aliases = ["ct", "to", "takeoff"];
+  let aliases = ["ct", "cto", "to", "takeoff"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
     return parts
       .next()
@@ -483,6 +483,7 @@ mod tests {
 
   #[test]
   fn parse_taxi() {
+    // Argument variants.
     assert_eq!(
       parse_tasks("tx A"),
       vec![Task::Taxi(vec![
@@ -500,6 +501,24 @@ mod tests {
       vec![Task::Taxi(vec![Node::build(())
         .with_name(Intern::from_ref("27L"))
         .with_kind(NodeKind::Runway)])]
+    );
+    assert_eq!(
+      parse_tasks("tx 27r"),
+      vec![Task::Taxi(vec![Node::build(())
+        .with_name(Intern::from_ref("27R"))
+        .with_kind(NodeKind::Runway)])]
+    );
+    assert_eq!(
+      parse_tasks("tx gate A1"),
+      vec![Task::Taxi(vec![Node::build(())
+        .with_name(Intern::from_ref("A1"))
+        .with_kind(NodeKind::Gate)])]
+    );
+    assert_eq!(
+      parse_tasks("tx gate a1"),
+      vec![Task::Taxi(vec![Node::build(())
+        .with_name(Intern::from_ref("A1"))
+        .with_kind(NodeKind::Gate),])]
     );
 
     // Flags.
@@ -597,6 +616,10 @@ mod tests {
     // Alias variants.
     assert_eq!(
       parse_tasks("ct 27L"),
+      vec![Task::Takeoff(Intern::from_ref("27L"))]
+    );
+    assert_eq!(
+      parse_tasks("cto 27L"),
       vec![Task::Takeoff(Intern::from_ref("27L"))]
     );
     assert_eq!(
