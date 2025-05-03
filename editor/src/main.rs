@@ -207,6 +207,20 @@ pub fn main() -> Result<()> {
       .unwrap();
     globals.set("vec2", vec2_constructor).unwrap();
 
+    let vec2_from = lua
+      .create_function(|_, vec: Vec<f32>| {
+        if vec.len() != 2 {
+          return Err(mlua::Error::SyntaxError {
+            message: "Table must be length of 2".to_owned(),
+            incomplete_input: false,
+          });
+        }
+
+        Ok(LuaVec2::new(*vec.first().unwrap(), *vec.last().unwrap()))
+      })
+      .unwrap();
+    globals.set("vec2_from", vec2_from).unwrap();
+
     if args.watch {
       let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
