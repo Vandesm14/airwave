@@ -38,19 +38,20 @@ fn draw_label(
   scale: f32,
   offset: Vec2,
 ) {
-  let pos = scale_point(pos, offset, scale);
+  let point = scale_point(pos - 25.0, offset, scale);
 
   // Background rectangle for the label
   draw
     .rect()
-    .xy(glam_to_geom(pos))
-    .w_h(200.0 * scale, 200.0 * scale)
+    .xy(glam_to_geom(point))
+    .w_h(300.0 * scale, 200.0 * scale)
     .color(color::rgba(0.0, 0.0, 0.0, 0.8));
 
   // Draw the label text
+  let point = scale_point(pos, offset, scale);
   draw
     .text(&text)
-    .xy(glam_to_geom(pos))
+    .xy(glam_to_geom(point))
     .font_size((FONT_SIZE * scale) as u32)
     .color(color::ORANGE);
 }
@@ -122,7 +123,7 @@ impl Draw for Gate {
       .x_y(pos.x, pos.y)
       .width(200.0 * scale)
       .height(200.0 * scale)
-      .color(color::rgb::<u8>(0xff, 0x00, 0x00));
+      .color(color::RED);
   }
 
   fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
@@ -153,7 +154,7 @@ impl Draw for Airport {
         .x_y(point.x, point.y)
         .width(100.0 * scale)
         .height(100.0 * scale)
-        .color(color::rgba::<u8>(0xff, 0xff, 0x00, 0x55));
+        .color(color::YELLOW);
     }
 
     let center = scale_point(self.center, offset, scale);
@@ -162,7 +163,7 @@ impl Draw for Airport {
       .x_y(center.x, center.y)
       .width(150.0 * scale)
       .height(150.0 * scale)
-      .color(color::rgb::<u8>(0x00, 0x00, 0xff));
+      .color(color::BLUE);
 
     for taxiway in self.taxiways.iter() {
       taxiway.draw_label(draw, scale, offset);
