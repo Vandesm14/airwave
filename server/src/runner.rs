@@ -1,4 +1,6 @@
 use std::{
+  collections::HashMap,
+  fs,
   ops::Div,
   path::PathBuf,
   time::{Duration, Instant, SystemTime},
@@ -29,7 +31,6 @@ use engine::{
 };
 
 use crate::{
-  airport::new_v_pattern,
   job::{JobQueue, JobReq},
   merge_points,
   ring::RingBuffer,
@@ -103,6 +104,8 @@ pub enum ResKind {
 
 #[derive(Debug)]
 pub struct Runner {
+  pub airports: HashMap<Intern<String>, Airport>,
+
   pub world: World,
   pub game: Game,
   pub engine: Engine,
@@ -133,6 +136,8 @@ impl Runner {
     let rate = 15;
 
     Self {
+      airports: HashMap::new(),
+
       world: World::default(),
       game: Game::default(),
       engine: Engine::default(),
@@ -155,6 +160,31 @@ impl Runner {
     }
   }
 
+  pub fn pull_assets(&mut self) {
+    if let Ok(dir) = fs::read_dir("assets/worlds") {
+      for path in dir
+        .flatten()
+        .filter(|f| f.file_name().to_str().unwrap().ends_with(".json"))
+      {
+        if let Ok(content) = fs::read_to_string(path.file_name()) {
+          if let Ok(mut airport) = serde_json::from_str::<Airport>(&content) {
+            airport.calculate_waypoints();
+            self.airports.insert(airport.id, airport);
+          }
+        } else {
+          tracing::error!("Failed to read {:?}", path.file_name());
+        }
+      }
+    } else {
+      tracing::error!("Failed to read assets directory.");
+      std::process::exit(1);
+    }
+  }
+
+  pub fn airport(&self, id: &Intern<String>) -> Option<&Airport> {
+    self.airports.get(id)
+  }
+
   pub fn add_aircraft(&mut self, mut aircraft: Aircraft) {
     while self.game.aircraft.iter().any(|a| a.id == aircraft.id) {
       aircraft.id = Intern::from(Aircraft::random_callsign(&mut self.rng));
@@ -174,6 +204,20 @@ impl Runner {
       "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
       "EGKK", "EGHI",
     ];
+
+    let frequencies = Frequencies {
+      approach: 0.0,
+      departure: 0.0,
+      tower: 0.0,
+      ground: 0.0,
+      center: config_frequencies.center,
+    };
+
+    let mut airport = self
+      .airport(&Intern::from_ref("default"))
+      .expect("Could not find default airport.")
+      .clone();
+    airport.frequencies = frequencies;
 
     // Generate randomly positioned uncontrolled airspaces.
     for airspace_name in airspace_names {
@@ -220,25 +264,8 @@ impl Runner {
         auto: true,
       };
 
-      let frequencies = Frequencies {
-        approach: 0.0,
-        departure: 0.0,
-        tower: 0.0,
-        ground: 0.0,
-        center: config_frequencies.center,
-      };
-
-      let mut airport = Airport {
-        id: Intern::from_ref(airspace_name),
-        frequencies,
-        ..Default::default()
-      };
-
-      new_v_pattern::setup(&mut airport);
-
+      let mut airport = airport.clone();
       airport.translate(airspace.pos);
-      airport.calculate_waypoints();
-
       airspace.airports.push(airport);
 
       self.world.airspaces.push(airspace);

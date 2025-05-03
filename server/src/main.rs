@@ -11,9 +11,8 @@ use internment::Intern;
 use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
-use engine::entities::{airport::Airport, airspace::Airspace};
+use engine::entities::airspace::Airspace;
 use server::{
-  airport::new_v_pattern,
   config::Config,
   http,
   job::JobReq,
@@ -73,6 +72,7 @@ async fn main() {
   let seed = seed.unwrap_or(
     config
       .world
+      .clone()
       .and_then(|w| w.seed)
       .unwrap_or(SystemTime::now().elapsed().unwrap().as_secs()),
   );
@@ -97,18 +97,16 @@ async fn main() {
   };
 
   let frequencies = config.frequencies.unwrap_or_default();
-  let mut airport_ksfo = Airport {
-    id: Intern::from_ref("KSFO"),
-    center: player_airspace.pos,
-    frequencies: frequencies.clone(),
-    ..Default::default()
-  };
+  let main_airport = runner
+    .airport(&Intern::from(
+      config
+        .world
+        .map(|w| w.airport)
+        .unwrap_or_else(|| "KSFO".to_owned()),
+    ))
+    .expect("Could not find main airport.");
 
-  new_v_pattern::setup(&mut airport_ksfo);
-
-  airport_ksfo.calculate_waypoints();
-  player_airspace.airports.push(airport_ksfo);
-
+  player_airspace.airports.push(main_airport.clone());
   runner.world.airspaces.push(player_airspace);
 
   runner.generate_airspaces(&mut world_rng, &frequencies);
