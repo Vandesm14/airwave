@@ -199,7 +199,7 @@ pub fn main() -> Result<()> {
     globals.set("terminal", assert_terminal).unwrap();
 
     globals.set("add_degrees", add_deg).unwrap();
-    globals.set("sub_degrees", sub_deg).unwrap();
+    globals.set("subtract_degrees", sub_deg).unwrap();
     globals.set("inverse_degrees", inverse_deg).unwrap();
 
     let vec2_constructor = lua
