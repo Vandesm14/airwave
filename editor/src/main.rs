@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf, sync::mpsc, thread};
 
 use clap::Parser;
-use editor::model::start_app;
+use editor::viewer::start_app;
 use glam::Vec2;
 use mlua::{
   FromLua, Lua, LuaSerdeExt, MetaMethod, Result, UserData, UserDataMethods,

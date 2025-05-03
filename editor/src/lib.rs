@@ -1,4 +1,4 @@
-pub mod model;
+pub mod viewer;
 
 use engine::entities::airport::{Airport, Gate, Runway, Taxiway, Terminal};
 use glam::Vec2;
