@@ -97,5 +97,13 @@ impl Draw for Airport {
     for terminal in self.terminals.iter() {
       terminal.draw(draw, scale, offset);
     }
+
+    let center = scale_point(self.center, offset, scale);
+    draw
+      .ellipse()
+      .x_y(center.x, center.y)
+      .width(150.0 * scale)
+      .height(150.0 * scale)
+      .color(color::rgb::<u8>(0x00, 0x00, 0xff));
   }
 }
