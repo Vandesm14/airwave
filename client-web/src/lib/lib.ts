@@ -113,11 +113,8 @@ export function runwayInfo(
     minAngle: Vec2;
   };
 } {
-  let pos: Vec2 = runway.pos;
-  let length = runway.length;
-
-  let start = movePoint(pos, length * 0.5, inverseDegrees(runway.heading));
-  let end = movePoint(pos, length * 0.5, runway.heading);
+  let start: Vec2 = runway.start;
+  let end = movePoint(start, runway.length, runway.heading);
 
   let maxIlsRangeMiles = 18;
   let ilsStart = movePoint(

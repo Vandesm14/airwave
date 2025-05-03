@@ -157,7 +157,7 @@ impl From<&Object> for Line {
   fn from(value: &Object) -> Self {
     match value {
       Object::Taxiway(value) => Line::new(value.a, value.b),
-      Object::Runway(value) => Line::new(value.start(), value.end()),
+      Object::Runway(value) => Line::new(value.start, value.end()),
       Object::Terminal(value) => value.apron,
     }
   }
@@ -648,7 +648,7 @@ mod tests {
 
       let runway_36 = Runway {
         id: Intern::from_ref("36"),
-        pos: Vec2::new(5.0, 0.0),
+        start: Vec2::new(5.0, 0.0),
         heading: 360.0,
         length: 500.0,
       };
@@ -700,7 +700,7 @@ mod tests {
 
       let runway_36 = Runway {
         id: Intern::from_ref("36"),
-        pos: Vec2::new(5.0, 0.0),
+        start: Vec2::new(5.0, 0.0),
         heading: 360.0,
         length: 500.0,
       };

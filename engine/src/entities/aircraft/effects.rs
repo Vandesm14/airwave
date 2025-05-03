@@ -211,7 +211,7 @@ impl AircraftUpdateLandingEffect {
       return;
     }
 
-    let distance_to_runway = aircraft.pos.distance(runway.start());
+    let distance_to_runway = aircraft.pos.distance(runway.start);
     let target_altitude = calculate_ils_altitude(distance_to_runway);
 
     // If we are too high, go around.
@@ -256,7 +256,7 @@ impl AircraftUpdateLandingEffect {
     }
 
     let start_descent_distance = NAUTICALMILES_TO_FEET * 10.0;
-    let distance_to_runway = aircraft.pos.distance(runway.start());
+    let distance_to_runway = aircraft.pos.distance(runway.start);
 
     let angle_to_runway =
       inverse_degrees(angle_between_points(runway.end(), aircraft.pos));

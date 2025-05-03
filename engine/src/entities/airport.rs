@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  inverse_degrees, move_point,
+  move_point,
   pathfinder::{Object, Pathfinder},
   Line, Translate,
 };
@@ -121,25 +121,21 @@ pub struct Runway {
   #[ts(as = "String")]
   pub id: Intern<String>,
   #[ts(as = "(f32, f32)")]
-  pub pos: Vec2,
+  pub start: Vec2,
   pub heading: f32,
   pub length: f32,
 }
 
 impl Translate for Runway {
   fn translate(&mut self, offset: Vec2) -> &mut Self {
-    self.pos += offset;
+    self.start += offset;
     self
   }
 }
 
 impl Runway {
-  pub fn start(&self) -> Vec2 {
-    move_point(self.pos, inverse_degrees(self.heading), self.length * 0.5)
-  }
-
   pub fn end(&self) -> Vec2 {
-    move_point(self.pos, self.heading, self.length * 0.5)
+    move_point(self.start, self.heading, self.length)
   }
 }
 

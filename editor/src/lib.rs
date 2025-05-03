@@ -45,7 +45,7 @@ impl Draw for Runway {
 
     draw
       .line()
-      .start(glam_to_geom(scale_point(self.start(), offset, scale)))
+      .start(glam_to_geom(scale_point(self.start, offset, scale)))
       .end(glam_to_geom(scale_point(self.end(), offset, scale)))
       .weight(250.0 * scale)
       .color(color::rgb::<u8>(RUNWAY_COLOR, RUNWAY_COLOR, RUNWAY_COLOR));

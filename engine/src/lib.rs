@@ -104,7 +104,7 @@ impl Line {
 
 impl From<Runway> for Line {
   fn from(value: Runway) -> Self {
-    Line::new(value.start(), value.end())
+    Line::new(value.start, value.end())
   }
 }
 

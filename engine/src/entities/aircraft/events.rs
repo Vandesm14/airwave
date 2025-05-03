@@ -216,7 +216,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
               .pos
               .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 30.0);
             let transition_iaf = move_point(
-              runway.start(),
+              runway.start,
               inverse_degrees(runway.heading),
               NAUTICALMILES_TO_FEET * 15.0,
             );
@@ -562,7 +562,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             // If an airport doesn't have a runway, we have other problems.
             let runway = closest.unwrap();
 
-            aircraft.pos = runway.start();
+            aircraft.pos = runway.start;
             aircraft.heading = runway.heading;
             aircraft.target.heading = runway.heading;
 
@@ -571,7 +571,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
                 runway.id,
                 NodeKind::Runway,
                 NodeBehavior::Takeoff,
-                runway.start(),
+                runway.start,
               ),
               waypoints: Vec::new(),
               state: TaxiingState::default(),
