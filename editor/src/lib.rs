@@ -6,6 +6,7 @@ use nannou::{color, geom};
 
 const TAXIWAY_COLOR: u8 = 0x55;
 const RUNWAY_COLOR: u8 = 0x22;
+const FONT_SIZE: f32 = 150.0;
 
 pub fn scale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
   (point + offset) * scale
@@ -19,8 +20,39 @@ pub fn glam_to_geom(v: Vec2) -> geom::Vec2 {
   geom::Vec2::new(v.x, v.y)
 }
 
+// Helper function to get midpoint between two points
+pub fn midpoint(a: Vec2, b: Vec2) -> Vec2 {
+  (a + b) * 0.5
+}
+
 pub trait Draw {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2);
+
+  fn draw_label(&self, _draw: &nannou::Draw, _scale: f32, _offset: Vec2) {}
+}
+
+fn draw_label(
+  text: String,
+  pos: Vec2,
+  draw: &nannou::Draw,
+  scale: f32,
+  offset: Vec2,
+) {
+  let pos = scale_point(pos, offset, scale);
+
+  // Background rectangle for the label
+  draw
+    .rect()
+    .xy(glam_to_geom(pos))
+    .w_h(200.0 * scale, 200.0 * scale)
+    .color(color::rgba(0.0, 0.0, 0.0, 0.8));
+
+  // Draw the label text
+  draw
+    .text(&text)
+    .xy(glam_to_geom(pos))
+    .font_size((FONT_SIZE * scale) as u32)
+    .color(color::ORANGE);
 }
 
 impl Draw for Taxiway {
@@ -36,19 +68,26 @@ impl Draw for Taxiway {
         TAXIWAY_COLOR,
       ));
   }
+
+  fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    let middle = midpoint(self.a, self.b);
+    draw_label(self.id.to_string(), middle, draw, scale, offset);
+  }
 }
 
 impl Draw for Runway {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
-    // let scaled_start = glam_to_geom(self.start());
-    // let scaled_end = glam_to_geom(self.end());
-
+    // Draw the runway line
     draw
       .line()
       .start(glam_to_geom(scale_point(self.start, offset, scale)))
       .end(glam_to_geom(scale_point(self.end(), offset, scale)))
       .weight(200.0 * scale)
       .color(color::rgb::<u8>(RUNWAY_COLOR, RUNWAY_COLOR, RUNWAY_COLOR));
+  }
+
+  fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    draw_label(self.id.to_string(), self.start, draw, scale, offset);
   }
 }
 
@@ -76,6 +115,7 @@ impl Draw for Terminal {
 
 impl Draw for Gate {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    // Draw the gate dot
     let pos = scale_point(self.pos, offset, scale);
     draw
       .ellipse()
@@ -83,6 +123,11 @@ impl Draw for Gate {
       .width(200.0 * scale)
       .height(200.0 * scale)
       .color(color::rgb::<u8>(0xff, 0x00, 0x00));
+  }
+
+  fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    let pos = scale_point(self.pos, offset, scale);
+    draw_label(self.id.to_string(), pos, draw, scale, offset);
   }
 }
 
@@ -97,6 +142,9 @@ impl Draw for Airport {
     for terminal in self.terminals.iter() {
       terminal.draw(draw, scale, offset);
     }
+    for gate in self.terminals.iter().flat_map(|t| t.gates.iter()) {
+      gate.draw(draw, scale, offset);
+    }
 
     for point in self.pathfinder.graph.edge_weights() {
       let point = scale_point(*point, offset, scale);
@@ -105,7 +153,7 @@ impl Draw for Airport {
         .x_y(point.x, point.y)
         .width(100.0 * scale)
         .height(100.0 * scale)
-        .color(color::rgb::<u8>(0xff, 0xff, 0x00));
+        .color(color::rgba::<u8>(0xff, 0xff, 0x00, 0x55));
     }
 
     let center = scale_point(self.center, offset, scale);
@@ -115,5 +163,15 @@ impl Draw for Airport {
       .width(150.0 * scale)
       .height(150.0 * scale)
       .color(color::rgb::<u8>(0x00, 0x00, 0xff));
+
+    for taxiway in self.taxiways.iter() {
+      taxiway.draw_label(draw, scale, offset);
+    }
+    for runway in self.runways.iter() {
+      runway.draw_label(draw, scale, offset);
+    }
+    for gate in self.terminals.iter().flat_map(|t| t.gates.iter()) {
+      gate.draw_label(draw, scale, offset);
+    }
   }
 }
