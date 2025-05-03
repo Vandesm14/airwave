@@ -52,7 +52,7 @@ fn model(app: &App) -> Model {
 
   let args = Cli::parse();
   let airport = if let Ok(world_file) = std::fs::read_to_string(&args.file) {
-    ron::from_str(&world_file).unwrap()
+    serde_json::from_str(&world_file).unwrap()
   } else {
     eprintln!("Failed to load world file: {:?}", args.file);
     std::process::exit(1);

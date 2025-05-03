@@ -2,6 +2,9 @@ use engine::entities::airport::{Airport, Gate, Runway, Taxiway, Terminal};
 use glam::Vec2;
 use nannou::{color, geom};
 
+const TAXIWAY_COLOR: u8 = 0x55;
+const RUNWAY_COLOR: u8 = 0x22;
+
 pub fn scale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
   (point + offset) * scale
 }
@@ -25,7 +28,11 @@ impl Draw for Taxiway {
       .start(glam_to_geom(scale_point(self.a, offset, scale)))
       .end(glam_to_geom(scale_point(self.b, offset, scale)))
       .weight(200.0 * scale)
-      .color(color::rgb::<u8>(0x99, 0x99, 0x99));
+      .color(color::rgb::<u8>(
+        TAXIWAY_COLOR,
+        TAXIWAY_COLOR,
+        TAXIWAY_COLOR,
+      ));
   }
 }
 
@@ -38,8 +45,8 @@ impl Draw for Runway {
       .line()
       .start(glam_to_geom(scale_point(self.start(), offset, scale)))
       .end(glam_to_geom(scale_point(self.end(), offset, scale)))
-      .weight(250.0)
-      .color(color::rgb::<u8>(0x66, 0x66, 0x66));
+      .weight(250.0 * scale)
+      .color(color::rgb::<u8>(RUNWAY_COLOR, RUNWAY_COLOR, RUNWAY_COLOR));
   }
 }
 
@@ -48,12 +55,16 @@ impl Draw for Terminal {
     draw
       .quad()
       .points(
-        glam_to_geom(self.a),
-        glam_to_geom(self.b),
-        glam_to_geom(self.c),
-        glam_to_geom(self.d),
+        glam_to_geom(scale_point(self.a, offset, scale)),
+        glam_to_geom(scale_point(self.b, offset, scale)),
+        glam_to_geom(scale_point(self.c, offset, scale)),
+        glam_to_geom(scale_point(self.d, offset, scale)),
       )
-      .color(color::rgb::<u8>(0x99, 0x99, 0x99));
+      .color(color::rgb::<u8>(
+        TAXIWAY_COLOR,
+        TAXIWAY_COLOR,
+        TAXIWAY_COLOR,
+      ));
 
     for gate in self.gates.iter() {
       gate.draw(draw, scale, offset);
@@ -67,8 +78,8 @@ impl Draw for Gate {
     draw
       .ellipse()
       .x_y(pos.x, pos.y)
-      .width(200.0)
-      .height(200.0)
+      .width(200.0 * scale)
+      .height(200.0 * scale)
       .color(color::rgb::<u8>(0xff, 0x00, 0x00));
   }
 }
