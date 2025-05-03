@@ -30,7 +30,7 @@ struct Cli {
   view: bool,
 }
 
-pub fn compile_airport(
+pub fn try_compile_airport(
   lua: &Lua,
   path: &PathBuf,
   sender: Option<mpsc::Sender<Airport>>,
@@ -66,12 +66,12 @@ pub fn compile_airport(
   Ok(())
 }
 
-pub fn handle_compile_airport(
+pub fn compile_airport(
   lua: &Lua,
   path: &PathBuf,
   sender: Option<mpsc::Sender<Airport>>,
 ) {
-  match compile_airport(lua, path, sender) {
+  match try_compile_airport(lua, path, sender) {
     Ok(_) => {}
     Err(e) => eprintln!("Error compiling: {:?}", e),
   };
@@ -112,6 +112,7 @@ impl UserData for LuaVec2 {
     methods.add_method("move", |_, a, (degrees, length): (f32, f32)| {
       Ok(LuaVec2::from(move_point(a.inner, degrees, length)))
     });
+    methods.add_method("into", |_, a, _: ()| Ok(vec![a.inner.x, a.inner.y]));
 
     methods
       .add_meta_function(MetaMethod::Add, |_, (a, b): (LuaVec2, LuaVec2)| {
@@ -194,11 +195,7 @@ pub fn main() -> Result<()> {
     if args.watch {
       let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
-      handle_compile_airport(
-        &lua,
-        &args.path,
-        args.view.then(|| sender.clone()),
-      );
+      compile_airport(&lua, &args.path, args.view.then(|| sender.clone()));
 
       let mut watcher = notify::recommended_watcher(tx).unwrap();
       watcher.watch(&args.path, RecursiveMode::Recursive).unwrap();
@@ -207,7 +204,7 @@ pub fn main() -> Result<()> {
         match res {
           Ok(event) => {
             if matches!(event.kind, notify::EventKind::Modify(..)) {
-              handle_compile_airport(
+              compile_airport(
                 &lua,
                 &args.path,
                 args.view.then(|| sender.clone()),
@@ -218,7 +215,7 @@ pub fn main() -> Result<()> {
         }
       }
     } else {
-      handle_compile_airport(&lua, &args.path, args.view.then_some(sender));
+      compile_airport(&lua, &args.path, args.view.then_some(sender));
     }
   });
 
