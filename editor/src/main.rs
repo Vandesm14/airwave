@@ -248,7 +248,10 @@ pub fn main() -> Result<()> {
     }
   });
 
-  start_app(receiver);
+  let args = Cli::parse();
+  if args.view {
+    start_app(receiver);
+  }
 
   Ok(())
 }
