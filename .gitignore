@@ -19,5 +19,8 @@ recordings/
 /config.toml
 /world
 
+# Logs
+mprocs.log
+
 # From Replit
 .cargo
