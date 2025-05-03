@@ -104,7 +104,7 @@ pub enum ResKind {
 
 #[derive(Debug)]
 pub struct Runner {
-  pub airports: HashMap<Intern<String>, Airport>,
+  pub airports: HashMap<String, Airport>,
 
   pub world: World,
   pub game: Game,
@@ -160,19 +160,43 @@ impl Runner {
     }
   }
 
-  pub fn pull_assets(&mut self) {
-    if let Ok(dir) = fs::read_dir("assets/worlds") {
+  pub fn load_assets(&mut self) {
+    if let Ok(dir) = fs::read_dir("assets/airports") {
       for path in dir
         .flatten()
         .filter(|f| f.file_name().to_str().unwrap().ends_with(".json"))
       {
-        if let Ok(content) = fs::read_to_string(path.file_name()) {
-          if let Ok(mut airport) = serde_json::from_str::<Airport>(&content) {
-            airport.calculate_waypoints();
-            self.airports.insert(airport.id, airport);
+        match fs::read_to_string(path.path()) {
+          Ok(content) => {
+            match serde_json::from_str::<Airport>(&content) {
+              Ok(mut airport) => {
+                airport.calculate_waypoints();
+
+                let name = path.file_name();
+                let name = name.to_str().unwrap().replace(".json", "");
+                tracing::info!(
+                  "Loaded airport \"{}\" from {}",
+                  airport.id,
+                  path.file_name().to_str().unwrap()
+                );
+                self.airports.insert(name.to_owned(), airport);
+              }
+              Err(e) => {
+                tracing::error!(
+                  "Failed to read {:?}: {:?}",
+                  path.file_name(),
+                  e
+                );
+              }
+            };
           }
-        } else {
-          tracing::error!("Failed to read {:?}", path.file_name());
+          Err(e) => {
+            tracing::error!(
+              "Failed to read airport file {:?}: {:?}",
+              path.file_name(),
+              e
+            );
+          }
         }
       }
     } else {
@@ -181,8 +205,12 @@ impl Runner {
     }
   }
 
-  pub fn airport(&self, id: &Intern<String>) -> Option<&Airport> {
-    self.airports.get(id)
+  pub fn airport(&self, id: impl AsRef<str>) -> Option<&Airport> {
+    self.airports.get(id.as_ref())
+  }
+
+  pub fn default_airport(&self) -> Option<&Airport> {
+    self.airport("default")
   }
 
   pub fn add_aircraft(&mut self, mut aircraft: Aircraft) {
@@ -214,7 +242,7 @@ impl Runner {
     };
 
     let mut airport = self
-      .airport(&Intern::from_ref("default"))
+      .default_airport()
       .expect("Could not find default airport.")
       .clone();
     airport.frequencies = frequencies;

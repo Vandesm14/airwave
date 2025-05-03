@@ -30,7 +30,7 @@ impl Config {
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct WorldConfig {
   pub seed: Option<u64>,
-  pub airport: String,
+  pub airport: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]

@@ -11,7 +11,7 @@ use internment::Intern;
 use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
-use engine::entities::airspace::Airspace;
+use engine::entities::{airport::Airport, airspace::Airspace};
 use server::{
   config::Config,
   http,
@@ -88,6 +88,8 @@ async fn main() {
     rng,
   );
 
+  runner.load_assets();
+
   let mut player_airspace = Airspace {
     id: Intern::from_ref("KSFO"),
     pos: Vec2::ZERO,
@@ -97,14 +99,16 @@ async fn main() {
   };
 
   let frequencies = config.frequencies.unwrap_or_default();
-  let main_airport = runner
-    .airport(&Intern::from(
-      config
-        .world
-        .map(|w| w.airport)
-        .unwrap_or_else(|| "KSFO".to_owned()),
-    ))
-    .expect("Could not find main airport.");
+  let main_airport: Airport = match config.world.and_then(|w| w.airport) {
+    Some(id) => runner
+      .airport(id)
+      .expect("Could not find configured airport")
+      .clone(),
+    None => runner
+      .default_airport()
+      .expect("Could not find default airport")
+      .clone(),
+  };
 
   player_airspace.airports.push(main_airport.clone());
   runner.world.airspaces.push(player_airspace);
