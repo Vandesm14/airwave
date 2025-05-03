@@ -10,8 +10,9 @@ use mlua::{
 use notify::{Event, RecursiveMode, Watcher};
 
 use engine::{
+  add_degrees,
   entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
-  move_point,
+  inverse_degrees, move_point, subtract_degrees,
 };
 
 /// View and edit an Airwave world file
@@ -181,11 +182,25 @@ pub fn main() -> Result<()> {
       })
       .unwrap();
 
+    let add_deg = lua
+      .create_function(|_, (a, b): (f32, f32)| Ok(add_degrees(a, b)))
+      .unwrap();
+    let sub_deg = lua
+      .create_function(|_, (a, b): (f32, f32)| Ok(subtract_degrees(a, b)))
+      .unwrap();
+    let inverse_deg = lua
+      .create_function(|_, a: f32| Ok(inverse_degrees(a)))
+      .unwrap();
+
     globals.set("airport", assert_airport).unwrap();
     globals.set("runway", assert_runway).unwrap();
     globals.set("taxiway", assert_taxiway).unwrap();
     globals.set("gate", assert_gate).unwrap();
     globals.set("terminal", assert_terminal).unwrap();
+
+    globals.set("add_degrees", add_deg).unwrap();
+    globals.set("sub_degrees", sub_deg).unwrap();
+    globals.set("inverse_degrees", inverse_deg).unwrap();
 
     let vec2_constructor = lua
       .create_function(|_, (x, y): (f32, f32)| Ok(LuaVec2::new(x, y)))
