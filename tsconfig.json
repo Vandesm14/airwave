@@ -8,5 +8,5 @@
     "jsxImportSource": "solid-js",
     "noEmit": true
   },
-  "exclude": ["node_modules", "client-web/dist"]
+  "exclude": ["node_modules", "client-web/dist", "docs"]
 }
