@@ -13,7 +13,7 @@
     "docs:build": "cd docs && mdbook build",
     "engine:bindings": "cargo test export_bindings",
     "engine:dump-prompts": "cargo run --bin dump_prompts",
-    "run-all": "zellij --layout zellij.kdl"
+    "run-all": "mprocs"
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
