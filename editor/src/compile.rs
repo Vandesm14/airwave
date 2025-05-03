@@ -1,10 +1,17 @@
 use std::{fs, path::PathBuf, sync::mpsc};
 
 use clap::Parser;
-use mlua::{Lua, LuaSerdeExt, Result, Value};
+use glam::Vec2;
+use mlua::{
+  FromLua, Lua, LuaSerdeExt, MetaMethod, Result, UserData, UserDataMethods,
+  Value,
+};
 use notify::{Event, RecursiveMode, Watcher};
 
-use engine::entities::airport::{Airport, Gate, Runway, Taxiway, Terminal};
+use engine::{
+  entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
+  move_point,
+};
 
 /// View and edit an Airwave world file
 #[derive(Parser, Debug)]
@@ -56,6 +63,74 @@ pub fn handle_compile_airport(lua: &Lua, path: &PathBuf) {
   };
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct LuaVec2 {
+  inner: Vec2,
+}
+
+// We can implement `FromLua` trait for our `Vec2` to return a copy
+impl FromLua for LuaVec2 {
+  fn from_lua(value: Value, _: &Lua) -> Result<Self> {
+    match value {
+      Value::UserData(ud) => Ok(*ud.borrow::<Self>()?),
+      _ => unreachable!(),
+    }
+  }
+}
+
+impl UserData for LuaVec2 {
+  fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
+    methods.add_method("lerp", |_, a, (b, s): (LuaVec2, f32)| {
+      Ok(LuaVec2::from(a.inner.lerp(b.inner, s)))
+    });
+    methods
+      .add_method("distance", |_, a, b: LuaVec2| Ok(a.inner.distance(b.inner)));
+    methods.add_method("distance_squared", |_, a, b: LuaVec2| {
+      Ok(a.inner.distance_squared(b.inner))
+    });
+    methods.add_method("length", |_, a, _: ()| Ok(a.inner.length()));
+    methods.add_method("midpoint", |_, a, b: LuaVec2| {
+      Ok(LuaVec2::from(a.inner.midpoint(b.inner)))
+    });
+    methods.add_method("angle_between", |_, a, b: LuaVec2| {
+      Ok(a.inner.angle_to(b.inner))
+    });
+    methods.add_method("move", |_, a, (degrees, length): (f32, f32)| {
+      Ok(LuaVec2::from(move_point(a.inner, degrees, length)))
+    });
+
+    methods
+      .add_meta_function(MetaMethod::Add, |_, (a, b): (LuaVec2, LuaVec2)| {
+        Ok(LuaVec2::from(a.inner + b.inner))
+      });
+  }
+
+  fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
+    fields.add_field_method_get("x", |_, vec2: &LuaVec2| Ok(vec2.inner.x));
+    fields.add_field_method_get("y", |_, vec2: &LuaVec2| Ok(vec2.inner.y));
+  }
+}
+
+impl From<Vec2> for LuaVec2 {
+  fn from(value: Vec2) -> Self {
+    Self { inner: value }
+  }
+}
+
+impl From<LuaVec2> for Vec2 {
+  fn from(value: LuaVec2) -> Self {
+    value.inner
+  }
+}
+
+impl LuaVec2 {
+  pub fn new(x: f32, y: f32) -> Self {
+    Self {
+      inner: Vec2::new(x, y),
+    }
+  }
+}
+
 pub fn main() -> Result<()> {
   tracing_subscriber::fmt::init();
 
@@ -85,6 +160,10 @@ pub fn main() -> Result<()> {
   globals.set("assert_taxiway", assert_taxiway)?;
   globals.set("assert_gate", assert_gate)?;
   globals.set("assert_terminal", assert_terminal)?;
+
+  let vec2_constructor =
+    lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaVec2::new(x, y)))?;
+  globals.set("vec2", vec2_constructor)?;
 
   if args.watch {
     let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
