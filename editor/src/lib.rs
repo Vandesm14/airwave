@@ -98,6 +98,16 @@ impl Draw for Airport {
       terminal.draw(draw, scale, offset);
     }
 
+    for point in self.pathfinder.graph.edge_weights() {
+      let point = scale_point(*point, offset, scale);
+      draw
+        .ellipse()
+        .x_y(point.x, point.y)
+        .width(100.0 * scale)
+        .height(100.0 * scale)
+        .color(color::rgb::<u8>(0xff, 0xff, 0x00));
+    }
+
     let center = scale_point(self.center, offset, scale);
     draw
       .ellipse()

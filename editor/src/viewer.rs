@@ -75,6 +75,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
     if let Ok(chan) = mutex.lock() {
       while let Ok(airport) = chan.try_recv() {
         model.airport = airport;
+        model.airport.calculate_waypoints();
       }
     }
   }
