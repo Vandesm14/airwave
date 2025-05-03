@@ -155,11 +155,11 @@ pub fn main() -> Result<()> {
     lua.from_value::<Terminal>(value.clone()).map(|_| value)
   })?;
 
-  globals.set("assert_airport", assert_airport)?;
-  globals.set("assert_runway", assert_runway)?;
-  globals.set("assert_taxiway", assert_taxiway)?;
-  globals.set("assert_gate", assert_gate)?;
-  globals.set("assert_terminal", assert_terminal)?;
+  globals.set("airport", assert_airport)?;
+  globals.set("runway", assert_runway)?;
+  globals.set("taxiway", assert_taxiway)?;
+  globals.set("gate", assert_gate)?;
+  globals.set("terminal", assert_terminal)?;
 
   let vec2_constructor =
     lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaVec2::new(x, y)))?;

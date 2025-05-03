@@ -1,4 +1,4 @@
-local airport = assert_airport({
+local airport = airport({
   id = "KSFO",
   frequencies = {
     approach = 118.6,
@@ -10,7 +10,7 @@ local airport = assert_airport({
   center = {0.0, 0.0},
 
   runways = {
-    assert_runway({
+    runway({
       id = "13",
       pos = {0.0, 0.0},
       heading = 135.0,
@@ -18,12 +18,12 @@ local airport = assert_airport({
     })
   },
   taxiways = {
-    assert_taxiway({
+    taxiway({
       id = "A",
       a = {0.0, 0.0},
       b = {0.0, 0.0},
     }),
-    assert_taxiway({
+    taxiway({
       id = "B",
       a = {0.0, 0.0},
       b = {0.0, 0.0},
