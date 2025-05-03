@@ -150,67 +150,83 @@ impl LuaVec2 {
 pub fn main() -> Result<()> {
   tracing_subscriber::fmt::init();
 
-  let args = Cli::parse();
+  let (sender, receiver) = mpsc::channel::<Airport>();
 
-  let lua = Lua::new();
-  let globals = lua.globals();
+  thread::spawn(|| {
+    let args = Cli::parse();
 
-  let assert_airport = lua.create_function(|lua, value: Value| {
-    lua.from_value::<Airport>(value.clone()).map(|_| value)
-  })?;
-  let assert_runway = lua.create_function(|lua, value: Value| {
-    lua.from_value::<Runway>(value.clone()).map(|_| value)
-  })?;
-  let assert_taxiway = lua.create_function(|lua, value: Value| {
-    lua.from_value::<Taxiway>(value.clone()).map(|_| value)
-  })?;
-  let assert_gate = lua.create_function(|lua, value: Value| {
-    lua.from_value::<Gate>(value.clone()).map(|_| value)
-  })?;
-  let assert_terminal = lua.create_function(|lua, value: Value| {
-    lua.from_value::<Terminal>(value.clone()).map(|_| value)
-  })?;
+    let lua = Lua::new();
+    let globals = lua.globals();
 
-  globals.set("airport", assert_airport)?;
-  globals.set("runway", assert_runway)?;
-  globals.set("taxiway", assert_taxiway)?;
-  globals.set("gate", assert_gate)?;
-  globals.set("terminal", assert_terminal)?;
+    let assert_airport = lua
+      .create_function(|lua, value: Value| {
+        lua.from_value::<Airport>(value.clone()).map(|_| value)
+      })
+      .unwrap();
+    let assert_runway = lua
+      .create_function(|lua, value: Value| {
+        lua.from_value::<Runway>(value.clone()).map(|_| value)
+      })
+      .unwrap();
+    let assert_taxiway = lua
+      .create_function(|lua, value: Value| {
+        lua.from_value::<Taxiway>(value.clone()).map(|_| value)
+      })
+      .unwrap();
+    let assert_gate = lua
+      .create_function(|lua, value: Value| {
+        lua.from_value::<Gate>(value.clone()).map(|_| value)
+      })
+      .unwrap();
+    let assert_terminal = lua
+      .create_function(|lua, value: Value| {
+        lua.from_value::<Terminal>(value.clone()).map(|_| value)
+      })
+      .unwrap();
 
-  let vec2_constructor =
-    lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaVec2::new(x, y)))?;
-  globals.set("vec2", vec2_constructor)?;
+    globals.set("airport", assert_airport).unwrap();
+    globals.set("runway", assert_runway).unwrap();
+    globals.set("taxiway", assert_taxiway).unwrap();
+    globals.set("gate", assert_gate).unwrap();
+    globals.set("terminal", assert_terminal).unwrap();
 
-  let sender = if args.view {
-    let (sender, receiver) = mpsc::channel::<Airport>();
-    start_app(receiver);
+    let vec2_constructor = lua
+      .create_function(|_, (x, y): (f32, f32)| Ok(LuaVec2::new(x, y)))
+      .unwrap();
+    globals.set("vec2", vec2_constructor).unwrap();
 
-    Some(sender)
-  } else {
-    None
-  };
+    if args.watch {
+      let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
-  if args.watch {
-    let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
+      handle_compile_airport(
+        &lua,
+        &args.path,
+        args.view.then(|| sender.clone()),
+      );
 
-    handle_compile_airport(&lua, &args.path, sender.clone());
-
-    let mut watcher = notify::recommended_watcher(tx).unwrap();
-    watcher.watch(&args.path, RecursiveMode::Recursive).unwrap();
-    // Block forever, printing out events as they come in
-    for res in rx {
-      match res {
-        Ok(event) => {
-          if matches!(event.kind, notify::EventKind::Modify(..)) {
-            handle_compile_airport(&lua, &args.path, sender.clone());
+      let mut watcher = notify::recommended_watcher(tx).unwrap();
+      watcher.watch(&args.path, RecursiveMode::Recursive).unwrap();
+      // Block forever, printing out events as they come in
+      for res in rx {
+        match res {
+          Ok(event) => {
+            if matches!(event.kind, notify::EventKind::Modify(..)) {
+              handle_compile_airport(
+                &lua,
+                &args.path,
+                args.view.then(|| sender.clone()),
+              );
+            }
           }
+          Err(e) => tracing::error!("watch error: {:?}", e),
         }
-        Err(e) => tracing::error!("watch error: {:?}", e),
       }
+    } else {
+      handle_compile_airport(&lua, &args.path, args.view.then_some(sender));
     }
-  } else {
-    handle_compile_airport(&lua, &args.path, sender);
-  }
+  });
+
+  start_app(receiver);
 
   Ok(())
 }
