@@ -38,7 +38,7 @@ pub fn compile_airport(
   let script = if let Ok(script) = std::fs::read_to_string(path) {
     script
   } else {
-    tracing::error!("Failed to load script file: {:?}", path);
+    eprint!("Failed to load script file: {:?}", path);
     std::process::exit(1);
   };
 
@@ -58,11 +58,9 @@ pub fn compile_airport(
   let json_size = json_string.len();
   fs::write(json_path.clone(), json_string)?;
 
-  tracing::info!(
+  println!(
     "Wrote airport \"{}\" to {} ({} bytes)",
-    airport.id,
-    json_path,
-    json_size
+    airport.id, json_path, json_size
   );
 
   Ok(())
@@ -75,7 +73,7 @@ pub fn handle_compile_airport(
 ) {
   match compile_airport(lua, path, sender) {
     Ok(_) => {}
-    Err(e) => tracing::error!("Error compiling: {:?}", e),
+    Err(e) => eprintln!("Error compiling: {:?}", e),
   };
 }
 
@@ -148,8 +146,6 @@ impl LuaVec2 {
 }
 
 pub fn main() -> Result<()> {
-  tracing_subscriber::fmt::init();
-
   let (sender, receiver) = mpsc::channel::<Airport>();
 
   thread::spawn(|| {
@@ -218,7 +214,7 @@ pub fn main() -> Result<()> {
               );
             }
           }
-          Err(e) => tracing::error!("watch error: {:?}", e),
+          Err(e) => eprintln!("watch error: {:?}", e),
         }
       }
     } else {

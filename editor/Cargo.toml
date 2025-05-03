@@ -12,11 +12,8 @@ clap.workspace = true
 glam.workspace = true
 serde_json.workspace = true
 serde.workspace = true
-tracing-subscriber.workspace = true
-tracing.workspace = true
 
 mlua = { version = "0.10.3", features = ["lua54", "serialize"] }
 nannou = "0.19.0"
 nannou_egui = "0.19.0"
 notify = "8.0.0"
-wgpu-core = { version = "*", default-features = false, features = ["link"] }
