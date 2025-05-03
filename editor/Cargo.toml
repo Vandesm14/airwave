@@ -5,10 +5,6 @@ edition.workspace = true
 publish.workspace = true
 license.workspace = true
 
-[[bin]]
-name = "compile"
-path = "src/compile.rs"
-
 [dependencies]
 engine = { path = "../engine" }
 

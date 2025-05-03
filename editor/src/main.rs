@@ -1,169 +1,216 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf, sync::mpsc, thread};
 
 use clap::Parser;
-use editor::Draw;
-use engine::entities::airport::Airport;
-use nannou::prelude::*;
-use nannou_egui::Egui;
+use editor::model::start_app;
+use glam::Vec2;
+use mlua::{
+  FromLua, Lua, LuaSerdeExt, MetaMethod, Result, UserData, UserDataMethods,
+  Value,
+};
+use notify::{Event, RecursiveMode, Watcher};
+
+use engine::{
+  entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
+  move_point,
+};
 
 /// View and edit an Airwave world file
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
   /// The file to load
-  file: PathBuf,
+  path: PathBuf,
+
+  /// Watch for changes
+  #[arg(short, long)]
+  watch: bool,
+
+  /// View changes in a GUI
+  #[arg(short, long)]
+  view: bool,
 }
 
-fn main() {
-  nannou::app(model).update(update).run();
-}
-
-struct HeldKeys {
-  ctrl: bool,
-  shift: bool,
-  alt: bool,
-}
-
-struct Model {
-  egui: Egui,
-  airport: Airport,
-
-  is_mouse_down: bool,
-  is_over_ui: bool,
-
-  drag_anchor: Option<glam::Vec2>,
-  old_shift_pos: glam::Vec2,
-  shift_pos: glam::Vec2,
-  scale: f32,
-
-  held_keys: HeldKeys,
-}
-
-fn model(app: &App) -> Model {
-  // Create window
-  let window_id = app
-    .new_window()
-    .view(view)
-    .raw_event(raw_window_event)
-    .build()
-    .unwrap();
-  let window = app.window(window_id).unwrap();
-  let egui = Egui::from_window(&window);
-
-  let args = Cli::parse();
-  let airport = if let Ok(world_file) = std::fs::read_to_string(&args.file) {
-    serde_json::from_str(&world_file).unwrap()
+pub fn compile_airport(
+  lua: &Lua,
+  path: &PathBuf,
+  sender: Option<mpsc::Sender<Airport>>,
+) -> Result<()> {
+  let script = if let Ok(script) = std::fs::read_to_string(path) {
+    script
   } else {
-    eprintln!("Failed to load world file: {:?}", args.file);
+    tracing::error!("Failed to load script file: {:?}", path);
     std::process::exit(1);
   };
 
-  Model {
-    egui,
-    airport,
-
-    is_mouse_down: false,
-    is_over_ui: false,
-
-    drag_anchor: None,
-    old_shift_pos: glam::Vec2::default(),
-    shift_pos: glam::Vec2::default(),
-    scale: 0.1,
-
-    held_keys: HeldKeys {
-      ctrl: false,
-      shift: false,
-      alt: false,
-    },
+  // This happens due to an issue with file watching. So I think it's fine if we
+  // ignore blank files altogether anyway.
+  if script.is_empty() {
+    return Ok(());
   }
+
+  let airport: Airport = lua.from_value(lua.load(script).eval()?)?;
+  if let Some(send) = sender {
+    let _ = send.send(airport.clone());
+  }
+
+  let json_path = path.to_str().unwrap().replace(".lua", ".json");
+  let json_string = serde_json::to_string(&airport).unwrap();
+  let json_size = json_string.len();
+  fs::write(json_path.clone(), json_string)?;
+
+  tracing::info!(
+    "Wrote airport \"{}\" to {} ({} bytes)",
+    airport.id,
+    json_path,
+    json_size
+  );
+
+  Ok(())
 }
 
-fn update(_app: &App, model: &mut Model, update: Update) {
-  model.egui.set_elapsed_time(update.since_start);
-  let _ = model.egui.begin_frame();
-}
-
-fn real_mouse_pos(app: &App, model: &Model) -> glam::Vec2 {
-  let size = app.main_window().inner_size_points();
-  let size = Vec2::new(size.0, size.1);
-  let half_size = size / 2.0;
-
-  let pos = model.egui.input().pointer_pos;
-
-  glam::Vec2::new(pos.x - half_size.x, -pos.y + half_size.y)
-}
-
-fn raw_window_event(
-  app: &App,
-  model: &mut Model,
-  event: &nannou::winit::event::WindowEvent,
+pub fn handle_compile_airport(
+  lua: &Lua,
+  path: &PathBuf,
+  sender: Option<mpsc::Sender<Airport>>,
 ) {
-  // Let egui handle things like keyboard and mouse input.
-  model.egui.handle_raw_event(event);
+  match compile_airport(lua, path, sender) {
+    Ok(_) => {}
+    Err(e) => tracing::error!("Error compiling: {:?}", e),
+  };
+}
 
-  // Update Modifiers
-  if let nannou::winit::event::WindowEvent::ModifiersChanged(modifiers) = event
-  {
-    model.held_keys.ctrl = modifiers.ctrl();
-    model.held_keys.shift = modifiers.shift();
-    model.held_keys.alt = modifiers.alt();
-  }
+#[derive(Debug, Clone, Copy)]
+pub struct LuaVec2 {
+  inner: Vec2,
+}
 
-  // Detect mouse wheel
-  if let nannou::winit::event::WindowEvent::MouseWheel {
-    delta: MouseScrollDelta::LineDelta(_, y),
-    ..
-  } = event
-  {
-    if *y < 0.0 {
-      model.scale *= 0.9;
-    } else {
-      model.scale *= 1.1;
+// We can implement `FromLua` trait for our `Vec2` to return a copy
+impl FromLua for LuaVec2 {
+  fn from_lua(value: Value, _: &Lua) -> Result<Self> {
+    match value {
+      Value::UserData(ud) => Ok(*ud.borrow::<Self>()?),
+      _ => unreachable!(),
     }
   }
+}
 
-  // Detect mouse click
-  if let nannou::winit::event::WindowEvent::MouseInput {
-    state: nannou::winit::event::ElementState::Pressed,
-    button: nannou::winit::event::MouseButton::Left,
-    ..
-  } = event
-  {
-    if !model.is_over_ui {
-      model.is_mouse_down = true;
+impl UserData for LuaVec2 {
+  fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
+    methods.add_method("lerp", |_, a, (b, s): (LuaVec2, f32)| {
+      Ok(LuaVec2::from(a.inner.lerp(b.inner, s)))
+    });
+    methods
+      .add_method("distance", |_, a, b: LuaVec2| Ok(a.inner.distance(b.inner)));
+    methods.add_method("distance_squared", |_, a, b: LuaVec2| {
+      Ok(a.inner.distance_squared(b.inner))
+    });
+    methods.add_method("length", |_, a, _: ()| Ok(a.inner.length()));
+    methods.add_method("midpoint", |_, a, b: LuaVec2| {
+      Ok(LuaVec2::from(a.inner.midpoint(b.inner)))
+    });
+    methods.add_method("angle_between", |_, a, b: LuaVec2| {
+      Ok(a.inner.angle_to(b.inner))
+    });
+    methods.add_method("move", |_, a, (degrees, length): (f32, f32)| {
+      Ok(LuaVec2::from(move_point(a.inner, degrees, length)))
+    });
 
-      let pos = real_mouse_pos(app, model);
-      model.drag_anchor = Some(pos);
-      model.old_shift_pos = model.shift_pos;
-    }
-  } else if let nannou::winit::event::WindowEvent::MouseInput {
-    state: nannou::winit::event::ElementState::Released,
-    button: nannou::winit::event::MouseButton::Left,
-    ..
-  } = event
-  {
-    model.is_mouse_down = false;
-    model.drag_anchor = None;
+    methods
+      .add_meta_function(MetaMethod::Add, |_, (a, b): (LuaVec2, LuaVec2)| {
+        Ok(LuaVec2::from(a.inner + b.inner))
+      });
   }
 
-  // Detect mouse move
-  if let nannou::winit::event::WindowEvent::CursorMoved { .. } = event {
-    let pos = real_mouse_pos(app, model);
-    if model.is_mouse_down {
-      if let Some(drag_anchor) = model.drag_anchor {
-        model.shift_pos =
-          model.old_shift_pos + (pos - drag_anchor) / model.scale;
+  fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
+    fields.add_field_method_get("x", |_, vec2: &LuaVec2| Ok(vec2.inner.x));
+    fields.add_field_method_get("y", |_, vec2: &LuaVec2| Ok(vec2.inner.y));
+  }
+}
+
+impl From<Vec2> for LuaVec2 {
+  fn from(value: Vec2) -> Self {
+    Self { inner: value }
+  }
+}
+
+impl From<LuaVec2> for Vec2 {
+  fn from(value: LuaVec2) -> Self {
+    value.inner
+  }
+}
+
+impl LuaVec2 {
+  pub fn new(x: f32, y: f32) -> Self {
+    Self {
+      inner: Vec2::new(x, y),
+    }
+  }
+}
+
+pub fn main() -> Result<()> {
+  tracing_subscriber::fmt::init();
+
+  let args = Cli::parse();
+
+  let lua = Lua::new();
+  let globals = lua.globals();
+
+  let assert_airport = lua.create_function(|lua, value: Value| {
+    lua.from_value::<Airport>(value.clone()).map(|_| value)
+  })?;
+  let assert_runway = lua.create_function(|lua, value: Value| {
+    lua.from_value::<Runway>(value.clone()).map(|_| value)
+  })?;
+  let assert_taxiway = lua.create_function(|lua, value: Value| {
+    lua.from_value::<Taxiway>(value.clone()).map(|_| value)
+  })?;
+  let assert_gate = lua.create_function(|lua, value: Value| {
+    lua.from_value::<Gate>(value.clone()).map(|_| value)
+  })?;
+  let assert_terminal = lua.create_function(|lua, value: Value| {
+    lua.from_value::<Terminal>(value.clone()).map(|_| value)
+  })?;
+
+  globals.set("airport", assert_airport)?;
+  globals.set("runway", assert_runway)?;
+  globals.set("taxiway", assert_taxiway)?;
+  globals.set("gate", assert_gate)?;
+  globals.set("terminal", assert_terminal)?;
+
+  let vec2_constructor =
+    lua.create_function(|_, (x, y): (f32, f32)| Ok(LuaVec2::new(x, y)))?;
+  globals.set("vec2", vec2_constructor)?;
+
+  let sender = if args.view {
+    let (sender, receiver) = mpsc::channel::<Airport>();
+    start_app(receiver);
+
+    Some(sender)
+  } else {
+    None
+  };
+
+  if args.watch {
+    let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
+
+    handle_compile_airport(&lua, &args.path, sender.clone());
+
+    let mut watcher = notify::recommended_watcher(tx).unwrap();
+    watcher.watch(&args.path, RecursiveMode::Recursive).unwrap();
+    // Block forever, printing out events as they come in
+    for res in rx {
+      match res {
+        Ok(event) => {
+          if matches!(event.kind, notify::EventKind::Modify(..)) {
+            handle_compile_airport(&lua, &args.path, sender.clone());
+          }
+        }
+        Err(e) => tracing::error!("watch error: {:?}", e),
       }
     }
+  } else {
+    handle_compile_airport(&lua, &args.path, sender);
   }
-}
 
-fn view(app: &App, model: &Model, frame: Frame) {
-  let draw = app.draw();
-  draw.background().color(BLACK);
-
-  model.airport.draw(&draw, model.scale, model.shift_pos);
-
-  draw.to_frame(app, &frame).unwrap();
-  model.egui.draw_to_frame(&frame).unwrap();
+  Ok(())
 }

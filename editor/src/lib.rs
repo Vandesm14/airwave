@@ -1,3 +1,5 @@
+pub mod model;
+
 use engine::entities::airport::{Airport, Gate, Runway, Taxiway, Terminal};
 use glam::Vec2;
 use nannou::{color, geom};
