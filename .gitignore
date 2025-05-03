@@ -14,10 +14,8 @@ client-web/bindings/
 
 # Environment
 .env
-assets/
 recordings/
 /config.toml
-/world
 
 # Logs
 mprocs.log
