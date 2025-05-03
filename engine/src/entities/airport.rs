@@ -96,14 +96,26 @@ impl Airport {
     }
   }
 
-  pub fn add_taxiway(&mut self, taxiway: Taxiway) {
-    let taxiway = taxiway.extend_ends_by(100.0);
-    self.taxiways.push(taxiway);
+  /// Extend taxiways to add some extra room against floating point errors.
+  pub fn extend_taxiways(&mut self) {
+    for taxiway in self.taxiways.iter_mut() {
+      *taxiway = taxiway.clone().extend_ends_by(100.0);
+    }
   }
 
-  pub fn add_runway(&mut self, mut runway: Runway) {
-    runway.length += 200.0;
-    self.runways.push(runway);
+  /// Extend runways to add some extra room against floating point errors.
+  pub fn extend_runways(&mut self) {
+    for runway in self.runways.iter_mut() {
+      runway.start = runway.start.move_towards(runway.end(), -100.0);
+      runway.length += 200.0;
+    }
+  }
+
+  /// Extend all runways and taxiways to add some extra room against floating
+  /// point errors.
+  pub fn extend_all(&mut self) {
+    self.extend_runways();
+    self.extend_taxiways();
   }
 
   pub fn calculate_waypoints(&mut self) {

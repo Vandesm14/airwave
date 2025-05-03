@@ -170,6 +170,7 @@ impl Runner {
           Ok(content) => {
             match serde_json::from_str::<Airport>(&content) {
               Ok(mut airport) => {
+                airport.extend_all();
                 airport.calculate_waypoints();
 
                 let name = path.file_name();
