@@ -1,5 +1,3 @@
-local center = { 0, 0 }
-
 local UP = 15
 local DOWN = 195
 local LEFT = 285
@@ -11,7 +9,7 @@ local runway19R = runway({
   heading = DOWN,
   length = 7650
 })
-runway19R.start = vec2(center):move(DOWN, runway19R.length * -0.5):into()
+runway19R.start = vec2({ 0, 0 }):move(DOWN, runway19R.length * -0.5):into()
 
 local runway19L = runway({
   id = "19L",
@@ -26,7 +24,7 @@ local runway28R = runway({
   heading = LEFT,
   length = 11900
 })
-runway28R.start = vec2(center):move(LEFT, runway28R.length * -0.5):move(DOWN, -1500):into()
+runway28R.start = vec2({ 0, 0 }):move(LEFT, runway28R.length * -0.5):move(DOWN, -1500):into()
 
 local runway28L = runway({
   id = "28L",
@@ -249,7 +247,7 @@ local airport = airport({
     ground = 118.6,
     center = 118.7,
   },
-  center = center,
+  center = { 600, -100 },
 
   runways = {
     runway19R,

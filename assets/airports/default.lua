@@ -188,7 +188,8 @@ local airport = airport({
     ground = 118.6,
     center = 118.7,
   },
-  center      = vec2(taxiwayE3.a):midpoint(vec2(taxiwayF3.b)):into(),
+  -- Between runway 13 and 22
+  center      = { 0, -3000 },
   runways     = { runway13, runway22 },
   taxiways    = { taxiwayA, taxiwayB, taxiwayC, taxiwayD,
     taxiwayE1, taxiwayE2, taxiwayE3, taxiwayE4,
