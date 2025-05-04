@@ -1,7 +1,6 @@
 {
   "imports": [
     "server/prompts/tasks/altitude.json",
-    "server/prompts/tasks/delete.json",
     "server/prompts/tasks/direct.json",
     "server/prompts/tasks/frequency.json",
     "server/prompts/tasks/go-around.json",

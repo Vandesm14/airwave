@@ -1,6 +1,5 @@
 {
   "imports": [
-    "server/prompts/tasks/delete.json",
     "server/prompts/tasks/frequency.json",
     "server/prompts/tasks/ident.json",
     "server/prompts/tasks/line-up.json",
