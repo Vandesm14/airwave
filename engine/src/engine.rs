@@ -20,7 +20,7 @@ use crate::{
       },
       Aircraft, AircraftState, TaxiingState, TCAS,
     },
-    world::{Game, World},
+    world::{closest_airport, Game, World},
   },
   KNOT_TO_FEET_PER_SECOND,
 };
@@ -314,20 +314,26 @@ impl Engine {
       let aircraft = pair.first().unwrap();
       let other_aircraft = pair.last().unwrap();
 
-      // This allows us to ignore non-moving aircraft included parked.
-      if aircraft.speed == 0.0 && other_aircraft.speed == 0.0 {
+      // Skip checking aircraft that are both parked or not at the same airport.
+      if matches!(aircraft.state, AircraftState::Parked { .. })
+        && matches!(other_aircraft.state, AircraftState::Parked { .. })
+        || closest_airport(&bundle.world.airspaces, aircraft.pos).map(|a| a.id)
+          != closest_airport(&bundle.world.airspaces, other_aircraft.pos)
+            .map(|a| a.id)
+      {
         continue;
       }
 
       let distance = aircraft.pos.distance_squared(other_aircraft.pos);
 
+      let detection_range_deg = 25.0;
       if distance <= 250.0_f32.powf(2.0) * 2.0 {
         if delta_angle(
           aircraft.heading,
           angle_between_points(aircraft.pos, other_aircraft.pos),
         )
         .abs()
-          <= 45.0
+          <= detection_range_deg
         {
           collisions.insert(aircraft.id);
         }
@@ -337,7 +343,7 @@ impl Engine {
           angle_between_points(other_aircraft.pos, aircraft.pos),
         )
         .abs()
-          <= 45.0
+          <= detection_range_deg
         {
           collisions.insert(other_aircraft.id);
         }
