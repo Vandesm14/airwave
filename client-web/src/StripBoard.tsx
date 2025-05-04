@@ -24,7 +24,6 @@ import { makePersisted } from '@solid-primitives/storage';
 import { FlightSegment } from '../bindings/FlightSegment';
 
 import './StripBoard.scss';
-import { unwrap } from 'solid-js/store';
 
 const INBOX_ID = 0;
 
@@ -524,7 +523,6 @@ export default function StripBoard() {
               statusOfAircraft(aircraft, airspace.id, selected)
             ))
         ) {
-          console.log('create strip:', unwrap(aircraft));
           newStrips.push(aircraftToStrip(aircraft, airspace, selected));
         }
       }
