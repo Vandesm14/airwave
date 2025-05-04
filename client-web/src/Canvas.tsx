@@ -16,6 +16,7 @@ import {
 import {
   calculateSquaredDistance,
   HARD_CODED_AIRPORT,
+  hardcodedAirport,
   headingToDegrees,
   knotToFeetPerSecond,
   midpointBetweenPoints,
@@ -835,6 +836,8 @@ export default function Canvas() {
       ? Date.now() > aircraft.timer.secs * 1000
       : false;
 
+    const airport = hardcodedAirport(world.data);
+
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
@@ -842,7 +845,14 @@ export default function Canvas() {
     taxi_color = isSelected ? colors.text_yellow : taxi_color;
 
     let callsign_color =
-      aircraft.frequency !== frequency() ? colors.text_grey : taxi_color;
+      aircraft.frequency !== frequency() ? colors.text_grey : '#fff';
+    if (airport !== undefined) {
+      callsign_color =
+        aircraft.flight_plan.arriving === airport.id
+          ? colors.text_green
+          : colors.line_blue;
+    }
+    callsign_color = isSelected ? colors.text_yellow : callsign_color;
 
     // Draw taxi waypoints
     if (aircraft.state.type === 'taxiing' && isSelected) {
