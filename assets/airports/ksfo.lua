@@ -149,7 +149,7 @@ terminal_a.apron = {
   vec2(terminal_a.c):midpoint(vec2(terminal_a.d)):into()
 }
 
-local count = 4
+local count = 5
 for i = 1, count do
   local pos = vec2(terminal_a.a):move(DOWN, 200):lerp(vec2(terminal_a.d), i / count):move(RIGHT, 100):move(UP,
     100):into()
@@ -159,8 +159,6 @@ for i = 1, count do
     heading = LEFT,
     available = true,
   }))
-end
-for i = 1, count do
   local pos = vec2(terminal_a.b):move(DOWN, 200):lerp(vec2(terminal_a.c), i / count):move(LEFT, 100):move(UP,
     100):into()
   table.insert(terminal_a.gates, gate({
@@ -196,12 +194,46 @@ for i = 1, count do
     heading = LEFT,
     available = true,
   }))
-end
-for i = 1, count do
   local pos = vec2(terminal_b.b):move(DOWN, 200):lerp(vec2(terminal_b.c), i / count):move(LEFT, 100):move(UP,
     100):into()
   table.insert(terminal_b.gates, gate({
     id = "B" .. (count + i),
+    pos = pos,
+    heading = RIGHT,
+    available = true,
+  }))
+end
+
+local size = 450
+local terminal_c = terminal({
+  id = "C",
+  a = vec2(taxiway_g.a):move(UP, size):into(),
+  b = vec2(taxiway_g.a):move(DOWN, size):into(),
+  c = { 0, 0 },
+  d = { 0, 0 },
+  gates = {},
+  apron = { { 0, 0 }, { 0, 0 } }
+})
+terminal_c.c = vec2(terminal_c.b):move(LEFT, 1100):into()
+terminal_c.d = vec2(terminal_c.a):move(LEFT, 1100):into()
+terminal_c.apron = {
+  vec2(terminal_c.a):midpoint(vec2(terminal_c.b)):into(),
+  vec2(terminal_c.c):midpoint(vec2(terminal_c.d)):into()
+}
+
+for i = 1, count do
+  local pos = vec2(terminal_c.a):move(LEFT, 150):lerp(vec2(terminal_c.d), i / count):move(RIGHT, 100):move(DOWN,
+    100):into()
+  table.insert(terminal_c.gates, gate({
+    id = "C" .. i,
+    pos = pos,
+    heading = LEFT,
+    available = true,
+  }))
+  local pos = vec2(terminal_c.b):move(LEFT, 150):lerp(vec2(terminal_c.c), i / count):move(RIGHT, 100):move(UP,
+    100):into()
+  table.insert(terminal_c.gates, gate({
+    id = "C" .. (count + i),
     pos = pos,
     heading = RIGHT,
     available = true,
@@ -246,6 +278,7 @@ local airport = airport({
   terminals = {
     terminal_a,
     terminal_b,
+    terminal_c,
   },
 })
 
