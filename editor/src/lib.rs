@@ -6,7 +6,6 @@ use nannou::{color, geom};
 
 const TAXIWAY_COLOR: u8 = 0x55;
 const RUNWAY_COLOR: u8 = 0x22;
-const FONT_SIZE: f32 = 150.0;
 
 pub fn scale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
   (point + offset) * scale
