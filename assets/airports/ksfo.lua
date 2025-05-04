@@ -154,7 +154,7 @@ terminal_a.apron = {
 }
 
 for i = 1, count do
-  local pos = vec2(terminal_a.a):move(DOWN, terminal_padding):lerp(vec2(terminal_a.d), i / count):move(LEFT,
+  local pos = vec2(terminal_a.b):move(DOWN, terminal_padding):lerp(vec2(terminal_a.c), i / count):move(RIGHT,
     gate_size * 0.5 + gate_spacing):move(
     UP,
     gate_size * 0.5 + gate_spacing):into()
@@ -164,7 +164,7 @@ for i = 1, count do
     heading = LEFT,
     available = true,
   }))
-  local pos = vec2(terminal_a.b):move(DOWN, terminal_padding):lerp(vec2(terminal_a.c), i / count):move(RIGHT,
+  local pos = vec2(terminal_a.a):move(DOWN, terminal_padding):lerp(vec2(terminal_a.d), i / count):move(LEFT,
     gate_size * 0.5 + gate_spacing):move(
     UP,
     gate_size * 0.5 + gate_spacing):into()
@@ -193,7 +193,7 @@ terminal_b.apron = {
 }
 
 for i = 1, count do
-  local pos = vec2(terminal_b.a):move(DOWN, terminal_padding):lerp(vec2(terminal_b.d), i / count):move(LEFT,
+  local pos = vec2(terminal_b.b):move(DOWN, terminal_padding):lerp(vec2(terminal_b.c), i / count):move(RIGHT,
     gate_size * 0.5 + gate_spacing):move(
     UP,
     gate_size * 0.5 + gate_spacing):into()
@@ -203,7 +203,7 @@ for i = 1, count do
     heading = LEFT,
     available = true,
   }))
-  local pos = vec2(terminal_b.b):move(DOWN, terminal_padding):lerp(vec2(terminal_b.c), i / count):move(RIGHT,
+  local pos = vec2(terminal_b.a):move(DOWN, terminal_padding):lerp(vec2(terminal_b.d), i / count):move(LEFT,
     gate_size * 0.5 + gate_spacing):move(
     UP,
     gate_size * 0.5 + gate_spacing):into()
@@ -239,7 +239,7 @@ for i = 1, count do
   table.insert(terminal_c.gates, gate({
     id = "C" .. i,
     pos = pos,
-    heading = LEFT,
+    heading = UP,
     available = true,
   }))
   local pos = vec2(terminal_c.b):move(LEFT, terminal_padding):lerp(vec2(terminal_c.c), i / count):move(UP,
@@ -249,7 +249,7 @@ for i = 1, count do
   table.insert(terminal_c.gates, gate({
     id = "C" .. (count + i),
     pos = pos,
-    heading = RIGHT,
+    heading = DOWN,
     available = true,
   }))
 end
