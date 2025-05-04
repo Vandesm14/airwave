@@ -177,7 +177,7 @@ export default function Canvas() {
   }
 
   onMount(() => {
-    const maxScale = 50.0;
+    const maxScale = 60.0;
     const minScale = 0.07;
 
     window.addEventListener('resize', onResize);
