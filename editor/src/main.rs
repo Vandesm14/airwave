@@ -150,7 +150,7 @@ impl LuaVec2 {
 pub fn main() -> Result<()> {
   let (sender, receiver) = mpsc::channel::<Airport>();
 
-  thread::spawn(|| {
+  let thread = thread::spawn(|| {
     let args = Cli::parse();
 
     let lua = Lua::new();
@@ -251,6 +251,8 @@ pub fn main() -> Result<()> {
   let args = Cli::parse();
   if args.view {
     start_app(receiver);
+  } else {
+    thread.join().unwrap();
   }
 
   Ok(())
