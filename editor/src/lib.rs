@@ -121,14 +121,19 @@ impl Draw for Gate {
     draw
       .ellipse()
       .x_y(pos.x, pos.y)
-      .width(200.0 * scale)
-      .height(200.0 * scale)
+      .width(100.0 * scale)
+      .height(100.0 * scale)
       .color(color::RED);
   }
 
   fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
-    let pos = scale_point(self.pos, offset, scale);
-    draw_label(self.id.to_string(), pos, draw, scale, offset);
+    draw_label(
+      self.id.to_string(),
+      self.pos + Vec2::new(0.0, 250.0),
+      draw,
+      scale,
+      offset,
+    );
   }
 }
 
