@@ -4,7 +4,7 @@ use engine::entities::airport::Airport;
 use nannou::prelude::*;
 use nannou_egui::Egui;
 
-use crate::Draw;
+use crate::draw::Draw;
 
 static GLOBAL_CHANNEL: OnceLock<Mutex<mpsc::Receiver<Airport>>> =
   OnceLock::new();
