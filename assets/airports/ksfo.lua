@@ -237,7 +237,7 @@ for i = 1, count do
     RIGHT,
     gate_size * 0.5 + gate_spacing):into()
   table.insert(terminal_c.gates, gate({
-    id = "B" .. i,
+    id = "C" .. i,
     pos = pos,
     heading = LEFT,
     available = true,
@@ -247,7 +247,7 @@ for i = 1, count do
     RIGHT,
     gate_size * 0.5 + gate_spacing):into()
   table.insert(terminal_c.gates, gate({
-    id = "B" .. (count + i),
+    id = "C" .. (count + i),
     pos = pos,
     heading = RIGHT,
     available = true,
