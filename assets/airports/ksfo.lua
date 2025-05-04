@@ -140,8 +140,8 @@ local terminal_a = terminal({
   gates = {},
   apron = { { 0, 0 }, { 0, 0 } }
 })
-terminal_a.c = vec2(terminal_a.b):move(DOWN, 1100):into()
-terminal_a.d = vec2(terminal_a.a):move(DOWN, 1100):into()
+terminal_a.c = vec2(terminal_a.b):move(DOWN, 1000):into()
+terminal_a.d = vec2(terminal_a.a):move(DOWN, 1000):into()
 terminal_a.apron = {
   vec2(terminal_a.a):midpoint(vec2(terminal_a.b)):into(),
   vec2(terminal_a.c):midpoint(vec2(terminal_a.d)):into()
@@ -149,7 +149,7 @@ terminal_a.apron = {
 
 local count = 5
 for i = 1, count do
-  local pos = vec2(terminal_a.a):move(DOWN, 200):lerp(vec2(terminal_a.d), i / count):move(RIGHT, 100):move(UP,
+  local pos = vec2(terminal_a.a):move(DOWN, 150):lerp(vec2(terminal_a.d), i / count):move(RIGHT, 100):move(UP,
     100):into()
   table.insert(terminal_a.gates, gate({
     id = "A" .. i,
@@ -157,7 +157,7 @@ for i = 1, count do
     heading = LEFT,
     available = true,
   }))
-  local pos = vec2(terminal_a.b):move(DOWN, 200):lerp(vec2(terminal_a.c), i / count):move(LEFT, 100):move(UP,
+  local pos = vec2(terminal_a.b):move(DOWN, 150):lerp(vec2(terminal_a.c), i / count):move(LEFT, 100):move(UP,
     100):into()
   table.insert(terminal_a.gates, gate({
     id = "A" .. (count + i),
@@ -176,15 +176,15 @@ local terminal_b = terminal({
   gates = {},
   apron = { { 0, 0 }, { 0, 0 } }
 })
-terminal_b.c = vec2(terminal_b.b):move(DOWN, 1100):into()
-terminal_b.d = vec2(terminal_b.a):move(DOWN, 1100):into()
+terminal_b.c = vec2(terminal_b.b):move(DOWN, 1000):into()
+terminal_b.d = vec2(terminal_b.a):move(DOWN, 1000):into()
 terminal_b.apron = {
   vec2(terminal_b.a):midpoint(vec2(terminal_b.b)):into(),
   vec2(terminal_b.c):midpoint(vec2(terminal_b.d)):into()
 }
 
 for i = 1, count do
-  local pos = vec2(terminal_b.a):move(DOWN, 200):lerp(vec2(terminal_b.d), i / count):move(RIGHT, 100):move(UP,
+  local pos = vec2(terminal_b.a):move(DOWN, 150):lerp(vec2(terminal_b.d), i / count):move(RIGHT, 100):move(UP,
     100):into()
   table.insert(terminal_b.gates, gate({
     id = "B" .. i,
@@ -192,7 +192,7 @@ for i = 1, count do
     heading = LEFT,
     available = true,
   }))
-  local pos = vec2(terminal_b.b):move(DOWN, 200):lerp(vec2(terminal_b.c), i / count):move(LEFT, 100):move(UP,
+  local pos = vec2(terminal_b.b):move(DOWN, 150):lerp(vec2(terminal_b.c), i / count):move(LEFT, 100):move(UP,
     100):into()
   table.insert(terminal_b.gates, gate({
     id = "B" .. (count + i),
@@ -212,8 +212,8 @@ local terminal_c = terminal({
   gates = {},
   apron = { { 0, 0 }, { 0, 0 } }
 })
-terminal_c.c = vec2(terminal_c.b):move(LEFT, 1100):into()
-terminal_c.d = vec2(terminal_c.a):move(LEFT, 1100):into()
+terminal_c.c = vec2(terminal_c.b):move(LEFT, 1000):into()
+terminal_c.d = vec2(terminal_c.a):move(LEFT, 1000):into()
 terminal_c.apron = {
   vec2(terminal_c.a):midpoint(vec2(terminal_c.b)):into(),
   vec2(terminal_c.c):midpoint(vec2(terminal_c.d)):into()
