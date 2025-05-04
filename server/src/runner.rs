@@ -170,6 +170,7 @@ impl Runner {
           Ok(content) => {
             match serde_json::from_str::<Airport>(&content) {
               Ok(mut airport) => {
+                airport.translate(airport.center * -1.0);
                 airport.extend_all();
                 airport.calculate_waypoints();
 
@@ -294,7 +295,6 @@ impl Runner {
       };
 
       let mut airport = airport.clone();
-      airport.translate(airport.center * -1.0);
       airport.translate(airspace.pos);
       airspace.airports.push(airport);
 

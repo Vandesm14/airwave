@@ -113,8 +113,6 @@ async fn main() {
       .clone(),
   };
 
-  main_airport.translate(main_airport.center * -1.0);
-
   player_airspace.airports.push(main_airport.clone());
   runner.world.airspaces.push(player_airspace);
 
