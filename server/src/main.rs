@@ -11,10 +11,7 @@ use internment::Intern;
 use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
-use engine::{
-  entities::{airport::Airport, airspace::Airspace},
-  Translate,
-};
+use engine::entities::{airport::Airport, airspace::Airspace};
 use server::{
   config::Config,
   http,
@@ -102,7 +99,7 @@ async fn main() {
   };
 
   let frequencies = config.frequencies.unwrap_or_default();
-  let mut main_airport: Airport = match config.world.and_then(|w| w.airport) {
+  let main_airport: Airport = match config.world.and_then(|w| w.airport) {
     Some(id) => runner
       .airport(id)
       .expect("Could not find configured airport")
