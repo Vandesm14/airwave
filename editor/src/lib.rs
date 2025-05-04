@@ -1,6 +1,9 @@
 pub mod viewer;
 
-use engine::entities::airport::{Airport, Gate, Runway, Taxiway, Terminal};
+use engine::{
+  entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
+  move_point,
+};
 use glam::Vec2;
 use nannou::{color, geom};
 
@@ -124,14 +127,30 @@ impl Draw for Terminal {
 
 impl Draw for Gate {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    let gate_size = 175.0;
+
     // Draw the gate dot
     let pos = scale_point(self.pos, offset, scale);
     draw
       .rect()
       .x_y(pos.x, pos.y)
-      .wh(glam_to_geom(Vec2::splat(175.0) * scale))
       .rotate(-self.heading.to_radians())
-      .color(color::RED);
+      .wh(glam_to_geom(Vec2::splat(gate_size) * scale))
+      .stroke_weight(2.0)
+      .stroke(color::rgb::<u8>(0xaa, 0x22, 0x22))
+      .color(color::rgb::<u8>(0x22, 0x22, 0x22));
+
+    let point = scale_point(
+      move_point(self.pos, self.heading, gate_size * 0.5),
+      offset,
+      scale,
+    );
+    draw
+      .ellipse()
+      .x_y(point.x, point.y)
+      .width(30.0 * scale)
+      .height(30.0 * scale)
+      .color(color::YELLOW);
   }
 
   fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
