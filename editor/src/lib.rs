@@ -129,7 +129,7 @@ impl Draw for Gate {
   fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     draw_label(
       self.id.to_string(),
-      self.pos + Vec2::new(0.0, 250.0),
+      self.pos + Vec2::new(0.0, 150.0),
       draw,
       scale,
       offset,
