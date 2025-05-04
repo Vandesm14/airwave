@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use glam::Vec2;
 use internment::Intern;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -324,29 +325,44 @@ impl Engine {
         continue;
       }
 
-      let distance = aircraft.pos.distance_squared(other_aircraft.pos);
+      let distance_squared = aircraft.pos.distance_squared(other_aircraft.pos);
+      let diff_angle_a = delta_angle(
+        aircraft.heading,
+        angle_between_points(aircraft.pos, other_aircraft.pos),
+      );
+      let diff_angle_b = delta_angle(
+        other_aircraft.heading,
+        angle_between_points(other_aircraft.pos, aircraft.pos),
+      );
 
-      let detection_range_deg = 25.0;
-      if distance <= 250.0_f32.powf(2.0) * 2.0 {
-        if delta_angle(
-          aircraft.heading,
-          angle_between_points(aircraft.pos, other_aircraft.pos),
-        )
-        .abs()
-          <= detection_range_deg
-        {
-          collisions.insert(aircraft.id);
-        }
+      let rel_pos_a = Vec2::new(
+        distance_squared * diff_angle_a.to_radians().sin().abs(),
+        distance_squared * diff_angle_a.to_radians().cos(),
+      );
 
-        if delta_angle(
-          other_aircraft.heading,
-          angle_between_points(other_aircraft.pos, aircraft.pos),
-        )
-        .abs()
-          <= detection_range_deg
-        {
-          collisions.insert(other_aircraft.id);
-        }
+      let rel_pos_b = Vec2::new(
+        distance_squared * diff_angle_b.to_radians().sin().abs(),
+        distance_squared * diff_angle_b.to_radians().cos(),
+      );
+
+      let min_forward_distance = 0.0;
+      let forward_distance = 150.0_f32.powf(2.0);
+      let side_distance = 120.0_f32.powf(2.0);
+
+      // Aircraft
+      if rel_pos_a.y >= min_forward_distance
+        && rel_pos_a.x <= side_distance
+        && rel_pos_a.y <= forward_distance
+      {
+        collisions.insert(aircraft.id);
+      }
+
+      // Other Aircraft
+      if rel_pos_b.y >= min_forward_distance
+        && rel_pos_b.x <= side_distance
+        && rel_pos_b.y <= forward_distance
+      {
+        collisions.insert(other_aircraft.id);
       }
     }
 
