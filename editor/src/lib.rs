@@ -51,7 +51,7 @@ fn draw_label(
   // Draw the label text
   draw
     .text(&text)
-    .xy(glam_to_geom(point + Vec2::new(0.0, 4.0)))
+    .xy(glam_to_geom(point + Vec2::new(0.0, 2.0)))
     .wh(glam_to_geom(wh))
     .font_size(16)
     .color(color::ORANGE);
