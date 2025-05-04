@@ -319,6 +319,35 @@ pub fn circle_circle_intersection(
 mod tests {
   use super::*;
 
+  mod delta_angle {
+    use super::*;
+
+    #[test]
+    fn test_delta_angle_zero() {
+      assert_eq!(delta_angle(0.0, 0.0), 0.0)
+    }
+
+    #[test]
+    fn test_delta_angle_90() {
+      assert_eq!(delta_angle(0.0, 90.0), 90.0)
+    }
+
+    #[test]
+    fn test_delta_angle_negative() {
+      assert_eq!(delta_angle(0.0, -90.0), -90.0)
+    }
+
+    #[test]
+    fn test_delta_angle_not_zero() {
+      assert_eq!(delta_angle(90.0, 180.0), 90.0)
+    }
+
+    #[test]
+    fn test_delta_angle_not_zero_negative() {
+      assert_eq!(delta_angle(180.0, 90.0), -90.0)
+    }
+  }
+
   mod angle_between_points {
     use super::*;
 
