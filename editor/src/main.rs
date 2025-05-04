@@ -203,11 +203,6 @@ pub fn main() -> Result<()> {
     globals.set("inverse_degrees", inverse_deg).unwrap();
 
     let vec2_constructor = lua
-      .create_function(|_, (x, y): (f32, f32)| Ok(LuaVec2::new(x, y)))
-      .unwrap();
-    globals.set("vec2", vec2_constructor).unwrap();
-
-    let vec2_from = lua
       .create_function(|_, vec: Vec<f32>| {
         if vec.len() != 2 {
           return Err(mlua::Error::SyntaxError {
@@ -219,7 +214,7 @@ pub fn main() -> Result<()> {
         Ok(LuaVec2::new(*vec.first().unwrap(), *vec.last().unwrap()))
       })
       .unwrap();
-    globals.set("vec2_from", vec2_from).unwrap();
+    globals.set("vec2", vec2_constructor).unwrap();
 
     if args.watch {
       let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
