@@ -225,7 +225,7 @@ for i = 1, count do
   table.insert(terminal_c.gates, gate({
     id = "C" .. i,
     pos = pos,
-    heading = LEFT,
+    heading = UP,
     available = true,
   }))
   local pos = vec2(terminal_c.b):move(LEFT, 150):lerp(vec2(terminal_c.c), i / count):move(RIGHT, 100):move(UP,
@@ -233,7 +233,7 @@ for i = 1, count do
   table.insert(terminal_c.gates, gate({
     id = "C" .. (count + i),
     pos = pos,
-    heading = RIGHT,
+    heading = DOWN,
     available = true,
   }))
 end
