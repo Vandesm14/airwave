@@ -14,7 +14,7 @@ export default {
   text_grey: '#777',
   text_dark_grey: '#555',
 
-  text_background: '#000a',
+  text_background: '#000c',
 
   special: {
     terminal: '#555',
