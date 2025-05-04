@@ -127,10 +127,10 @@ impl Draw for Gate {
     // Draw the gate dot
     let pos = scale_point(self.pos, offset, scale);
     draw
-      .ellipse()
+      .rect()
       .x_y(pos.x, pos.y)
-      .width(100.0 * scale)
-      .height(100.0 * scale)
+      .wh(glam_to_geom(Vec2::splat(175.0) * scale))
+      .rotate(-self.heading.to_radians())
       .color(color::RED);
   }
 
