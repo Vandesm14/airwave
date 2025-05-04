@@ -38,21 +38,23 @@ fn draw_label(
   scale: f32,
   offset: Vec2,
 ) {
-  let point = scale_point(pos - 25.0, offset, scale);
+  let point = scale_point(pos, offset, scale);
+
+  let wh = Vec2::new(30.0, 22.0);
 
   // Background rectangle for the label
   draw
     .rect()
     .xy(glam_to_geom(point))
-    .w_h(300.0 * scale, 200.0 * scale)
+    .wh(glam_to_geom(wh))
     .color(color::rgba(0.0, 0.0, 0.0, 0.8));
 
   // Draw the label text
-  let point = scale_point(pos, offset, scale);
   draw
     .text(&text)
-    .xy(glam_to_geom(point))
-    .font_size((FONT_SIZE * scale) as u32)
+    .xy(glam_to_geom(point + Vec2::new(0.0, 4.0)))
+    .wh(glam_to_geom(wh))
+    .font_size(16)
     .color(color::ORANGE);
 }
 
@@ -136,7 +138,7 @@ impl Draw for Gate {
   fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     draw_label(
       self.id.to_string(),
-      self.pos + Vec2::new(0.0, 150.0),
+      self.pos + Vec2::new(0.0, 0.0),
       draw,
       scale,
       offset,
