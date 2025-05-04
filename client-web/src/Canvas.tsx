@@ -177,8 +177,8 @@ export default function Canvas() {
   }
 
   onMount(() => {
-    const maxScale = 60.0;
-    const minScale = 0.07;
+    const maxScale = 100.0;
+    const minScale = 0.1;
 
     window.addEventListener('resize', onResize);
     document.addEventListener('keydown', onKeydown);
@@ -738,10 +738,16 @@ export default function Canvas() {
     let id = gate.id;
     let pos = scalePoint(gate.pos);
 
-    ctx.fillStyle = 'red';
-    ctx.beginPath();
-    ctx.arc(pos[0], pos[1], scaleFeetToPixels(50), 0, Math.PI * 2);
-    ctx.fill();
+    let gate_size = scaleFeetToPixels(175);
+
+    ctx.fillStyle = '#222';
+    ctx.strokeStyle = colors.text_red;
+    ctx.save();
+    ctx.translate(pos[0], pos[1]);
+    ctx.rotate(toRadians(gate.heading));
+    ctx.fillRect(-gate_size / 2, -gate_size / 2, gate_size, gate_size);
+    ctx.strokeRect(-gate_size / 2, -gate_size / 2, gate_size, gate_size);
+    ctx.restore();
 
     let fontSize = 16;
     let textWidth = ctx.measureText(id).width + 10;
