@@ -1,6 +1,5 @@
 use std::{
   collections::HashMap,
-  fs,
   ops::Div,
   path::PathBuf,
   time::{Duration, Instant, SystemTime},
@@ -31,6 +30,7 @@ use engine::{
 };
 
 use crate::{
+  assets::load_assets,
   job::{JobQueue, JobReq},
   merge_points,
   ring::RingBuffer,
@@ -161,50 +161,9 @@ impl Runner {
   }
 
   pub fn load_assets(&mut self) {
-    if let Ok(dir) = fs::read_dir("assets/airports") {
-      for path in dir
-        .flatten()
-        .filter(|f| f.file_name().to_str().unwrap().ends_with(".json"))
-      {
-        match fs::read_to_string(path.path()) {
-          Ok(content) => {
-            match serde_json::from_str::<Airport>(&content) {
-              Ok(mut airport) => {
-                airport.translate(airport.center * -1.0);
-                airport.extend_all();
-                airport.calculate_waypoints();
+    let assets = load_assets();
 
-                let name = path.file_name();
-                let name = name.to_str().unwrap().replace(".json", "");
-                tracing::info!(
-                  "Loaded airport \"{}\" from {}",
-                  airport.id,
-                  path.file_name().to_str().unwrap()
-                );
-                self.airports.insert(name.to_owned(), airport);
-              }
-              Err(e) => {
-                tracing::error!(
-                  "Failed to read {:?}: {:?}",
-                  path.file_name(),
-                  e
-                );
-              }
-            };
-          }
-          Err(e) => {
-            tracing::error!(
-              "Failed to read airport file {:?}: {:?}",
-              path.file_name(),
-              e
-            );
-          }
-        }
-      }
-    } else {
-      tracing::error!("Failed to read assets directory.");
-      std::process::exit(1);
-    }
+    self.airports = assets.airports;
   }
 
   pub fn airport(&self, id: impl AsRef<str>) -> Option<&Airport> {

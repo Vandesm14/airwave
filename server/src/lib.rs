@@ -13,6 +13,7 @@ pub const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
 pub const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
 pub const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
 
+pub mod assets;
 pub mod config;
 pub mod http;
 pub mod job;

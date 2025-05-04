@@ -12,7 +12,29 @@ use engine::{
   inverse_degrees, move_point, subtract_degrees,
 };
 
-pub fn try_compile_airport(
+pub fn try_compile_airport(lua: &Lua, path: &PathBuf) -> Result<()> {
+  let script = if let Ok(script) = std::fs::read_to_string(path) {
+    script
+  } else {
+    eprint!("Failed to load script file: {:?}", path);
+    std::process::exit(1);
+  };
+
+  // This happens due to an issue with file watching. So I think it's fine if we
+  // ignore blank files altogether anyway.
+  if script.is_empty() {
+    return Ok(());
+  }
+
+  let airport: Airport = lua.from_value(lua.load(script).eval()?)?;
+  let json_path = path.to_str().unwrap().replace(".lua", ".json");
+  let json_string = serde_json::to_string(&airport).unwrap();
+  fs::write(json_path.clone(), json_string)?;
+
+  Ok(())
+}
+
+fn log_compile_airport(
   lua: &Lua,
   path: &PathBuf,
   sender: Option<mpsc::Sender<Airport>>,
@@ -53,8 +75,8 @@ pub fn compile_airport(
   path: &PathBuf,
   sender: Option<mpsc::Sender<Airport>>,
 ) {
-  match try_compile_airport(lua, path, sender) {
-    Ok(_) => {}
+  match log_compile_airport(lua, path, sender) {
+    Ok(_) => println!("Changes detected, recompiling..."),
     Err(e) => eprintln!("Error compiling: {:?}", e),
   };
 }

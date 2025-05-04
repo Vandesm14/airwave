@@ -11,6 +11,7 @@ path = "src/dump_prompts.rs"
 
 [dependencies]
 engine = { path = "../engine" }
+editor = { path = "../editor" }
 
 async-broadcast.workspace = true
 async-channel.workspace = true
