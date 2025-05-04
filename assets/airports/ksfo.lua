@@ -36,6 +36,12 @@ local runway28L = runway({
 })
 runway28L.start = vec2(runway28R.start):move(DOWN, 750):into()
 
+local taxiway_s = taxiway({
+  id = "S",
+  a = vec2(runway28L.start):move(LEFT, runway28L.length):into(),
+  b = vec2(runway28R.start):move(LEFT, runway28R.length):into(),
+})
+
 local taxiway_l = taxiway({
   id = "L",
   a = vec2(runway19L.start):move(RIGHT, 500):into(),
@@ -46,6 +52,12 @@ local taxiway_l1 = taxiway({
   id = "L1",
   a = runway19L.start,
   b = taxiway_l.a,
+})
+
+local taxiway_l2 = taxiway({
+  id = "L1",
+  a = vec2(runway19L.start):move(DOWN, runway19L.length):into(),
+  b = taxiway_l.b,
 })
 
 local taxiway_e = taxiway({
@@ -64,6 +76,12 @@ local taxiway_m = taxiway({
   id = "M",
   a = vec2(taxiway_e1.a):move(DOWN, runway19R.length):into(),
   b = vec2(taxiway_e1.b):move(DOWN, runway19R.length):into(),
+})
+
+local taxiway_g = taxiway({
+  id = "G",
+  a = vec2(taxiway_m.a):move(UP, 2200):into(),
+  b = vec2(taxiway_m.b):move(UP, 2200):into(),
 })
 
 local taxiway_c = taxiway({
@@ -86,7 +104,7 @@ local taxiway_c3 = taxiway({
 
 local taxiway_r = taxiway({
   id = "R",
-  a = vec2(taxiway_c3.a):move(RIGHT, 750):into(),
+  a = vec2(taxiway_c3.a):move(RIGHT, 1000):into(),
   b = { 0, 0 },
 })
 taxiway_r.b = vec2(taxiway_r.a):move(DOWN, 1750):into()
@@ -94,7 +112,7 @@ taxiway_r.b = vec2(taxiway_r.a):move(DOWN, 1750):into()
 local taxiway_d = taxiway({
   id = "D",
   a = vec2(taxiway_r.a):move(RIGHT, 3000):into(),
-  b = vec2(taxiway_r.b):move(RIGHT, 3000):move(DOWN, 500):into(),
+  b = vec2(taxiway_r.b):move(RIGHT, 3000):move(DOWN, 300):into(),
 })
 
 local taxiway_k = taxiway({
@@ -112,26 +130,26 @@ local taxiway_b = taxiway({
 local taxiway_a = taxiway({
   id = "A",
   a = vec2(taxiway_k.b):move(LEFT, 1000):into(),
-  b = vec2(taxiway_d.b):move(RIGHT, 1000):into(),
+  b = vec2(taxiway_d.b):move(RIGHT, 1400):into(),
 })
 
 local terminal_a = terminal({
   id = "A",
-  a = vec2(taxiway_k.b):move(LEFT, 100):into(),
-  b = vec2(taxiway_d.b):move(RIGHT, 100):into(),
+  a = taxiway_k.b,
+  b = taxiway_d.b,
   c = { 0, 0 },
   d = { 0, 0 },
   gates = {},
   apron = { { 0, 0 }, { 0, 0 } }
 })
-terminal_a.c = vec2(terminal_a.b):move(DOWN, 2200):into()
-terminal_a.d = vec2(terminal_a.a):move(DOWN, 2200):into()
+terminal_a.c = vec2(terminal_a.b):move(DOWN, 1100):into()
+terminal_a.d = vec2(terminal_a.a):move(DOWN, 1100):into()
 terminal_a.apron = {
   vec2(terminal_a.a):midpoint(vec2(terminal_a.b)):into(),
   vec2(terminal_a.c):midpoint(vec2(terminal_a.d)):into()
 }
 
-local count = 6
+local count = 4
 for i = 1, count do
   local pos = vec2(terminal_a.a):move(DOWN, 200):lerp(vec2(terminal_a.d), i / count):move(RIGHT, 100):move(UP,
     100):into()
@@ -147,6 +165,43 @@ for i = 1, count do
     100):into()
   table.insert(terminal_a.gates, gate({
     id = "A" .. (count + i),
+    pos = pos,
+    heading = RIGHT,
+    available = true,
+  }))
+end
+
+local terminal_b = terminal({
+  id = "B",
+  a = vec2(taxiway_d.b):move(RIGHT, 100):into(),
+  b = vec2(taxiway_a.b):move(LEFT, 300):into(),
+  c = { 0, 0 },
+  d = { 0, 0 },
+  gates = {},
+  apron = { { 0, 0 }, { 0, 0 } }
+})
+terminal_b.c = vec2(terminal_b.b):move(DOWN, 1100):into()
+terminal_b.d = vec2(terminal_b.a):move(DOWN, 1100):into()
+terminal_b.apron = {
+  vec2(terminal_b.a):midpoint(vec2(terminal_b.b)):into(),
+  vec2(terminal_b.c):midpoint(vec2(terminal_b.d)):into()
+}
+
+for i = 1, count do
+  local pos = vec2(terminal_b.a):move(DOWN, 200):lerp(vec2(terminal_b.d), i / count):move(RIGHT, 100):move(UP,
+    100):into()
+  table.insert(terminal_b.gates, gate({
+    id = "B" .. i,
+    pos = pos,
+    heading = LEFT,
+    available = true,
+  }))
+end
+for i = 1, count do
+  local pos = vec2(terminal_b.b):move(DOWN, 200):lerp(vec2(terminal_b.c), i / count):move(LEFT, 100):move(UP,
+    100):into()
+  table.insert(terminal_b.gates, gate({
+    id = "B" .. (count + i),
     pos = pos,
     heading = RIGHT,
     available = true,
@@ -179,14 +234,18 @@ local airport = airport({
     taxiway_d,
     taxiway_e,
     taxiway_e1,
+    taxiway_g,
     taxiway_k,
     taxiway_l,
     taxiway_l1,
+    taxiway_l2,
     taxiway_m,
     taxiway_r,
+    taxiway_s,
   },
   terminals = {
-    terminal_a
+    terminal_a,
+    terminal_b,
   },
 })
 
