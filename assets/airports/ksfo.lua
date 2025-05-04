@@ -131,22 +131,22 @@ terminal_a.apron = {
   vec2_from(terminal_a.c):midpoint(vec2_from(terminal_a.d)):into()
 }
 
-local count = 8
+local count = 6
 for i = 1, count do
-  local pos = vec2_from(terminal_a.a):lerp(vec2_from(terminal_a.d), i / count):move(RIGHT, 100):move(UP, 100):into()
+  local pos = vec2_from(terminal_a.a):move(DOWN, 200):lerp(vec2_from(terminal_a.d), i / count):move(RIGHT, 100):move(UP, 100):into()
   table.insert(terminal_a.gates, gate({
     id = "A"..i,
     pos = pos,
-    heading = 0,
+    heading = LEFT,
     available = true,
   }))
 end
 for i = 1, count do
-  local pos = vec2_from(terminal_a.b):lerp(vec2_from(terminal_a.c), i / count):move(LEFT, 100):move(UP, 100):into()
+  local pos = vec2_from(terminal_a.b):move(DOWN, 200):lerp(vec2_from(terminal_a.c), i / count):move(LEFT, 100):move(UP, 100):into()
   table.insert(terminal_a.gates, gate({
     id = "A"..(count + i),
     pos = pos,
-    heading = 0,
+    heading = RIGHT,
     available = true,
   }))
 end
