@@ -111,6 +111,13 @@ impl Draw for Terminal {
     for gate in self.gates.iter() {
       gate.draw(draw, scale, offset);
     }
+
+    draw
+      .line()
+      .start(glam_to_geom(scale_point(self.apron.0, offset, scale)))
+      .end(glam_to_geom(scale_point(self.apron.1, offset, scale)))
+      .weight(20.0 * scale)
+      .color(color::GREENYELLOW);
   }
 }
 
