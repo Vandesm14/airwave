@@ -12,7 +12,7 @@ use engine::{
   inverse_degrees, move_point, subtract_degrees,
 };
 
-pub fn try_compile_airport(lua: &Lua, path: &PathBuf) -> Result<()> {
+pub fn try_compile_airport(lua: &Lua, path: &PathBuf) -> Result<Airport> {
   let script = if let Ok(script) = std::fs::read_to_string(path) {
     script
   } else {
@@ -20,18 +20,12 @@ pub fn try_compile_airport(lua: &Lua, path: &PathBuf) -> Result<()> {
     std::process::exit(1);
   };
 
-  // This happens due to an issue with file watching. So I think it's fine if we
-  // ignore blank files altogether anyway.
-  if script.is_empty() {
-    return Ok(());
-  }
-
   let airport: Airport = lua.from_value(lua.load(script).eval()?)?;
   let json_path = path.to_str().unwrap().replace(".lua", ".json");
   let json_string = serde_json::to_string(&airport).unwrap();
   fs::write(json_path.clone(), json_string)?;
 
-  Ok(())
+  Ok(airport)
 }
 
 fn log_compile_airport(
