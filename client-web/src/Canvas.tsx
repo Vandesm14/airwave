@@ -162,7 +162,7 @@ export default function Canvas() {
     } else if (e.key === 'PageDown') {
       e.preventDefault();
       setRadar((radar) => {
-        radar.scale = groundScale * 6;
+        radar.scale = groundScale * 8;
         radar.shiftPoint = { x: 0, y: 0 };
         return { ...radar };
       });
