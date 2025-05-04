@@ -230,6 +230,9 @@ impl Translate for Terminal {
       gate.translate(offset);
     }
 
+    self.apron.0 += offset;
+    self.apron.1 += offset;
+
     self
   }
 }
