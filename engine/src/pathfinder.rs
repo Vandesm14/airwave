@@ -7,9 +7,12 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  angle_between_points, closest_point_on_line, delta_angle,
   entities::airport::{Gate, Runway, Taxiway, Terminal},
-  find_line_intersection, Line,
+  geometry::{
+    angle_between_points, closest_point_on_line, delta_angle,
+    find_line_intersection,
+  },
+  line::Line,
 };
 
 #[derive(
@@ -541,6 +544,8 @@ mod tests {
   }
 
   mod pathfinder {
+    use crate::entities::airport::Taxiway;
+
     use super::*;
 
     #[test]

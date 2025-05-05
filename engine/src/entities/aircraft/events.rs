@@ -5,14 +5,13 @@ use serde::{Deserialize, Serialize};
 use turborand::TurboRand;
 
 use crate::{
-  angle_between_points,
   command::{CommandReply, CommandWithFreq, Task},
-  delta_angle,
   engine::{Bundle, Event},
   entities::world::{
     closest_airport, closest_airspace, AirspaceStatus, ArrivalStatus,
   },
-  heading_to_direction, inverse_degrees, move_point,
+  geometry::{angle_between_points, delta_angle, inverse_degrees, move_point},
+  heading_to_direction,
   pathfinder::{
     display_node_vec2, display_vec_node_vec2, Node, NodeBehavior, NodeKind,
     Pathfinder,

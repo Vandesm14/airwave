@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  abbreviate_altitude, duration_now, pathfinder::Node, wordify::wordify,
-  ExportedDuration,
+  abbreviate_altitude, geometry::duration_now, pathfinder::Node,
+  wordify::wordify, ExportedDuration,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

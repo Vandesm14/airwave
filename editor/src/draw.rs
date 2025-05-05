@@ -1,29 +1,14 @@
 use engine::{
   entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
-  move_point,
+  geometry::move_point,
 };
 use glam::Vec2;
-use nannou::{color, geom};
+use nannou::color;
+
+use crate::{glam_to_geom, midpoint, scale_point};
 
 const TAXIWAY_COLOR: u8 = 0x55;
 const RUNWAY_COLOR: u8 = 0x22;
-
-pub fn scale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
-  (point + offset) * scale
-}
-
-pub fn unscale_point(point: Vec2, offset: Vec2, scale: f32) -> Vec2 {
-  (point / scale) - offset
-}
-
-pub fn glam_to_geom(v: Vec2) -> geom::Vec2 {
-  geom::Vec2::new(v.x, v.y)
-}
-
-// Helper function to get midpoint between two points
-pub fn midpoint(a: Vec2, b: Vec2) -> Vec2 {
-  (a + b) * 0.5
-}
 
 pub trait Draw {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2);

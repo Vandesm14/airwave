@@ -1,10 +1,9 @@
 use std::sync::{mpsc, Mutex, OnceLock};
 
+use editor::draw::Draw;
 use engine::entities::airport::Airport;
 use nannou::prelude::*;
 use nannou_egui::Egui;
-
-use crate::draw::Draw;
 
 static GLOBAL_CHANNEL: OnceLock<Mutex<mpsc::Receiver<Airport>>> =
   OnceLock::new();

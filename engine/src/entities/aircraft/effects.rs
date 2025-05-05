@@ -1,15 +1,17 @@
 use std::f32::consts::PI;
 
 use crate::{
-  add_degrees, angle_between_points, calculate_ils_altitude,
-  closest_point_on_line,
   command::{CommandReply, CommandWithFreq},
-  delta_angle,
   engine::Bundle,
   entities::world::closest_airport,
-  inverse_degrees, move_point, normalize_angle,
+  geometry::{
+    add_degrees, angle_between_points, calculate_ils_altitude,
+    closest_point_on_line, delta_angle, inverse_degrees, move_point,
+    normalize_angle,
+  },
+  line::Line,
   pathfinder::{NodeBehavior, NodeKind},
-  Line, KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
 };
 
 use super::{

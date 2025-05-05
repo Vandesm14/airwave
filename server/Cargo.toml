@@ -11,7 +11,6 @@ path = "src/dump_prompts.rs"
 
 [dependencies]
 engine = { path = "../engine" }
-editor = { path = "../editor" }
 
 async-broadcast.workspace = true
 async-channel.workspace = true
@@ -25,6 +24,7 @@ tokio.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
 turborand.workspace = true
+mlua.workspace = true
 
 async-openai = "0.28.1"
 axum = { version = "0.7.5", features = ["macros"] }

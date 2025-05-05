@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  move_point,
+  geometry::{move_point, Translate},
+  line::Line,
   pathfinder::{Object, Pathfinder},
-  Line, Translate,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

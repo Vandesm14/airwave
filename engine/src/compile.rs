@@ -6,10 +6,9 @@ use mlua::{
   Value,
 };
 
-use engine::{
-  add_degrees,
+use crate::{
   entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
-  inverse_degrees, move_point, subtract_degrees,
+  geometry::{add_degrees, inverse_degrees, move_point, subtract_degrees},
 };
 
 pub fn try_compile_airport(lua: &Lua, path: &PathBuf) -> Result<Airport> {

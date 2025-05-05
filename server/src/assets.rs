@@ -1,7 +1,10 @@
 use std::{collections::HashMap, fs, path::Path};
 
-use editor::compile::{setup_lua, try_compile_airport};
-use engine::{entities::airport::Airport, Translate};
+use engine::{
+  compile::{setup_lua, try_compile_airport},
+  entities::airport::Airport,
+  geometry::Translate,
+};
 
 pub fn airport_asset_path() -> &'static Path {
   Path::new("assets/airports")

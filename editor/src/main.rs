@@ -1,13 +1,15 @@
+pub mod viewer;
+
 use std::{path::PathBuf, sync::mpsc, thread};
 
 use clap::Parser;
-use editor::{
-  compile::{compile_airport, setup_lua},
-  viewer::start_app,
-};
 use notify::{Event, RecursiveMode, Watcher};
 
-use engine::entities::airport::Airport;
+use engine::{
+  compile::{compile_airport, setup_lua},
+  entities::airport::Airport,
+};
+use viewer::start_app;
 
 /// View and edit an Airwave world file
 #[derive(Parser, Debug)]

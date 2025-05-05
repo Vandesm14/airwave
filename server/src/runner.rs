@@ -13,7 +13,6 @@ use tokio::sync::mpsc::error::TryRecvError;
 use turborand::{rng::Rng, TurboRand};
 
 use engine::{
-  circle_circle_intersection,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, EngineConfig, Event},
   entities::{
@@ -25,8 +24,9 @@ use engine::{
     airspace::Airspace,
     world::{AirspaceStatus, ArrivalStatus, DepartureStatus, Game, World},
   },
+  geometry::{circle_circle_intersection, Translate},
   pathfinder::{Node, NodeBehavior, NodeKind},
-  Translate, NAUTICALMILES_TO_FEET,
+  NAUTICALMILES_TO_FEET,
 };
 
 use crate::{

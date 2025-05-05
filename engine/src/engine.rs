@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use turborand::rng::Rng;
 
 use crate::{
-  angle_between_points, delta_angle,
   entities::{
     aircraft::{
       effects::{
@@ -23,6 +22,7 @@ use crate::{
     },
     world::{closest_airport, Game, World},
   },
+  geometry::{angle_between_points, delta_angle},
   KNOT_TO_FEET_PER_SECOND,
 };
 
