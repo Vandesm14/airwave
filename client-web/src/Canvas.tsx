@@ -923,7 +923,7 @@ export default function Canvas() {
     // Draw the direction
     ctx.strokeStyle = taxi_color;
     ctx.lineWidth = 2;
-    const length = 400;
+    const length = 150;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
     let endPos = scalePoint(end);
 
