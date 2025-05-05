@@ -30,11 +30,11 @@
     },
     {
       "user": "Descend and maintain flight level 270.",
-      "assistant": "Descend to flight level two seven zero."
+      "assistant": "Descend and maintain flight level two seven zero."
     },
     {
       "user": "Descend and maintain 4000 feet, plan for the ILS runway 22 approach.",
-      "assistant": "Descend to four thousand feet, we'll plan for the ILS runway 22 approach."
+      "assistant": "Maintain four thousand feet, we'll plan for the ILS runway 22 approach."
     }
   ]
 }
