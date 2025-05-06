@@ -121,8 +121,14 @@ function statusOfAircraft(
   const isOurDeparture = ourAirspace === aircraft.flight_plan.departing;
   const isOurs = isOurArrival || isOurDeparture;
 
-  const isParked = aircraft.segment === 'parked';
-  const isGround = aircraft.segment.startsWith('taxi-');
+  const isReady = aircraft.timer
+    ? Date.now() >= aircraft.timer.secs * 1000
+    : false;
+
+  const isParked = !isReady && aircraft.segment === 'parked';
+  const isGround =
+    isReady &&
+    (aircraft.segment.startsWith('taxi-') || aircraft.segment === 'parked');
   const isActive = !!aircraft.timer;
 
   const isTakeoff = aircraft.segment === 'takeoff';
@@ -168,15 +174,15 @@ type StripProps = {
   deletable?: boolean;
 };
 
-function Strip({
-  strip,
-  onmousedown,
-  onmousemove,
-  ondelete,
-  onedit,
-  dragged,
-  deletable,
-}: StripProps) {
+function Strip(props: StripProps) {
+  const _strip = () => props.strip;
+  const onmousedown = () => props.onmousedown;
+  const onmousemove = () => props.onmousemove;
+  const ondelete = () => props.ondelete;
+  const onedit = () => props.onedit;
+  const dragged = () => props.dragged;
+  const deletable = () => props.deletable;
+
   let input!: HTMLInputElement;
 
   let [ourFrequency] = useAtom(frequencyAtom);
@@ -186,13 +192,12 @@ function Strip({
   let [airspace] = useAtom(control().airspace);
   let [editing, setEditing] = createSignal(false);
 
+  const strip = _strip();
   if (strip.type === StripType.Header) {
     const handleDoubleClick: JSX.EventHandlerUnion<
       HTMLSpanElement,
       MouseEvent
     > = (e) => {
-      if (strip.id === INBOX_ID) return;
-
       e.stopPropagation();
       setEditing(true);
 
@@ -206,7 +211,7 @@ function Strip({
       KeyboardEvent
     > = (e) => {
       if (e.key === 'Enter') {
-        onedit?.((e.target as HTMLInputElement).value.trim());
+        onedit()?.((e.target as HTMLInputElement).value.trim());
         setEditing(false);
       }
     };
@@ -214,7 +219,7 @@ function Strip({
     const handleBlur: JSX.EventHandlerUnion<HTMLInputElement, FocusEvent> = (
       e
     ) => {
-      onedit?.((e.target as HTMLInputElement).value.trim());
+      onedit()?.((e.target as HTMLInputElement).value.trim());
       setEditing(false);
     };
 
@@ -223,10 +228,10 @@ function Strip({
         classList={{
           strip: true,
           header: true,
-          dragged: dragged?.() === strip.id,
+          dragged: dragged()?.() === strip.id,
         }}
-        onmousedown={() => onmousedown?.()}
-        onmousemove={() => onmousemove?.()}
+        onmousedown={() => onmousedown()?.()}
+        onmousemove={() => onmousemove()?.()}
       >
         <div class="vertical">
           <Show when={editing()}>
@@ -242,9 +247,9 @@ function Strip({
             <span ondblclick={handleDoubleClick}>{strip.name}</span>
           </Show>
         </div>
-        <Show when={deletable}>
+        <Show when={deletable()}>
           <div class="vertical end">
-            <button class="delete" onclick={() => ondelete?.()}>
+            <button class="delete" onclick={() => ondelete()?.()}>
               X
             </button>
           </div>
@@ -254,7 +259,7 @@ function Strip({
   } else if (strip.type === StripType.Aircraft) {
     const handleMouseDown = () => {
       setSelectedAircraft(strip.callsign);
-      onmousedown?.();
+      onmousedown()?.();
     };
 
     let dimmer = createMemo(
@@ -271,13 +276,13 @@ function Strip({
       <div
         classList={{
           strip: true,
-          dragged: dragged?.() === strip.id,
+          dragged: dragged()?.() === strip.id,
           theirs: dimmer(),
           selected: selectedAircraft() === strip.callsign,
           departure: airspace() === strip.departing,
         }}
         onmousedown={handleMouseDown}
-        onmousemove={() => onmousemove?.()}
+        onmousemove={() => onmousemove()?.()}
       >
         <div class="vertical">
           <span class="callsign">{strip.callsign}</span>
@@ -295,11 +300,11 @@ function Strip({
           <span class="frequency">{strip.frequency}</span>
           <span class="timer">{timer()}</span>
         </div>
-        <Show when={deletable}>
+        <Show when={deletable()}>
           <div class="vertical end">
             <button
               class="delete"
-              onclick={() => ondelete?.()}
+              onclick={() => ondelete()?.()}
               onmousedown={(e) => e.stopPropagation()}
             >
               X
@@ -677,37 +682,22 @@ export default function StripBoard() {
         </For>
       </Show>
       <For each={board.strips()}>
-        {(strip, index) => {
-          // Prevent the inbox from being deleted or moved.
-          if (strip.type === StripType.Header && strip.id === INBOX_ID) {
-            return (
-              <>
-                <Strip
-                  key={index()}
-                  strip={strip}
-                  onmousemove={() => handleMouseMove(strip.id)}
-                  deletable={false}
-                />
-                {strip.id === separator() ? <Separator /> : null}
-              </>
-            );
-          } else {
-            return (
-              <>
-                <Strip
-                  key={index()}
-                  strip={strip}
-                  onmousedown={() => handleMouseDown(strip.id)}
-                  onmousemove={() => handleMouseMove(strip.id)}
-                  ondelete={() => handleDelete(strip.id)}
-                  onedit={(name) => handleEdit(strip.id, name)}
-                  dragged={() => (separator() !== null ? dragged() : null)}
-                  deletable
-                />
-                {strip.id === separator() ? <Separator /> : null}
-              </>
-            );
-          }
+        {(strip) => {
+          return (
+            <>
+              <Strip
+                key={strip.id}
+                strip={strip}
+                onmousedown={() => handleMouseDown(strip.id)}
+                onmousemove={() => handleMouseMove(strip.id)}
+                ondelete={() => handleDelete(strip.id)}
+                onedit={(name) => handleEdit(strip.id, name)}
+                dragged={() => (separator() !== null ? dragged() : null)}
+                deletable={strip.id !== INBOX_ID}
+              />
+              {strip.id === separator() ? <Separator /> : null}
+            </>
+          );
         }}
       </For>
     </div>
