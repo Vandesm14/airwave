@@ -127,7 +127,8 @@ async fn main() {
   let simulated_seconds = ticks_ran as f32 / runner.rate as f32;
   let simulated_minutes = (simulated_seconds / 60.0).floor();
   tracing::info!(
-    "Simulated {:.0}m{:.0}s in {:.2} secs (approx. {:.2}x speed).",
+    "Simulated {} ticks (relative time: {:.0}m{:.0}s) in {:.2} secs (approx. {:.2}x speed).",
+    ticks_ran,
     simulated_minutes,
     simulated_seconds % 60.0,
     duration.as_secs_f32(),
