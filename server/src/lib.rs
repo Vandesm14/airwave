@@ -31,10 +31,6 @@ pub struct Cli {
   #[arg(short, long, default_value = None)]
   pub address: Option<SocketAddr>,
 
-  /// The seed to use for the random number generator.
-  #[arg(short, long)]
-  pub seed: Option<u64>,
-
   /// Whether to and where to record incomming audio to.
   #[arg(long, default_value = None)]
   pub audio_path: Option<PathBuf>,

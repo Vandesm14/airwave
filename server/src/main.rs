@@ -1,10 +1,5 @@
 use core::str::FromStr;
-use std::{
-  fs,
-  net::{IpAddr, Ipv4Addr, SocketAddr},
-  path::PathBuf,
-  time::{Instant, SystemTime},
-};
+use std::{fs, path::PathBuf, time::Instant};
 
 use glam::Vec2;
 use internment::Intern;
@@ -32,7 +27,6 @@ async fn main() {
 
   let Cli {
     address,
-    seed,
     ref audio_path,
     ref config_path,
   } = *CLI;
@@ -60,22 +54,12 @@ async fn main() {
     Config::default()
   };
 
-  let address = address
-    .or_else(|| config.server.and_then(|s| s.address))
-    .unwrap_or(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001));
-
   let (get_tx, get_rx) =
     mpsc::unbounded_channel::<JobReq<TinyReqKind, ResKind>>();
   let (post_tx, post_rx) =
     mpsc::unbounded_channel::<JobReq<ArgReqKind, ResKind>>();
 
-  let seed = seed.unwrap_or(
-    config
-      .world
-      .clone()
-      .and_then(|w| w.seed)
-      .unwrap_or(SystemTime::now().elapsed().unwrap().as_secs()),
-  );
+  let seed = config.world().seed();
 
   tracing::info!("Seed: {seed}");
 
@@ -98,22 +82,38 @@ async fn main() {
     auto: false,
   };
 
-  let frequencies = config.frequencies.unwrap_or_default();
-  let main_airport: Airport = match config.world.and_then(|w| w.airport) {
-    Some(id) => runner
-      .airport(id)
-      .expect("Could not find configured airport")
-      .clone(),
-    None => runner
-      .default_airport()
-      .expect("Could not find default airport")
-      .clone(),
+  let mut main_airport: Airport = match config.world().airport() {
+    Some(id) => match runner.airport(id) {
+      Some(airport) => {
+        tracing::info!(r#"Using airport: "{}""#, airport.id);
+        airport.clone()
+      }
+      None => {
+        tracing::error!(
+          r#"Failed to load airport "{id}": Could not find assets "{id}.json" or "{id}.lua" (assets are case-sensetive)."#
+        );
+        std::process::exit(1);
+      }
+    },
+    None => match runner.default_airport() {
+      Some(airport) => {
+        tracing::info!(r#"Using default airport: "{}""#, airport.id);
+        airport.clone()
+      }
+      None => {
+        tracing::error!("Could not find default airport");
+        std::process::exit(1);
+      }
+    },
   };
+  if let Some(frequencies) = config.frequencies() {
+    main_airport.frequencies = frequencies.clone();
+  }
 
   player_airspace.airports.push(main_airport.clone());
   runner.world.airspaces.push(player_airspace);
 
-  runner.generate_airspaces(&mut world_rng, &frequencies);
+  runner.generate_airspaces(&mut world_rng, &main_airport.frequencies);
   runner.generate_waypoints();
   runner.world.reset_statuses();
   runner.fill_gates();
@@ -132,5 +132,6 @@ async fn main() {
   tracing::info!("Starting game loop...");
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
+  let address = address.unwrap_or(config.server().address());
   let _ = tokio::spawn(http::run(address, get_tx, post_tx)).await;
 }

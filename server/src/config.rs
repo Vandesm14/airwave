@@ -1,13 +1,19 @@
-use std::{net::SocketAddr, path::Path};
+use std::{
+  net::{IpAddr, Ipv4Addr, SocketAddr},
+  path::Path,
+};
 
 use engine::entities::airport::Frequencies;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct Config {
-  pub frequencies: Option<Frequencies>,
-  pub world: Option<WorldConfig>,
-  pub server: Option<ServerConfig>,
+  #[serde(default)]
+  frequencies: Option<Frequencies>,
+  #[serde(default)]
+  world: WorldConfig,
+  #[serde(default)]
+  server: ServerConfig,
 }
 
 impl Config {
@@ -25,15 +31,66 @@ impl Config {
       Err(err) => Err(format!("Failed to read config file: {}", err)),
     }
   }
+
+  pub fn frequencies(&self) -> Option<&Frequencies> {
+    self.frequencies.as_ref()
+  }
+
+  pub fn world(&self) -> &WorldConfig {
+    &self.world
+  }
+
+  pub fn server(&self) -> &ServerConfig {
+    &self.server
+  }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
+struct WorldSeed(u64);
+
+impl Default for WorldSeed {
+  fn default() -> Self {
+    let now = std::time::SystemTime::now();
+    let since_epoch = now.duration_since(std::time::UNIX_EPOCH).unwrap();
+    Self(since_epoch.as_secs())
+  }
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WorldConfig {
-  pub seed: Option<u64>,
-  pub airport: Option<String>,
+  #[serde(default)]
+  seed: WorldSeed,
+  #[serde(default)]
+  airport: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+impl WorldConfig {
+  pub fn seed(&self) -> u64 {
+    self.seed.0
+  }
+
+  pub fn airport(&self) -> Option<&str> {
+    self.airport.as_deref()
+  }
+}
+
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub struct ServerAddress(SocketAddr);
+
+impl Default for ServerAddress {
+  fn default() -> Self {
+    Self(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))
+  }
+}
+
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct ServerConfig {
-  pub address: Option<SocketAddr>,
+  #[serde(default)]
+  address: ServerAddress,
+}
+
+impl ServerConfig {
+  pub fn address(&self) -> SocketAddr {
+    self.address.0
+  }
 }
