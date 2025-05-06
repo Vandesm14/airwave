@@ -466,6 +466,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
               // waypoints so please check this TODO when that happens.
               aircraft.flight_plan.clear_waypoints();
 
+              aircraft.target.heading =
+                angle_between_points(aircraft.pos, airspace.pos);
+
               let direction = heading_to_direction(angle_between_points(
                 airspace.pos,
                 aircraft.pos,
