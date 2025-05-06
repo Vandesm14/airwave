@@ -126,11 +126,11 @@ function statusOfAircraft(
     ? Date.now() >= aircraft.timer.secs * 1000
     : false;
 
-  const isParked = !isReady && aircraft.segment === 'parked';
+  const isParked = !isReady && isOurDeparture && aircraft.segment === 'parked';
   const isGround =
-    isReady &&
-    (aircraft.segment.startsWith('taxi-') ||
-      (isOurDeparture && aircraft.segment === 'parked'));
+    (isOurArrival && aircraft.segment === 'taxi-arr') ||
+    (isOurDeparture && aircraft.segment === 'taxi-dep') ||
+    (isReady && isOurDeparture && aircraft.segment === 'parked');
   const isActive = !!aircraft.timer;
 
   const isTakeoff = aircraft.segment === 'takeoff';
