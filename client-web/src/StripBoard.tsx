@@ -24,6 +24,7 @@ import { makePersisted } from '@solid-primitives/storage';
 import { FlightSegment } from '../bindings/FlightSegment';
 
 import './StripBoard.scss';
+import { unwrap } from 'solid-js/store';
 
 const INBOX_ID = 0;
 
@@ -128,7 +129,8 @@ function statusOfAircraft(
   const isParked = !isReady && aircraft.segment === 'parked';
   const isGround =
     isReady &&
-    (aircraft.segment.startsWith('taxi-') || aircraft.segment === 'parked');
+    (aircraft.segment.startsWith('taxi-') ||
+      (isOurDeparture && aircraft.segment === 'parked'));
   const isActive = !!aircraft.timer;
 
   const isTakeoff = aircraft.segment === 'takeoff';
@@ -522,6 +524,10 @@ export default function StripBoard() {
               statusOfAircraft(aircraft, airspace.id, selected)
             ))
         ) {
+          console.log('create:', {
+            status: statusOfAircraft(aircraft, airspace.id, selected),
+            aircraft: structuredClone(unwrap(aircraft)),
+          });
           newStrips.push(aircraftToStrip(aircraft, airspace, selected));
         }
       }
