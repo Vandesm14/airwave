@@ -526,7 +526,8 @@ impl Runner {
                 );
               }
             } else {
-              tracing::warn!("No destination available for {:?}", aircraft.id);
+              // TODO: Do we want to keep this for visibility?
+              // tracing::warn!("No destination available for {:?}", aircraft.id);
             }
 
             if auto {
