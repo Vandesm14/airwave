@@ -7,7 +7,7 @@ import {
   JSX,
   Show,
 } from 'solid-js';
-import { hardcodedAirport, smallFlightSegment } from './lib/lib';
+import { smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
@@ -483,13 +483,7 @@ export default function StripBoard() {
 
   // Prefill the strips with default headers.
   createEffect(() => {
-    const airport = hardcodedAirport(query.data!);
-
-    if (
-      board.length() === 0 &&
-      aircrafts.data.length > 0 &&
-      airport !== undefined
-    ) {
+    if (board.length() === 0 && aircrafts.data.length > 0) {
       const defaultHeaders: string[] = [
         'Inbox',
         'Approach',
