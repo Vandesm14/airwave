@@ -1,40 +1,28 @@
 {
   "prompt": [
-    "Split the following message from Air Traffic Control into a JSON object into callsign and request like so:",
-    [
-      {
-        "callsign": "SKW1234",
-        "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
-      }
-    ],
-    "If the phrase \"break\" is used, split the message into two or more JSON objects like so:",
-    "SkyWest 1234 - Descend and maintain 4000 feet and reduce speed to 200 knots. break JetBlue 1234 - Descend and maintain 4000 feet and reduce speed to 200 knots.",
-    [
-      {
-        "callsign": "SKW1234",
-        "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
-      },
-      {
-        "callsign": "JBU1234",
-        "request": "Descend and maintain 4000 feet and reduce speed to 200 knots."
-      }
-    ],
-    "If \"break\" is not used, don't split the message into multiple JSON objects.",
-    "Available Callsigns: SKW (Skywest), AAL (American), JBU (Jet Blue), DAL (Delta), UAL (United), BAW (Speedbird), SWA (Southwest).",
-    "There might be artifacts from speech-to-text, so be mindful of that:",
-    [
-      {
-        "input": "SkyWest 80 02",
-        "callsign": "SKW8002"
-      },
-      {
-        "input": "American 40, 25,",
-        "callsign": "AAL4025"
-      },
-      {
-        "input": "JetBlue8746",
-        "callsign": "JBU8746"
-      }
-    ]
+    "Split the following message from Air Traffic Control into text with callsign and request like so. Split requests to multiple aircraft using a semicolon (\";\"). Keep in mind that there might be some artifacts from voice transcription in the callsign, you can simply ignore those and treat all callsigns as a 3-letter 4-digit block, regardless of how speech-to-text handles it.",
+    "Available Callsigns: SKW (Skywest), AAL (American), JBU (Jet Blue), DAL (Delta), UAL (United), BAW (Speedbird), SWA (Southwest)."
+  ],
+  "examples": [
+    {
+      "user": "Skywest 12, 34, descend and maintain 4000 feet and reduce speed to 200 knots.",
+      "assistant": "SKW1234 Descend and maintain 4000 feet and reduce speed to 200 knots."
+    },
+    {
+      "user": "SkyWest 1234 Descend and maintain 4000 feet and reduce speed to 200 knots. Break, JetBlue 45 46, cleared to land runway 21.",
+      "assistant": "SKW1234 Descend and maintain 4000 feet and reduce speed to 200 knots; JBU4546 Cleared to land runway 21"
+    },
+    {
+      "user": "SkyWest 80 02, turn right heading 140",
+      "assistant": "SKW8002 Turn right heading 140"
+    },
+    {
+      "user": "American 40, 25, turn right heading 140",
+      "assistant": "AAL4025 Turn right heading 140"
+    },
+    {
+      "user": "JetBlue8746, turn right heading 140",
+      "assistant": "JBU8746 Turn right heading 140"
+    }
   ]
 }

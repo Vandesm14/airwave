@@ -1,7 +1,4 @@
-use std::{
-  fs,
-  path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use async_openai::{
   error::OpenAIError,
@@ -194,12 +191,25 @@ impl Prompter {
       Self::load_prompt_as_string("server/prompts/splitter.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
-      let json: Vec<CallsignAndRequest> = serde_json::from_str(&result)
-        .map_err(|e| {
-          LoadPromptError::Deserialize(e, Path::new("").into(), result)
-        })?;
+      tracing::warn!("{result}");
 
-      Ok(json)
+      let requests: Vec<CallsignAndRequest> =
+        result.split(';').fold(Vec::new(), |mut acc, r| {
+          let mut r = r.trim().split(' ');
+          let callsign = r.next();
+          let request = r.collect();
+
+          if let Some(callsign) = callsign {
+            acc.push(CallsignAndRequest {
+              callsign: callsign.to_owned(),
+              request,
+            })
+          }
+
+          acc
+        });
+
+      Ok(requests)
     } else {
       Err(Error::NoResult(prompt))
     }
