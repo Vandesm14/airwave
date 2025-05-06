@@ -550,6 +550,20 @@ impl Runner {
     self.cleanup(events.iter());
     // TODO: self.save_world();
 
+    if !self.preparing && self.tick_counter % (self.rate * 60) == 0 {
+      let diff = self.last_tick.elapsed();
+      let mills = diff.as_millis();
+      let max = 1.0 / self.rate as f32 * 1000.0;
+      let percent = diff.as_secs_f32() / (1.0 / self.rate as f32);
+
+      tracing::info!(
+        "Using {}ms of {:.0}ms total tick time ({:.2}%)",
+        mills,
+        max,
+        percent * 100.0
+      );
+    }
+
     self.tick_counter += 1;
 
     events.clone()
@@ -585,6 +599,9 @@ impl Runner {
             {
               if !airspace.auto {
                 tracing::info!("Quick start interrupted by {}. Aircraft entered non-auto airspace.", aircraft.id);
+
+                self.preparing = false;
+
                 return self.tick_counter;
               }
             }

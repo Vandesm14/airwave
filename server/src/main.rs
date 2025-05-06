@@ -124,9 +124,14 @@ async fn main() {
   let start = Instant::now();
   let ticks_ran = runner.quick_start();
   let duration = start.elapsed();
+  let simulated_seconds = ticks_ran as f32 / runner.rate as f32;
+  let simulated_minutes = (simulated_seconds / 60.0).floor();
   tracing::info!(
-    "Preloaded {ticks_ran} ticks in {} seconds.",
-    duration.as_secs_f32()
+    "Simulated {:.0}m{:.0}s in {:.2} secs (approx. {:.2}x speed).",
+    simulated_minutes,
+    simulated_seconds % 60.0,
+    duration.as_secs_f32(),
+    simulated_seconds / duration.as_secs_f32()
   );
 
   tracing::info!("Starting game loop...");
