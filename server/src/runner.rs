@@ -468,13 +468,19 @@ impl Runner {
           .flat_map(|t| t.gates.iter().filter(|g| !g.available));
         let gate = self.rng.sample_iter(gates);
         if let Some(gate) = gate {
-          let aircraft = self.game.aircraft.iter_mut().find(|a| {
-            if let AircraftState::Parked { at } = &a.state {
-              at.name == gate.id && a.pos == gate.pos
-            } else {
-              false
-            }
-          });
+          let aircraft = self
+            .game
+            .aircraft
+            .iter_mut()
+            // Only pick inactive aircraft
+            .filter(|a| a.timer.is_none())
+            .find(|a| {
+              if let AircraftState::Parked { at } = &a.state {
+                at.name == gate.id && a.pos == gate.pos
+              } else {
+                false
+              }
+            });
 
           if let Some(aircraft) = aircraft {
             // Chance for a flight to go to a non-auto airspace.
