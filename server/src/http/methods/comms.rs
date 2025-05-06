@@ -210,6 +210,8 @@ pub async fn comms_voice(
 ) {
   let time = Instant::now();
 
+  tracing::info!("Received comms text request: {} bytes", bytes.len());
+
   match transcribe_voice(bytes).await {
     Ok(text) => {
       let _ = JobReq::send(

@@ -463,14 +463,15 @@ impl Pathfinder {
 
         p
       });
-      if let Some(first_path) = &first_path {
-        tracing::info!(
-          "found path from {:?} to {:?}: {:?}",
-          display_node_vec2(&from),
-          display_node_vec2(&to),
-          display_vec_node_vec2(&first_path.path)
-        );
-      }
+      // TODO: Do we still need observability into this?
+      // if let Some(first_path) = &first_path {
+      //   tracing::info!(
+      //     "found path from {:?} to {:?}: {:?}",
+      //     display_node_vec2(&from),
+      //     display_node_vec2(&to),
+      //     display_vec_node_vec2(&first_path.path)
+      //   );
+      // }
 
       first_path
     } else {
