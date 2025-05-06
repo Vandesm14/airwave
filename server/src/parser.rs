@@ -6,6 +6,7 @@ use engine::{
 };
 use internment::Intern;
 use itertools::Itertools;
+use regex::Regex;
 
 fn parse_altitude(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["a", "alt", "altitude"];
@@ -122,6 +123,9 @@ fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
 
     let mut waypoints: Vec<Node<()>> = Vec::new();
 
+    let runway_rgx = Regex::new(r"^[0-9]{2}[LCRlcr]?$").unwrap();
+    let taxiway_rgx = Regex::new(r"^[a-zA-Z]{1,2}[0-9]?$").unwrap();
+
     for part in parts {
       if part == &"via" {
         via = true;
@@ -151,23 +155,20 @@ fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
           behavior,
           (),
         ));
-      } else {
-        let runway = part.chars().next().and_then(|c| c.to_digit(10)).is_some();
-        if runway {
-          waypoints.push(Node::new(
-            Intern::from(part.to_uppercase()),
-            NodeKind::Runway,
-            behavior,
-            (),
-          ));
-        } else {
-          waypoints.push(Node::new(
-            Intern::from(part.to_uppercase()),
-            NodeKind::Taxiway,
-            behavior,
-            (),
-          ));
-        }
+      } else if runway_rgx.is_match(part) {
+        waypoints.push(Node::new(
+          Intern::from(part.to_uppercase()),
+          NodeKind::Runway,
+          behavior,
+          (),
+        ));
+      } else if taxiway_rgx.is_match(part) {
+        waypoints.push(Node::new(
+          Intern::from(part.to_uppercase()),
+          NodeKind::Taxiway,
+          behavior,
+          (),
+        ));
       }
     }
 
@@ -593,6 +594,12 @@ mod tests {
           .with_behavior(NodeBehavior::HoldShort),
       ])]
     );
+
+    // Invalid.
+    assert_eq!(parse_tasks("tx ABC"), vec![Task::Taxi(vec![])]);
+    assert_eq!(parse_tasks("tx A11"), vec![Task::Taxi(vec![])]);
+    assert_eq!(parse_tasks("tx 23W"), vec![Task::Taxi(vec![])]);
+    assert_eq!(parse_tasks("tx 2"), vec![Task::Taxi(vec![])]);
   }
 
   #[test]
