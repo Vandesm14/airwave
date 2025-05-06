@@ -8,14 +8,27 @@ use internment::Intern;
 use itertools::Itertools;
 use regex::Regex;
 
+fn runway_rgx() -> Regex {
+  Regex::new(r"^[0-9]{2}[LCRlcr]?$").unwrap()
+}
+
+fn taxiway_rgx() -> Regex {
+  Regex::new(r"^[a-zA-Z]{1}[0-9]{0,1}$").unwrap()
+}
+
 fn parse_altitude(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["a", "alt", "altitude"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return parts
+    let alt = parts
       .next()
       .and_then(|a| a.parse::<f32>().ok())
       .map(|a| a * 100.0)
       .map(Task::Altitude);
+
+    // End of input.
+    if parts.next().is_none() {
+      return alt;
+    }
   }
 
   None
@@ -24,10 +37,15 @@ fn parse_altitude(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_direct(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["d", "dt", "direct"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return parts
+    let direct = parts
       .next()
       .map(|a| Intern::from(a.to_owned().to_uppercase()))
       .map(Task::Direct);
+
+    // End of input.
+    if parts.next().is_none() {
+      return direct;
+    }
   }
 
   None
@@ -40,10 +58,13 @@ fn parse_frequency(mut parts: Iter<&str>) -> Option<Task> {
     let freq = arg.and_then(|a| a.parse::<f32>().ok());
     let name = arg.map(|a| a.to_lowercase());
 
-    if freq.is_some() {
-      return freq.map(Task::Frequency);
-    } else if name.is_some() {
-      return name.map(|a| a.to_owned()).map(Task::NamedFrequency);
+    // End of input.
+    if parts.next().is_none() {
+      if freq.is_some() {
+        return freq.map(Task::Frequency);
+      } else if name.is_some() {
+        return name.map(|a| a.to_owned()).map(Task::NamedFrequency);
+      }
     }
   }
 
@@ -53,7 +74,11 @@ fn parse_frequency(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_go_around(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["g", "ga", "go"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return Some(Task::GoAround);
+    let next = parts.next();
+    // End of input.
+    if next.is_none() || (next == Some(&"around") && parts.next().is_none()) {
+      return Some(Task::GoAround);
+    }
   }
 
   None
@@ -62,10 +87,15 @@ fn parse_go_around(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_heading(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["t", "turn", "h", "heading"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return parts
+    let heading = parts
       .next()
       .and_then(|a| a.parse::<f32>().ok())
       .map(Task::Heading);
+
+    // End of input.
+    if parts.next().is_none() {
+      return heading;
+    }
   }
 
   None
@@ -74,7 +104,10 @@ fn parse_heading(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_ident(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["i", "id", "ident"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return Some(Task::Ident);
+    // End of input.
+    if parts.next().is_none() {
+      return Some(Task::Ident);
+    }
   }
 
   None
@@ -83,10 +116,21 @@ fn parse_ident(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_land(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["l", "cl", "land"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return parts
-      .next()
-      .map(|a| Intern::from(a.to_owned().to_uppercase()))
+    let runway = parts.next();
+    let land = runway
+      .and_then(|a| {
+        if runway_rgx().is_match(a) {
+          Some(Intern::from(a.to_owned().to_uppercase()))
+        } else {
+          None
+        }
+      })
       .map(Task::Land);
+
+    // End of input.
+    if parts.next().is_none() {
+      return land;
+    }
   }
 
   None
@@ -95,7 +139,10 @@ fn parse_land(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_resume_own_navigation(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["r", "raf", "resume", "own"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return Some(Task::ResumeOwnNavigation);
+    // End of input.
+    if parts.next().is_none() {
+      return Some(Task::ResumeOwnNavigation);
+    }
   }
 
   None
@@ -104,10 +151,15 @@ fn parse_resume_own_navigation(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_speed(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["s", "spd", "speed"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return parts
+    let speed = parts
       .next()
       .and_then(|a| a.parse::<f32>().ok())
       .map(Task::Speed);
+
+    // End of input.
+    if parts.next().is_none() {
+      return speed;
+    }
   }
 
   None
@@ -115,6 +167,10 @@ fn parse_speed(mut parts: Iter<&str>) -> Option<Task> {
 
 fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["tx", "taxi"];
+
+  let runway_rgx = runway_rgx();
+  let taxiway_rgx = taxiway_rgx();
+
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
     // Flags.
     let mut via = false;
@@ -122,9 +178,6 @@ fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
     let mut short = false;
 
     let mut waypoints: Vec<Node<()>> = Vec::new();
-
-    let runway_rgx = Regex::new(r"^[0-9]{2}[LCRlcr]?$").unwrap();
-    let taxiway_rgx = Regex::new(r"^[a-zA-Z]{1,2}[0-9]?$").unwrap();
 
     for part in parts {
       if part == &"via" {
@@ -187,7 +240,10 @@ fn parse_taxi(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_taxi_continue(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["c", "tc", "continue"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return Some(Task::TaxiContinue);
+    // End of input.
+    if parts.next().is_none() {
+      return Some(Task::TaxiContinue);
+    }
   }
 
   None
@@ -196,7 +252,10 @@ fn parse_taxi_continue(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_taxi_hold(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["th", "hold", "stop"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return Some(Task::TaxiHold);
+    // End of input.
+    if parts.next().is_none() {
+      return Some(Task::TaxiHold);
+    }
   }
 
   None
@@ -205,10 +264,21 @@ fn parse_taxi_hold(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_takeoff(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["ct", "cto", "to", "takeoff"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return parts
-      .next()
-      .map(|a| Intern::from(a.to_owned().to_uppercase()))
+    let runway = parts.next();
+    let takeoff = runway
+      .and_then(|a| {
+        if runway_rgx().is_match(a) {
+          Some(Intern::from(a.to_owned().to_uppercase()))
+        } else {
+          None
+        }
+      })
       .map(Task::Takeoff);
+
+    // End of input.
+    if parts.next().is_none() {
+      return takeoff;
+    }
   }
 
   None
@@ -217,10 +287,21 @@ fn parse_takeoff(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_line_up(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["lu", "line", "wait"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return parts
-      .next()
-      .map(|a| Intern::from(a.to_owned().to_uppercase()))
+    let runway = parts.next();
+    let line_up = runway
+      .and_then(|a| {
+        if runway_rgx().is_match(a) {
+          Some(Intern::from(a.to_owned().to_uppercase()))
+        } else {
+          None
+        }
+      })
       .map(Task::LineUp);
+
+    // End of input.
+    if parts.next().is_none() {
+      return line_up;
+    }
   }
 
   None
@@ -229,7 +310,10 @@ fn parse_line_up(mut parts: Iter<&str>) -> Option<Task> {
 fn parse_delete(mut parts: Iter<&str>) -> Option<Task> {
   let aliases = ["del", "delete"];
   if parts.next().map(|f| aliases.contains(f)) == Some(true) {
-    return Some(Task::Delete);
+    // End of input.
+    if parts.next().is_none() {
+      return Some(Task::Delete);
+    }
   }
 
   None
@@ -321,11 +405,15 @@ mod tests {
     // Argument variants.
     assert_eq!(parse_tasks("alt 250"), vec![Task::Altitude(25000.0)]);
     assert_eq!(parse_tasks("alt 040"), vec![Task::Altitude(4000.0)]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("alt abcd"), vec![]);
+    assert_eq!(parse_tasks("alt 250 abcd"), vec![]);
   }
 
   #[test]
   fn parse_many() {
-    // Test multiple commands
+    // Test multiple commands.
     assert_eq!(
       parse_tasks("alt 250, alt 040, alt 40"),
       vec![
@@ -335,7 +423,7 @@ mod tests {
       ]
     );
 
-    // Test multiple commands with different parsers
+    // Test multiple commands with different parsers.
     assert_eq!(
       parse_tasks("alt 250, direct ABCD, f 123.4"),
       vec![
@@ -345,7 +433,7 @@ mod tests {
       ]
     );
 
-    // Test trailing comma
+    // Test trailing comma.
     assert_eq!(
       parse_tasks("alt 250, direct ABCD, f 123.4,"),
       vec![
@@ -381,6 +469,10 @@ mod tests {
       parse_tasks("direct abcd"),
       vec![Task::Direct(Intern::from_ref("ABCD"))]
     );
+
+    // Invalid.
+    assert_eq!(parse_tasks("direct"), vec![]);
+    assert_eq!(parse_tasks("direct ABCD EFGH"), vec![]);
   }
 
   #[test]
@@ -401,6 +493,11 @@ mod tests {
       parse_tasks("contact DEPARTURE"),
       vec![Task::NamedFrequency("departure".to_owned())]
     );
+
+    // Invalid.
+    assert_eq!(parse_tasks("f"), vec![]);
+    assert_eq!(parse_tasks("f 123.4 567.8"), vec![]);
+    assert_eq!(parse_tasks("f 123.4 ABCD"), vec![]);
   }
 
   #[test]
@@ -410,6 +507,10 @@ mod tests {
     assert_eq!(parse_tasks("ga"), vec![Task::GoAround]);
     assert_eq!(parse_tasks("go"), vec![Task::GoAround]);
     assert_eq!(parse_tasks("go around"), vec![Task::GoAround]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("go around 27L"), vec![]);
+    assert_eq!(parse_tasks("go 27L"), vec![]);
   }
 
   #[test]
@@ -424,6 +525,12 @@ mod tests {
     assert_eq!(parse_tasks("heading 250"), vec![Task::Heading(250.0)]);
     assert_eq!(parse_tasks("heading 040"), vec![Task::Heading(40.0)]);
     assert_eq!(parse_tasks("heading 040.0"), vec![Task::Heading(40.0)]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("heading"), vec![]);
+    assert_eq!(parse_tasks("heading 250 270"), vec![]);
+    assert_eq!(parse_tasks("heading 250 ABCD"), vec![]);
+    assert_eq!(parse_tasks("heading ABCD"), vec![]);
   }
 
   #[test]
@@ -432,6 +539,11 @@ mod tests {
     assert_eq!(parse_tasks("i"), vec![Task::Ident]);
     assert_eq!(parse_tasks("id"), vec![Task::Ident]);
     assert_eq!(parse_tasks("ident"), vec![Task::Ident]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("id 27L"), vec![]);
+    assert_eq!(parse_tasks("id 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("id ABCD"), vec![]);
   }
 
   #[test]
@@ -459,6 +571,12 @@ mod tests {
       parse_tasks("land 27l"),
       vec![Task::Land(Intern::from_ref("27L"))]
     );
+
+    // Invalid.
+    assert_eq!(parse_tasks("land"), vec![]);
+    assert_eq!(parse_tasks("land 27L 27R"), vec![]);
+    assert_eq!(parse_tasks("land 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("land ABCD"), vec![]);
   }
 
   #[test]
@@ -468,6 +586,11 @@ mod tests {
     assert_eq!(parse_tasks("raf"), vec![Task::ResumeOwnNavigation]);
     assert_eq!(parse_tasks("resume"), vec![Task::ResumeOwnNavigation]);
     assert_eq!(parse_tasks("own"), vec![Task::ResumeOwnNavigation]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("resume 27L"), vec![]);
+    assert_eq!(parse_tasks("resume 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("resume ABCD"), vec![]);
   }
 
   #[test]
@@ -480,6 +603,12 @@ mod tests {
     // Argument variants.
     assert_eq!(parse_tasks("speed 250"), vec![Task::Speed(250.0)]);
     assert_eq!(parse_tasks("speed 90"), vec![Task::Speed(90.0)]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("speed"), vec![]);
+    assert_eq!(parse_tasks("speed 250 270"), vec![]);
+    assert_eq!(parse_tasks("speed 250 ABCD"), vec![]);
+    assert_eq!(parse_tasks("speed ABCD"), vec![]);
   }
 
   #[test]
@@ -608,6 +737,11 @@ mod tests {
     assert_eq!(parse_tasks("c"), vec![Task::TaxiContinue]);
     assert_eq!(parse_tasks("tc"), vec![Task::TaxiContinue]);
     assert_eq!(parse_tasks("continue"), vec![Task::TaxiContinue]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("tc 27L"), vec![]);
+    assert_eq!(parse_tasks("tc 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("tc ABCD"), vec![]);
   }
 
   #[test]
@@ -616,6 +750,11 @@ mod tests {
     assert_eq!(parse_tasks("th"), vec![Task::TaxiHold]);
     assert_eq!(parse_tasks("hold"), vec![Task::TaxiHold]);
     assert_eq!(parse_tasks("stop"), vec![Task::TaxiHold]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("th 27L"), vec![]);
+    assert_eq!(parse_tasks("th 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("th ABCD"), vec![]);
   }
 
   #[test]
@@ -647,6 +786,12 @@ mod tests {
       parse_tasks("takeoff 27l"),
       vec![Task::Takeoff(Intern::from_ref("27L"))]
     );
+
+    // Invalid.
+    assert_eq!(parse_tasks("takeoff"), vec![]);
+    assert_eq!(parse_tasks("takeoff 27L 27R"), vec![]);
+    assert_eq!(parse_tasks("takeoff 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("takeoff ABCD"), vec![]);
   }
 
   #[test]
@@ -674,6 +819,12 @@ mod tests {
       parse_tasks("line 27l"),
       vec![Task::LineUp(Intern::from_ref("27L"))]
     );
+
+    // Invalid.
+    assert_eq!(parse_tasks("line"), vec![]);
+    assert_eq!(parse_tasks("line 27L 27R"), vec![]);
+    assert_eq!(parse_tasks("line 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("line ABCD"), vec![]);
   }
 
   #[test]
@@ -681,5 +832,10 @@ mod tests {
     // Alias variants.
     assert_eq!(parse_tasks("delete"), vec![Task::Delete]);
     assert_eq!(parse_tasks("del"), vec![Task::Delete]);
+
+    // Invalid.
+    assert_eq!(parse_tasks("delete 27L"), vec![]);
+    assert_eq!(parse_tasks("delete 27L ABCD"), vec![]);
+    assert_eq!(parse_tasks("delete ABCD"), vec![]);
   }
 }
