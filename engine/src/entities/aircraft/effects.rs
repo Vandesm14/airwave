@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use crate::{
   command::{CommandReply, CommandWithFreq},
   engine::Bundle,
-  entities::world::{closest_airport, DepartureStatus},
+  entities::world::{closest_airport, closest_airspace},
   geometry::{
     add_degrees, angle_between_points, calculate_ils_altitude,
     closest_point_on_line, delta_angle, duration_now, inverse_degrees,
@@ -11,7 +11,8 @@ use crate::{
   },
   line::Line,
   pathfinder::{NodeBehavior, NodeKind},
-  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
+  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
 };
 
 use super::{
@@ -413,13 +414,6 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             aircraft.state = AircraftState::Parked {
               at: current.clone(),
             };
-            bundle.events.push(
-              AircraftEvent {
-                id: aircraft.id,
-                kind: EventKind::Segment(FlightSegment::Dormant),
-              }
-              .into(),
-            );
 
             aircraft.flip_flight_plan();
             aircraft.flight_time = None;
@@ -491,146 +485,103 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
 pub struct AircraftUpdateSegmentEffect;
 impl AircraftEffect for AircraftUpdateSegmentEffect {
   fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    // The Following states are handled by events:
-    // Dormant
-    // Boarding
-    // Parked
-    // TaxiDep
-    // Takeoff
-    // --
-    // Land
-    // TaxiArr
+    let mut segment: Option<FlightSegment> = None;
 
-    // If the airport has disabled departures, disable the departure.
-    if let Some(status) = bundle
-      .world
-      .airspace_statuses
-      .get(&aircraft.flight_plan.departing)
-    {
-      if status.departure == DepartureStatus::Delay {
-        aircraft.flight_time = None;
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Segment(FlightSegment::Dormant),
-          }
-          .into(),
-        );
+    // Assert Dormant.
+    if aircraft.flight_time.is_none() {
+      segment = Some(FlightSegment::Dormant);
+    }
+
+    // Assert Boarding and Parked.
+    if let AircraftState::Parked { .. } = aircraft.state {
+      if let Some(flight_time) = aircraft.flight_time {
+        // Assert Boarding.
+        if duration_now() < flight_time {
+          segment = Some(FlightSegment::Boarding);
+
+          // Assert Parked.
+        } else if duration_now() >= flight_time {
+          segment = Some(FlightSegment::Parked);
+        }
       }
     }
 
-    // Ensure that we are Boarding if our timer is less than now.
-    if let Some(flight_time) = aircraft.flight_time {
-      if FlightSegment::Dormant == aircraft.segment
-        && duration_now() < flight_time
-      {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Segment(FlightSegment::Boarding),
-          }
-          .into(),
-        );
-      } else if FlightSegment::Boarding == aircraft.segment
-        && duration_now() >= flight_time
-      {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Segment(FlightSegment::Parked),
-          }
-          .into(),
-        );
-      }
-    }
+    // Assert Taxi.
+    if let AircraftState::Taxiing { .. } = aircraft.state {
+      let airport = closest_airport(&bundle.world.airspaces, aircraft.pos);
+      if let Some(airport) = airport {
+        // Assert TaxiDep.
+        if airport.id == aircraft.flight_plan.departing {
+          segment = Some(FlightSegment::TaxiDep);
 
-    if let AircraftState::Flying = &aircraft.state {
-      // If taking off and off the ground, set to departure
-      if FlightSegment::Takeoff == aircraft.segment && aircraft.altitude > 0.0 {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Segment(FlightSegment::Departure),
-          }
-          .into(),
-        );
-      }
-
-      if FlightSegment::Departure == aircraft.segment {
-        // If passed transition altitude, set to cruise
-        if aircraft.altitude >= TRANSITION_ALTITUDE {
-          bundle.events.push(
-            AircraftEvent {
-              id: aircraft.id,
-              kind: EventKind::Segment(FlightSegment::Cruise),
-            }
-            .into(),
-          );
-          // If outside of departure airspace, set to cruise
+        // Assert TaxiArr.
+        } else if airport.id == aircraft.flight_plan.arriving {
+          segment = Some(FlightSegment::TaxiArr);
         } else {
-          let departure = bundle
-            .world
-            .airspaces
-            .iter()
-            .find(|a| a.id == aircraft.flight_plan.departing);
-          if let Some(departure) = departure {
-            let distance = departure.pos.distance_squared(aircraft.pos);
-            if distance >= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
-              bundle.events.push(
-                AircraftEvent {
-                  id: aircraft.id,
-                  kind: EventKind::Segment(FlightSegment::Cruise),
-                }
-                .into(),
-              );
-
-              if departure.auto {
-                // TODO: Add proper callout events (to the waypoints) instead
-                // of hard-coding this.
-                aircraft.frequency =
-                  departure.airports.first().unwrap().frequencies.center;
-              }
-            }
-          }
+          tracing::warn!(
+            "Aircraft is taxiing at an airport that is not in the flight plan: {} {:#?}",
+            airport.id, aircraft
+          );
         }
       }
+    }
 
-      // If in cruise and descending, set to arrival
-      if FlightSegment::Cruise == aircraft.segment
-        && aircraft.target.altitude < TRANSITION_ALTITUDE
-      {
-        // FIXME: This doesn't account for aircraft that didn't pass transition
-        // before reaching their TOD.
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Segment(FlightSegment::Arrival),
-          }
-          .into(),
-        );
+    if let AircraftState::Flying = aircraft.state {
+      let airspace = closest_airspace(&bundle.world.airspaces, aircraft.pos)
+        .filter(|a| {
+          a.pos.distance_squared(aircraft.pos) <= AIRSPACE_RADIUS.powf(2.0)
+        });
+      if let Some(airspace) = airspace {
+        // Assert Departure.
+        if airspace.id == aircraft.flight_plan.departing {
+          segment = Some(FlightSegment::Departure);
 
-        // If within arrival airspace, set to approach
-      } else if FlightSegment::Cruise == aircraft.segment
-        || FlightSegment::Arrival == aircraft.segment
-      {
-        let arrival = bundle
-          .world
-          .airspaces
-          .iter()
-          .find(|a| a.id == aircraft.flight_plan.arriving);
-        if let Some(arrival) = arrival {
-          let distance = aircraft.pos.distance_squared(arrival.pos);
-          if distance <= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
-            bundle.events.push(
-              AircraftEvent {
-                id: aircraft.id,
-                kind: EventKind::Segment(FlightSegment::Approach),
-              }
-              .into(),
-            );
-          }
+        // Assert Approach.
+        } else if airspace.id == aircraft.flight_plan.arriving {
+          segment = Some(FlightSegment::Approach);
         }
+
+        // Assert Climb.
+      } else if aircraft.altitude < aircraft.target.altitude {
+        segment = Some(FlightSegment::Climb);
+
+        // Assert Cruise.
+      } else if aircraft.altitude == aircraft.target.altitude
+        && aircraft.altitude >= MIN_CRUISE_ALTITUDE
+      {
+        segment = Some(FlightSegment::Cruise);
+
+        // Assert Arrival.
+      } else if aircraft.altitude <= MIN_CRUISE_ALTITUDE
+        || aircraft.altitude >= aircraft.target.altitude
+      {
+        segment = Some(FlightSegment::Arrival);
       }
+
+      // Assert Takeoff.
+      if aircraft.altitude == 0.0 {
+        segment = Some(FlightSegment::Takeoff);
+      }
+    }
+
+    // Assert Landing.
+    if let AircraftState::Landing { .. } = aircraft.state {
+      segment = Some(FlightSegment::Landing);
+    }
+
+    let segment = segment.unwrap_or_default();
+    if segment != aircraft.segment {
+      if segment == FlightSegment::Unknown {
+        tracing::warn!("Aircraft has an unknown segment: {:#?}", aircraft);
+      }
+
+      bundle.events.push(
+        AircraftEvent {
+          id: aircraft.id,
+          kind: EventKind::Segment(segment),
+        }
+        .into(),
+      );
     }
   }
 }

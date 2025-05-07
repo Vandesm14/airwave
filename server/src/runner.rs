@@ -26,7 +26,8 @@ use engine::{
   },
   geometry::{circle_circle_intersection, duration_now, Translate},
   pathfinder::{Node, NodeBehavior, NodeKind},
-  NAUTICALMILES_TO_FEET,
+  AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
+  WORLD_RADIUS,
 };
 
 use crate::{
@@ -35,7 +36,6 @@ use crate::{
   merge_points,
   ring::RingBuffer,
   signal_gen::SignalGenerator,
-  AUTO_TOWER_AIRSPACE_RADIUS, TOWER_AIRSPACE_PADDING_RADIUS, WORLD_RADIUS,
 };
 
 pub const AIRPORT_SPAWN_CHANCE: f64 = 0.8;
@@ -235,8 +235,8 @@ impl Runner {
           if circle_circle_intersection(
             position,
             airport.pos,
-            AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
-            AUTO_TOWER_AIRSPACE_RADIUS + TOWER_AIRSPACE_PADDING_RADIUS,
+            AIRSPACE_RADIUS + AIRSPACE_PADDING_RADIUS,
+            AIRSPACE_RADIUS + AIRSPACE_PADDING_RADIUS,
           ) {
             continue 'outer;
           }
@@ -281,9 +281,11 @@ impl Runner {
     let waypoints = waypoints
       .drain(..)
       .filter(|w| {
-        !self.world.airspaces.iter().any(|a| {
-          a.pos.distance_squared(*w) < AUTO_TOWER_AIRSPACE_RADIUS.powf(2.0)
-        })
+        !self
+          .world
+          .airspaces
+          .iter()
+          .any(|a| a.pos.distance_squared(*w) < AIRSPACE_RADIUS.powf(2.0))
       })
       .enumerate()
       .map(|(i, w)| {

@@ -138,7 +138,7 @@ function statusOfAircraft(
   const isDeparture = aircraft.segment === 'departure';
   const isArriving = aircraft.segment === 'arrival';
 
-  const isLanding = aircraft.segment === 'land';
+  const isLanding = aircraft.segment === 'landing';
   const isApproach = aircraft.segment === 'approach';
 
   if (isActive) {
@@ -303,7 +303,9 @@ function Strip(props: StripProps) {
         </div>
         <div class="vertical">
           <span class="frequency">{strip.frequency}</span>
-          <span class="timer">{timer()}</span>
+          <span class="timer">
+            {smallFlightSegment(strip.segment).toUpperCase()}
+          </span>
         </div>
         <Show when={deletable()}>
           <div class="vertical end">

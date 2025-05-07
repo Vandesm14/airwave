@@ -16,6 +16,10 @@ pub mod wordify;
 pub const NAUTICALMILES_TO_FEET: f32 = 6076.115;
 pub const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781;
 
+pub const AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
+pub const AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
+pub const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
+
 pub const UP: f32 = 0.0;
 pub const DOWN: f32 = 180.0;
 pub const LEFT: f32 = 270.0;
@@ -25,6 +29,7 @@ pub const COUNTERCLOCKWISE: f32 = 270.0;
 
 pub const DEPARTURE_WAIT_RANGE: RangeInclusive<u64> = 180..=900;
 
+pub const MIN_CRUISE_ALTITUDE: f32 = 28000.0;
 pub const EAST_CRUISE_ALTITUDE: f32 = 37000.0;
 pub const WEST_CRUISE_ALTITUDE: f32 = 38000.0;
 pub const TRANSITION_ALTITUDE: f32 = 18000.0;

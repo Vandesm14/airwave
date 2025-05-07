@@ -211,6 +211,10 @@ export function shortTaxiingState(state: TaxiingState): string {
 
 export function smallFlightSegment(segment: FlightSegment): string {
   switch (segment) {
+    case 'unknown':
+      return 'unkn';
+    case 'dormant':
+      return 'dorm';
     case 'boarding':
       return 'wait';
     case 'parked':
@@ -221,18 +225,20 @@ export function smallFlightSegment(segment: FlightSegment): string {
       return 'tkff';
     case 'departure':
       return 'depr';
+    case 'climb':
+      return 'clmb';
     case 'cruise':
       return 'cruz';
     case 'arrival':
       return 'arrv';
     case 'approach':
       return 'appr';
-    case 'land':
+    case 'landing':
       return 'land';
     case 'taxi-arr':
       return 'txia';
     default:
-      return 'unkn';
+      return '----';
   }
 }
 

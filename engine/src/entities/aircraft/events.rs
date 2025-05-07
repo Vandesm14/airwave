@@ -337,14 +337,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
           bundle.events.push(
             AircraftEvent {
               id: aircraft.id,
-              kind: EventKind::Segment(FlightSegment::Approach),
-            }
-            .into(),
-          );
-
-          bundle.events.push(
-            AircraftEvent {
-              id: aircraft.id,
               kind: EventKind::AltitudeAtOrAbove(3000.0),
             }
             .into(),
@@ -371,16 +363,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Taxiing
       EventKind::Taxi(waypoints) => {
-        if let AircraftState::Parked { .. } = aircraft.state {
-          bundle.events.push(
-            AircraftEvent {
-              id: aircraft.id,
-              kind: EventKind::Segment(FlightSegment::TaxiDep),
-            }
-            .into(),
-          );
-        }
-
         if let AircraftState::Taxiing { .. } | AircraftState::Parked { .. } =
           aircraft.state
         {
@@ -460,26 +442,28 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // State
       EventKind::Segment(segment) => {
         // TODO: Remove this once we don't need the vis.
-        // tracing::info!(
-        //   "Setting segment for {} from {:?} to {:?}",
-        //   aircraft.id,
-        //   aircraft.segment,
-        //   segment
-        // );
+        tracing::info!(
+          "Setting segment for {} from {:?} to {:?}",
+          aircraft.id,
+          aircraft.segment,
+          segment
+        );
 
         aircraft.segment = *segment;
 
         match segment {
+          FlightSegment::Unknown => {}
           FlightSegment::Dormant => {}
           FlightSegment::Boarding => {}
           FlightSegment::Parked => handle_parked_segment(aircraft, bundle),
           FlightSegment::TaxiDep => {}
           FlightSegment::Takeoff => {}
           FlightSegment::Departure => {}
+          FlightSegment::Climb => {}
           FlightSegment::Cruise => {}
           FlightSegment::Arrival => {}
           FlightSegment::Approach => handle_approach_segment(aircraft, bundle),
-          FlightSegment::Land => {}
+          FlightSegment::Landing => {}
           FlightSegment::TaxiArr => {}
         }
       }
@@ -577,14 +561,6 @@ impl AircraftEventHandler for HandleAircraftEvent {
             aircraft.altitude = 0.0;
             aircraft.sync_targets_to_vals();
 
-            bundle.events.push(
-              AircraftEvent {
-                id: aircraft.id,
-                kind: EventKind::Segment(FlightSegment::Dormant),
-              }
-              .into(),
-            );
-
             aircraft.flip_flight_plan();
           } else {
             tracing::error!(
@@ -621,14 +597,6 @@ pub fn handle_land_event(
         runway: runway.clone(),
         state: LandingState::default(),
       };
-
-      bundle.events.push(
-        AircraftEvent {
-          id: aircraft.id,
-          kind: EventKind::Segment(FlightSegment::Land),
-        }
-        .into(),
-      );
     }
   }
 }
@@ -665,14 +633,6 @@ pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     waypoints: Vec::new(),
     state: TaxiingState::Override,
   };
-
-  bundle.events.push(
-    AircraftEvent {
-      id: aircraft.id,
-      kind: EventKind::Segment(FlightSegment::TaxiArr),
-    }
-    .into(),
-  );
 }
 
 pub fn handle_taxi_event(
@@ -798,14 +758,6 @@ pub fn handle_takeoff_event(
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       if NodeKind::Runway == current.kind && current.name == runway_id {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Segment(FlightSegment::Takeoff),
-          }
-          .into(),
-        );
-
         aircraft.target.speed = aircraft.flight_plan.speed;
         aircraft.target.altitude = aircraft.flight_plan.altitude;
         aircraft.heading = runway.heading;
@@ -928,13 +880,6 @@ pub fn handle_approach_segment(aircraft: &mut Aircraft, bundle: &mut Bundle) {
           aircraft.flip_flight_plan();
           // Set our new arrival.
           aircraft.flight_plan.arriving = arrival;
-          bundle.events.push(
-            AircraftEvent {
-              id: aircraft.id,
-              kind: EventKind::Segment(FlightSegment::Cruise),
-            }
-            .into(),
-          );
 
           // Recompute waypoints.
           bundle.events.push(Event::Aircraft(AircraftEvent::new(

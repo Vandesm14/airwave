@@ -309,12 +309,13 @@ impl AircraftKind {
 #[ts(export)]
 pub enum FlightSegment {
   #[default]
+  // Unknown state.
+  Unknown,
+
   /// Inactive and parked.
   Dormant,
-
   /// Boarding for departure.
   Boarding,
-
   /// Parked and ready for taxi.
   Parked,
 
@@ -322,8 +323,10 @@ pub enum FlightSegment {
   TaxiDep,
   /// Taking off (not yet in the air).
   Takeoff,
-  /// Departing, most likely via a SID.
+  /// Flying within departure airspace, most likely via a SID.
   Departure,
+  /// Climbing to cruise altitude, outside of terminal airspace.
+  Climb,
   /// Outside of terminal airspace, at cruise altitude and speed.
   Cruise,
 
@@ -332,7 +335,7 @@ pub enum FlightSegment {
   /// Within a terminal airspace for vectors to final.
   Approach,
   /// Following ILS for landing.
-  Land,
+  Landing,
   /// Taxiing as an arrival.
   TaxiArr,
 }
@@ -350,7 +353,7 @@ impl FlightSegment {
         | Self::Cruise
         | Self::Arrival
         | Self::Approach
-        | Self::Land
+        | Self::Landing
     )
   }
 
@@ -365,7 +368,7 @@ impl FlightSegment {
   pub fn arriving(&self) -> bool {
     matches!(
       self,
-      Self::Arrival | Self::Approach | Self::Land | Self::TaxiArr
+      Self::Arrival | Self::Approach | Self::Landing | Self::TaxiArr
     )
   }
 }

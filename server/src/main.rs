@@ -6,13 +6,16 @@ use internment::Intern;
 use tokio::sync::mpsc;
 use turborand::{rng::Rng, SeededCore};
 
-use engine::entities::{airport::Airport, airspace::Airspace};
+use engine::{
+  entities::{airport::Airport, airspace::Airspace},
+  AIRSPACE_RADIUS,
+};
 use server::{
   config::Config,
   http,
   job::JobReq,
   runner::{ArgReqKind, ResKind, Runner, TinyReqKind},
-  Cli, CLI, MANUAL_TOWER_AIRSPACE_RADIUS,
+  Cli, CLI,
 };
 
 #[tokio::main]
@@ -77,7 +80,7 @@ async fn main() {
   let mut player_airspace = Airspace {
     id: Intern::from_ref("KSFO"),
     pos: Vec2::ZERO,
-    radius: MANUAL_TOWER_AIRSPACE_RADIUS,
+    radius: AIRSPACE_RADIUS,
     airports: vec![],
     auto: false,
   };

@@ -3,15 +3,9 @@ use std::{path::PathBuf, sync::LazyLock};
 
 use clap::Parser;
 
-use engine::NAUTICALMILES_TO_FEET;
 use glam::Vec2;
 use itertools::Itertools;
 use union_find::{QuickUnionUf, UnionBySize, UnionFind};
-
-pub const MANUAL_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
-pub const AUTO_TOWER_AIRSPACE_RADIUS: f32 = NAUTICALMILES_TO_FEET * 30.0;
-pub const TOWER_AIRSPACE_PADDING_RADIUS: f32 = NAUTICALMILES_TO_FEET * 20.0;
-pub const WORLD_RADIUS: f32 = NAUTICALMILES_TO_FEET * 500.0;
 
 pub mod assets;
 pub mod config;
