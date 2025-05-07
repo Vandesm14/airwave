@@ -24,7 +24,7 @@ use engine::{
     airspace::Airspace,
     world::{AirspaceStatus, ArrivalStatus, DepartureStatus, Game, World},
   },
-  geometry::{circle_circle_intersection, Translate},
+  geometry::{circle_circle_intersection, duration_now, Translate},
   pathfinder::{Node, NodeBehavior, NodeKind},
   NAUTICALMILES_TO_FEET,
 };
@@ -500,7 +500,8 @@ impl Runner {
                   }
                 }));
             if let Some(destination) = destination {
-              if !auto
+              if !self.preparing
+                && !auto
                 && matches!(
                   self.world.airspace_statuses.get(&airport.id),
                   Some(AirspaceStatus {
@@ -526,23 +527,16 @@ impl Runner {
                 );
               } else if auto {
                 aircraft.flight_plan.arriving = destination.id;
+                aircraft.flight_time = Some(duration_now());
 
-                aircraft.flight_time = Some(
-                  SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap(),
-                );
+                self.engine.events.push(Event::Aircraft(AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::QuickDepart,
+                )));
               }
             } else {
               // TODO: Do we want to keep this for visibility?
               // tracing::warn!("No destination available for {:?}", aircraft.id);
-            }
-
-            if auto {
-              self.engine.events.push(Event::Aircraft(AircraftEvent::new(
-                aircraft.id,
-                EventKind::QuickDepart,
-              )));
             }
           }
         } else {
