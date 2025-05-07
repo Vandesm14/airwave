@@ -12,7 +12,7 @@ use crate::{
   line::Line,
   pathfinder::{NodeBehavior, NodeKind},
   AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  NAUTICALMILES_TO_FEET,
 };
 
 use super::{
