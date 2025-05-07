@@ -526,7 +526,7 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         .filter(|a| {
           a.pos.distance_squared(aircraft.pos) <= AIRSPACE_RADIUS.powf(2.0)
         })
-        .filter(|_| aircraft.altitude > TRANSITION_ALTITUDE)
+        .filter(|_| aircraft.altitude <= TRANSITION_ALTITUDE)
         .filter(|a| {
           a.id == aircraft.flight_plan.departing
             || a.id == aircraft.flight_plan.arriving
@@ -552,7 +552,7 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         segment = Some(FlightSegment::Cruise);
 
         // Assert Arrival.
-      } else if aircraft.altitude <= TRANSITION_ALTITUDE
+      } else if aircraft.altitude <= MIN_CRUISE_ALTITUDE
         || aircraft.altitude >= aircraft.target.altitude
       {
         segment = Some(FlightSegment::Arrival);
