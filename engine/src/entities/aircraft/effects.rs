@@ -517,11 +517,6 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         // Assert TaxiArr.
         } else if airport.id == aircraft.flight_plan.arriving {
           segment = Some(FlightSegment::TaxiArr);
-        } else {
-          tracing::warn!(
-            "Aircraft is taxiing at an airport that is not in the flight plan: {} {:#?}",
-            airport.id, aircraft
-          );
         }
       }
     }
