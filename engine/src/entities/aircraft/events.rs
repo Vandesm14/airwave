@@ -453,7 +453,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
         match segment {
           FlightSegment::Unknown => {}
-          FlightSegment::Dormant => {}
+          FlightSegment::Dormant => {
+            aircraft.flight_time = None;
+          }
           FlightSegment::Boarding => {}
           FlightSegment::Parked => handle_parked_segment(aircraft, bundle),
           FlightSegment::TaxiDep => {}
