@@ -247,8 +247,6 @@ impl Prompter {
     let path = format!("server/prompts/{mode}.json");
     let prompt = Self::load_prompt_as_string(path.clone().into())?;
 
-    tracing::info!("using prompt: {} for {}", path, aircraft.id);
-
     let result =
       send_chatgpt_request(prompt.clone(), split.request.clone()).await?;
     if let Some(result) = result {
