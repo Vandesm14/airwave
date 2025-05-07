@@ -579,8 +579,7 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
 
       // If in cruise and descending, set to arrival
       if FlightSegment::Cruise == aircraft.segment
-        && aircraft.target.altitude <= TRANSITION_ALTITUDE
-        && aircraft.altitude >= TRANSITION_ALTITUDE
+        && aircraft.target.altitude < TRANSITION_ALTITUDE
       {
         // FIXME: This doesn't account for aircraft that didn't pass transition
         // before reaching their TOD.
