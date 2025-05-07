@@ -22,9 +22,10 @@ import { Aircraft } from '../bindings/Aircraft';
 import { Airspace } from '../bindings/Airspace';
 import { makePersisted } from '@solid-primitives/storage';
 import { FlightSegment } from '../bindings/FlightSegment';
+import { unwrap } from 'solid-js/store';
+import fastDeepEqual from 'fast-deep-equal';
 
 import './StripBoard.scss';
-import { unwrap } from 'solid-js/store';
 
 const INBOX_ID = 0;
 
@@ -386,27 +387,28 @@ const Separator = () => <div class="separator"></div>;
 function createStrips() {
   const [_, setNextId] = makePersisted(createSignal(0));
   const [strips, setStrips] = makePersisted(
-    createSignal<Strip[]>([], { equals: false })
+    createSignal<Strip[]>([], { equals: (a, b) => fastDeepEqual(a, b) })
   );
 
   function addHeader(name: string) {
     setNextId((nextId) => {
-      setStrips((strips) => {
-        strips.push(newHeader(name, nextId++));
-        return strips;
-      });
-      return nextId;
+      const id = nextId;
+      setStrips((strips) => [...strips, newHeader(name, id)]);
+      return nextId + 1;
     });
   }
+
   function addAircraft(strip: AircraftStrip, headerId: number) {
     const index = strips().findIndex((s) => s.id === headerId);
     if (index !== -1) {
       setNextId((nextId) => {
+        const id = nextId;
         setStrips((strips) => {
-          strips.splice(index + 1, 0, { ...strip, id: nextId++ });
-          return strips;
+          const before = strips.slice(0, index + 1);
+          const after = strips.slice(index + 1);
+          return [...before, { ...strip, id }, ...after];
         });
-        return nextId;
+        return nextId + 1;
       });
     }
   }
@@ -422,18 +424,22 @@ function createStrips() {
     const toStrip = strip(toId);
 
     if (fromStrip !== undefined && toStrip !== undefined) {
-      setStrips((strips) => {
-        const fromIndex = strips.findIndex((s) => s.id === fromId);
-        if (fromIndex !== -1) {
-          strips.splice(fromIndex, 1);
-        }
+      setStrips((prevStrips) => {
+        // fromStrip is captured from the outer scope (const fromStrip = strip(fromId);)
+        // It's the actual object reference we want to move.
 
-        const toIndex = strips.findIndex((s) => s.id === toId);
-        if (toIndex !== -1) {
-          strips.splice(toIndex + 1, 0, fromStrip);
-        }
+        // Create a new array without the strip that is being moved.
+        const stripsWithoutFrom = prevStrips.filter((s) => s.id !== fromId);
 
-        return strips;
+        // Insert the fromStrip after the toStrip.
+        // flatMap is used here: for each strip, if it's the target (toStrip),
+        // output an array of [toStrip, fromStrip], otherwise just [strip].
+        // This effectively inserts fromStrip after toStrip.
+        const newStrips = stripsWithoutFrom.flatMap((currentStrip) =>
+          currentStrip.id === toId ? [currentStrip, fromStrip] : [currentStrip]
+        );
+
+        return newStrips;
       });
     }
   }
@@ -445,10 +451,7 @@ function createStrips() {
   function remove(stripId: number) {
     const index = strips().findIndex((s) => s.id === stripId);
     if (index !== -1) {
-      setStrips((strips) => {
-        strips.splice(index, 1);
-        return strips;
-      });
+      setStrips((strips) => strips.filter((s) => s.id !== stripId));
     }
   }
 
