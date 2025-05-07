@@ -442,12 +442,12 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // State
       EventKind::Segment(segment) => {
         // TODO: Remove this once we don't need the vis.
-        tracing::info!(
-          "Setting segment for {} from {:?} to {:?}",
-          aircraft.id,
-          aircraft.segment,
-          segment
-        );
+        // tracing::info!(
+        //   "Setting segment for {} from {:?} to {:?}",
+        //   aircraft.id,
+        //   aircraft.segment,
+        //   segment
+        // );
 
         aircraft.segment = *segment;
 
