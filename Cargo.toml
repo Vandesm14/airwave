@@ -11,10 +11,10 @@ license = "AGPL"
 [workspace.dependencies]
 async-broadcast = "0.7.1"
 async-channel = "2"
-glam = { version = "0.29.0", features = ["serde"] }
+glam = { version = "0.30.3", features = ["serde"] }
 internment = { version = "0.8.5", features = ["serde"] }
-itertools = "0.13.0"
-petgraph = "0.6.5"
+itertools = "0.14.0"
+petgraph = "0.8.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.127"
 thiserror = "1.0.63"

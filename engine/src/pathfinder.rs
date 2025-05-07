@@ -316,7 +316,7 @@ impl Pathfinder {
       .find(|(_, n)| to.name_and_kind_eq(*n));
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
-      let paths = simple_paths::all_simple_paths::<Vec<_>, _>(
+      let paths = simple_paths::all_simple_paths::<Vec<_>, _, std::hash::RandomState>(
         &self.graph,
         from_node.0,
         to_node.0,
