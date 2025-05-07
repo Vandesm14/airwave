@@ -254,6 +254,7 @@ impl Runner {
       };
 
       let mut airport = airport.clone();
+      airport.id = airspace.id;
       airport.translate(airspace.pos);
       airspace.airports.push(airport);
 
