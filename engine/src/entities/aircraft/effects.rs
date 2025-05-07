@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use crate::{
   command::{CommandReply, CommandWithFreq},
   engine::Bundle,
-  entities::world::closest_airport,
+  entities::world::{closest_airport, DepartureStatus},
   geometry::{
     add_degrees, angle_between_points, calculate_ils_altitude,
     closest_point_on_line, delta_angle, duration_now, inverse_degrees,
@@ -500,6 +500,24 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
     // --
     // Land
     // TaxiArr
+
+    // If the airport has disabled departures, disable the departure.
+    if let Some(status) = bundle
+      .world
+      .airspace_statuses
+      .get(&aircraft.flight_plan.departing)
+    {
+      if status.departure == DepartureStatus::Delay {
+        aircraft.flight_time = None;
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Segment(FlightSegment::Dormant),
+          }
+          .into(),
+        );
+      }
+    }
 
     // Ensure that we are Boarding if our timer is less than now.
     if let Some(flight_time) = aircraft.flight_time {
