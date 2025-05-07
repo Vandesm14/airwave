@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::LazyLock};
 
 use clap::Parser;
 
+use directories::ProjectDirs;
 use glam::Vec2;
 use itertools::Itertools;
 use union_find::{QuickUnionUf, UnionBySize, UnionFind};
@@ -18,6 +19,18 @@ pub mod runner;
 pub mod signal_gen;
 
 pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);
+pub static LOGS_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
+  match &CLI.log_path {
+    Some(path) => path.into(),
+    None => {
+      let dirs = ProjectDirs::from("com", "airwavegame", "Airwave").expect("unable to retrieve a valid user home directory path from the operating system");
+      dirs
+        .state_dir()
+        .unwrap_or_else(|| dirs.data_local_dir())
+        .into()
+    }
+  }
+});
 
 #[derive(Parser)]
 pub struct Cli {
@@ -32,6 +45,10 @@ pub struct Cli {
   /// The path to the config file.
   #[arg(short, long, default_value = None)]
   pub config_path: Option<PathBuf>,
+
+  /// Overrides the directory path to store log files.
+  #[arg(long)]
+  pub log_path: Option<PathBuf>,
 }
 
 pub fn merge_points(points: &[Vec2], min_distance: f32) -> Vec<Vec2> {

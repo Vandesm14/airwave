@@ -1,4 +1,4 @@
-use std::sync::{mpsc, Mutex, OnceLock};
+use std::sync::{Mutex, OnceLock, mpsc};
 
 use editor::draw::Draw;
 use engine::entities::airport::Airport;

@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  abbreviate_altitude, geometry::duration_now, nato_phonetic, pathfinder::Node,
-  wordify::wordify, ExportedDuration,
+  ExportedDuration, abbreviate_altitude, geometry::duration_now, nato_phonetic,
+  pathfinder::Node, wordify::wordify,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -134,7 +134,10 @@ impl fmt::Display for CommandWithFreq {
       }
 
       CommandReply::GoAround { runway } => {
-        write!(f, "{decoded_callsign}, going around, missed approach for runway {runway}.")
+        write!(
+          f,
+          "{decoded_callsign}, going around, missed approach for runway {runway}."
+        )
       }
       CommandReply::ArriveInAirspace {
         direction,

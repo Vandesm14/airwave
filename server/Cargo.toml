@@ -21,10 +21,12 @@ itertools.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-tracing-subscriber.workspace = true
 tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
 turborand.workspace = true
 mlua.workspace = true
+directories.workspace = true
 
 async-openai = "0.28.1"
 axum = { version = "0.8.4", features = ["macros"] }

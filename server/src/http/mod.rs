@@ -4,8 +4,8 @@ pub mod shared;
 use std::net::SocketAddr;
 
 use axum::{
-  routing::{get, post},
   Router,
+  routing::{get, post},
 };
 use methods::{
   aircraft::{get_aircraft, get_one_aircraft},
@@ -46,7 +46,10 @@ pub async fn run(
       .route("/world", get(get_world))
       .route("/status/{id}", get(get_airspace_status))
       .route("/status/arrival/{id}/{status}", post(post_arrival_status))
-      .route("/status/departure/{id}/{status}", post(post_departure_status))
+      .route(
+        "/status/departure/{id}/{status}",
+        post(post_departure_status),
+      )
       .with_state(AppState::new(get_sender, post_sender))
       .layer(CompressionLayer::new())
       .layer(cors),

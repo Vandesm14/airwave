@@ -628,27 +628,35 @@ mod tests {
     );
     assert_eq!(
       parse_tasks("tx 27L"),
-      vec![Task::Taxi(vec![Node::build(())
-        .with_name(Intern::from_ref("27L"))
-        .with_kind(NodeKind::Runway)])]
+      vec![Task::Taxi(vec![
+        Node::build(())
+          .with_name(Intern::from_ref("27L"))
+          .with_kind(NodeKind::Runway)
+      ])]
     );
     assert_eq!(
       parse_tasks("tx 27r"),
-      vec![Task::Taxi(vec![Node::build(())
-        .with_name(Intern::from_ref("27R"))
-        .with_kind(NodeKind::Runway)])]
+      vec![Task::Taxi(vec![
+        Node::build(())
+          .with_name(Intern::from_ref("27R"))
+          .with_kind(NodeKind::Runway)
+      ])]
     );
     assert_eq!(
       parse_tasks("tx gate A1"),
-      vec![Task::Taxi(vec![Node::build(())
-        .with_name(Intern::from_ref("A1"))
-        .with_kind(NodeKind::Gate)])]
+      vec![Task::Taxi(vec![
+        Node::build(())
+          .with_name(Intern::from_ref("A1"))
+          .with_kind(NodeKind::Gate)
+      ])]
     );
     assert_eq!(
       parse_tasks("tx gate a1"),
-      vec![Task::Taxi(vec![Node::build(())
-        .with_name(Intern::from_ref("A1"))
-        .with_kind(NodeKind::Gate),])]
+      vec![Task::Taxi(vec![
+        Node::build(())
+          .with_name(Intern::from_ref("A1"))
+          .with_kind(NodeKind::Gate),
+      ])]
     );
 
     // Flags.
@@ -679,10 +687,12 @@ mod tests {
     // Flags - Short.
     assert_eq!(
       parse_tasks("tx short 27L"),
-      vec![Task::Taxi(vec![Node::build(())
-        .with_name(Intern::from_ref("27L"))
-        .with_kind(NodeKind::Runway)
-        .with_behavior(NodeBehavior::HoldShort)])]
+      vec![Task::Taxi(vec![
+        Node::build(())
+          .with_name(Intern::from_ref("27L"))
+          .with_kind(NodeKind::Runway)
+          .with_behavior(NodeBehavior::HoldShort)
+      ])]
     );
     assert_eq!(
       parse_tasks("tx A short B"),

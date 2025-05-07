@@ -5,20 +5,20 @@ use serde::{Deserialize, Serialize};
 use turborand::TurboRand;
 
 use crate::{
+  APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
+  NAUTICALMILES_TO_FEET, WEST_CRUISE_ALTITUDE,
   command::{CommandReply, CommandWithFreq, Task},
   engine::{Bundle, Event},
   entities::world::{
-    closest_airport, closest_airspace, AirspaceStatus, ArrivalStatus,
+    AirspaceStatus, ArrivalStatus, closest_airport, closest_airspace,
   },
   geometry::{angle_between_points, delta_angle, inverse_degrees, move_point},
   heading_to_direction,
   pathfinder::{
-    display_node_vec2, display_vec_node_vec2, Node, NodeBehavior, NodeKind,
-    Pathfinder,
+    Node, NodeBehavior, NodeKind, Pathfinder, display_node_vec2,
+    display_vec_node_vec2,
   },
-  wayfinder::{new_vor, VORLimit, VORLimits},
-  APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, WEST_CRUISE_ALTITUDE,
+  wayfinder::{VORLimit, VORLimits, new_vor},
 };
 
 use super::{

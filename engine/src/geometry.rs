@@ -4,7 +4,7 @@ use std::{
 };
 
 use glam::Vec2;
-use turborand::{rng::Rng, TurboRand};
+use turborand::{TurboRand, rng::Rng};
 
 use crate::line::Line;
 
@@ -57,11 +57,7 @@ pub fn angle_between_points(a: Vec2, b: Vec2) -> f32 {
   let dx = b.x - a.x;
   let dy = b.y - a.y;
   let angle = dx.atan2(dy).to_degrees();
-  if angle < 0.0 {
-    angle + 360.0
-  } else {
-    angle
-  }
+  if angle < 0.0 { angle + 360.0 } else { angle }
 }
 
 pub fn find_line_intersection(a: Line, b: Line) -> Option<Vec2> {

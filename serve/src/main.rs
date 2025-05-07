@@ -2,11 +2,11 @@ use core::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 
 use axum::{
+  Router,
   extract::Path,
   http::{HeaderValue, StatusCode},
   response::{IntoResponse, Response},
   routing::get,
-  Router,
 };
 use clap::Parser;
 use rust_embed::Embed;

@@ -10,24 +10,24 @@ use internment::Intern;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::error::TryRecvError;
-use turborand::{rng::Rng, TurboRand};
+use turborand::{TurboRand, rng::Rng};
 
 use engine::{
+  AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
+  WORLD_RADIUS,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, EngineConfig, Event},
   entities::{
     aircraft::{
-      events::{AircraftEvent, EventKind},
       Aircraft, AircraftKind, AircraftState, FlightSegment,
+      events::{AircraftEvent, EventKind},
     },
     airport::{Airport, Frequencies},
     airspace::Airspace,
     world::{AirspaceStatus, ArrivalStatus, DepartureStatus, Game, World},
   },
-  geometry::{circle_circle_intersection, duration_now, Translate},
+  geometry::{Translate, circle_circle_intersection, duration_now},
   pathfinder::{Node, NodeBehavior, NodeKind},
-  AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
-  WORLD_RADIUS,
 };
 
 use crate::{
@@ -496,11 +496,7 @@ impl Runner {
                     return false;
                   }
 
-                  if go_to_non_auto {
-                    !a.auto
-                  } else {
-                    a.auto
-                  }
+                  if go_to_non_auto { !a.auto } else { a.auto }
                 }));
             if let Some(destination) = destination {
               if !self.preparing
@@ -603,7 +599,10 @@ impl Runner {
               .find(|a| a.id == aircraft.flight_plan.arriving)
             {
               if !airspace.auto {
-                tracing::info!("Quick start interrupted by {}. Aircraft entered non-auto airspace.", aircraft.id);
+                tracing::info!(
+                  "Quick start interrupted by {}. Aircraft entered non-auto airspace.",
+                  aircraft.id
+                );
 
                 self.preparing = false;
 

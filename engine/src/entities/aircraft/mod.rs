@@ -7,11 +7,11 @@ use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use turborand::{rng::Rng, TurboRand};
+use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  pathfinder::Node, wayfinder::VORData, ExportedDuration,
-  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
+  ExportedDuration, KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
+  pathfinder::Node, wayfinder::VORData,
 };
 
 use super::airport::{Airport, Gate, Runway};

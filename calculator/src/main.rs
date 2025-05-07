@@ -83,7 +83,10 @@ fn runway_heading_tool() -> String {
       let left_crosswind = (heading + 270) % 360;
       let right_crosswind = (heading + 90) % 360;
 
-      format!("Expanded Headings:\nUpwind: {}°\nDownwind: {}°\nLeft Crosswind: {}°\nRight Crosswind: {}°", upwind, downwind, left_crosswind, right_crosswind)
+      format!(
+        "Expanded Headings:\nUpwind: {}°\nDownwind: {}°\nLeft Crosswind: {}°\nRight Crosswind: {}°",
+        upwind, downwind, left_crosswind, right_crosswind
+      )
     }
     Err(_) => "Invalid input. Please enter a valid number.".to_string(),
   }
@@ -120,12 +123,12 @@ fn wind_component_tool() -> String {
   };
 
   format!(
-      "{} Component: {:.2} knots\n{} Component: {:.2} knots\nCrosswind Percent: {:.2}%",
-      headwind_label,
-      headwind.abs(),
-      crosswind_label,
-      crosswind.abs(),
-      (crosswind.abs() / wind_speed) * 100.0
+    "{} Component: {:.2} knots\n{} Component: {:.2} knots\nCrosswind Percent: {:.2}%",
+    headwind_label,
+    headwind.abs(),
+    crosswind_label,
+    crosswind.abs(),
+    (crosswind.abs() / wind_speed) * 100.0
   )
 }
 
@@ -160,8 +163,6 @@ fn top_of_descent_tool() -> String {
 
   format!(
     "Top of Descent Calculation:\n\nAltitude to descend: {:.0} feet\nDistance needed: {:.1} NM\nEstimated time: {:.1} minutes",
-    altitude_to_descend,
-    distance_nm,
-    time_minutes
+    altitude_to_descend, distance_nm, time_minutes
   )
 }

@@ -4,35 +4,54 @@ use std::{fs, path::PathBuf, time::Instant};
 use glam::Vec2;
 use internment::Intern;
 use tokio::sync::mpsc;
-use turborand::{rng::Rng, SeededCore};
+use turborand::{SeededCore, rng::Rng};
 
 use engine::{
-  entities::{airport::Airport, airspace::Airspace},
   AIRSPACE_RADIUS,
+  entities::{airport::Airport, airspace::Airspace},
 };
 use server::{
+  CLI, Cli, LOGS_DIR,
   config::Config,
   http,
   job::JobReq,
   runner::{ArgReqKind, ResKind, Runner, TinyReqKind},
-  Cli, CLI,
 };
 
 #[tokio::main]
 async fn main() {
-  tracing_subscriber::fmt::init();
+  let Cli {
+    address,
+    ref audio_path,
+    ref config_path,
+    ..
+  } = *CLI;
+
+  let (file_log_non_blocking, _file_log_guard) = tracing_appender::non_blocking(
+    tracing_appender::rolling::minutely(&*LOGS_DIR, "server.log"),
+  );
+
+  tracing_subscriber::fmt::fmt()
+    .with_env_filter(
+      tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(
+        |_| {
+          #[cfg(debug_assertions)]
+          return concat!(env!("CARGO_CRATE_NAME"), "=", "trace").into();
+          #[cfg(not(debug_assertions))]
+          return concat!(env!("CARGO_CRATE_NAME"), "=", "info").into();
+        },
+      ),
+    )
+    .with_writer(file_log_non_blocking)
+    .with_ansi(false)
+    .init();
+
   if let Err(e) = dotenv::dotenv() {
     tracing::warn!(".env file was not provided: {}", e);
   }
 
   // Ensure that the API key is set.
   let _ = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
-
-  let Cli {
-    address,
-    ref audio_path,
-    ref config_path,
-  } = *CLI;
 
   if let Some(audio_path) = audio_path {
     if !audio_path.exists() {

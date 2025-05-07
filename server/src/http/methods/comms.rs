@@ -1,9 +1,9 @@
 use std::time::Instant;
 
 use async_openai::{
+  Audio,
   error::OpenAIError,
   types::{AudioInput, CreateTranscriptionRequest},
-  Audio,
 };
 use axum::{
   body::Bytes,
@@ -17,12 +17,12 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+  CLI,
   http::shared::{AppState, GetSender},
   job::JobReq,
   parser::parse_commands,
   prompter::Prompter,
   runner::{ArgReqKind, ResKind, TinyReqKind},
-  CLI,
 };
 
 async fn complete_atc_request(

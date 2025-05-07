@@ -4,7 +4,7 @@ use glam::Vec2;
 use internment::Intern;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use turborand::{rng::Rng, TurboRand};
+use turborand::{TurboRand, rng::Rng};
 
 use crate::pathfinder::Node;
 

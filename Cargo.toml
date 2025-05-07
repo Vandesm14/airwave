@@ -19,11 +19,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.127"
 thiserror = "1.0.63"
 tokio = { version = "1", features = ["full"] }
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+tracing = { version = "0.1.40", features = ["release_max_level_info"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-appender = "0.2.3"
 ts-rs = "10.1.0"
 turborand = "0.10.1"
 mlua = { version = "0.10.3", features = ["vendored", "lua54", "serialize"] }
+directories = "6"
 
 [workspace.dependencies.clap]
 version = "4"

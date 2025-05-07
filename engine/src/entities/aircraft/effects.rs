@@ -1,6 +1,8 @@
 use std::f32::consts::PI;
 
 use crate::{
+  AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
+  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
   engine::Bundle,
   entities::world::{closest_airport, closest_airspace},
@@ -11,13 +13,11 @@ use crate::{
   },
   line::Line,
   pathfinder::{NodeBehavior, NodeKind},
-  AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
 };
 
 use super::{
-  events::{AircraftEvent, EventKind},
   Aircraft, AircraftState, FlightSegment, LandingState, TCAS,
+  events::{AircraftEvent, EventKind},
 };
 
 pub trait AircraftEffect {

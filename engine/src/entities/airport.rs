@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  geometry::{move_point, Translate},
+  geometry::{Translate, move_point},
   line::Line,
   pathfinder::{Object, Pathfinder},
 };

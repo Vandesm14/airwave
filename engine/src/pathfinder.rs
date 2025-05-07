@@ -1,7 +1,7 @@
 use glam::Vec2;
 use internment::Intern;
 use petgraph::{
-  algo::simple_paths, visit::IntoNodeReferences, Graph, Undirected,
+  Graph, Undirected, algo::simple_paths, visit::IntoNodeReferences,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -316,13 +316,11 @@ impl Pathfinder {
       .find(|(_, n)| to.name_and_kind_eq(*n));
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
-      let paths = simple_paths::all_simple_paths::<Vec<_>, _, std::hash::RandomState>(
-        &self.graph,
-        from_node.0,
-        to_node.0,
-        0,
-        None,
-      );
+      let paths = simple_paths::all_simple_paths::<
+        Vec<_>,
+        _,
+        std::hash::RandomState,
+      >(&self.graph, from_node.0, to_node.0, 0, None);
 
       let mut paths: Vec<PathfinderPath> = paths
         .map(|path| {

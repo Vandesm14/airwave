@@ -1,4 +1,4 @@
-use std::collections::{vec_deque, VecDeque};
+use std::collections::{VecDeque, vec_deque};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct RingBuffer<T> {

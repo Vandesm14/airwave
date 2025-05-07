@@ -7,8 +7,10 @@ use serde::{Deserialize, Serialize};
 use turborand::rng::Rng;
 
 use crate::{
+  KNOT_TO_FEET_PER_SECOND,
   entities::{
     aircraft::{
+      Aircraft, AircraftState, TCAS, TaxiingState,
       effects::{
         AircraftEffect, AircraftUpdateFlyingEffect,
         AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
@@ -18,12 +20,10 @@ use crate::{
       events::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
       },
-      Aircraft, AircraftState, TaxiingState, TCAS,
     },
-    world::{closest_airport, Game, World},
+    world::{Game, World, closest_airport},
   },
   geometry::{angle_between_points, delta_angle},
-  KNOT_TO_FEET_PER_SECOND,
 };
 
 #[derive(Debug)]
