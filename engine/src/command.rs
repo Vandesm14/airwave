@@ -109,7 +109,7 @@ pub enum CommandReply {
 
   GoAround { runway: String },
   HoldShortRunway { runway: String },
-  ReadyForDeparture { airport: String },
+  ReadyForDeparture,
   TaxiToGates { runway: String },
   ArriveInAirspace { direction: String, altitude: f32 },
   TARAResolved { assigned_alt: f32 },
@@ -154,11 +154,11 @@ impl fmt::Display for CommandWithFreq {
           decoded_callsign, runway
         )
       }
-      CommandReply::ReadyForDeparture { airport } => {
+      CommandReply::ReadyForDeparture => {
         write!(
           f,
-          "Ground, {} ready for departure to {}.",
-          decoded_callsign, airport
+          "Ground, {} ready to taxi to the active.",
+          decoded_callsign
         )
       }
       CommandReply::TaxiToGates { runway } => {

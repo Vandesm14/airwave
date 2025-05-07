@@ -64,8 +64,10 @@ pub enum EventKind {
 
   // Callouts
   Callout(CommandWithFreq),
-  CalloutInAirspace,
   CalloutTARA,
+
+  // State
+  Segment(FlightSegment),
 
   // Configuration and Automation
   /// Teleports an aircraft from its gate to the takeoff phase.
@@ -332,8 +334,13 @@ impl AircraftEventHandler for HandleAircraftEvent {
           aircraft.flight_plan.stop_following();
           aircraft.sync_targets_to_vals();
 
-          // TODO: Is it okay if we set the segment here?
-          aircraft.segment = FlightSegment::Approach;
+          bundle.events.push(
+            AircraftEvent {
+              id: aircraft.id,
+              kind: EventKind::Segment(FlightSegment::Approach),
+            }
+            .into(),
+          );
 
           bundle.events.push(
             AircraftEvent {
@@ -365,7 +372,13 @@ impl AircraftEventHandler for HandleAircraftEvent {
       // Taxiing
       EventKind::Taxi(waypoints) => {
         if let AircraftState::Parked { .. } = aircraft.state {
-          aircraft.segment = FlightSegment::TaxiDep;
+          bundle.events.push(
+            AircraftEvent {
+              id: aircraft.id,
+              kind: EventKind::Segment(FlightSegment::TaxiDep),
+            }
+            .into(),
+          );
         }
 
         if let AircraftState::Taxiing { .. } | AircraftState::Parked { .. } =
@@ -440,91 +453,25 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Generic callouts are handled outside of the engine.
       EventKind::Callout(..) => {}
-      EventKind::CalloutInAirspace => {
-        if let Some(airspace) =
-          closest_airspace(&bundle.world.airspaces, aircraft.pos)
-        {
-          // TODO: This ensures that the flight is in the right segment, though
-          // we might be better off using more concrete logic in the effect
-          // instead of relying on this in case that logic fails.
-          aircraft.segment = FlightSegment::Approach;
-          aircraft.frequency =
-            airspace.airports.first().unwrap().frequencies.approach;
-
-          if !airspace.auto {
-            if matches!(
-              bundle.world.airspace_statuses.get(&airspace.id),
-              Some(AirspaceStatus {
-                // If airspace is accepting inbounds.
-                arrival: ArrivalStatus::Normal,
-                ..
-              })
-            ) {
-              // TODO: This clears all waypoints to force the player to deal
-              // with the approach rather than use its automated routing.
-              // This might break future implementations of routing and
-              // waypoints so please check this TODO when that happens.
-              aircraft.flight_plan.clear_waypoints();
-
-              aircraft.target.heading =
-                angle_between_points(aircraft.pos, airspace.pos);
-
-              let direction = heading_to_direction(angle_between_points(
-                airspace.pos,
-                aircraft.pos,
-              ))
-              .to_owned();
-              let command = CommandWithFreq::new(
-                Intern::to_string(&aircraft.id),
-                aircraft.frequency,
-                CommandReply::ArriveInAirspace {
-                  direction,
-                  altitude: aircraft.altitude,
-                },
-                Vec::new(),
-              );
-
-              bundle.events.push(Event::Aircraft(AircraftEvent::new(
-                aircraft.id,
-                EventKind::Callout(command),
-              )));
-            } else {
-              // If not accepted, go to a random airspace.
-              let arrival = bundle
-                .rng
-                .sample_iter(bundle.world.airspaces.iter().filter(|a| a.auto))
-                .map(|a| a.id);
-              if let Some(arrival) = arrival {
-                // Use our old arrival as our departure.
-                aircraft.flip_flight_plan();
-                // Set our new arrival.
-                aircraft.flight_plan.arriving = arrival;
-                aircraft.segment = FlightSegment::Cruise;
-
-                // Recompute waypoints.
-                bundle.events.push(Event::Aircraft(AircraftEvent::new(
-                  aircraft.id,
-                  EventKind::ResumeOwnNavigation { diversion: true },
-                )));
-              }
-            }
-          }
-        }
-      }
       EventKind::CalloutTARA => {
-        let command = CommandWithFreq::new(
-          Intern::to_string(&aircraft.id),
-          aircraft.frequency,
-          CommandReply::TARAResolved {
-            assigned_alt: aircraft.target.altitude,
-          },
-          Vec::new(),
-        );
+        handle_callout_tara(aircraft, bundle);
+      }
 
-        bundle.events.push(Event::Aircraft(AircraftEvent::new(
-          aircraft.id,
-          EventKind::Callout(command),
-        )));
+      // State
+      EventKind::Segment(segment) => {
+        aircraft.segment = *segment;
+
+        match segment {
+          FlightSegment::Parked => {}
+          FlightSegment::TaxiDep => {}
+          FlightSegment::Takeoff => {}
+          FlightSegment::Departure => {}
+          FlightSegment::Cruise => {}
+          FlightSegment::Arrival => {}
+          FlightSegment::Approach => handle_approach_segment(aircraft, bundle),
+          FlightSegment::Land => {}
+          FlightSegment::TaxiArr => {}
+        }
       }
 
       // Configuration and Automation
@@ -622,7 +569,13 @@ impl AircraftEventHandler for HandleAircraftEvent {
             aircraft.altitude = 0.0;
             aircraft.sync_targets_to_vals();
 
-            aircraft.segment = FlightSegment::Parked;
+            bundle.events.push(
+              AircraftEvent {
+                id: aircraft.id,
+                kind: EventKind::Segment(FlightSegment::Parked),
+              }
+              .into(),
+            );
 
             aircraft.flip_flight_plan();
           } else {
@@ -661,7 +614,13 @@ pub fn handle_land_event(
         state: LandingState::default(),
       };
 
-      aircraft.segment = FlightSegment::Land;
+      bundle.events.push(
+        AircraftEvent {
+          id: aircraft.id,
+          kind: EventKind::Segment(FlightSegment::Land),
+        }
+        .into(),
+      );
     }
   }
 }
@@ -699,7 +658,13 @@ pub fn handle_touchdown_event(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     state: TaxiingState::Override,
   };
 
-  aircraft.segment = FlightSegment::TaxiArr;
+  bundle.events.push(
+    AircraftEvent {
+      id: aircraft.id,
+      kind: EventKind::Segment(FlightSegment::TaxiArr),
+    }
+    .into(),
+  );
 }
 
 pub fn handle_taxi_event(
@@ -825,7 +790,13 @@ pub fn handle_takeoff_event(
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       if NodeKind::Runway == current.kind && current.name == runway_id {
-        aircraft.segment = FlightSegment::Takeoff;
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Segment(FlightSegment::Takeoff),
+          }
+          .into(),
+        );
 
         aircraft.target.speed = aircraft.flight_plan.speed;
         aircraft.target.altitude = aircraft.flight_plan.altitude;
@@ -852,4 +823,98 @@ pub fn handle_takeoff_event(
       }
     }
   }
+}
+
+pub fn handle_approach_segment(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+  if let Some(airspace) =
+    closest_airspace(&bundle.world.airspaces, aircraft.pos)
+  {
+    // TODO: This ensures that the flight is in the right segment, though
+    // we might be better off using more concrete logic in the effect
+    // instead of relying on this in case that logic fails.
+    aircraft.segment = FlightSegment::Approach;
+    aircraft.frequency =
+      airspace.airports.first().unwrap().frequencies.approach;
+
+    if !airspace.auto {
+      if matches!(
+        bundle.world.airspace_statuses.get(&airspace.id),
+        Some(AirspaceStatus {
+          // If airspace is accepting inbounds.
+          arrival: ArrivalStatus::Normal,
+          ..
+        })
+      ) {
+        // TODO: This clears all waypoints to force the player to deal
+        // with the approach rather than use its automated routing.
+        // This might break future implementations of routing and
+        // waypoints so please check this TODO when that happens.
+        aircraft.flight_plan.clear_waypoints();
+
+        aircraft.target.heading =
+          angle_between_points(aircraft.pos, airspace.pos);
+
+        let direction = heading_to_direction(angle_between_points(
+          airspace.pos,
+          aircraft.pos,
+        ))
+        .to_owned();
+        let command = CommandWithFreq::new(
+          Intern::to_string(&aircraft.id),
+          aircraft.frequency,
+          CommandReply::ArriveInAirspace {
+            direction,
+            altitude: aircraft.altitude,
+          },
+          Vec::new(),
+        );
+
+        bundle.events.push(Event::Aircraft(AircraftEvent::new(
+          aircraft.id,
+          EventKind::Callout(command),
+        )));
+      } else {
+        // If not accepted, go to a random airspace.
+        let arrival = bundle
+          .rng
+          .sample_iter(bundle.world.airspaces.iter().filter(|a| a.auto))
+          .map(|a| a.id);
+        if let Some(arrival) = arrival {
+          // Use our old arrival as our departure.
+          aircraft.flip_flight_plan();
+          // Set our new arrival.
+          aircraft.flight_plan.arriving = arrival;
+          bundle.events.push(
+            AircraftEvent {
+              id: aircraft.id,
+              kind: EventKind::Segment(FlightSegment::Cruise),
+            }
+            .into(),
+          );
+
+          // Recompute waypoints.
+          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            aircraft.id,
+            EventKind::ResumeOwnNavigation { diversion: true },
+          )));
+        }
+      }
+    }
+  }
+}
+
+pub fn handle_callout_tara(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+  let command = CommandWithFreq::new(
+    Intern::to_string(&aircraft.id),
+    aircraft.frequency,
+    CommandReply::TARAResolved {
+      assigned_alt: aircraft.target.altitude,
+    },
+    Vec::new(),
+  );
+
+  bundle.events.push(Event::Aircraft(AircraftEvent::new(
+    aircraft.id,
+    EventKind::Callout(command),
+  )));
 }

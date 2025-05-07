@@ -18,7 +18,7 @@ use engine::{
   entities::{
     aircraft::{
       events::{AircraftEvent, EventKind},
-      Aircraft, AircraftKind, AircraftState,
+      Aircraft, AircraftKind, AircraftState, FlightSegment,
     },
     airport::{Airport, Frequencies},
     airspace::Airspace,
@@ -591,7 +591,7 @@ impl Runner {
       for event in self.tick().drain(..) {
         if let Event::Aircraft(AircraftEvent {
           id,
-          kind: EventKind::CalloutInAirspace,
+          kind: EventKind::Segment(FlightSegment::Approach),
         }) = event
         {
           if let Some(aircraft) =

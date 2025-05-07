@@ -413,7 +413,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             aircraft.state = AircraftState::Parked {
               at: current.clone(),
             };
-            aircraft.segment = FlightSegment::Parked;
+            bundle.events.push(
+              AircraftEvent {
+                id: aircraft.id,
+                kind: EventKind::Segment(FlightSegment::Parked),
+              }
+              .into(),
+            );
 
             aircraft.flip_flight_plan();
             aircraft.timer = None;
@@ -496,13 +502,25 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
     if let AircraftState::Flying = &aircraft.state {
       // If taking off and off the ground, set to departure
       if FlightSegment::Takeoff == aircraft.segment && aircraft.altitude > 0.0 {
-        aircraft.segment = FlightSegment::Departure;
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Segment(FlightSegment::Departure),
+          }
+          .into(),
+        );
       }
 
       if FlightSegment::Departure == aircraft.segment {
         // If passed transition altitude, set to cruise
         if aircraft.altitude >= TRANSITION_ALTITUDE {
-          aircraft.segment = FlightSegment::Cruise;
+          bundle.events.push(
+            AircraftEvent {
+              id: aircraft.id,
+              kind: EventKind::Segment(FlightSegment::Cruise),
+            }
+            .into(),
+          );
           // If outside of departure airspace, set to cruise
         } else {
           let departure = bundle
@@ -513,7 +531,13 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
           if let Some(departure) = departure {
             let distance = departure.pos.distance_squared(aircraft.pos);
             if distance >= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
-              aircraft.segment = FlightSegment::Cruise;
+              bundle.events.push(
+                AircraftEvent {
+                  id: aircraft.id,
+                  kind: EventKind::Segment(FlightSegment::Cruise),
+                }
+                .into(),
+              );
 
               if departure.auto {
                 // TODO: Add proper callout events (to the waypoints) instead
@@ -533,7 +557,13 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
       {
         // FIXME: This doesn't account for aircraft that didn't pass transition
         // before reaching their TOD.
-        aircraft.segment = FlightSegment::Arrival;
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Segment(FlightSegment::Arrival),
+          }
+          .into(),
+        );
 
         // If within arrival airspace, set to approach
       } else if FlightSegment::Cruise == aircraft.segment
@@ -547,12 +577,10 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         if let Some(arrival) = arrival {
           let distance = aircraft.pos.distance_squared(arrival.pos);
           if distance <= (NAUTICALMILES_TO_FEET * 30.0).powf(2.0) {
-            aircraft.segment = FlightSegment::Approach;
-
             bundle.events.push(
               AircraftEvent {
                 id: aircraft.id,
-                kind: EventKind::CalloutInAirspace,
+                kind: EventKind::Segment(FlightSegment::Approach),
               }
               .into(),
             );
