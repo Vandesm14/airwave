@@ -12,7 +12,7 @@ use crate::{
   line::Line,
   pathfinder::{NodeBehavior, NodeKind},
   AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET,
+  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
 };
 
 use super::{
@@ -525,6 +525,11 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
       let airspace = closest_airspace(&bundle.world.airspaces, aircraft.pos)
         .filter(|a| {
           a.pos.distance_squared(aircraft.pos) <= AIRSPACE_RADIUS.powf(2.0)
+        })
+        .filter(|_| aircraft.altitude > TRANSITION_ALTITUDE)
+        .filter(|a| {
+          a.id == aircraft.flight_plan.departing
+            || a.id == aircraft.flight_plan.arriving
         });
       if let Some(airspace) = airspace {
         // Assert Departure.
@@ -547,7 +552,7 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
         segment = Some(FlightSegment::Cruise);
 
         // Assert Arrival.
-      } else if aircraft.altitude <= MIN_CRUISE_ALTITUDE
+      } else if aircraft.altitude <= TRANSITION_ALTITUDE
         || aircraft.altitude >= aircraft.target.altitude
       {
         segment = Some(FlightSegment::Arrival);
