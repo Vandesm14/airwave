@@ -40,13 +40,13 @@ pub async fn run(
       .route("/comms/voice", post(comms_voice))
       // Aircraft
       .route("/game/aircraft", get(get_aircraft))
-      .route("/game/aircraft/:id", get(get_one_aircraft))
+      .route("/game/aircraft/{id}", get(get_one_aircraft))
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
-      .route("/status/:id", get(get_airspace_status))
-      .route("/status/arrival/:id/:status", post(post_arrival_status))
-      .route("/status/departure/:id/:status", post(post_departure_status))
+      .route("/status/{id}", get(get_airspace_status))
+      .route("/status/arrival/{id}/{status}", post(post_arrival_status))
+      .route("/status/departure/{id}/{status}", post(post_departure_status))
       .with_state(AppState::new(get_sender, post_sender))
       .layer(CompressionLayer::new())
       .layer(cors),
