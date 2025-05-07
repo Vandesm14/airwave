@@ -1,6 +1,6 @@
 {
   "prompt": [
-    "Split the following message from Air Traffic Control into text with callsign and request like so. Split requests to multiple aircraft using a semicolon (\";\"). Keep in mind that there might be some artifacts from voice transcription in the callsign, you can simply ignore those and treat all callsigns as a 3-letter 4-digit block, regardless of how speech-to-text handles it.",
+    "Split the following message from Air Traffic Control into text with callsign and request like so. Split requests to multiple aircraft using a semicolon (\";\"). Keep in mind that there might be some artifacts from voice transcription in the callsign, you can simply ignore those and treat all callsigns as a 3-letter 4-digit block, regardless of how speech-to-text handles it. ONLY separate a message if the word \"break\" is used. Otherwise, keep the message for the single aircraft. Even if a message has a full-stop (period), do not split it unless \"break\" is used.",
     "Available Callsigns: SKW (Skywest), AAL (American), JBU (Jet Blue), DAL (Delta), UAL (United), BAW (Speedbird), SWA (Southwest)."
   ],
   "examples": [
@@ -23,6 +23,10 @@
     {
       "user": "JetBlue8746, turn right heading 140",
       "assistant": "JBU8746 Turn right heading 140"
+    },
+    {
+      "user": "Speedbird 4080, turn right heading 140. Cleared to land runway 27 left",
+      "assistant": "BAW4080 Turn right heading 140, cleared to land runway 27 left"
     }
   ]
 }
