@@ -1,6 +1,7 @@
 use core::str::FromStr;
 use std::{fs, path::PathBuf, time::Instant};
 
+use directories::ProjectDirs;
 use glam::Vec2;
 use internment::Intern;
 use tokio::sync::mpsc;
@@ -11,7 +12,7 @@ use engine::{
   entities::{airport::Airport, airspace::Airspace},
 };
 use server::{
-  CLI, Cli, LOGS_DIR,
+  CLI, Cli,
   config::Config,
   http,
   job::JobReq,
@@ -24,11 +25,20 @@ async fn main() {
     address,
     ref audio_path,
     ref config_path,
-    ..
+    ref log_path,
   } = *CLI;
 
+  let project_dirs = ProjectDirs::from("com", "airwavegame", "Airwave").expect("unable to retrieve a valid user home directory path from the operating system");
+  let log_dir_path = match log_path {
+    Some(path) => path.into(),
+    None => project_dirs
+      .state_dir()
+      .unwrap_or_else(|| project_dirs.data_local_dir())
+      .join("logs"),
+  };
+
   let (file_log_non_blocking, _file_log_guard) = tracing_appender::non_blocking(
-    tracing_appender::rolling::minutely(&*LOGS_DIR, "server.log"),
+    tracing_appender::rolling::minutely(log_dir_path, "server.log"),
   );
 
   tracing_subscriber::fmt::fmt()
