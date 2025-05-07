@@ -492,13 +492,11 @@ impl AircraftEventHandler for HandleAircraftEvent {
             .airspaces
             .iter()
             .find(|a| a.id == aircraft.flight_plan.departing);
-          let arrival = bundle.rng.sample_iter(
-            bundle
-              .world
-              .airspaces
-              .iter()
-              .filter(|a| a.id == aircraft.flight_plan.arriving),
-          );
+          let arrival = bundle
+            .world
+            .airspaces
+            .iter()
+            .find(|a| a.id == aircraft.flight_plan.arriving);
           if let Some((departure, arrival)) = departure.zip(arrival) {
             let departure_angle =
               angle_between_points(departure.pos, arrival.pos);
