@@ -504,7 +504,17 @@ export default function Canvas() {
       aircraft.state.type === 'landing' &&
       aircraft.state.value.state !== 'before-turn';
 
-    const isActive = aircraft.frequency === frequency();
+    let isActive = aircraft.frequency === frequency();
+    // TODO: This limits the "Center" view to our aircraft. We can remove once
+    // we have better tooling for ARTCC.
+    if (
+      aircraft.segment !== 'departure' &&
+      (aircraft.flight_plan.arriving !== HARD_CODED_AIRPORT ||
+        aircraft.flight_plan.departing !== HARD_CODED_AIRPORT)
+    ) {
+      isActive = false;
+    }
+
     const isTcas = aircraft.tcas !== 'idle';
     const isTcasTaRa =
       aircraft.tcas === 'climb' ||
