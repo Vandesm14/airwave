@@ -506,11 +506,23 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
       if FlightSegment::Dormant == aircraft.segment
         && duration_now() < flight_time
       {
-        aircraft.segment = FlightSegment::Boarding;
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Segment(FlightSegment::Boarding),
+          }
+          .into(),
+        );
       } else if FlightSegment::Boarding == aircraft.segment
         && duration_now() >= flight_time
       {
-        aircraft.segment = FlightSegment::Parked;
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Segment(FlightSegment::Parked),
+          }
+          .into(),
+        );
       }
     }
 

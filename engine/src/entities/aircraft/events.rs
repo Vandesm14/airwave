@@ -459,6 +459,14 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // State
       EventKind::Segment(segment) => {
+        // TODO: Remove this once we don't need the vis.
+        // tracing::info!(
+        //   "Setting segment for {} from {:?} to {:?}",
+        //   aircraft.id,
+        //   aircraft.segment,
+        //   segment
+        // );
+
         aircraft.segment = *segment;
 
         match segment {
@@ -845,7 +853,7 @@ pub fn handle_parked_segment(aircraft: &mut Aircraft, bundle: &mut Bundle) {
             kind: EventKind::Callout(CommandWithFreq::new(
               aircraft.id.to_string(),
               aircraft.frequency,
-              CommandReply::ReadyForDeparture {
+              CommandReply::ReadyForTaxi {
                 gate: at.name.to_string(),
               },
               Vec::new(),
@@ -862,6 +870,11 @@ pub fn handle_approach_segment(aircraft: &mut Aircraft, bundle: &mut Bundle) {
   if let Some(airspace) =
     closest_airspace(&bundle.world.airspaces, aircraft.pos)
   {
+    // If we are not arriving at the right airspace, ignore this event.
+    if airspace.id != aircraft.flight_plan.arriving {
+      return;
+    }
+
     // TODO: This ensures that the flight is in the right segment, though
     // we might be better off using more concrete logic in the effect
     // instead of relying on this in case that logic fails.

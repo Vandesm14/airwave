@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{collections::HashMap, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -70,6 +70,75 @@ pub fn heading_to_direction(heading: f32) -> &'static str {
 
   // This should never happen, but we'll return "Unknown" just in case
   "Unknown"
+}
+
+const NATO_ALPHABET: [(char, &str); 26] = [
+  ('A', "Alfa"),
+  ('B', "Bravo"),
+  ('C', "Charlie"),
+  ('D', "Delta"),
+  ('E', "Echo"),
+  ('F', "Foxtrot"),
+  ('G', "Golf"),
+  ('H', "Hotel"),
+  ('I', "India"),
+  ('J', "Juliett"),
+  ('K', "Kilo"),
+  ('L', "Lima"),
+  ('M', "Mike"),
+  ('N', "November"),
+  ('O', "Oscar"),
+  ('P', "Papa"),
+  ('Q', "Quebec"),
+  ('R', "Romeo"),
+  ('S', "Sierra"),
+  ('T', "Tango"),
+  ('U', "Uniform"),
+  ('V', "Victor"),
+  ('W', "Whiskey"),
+  ('X', "X-ray"),
+  ('Y', "Yankee"),
+  ('Z', "Zulu"),
+];
+
+const NATO_NUMBERS: [(char, &str); 10] = [
+  ('0', "Zero"),
+  ('1', "One"),
+  ('2', "Two"),
+  ('3', "Three"),
+  ('4', "Four"),
+  ('5', "Five"),
+  ('6', "Six"),
+  ('7', "Seven"),
+  ('8', "Eight"),
+  ('9', "Nine"),
+];
+
+pub fn nato_phonetic(string: impl AsRef<str>) -> String {
+  let string = string.as_ref();
+  let mut result = String::new();
+
+  let nato_alphabet: HashMap<char, &str> = HashMap::from_iter(NATO_ALPHABET);
+  let nato_numbers: HashMap<char, &str> = HashMap::from_iter(NATO_NUMBERS);
+
+  for c in string.chars() {
+    if c.is_alphabetic() {
+      let c = c.to_ascii_uppercase();
+      if let Some(nato) = nato_alphabet.get(&c) {
+        result.push_str(nato);
+        result.push(' ');
+      }
+    } else if c.is_numeric() {
+      if let Some(nato) = nato_numbers.get(&c) {
+        result.push_str(nato);
+        result.push(' ');
+      }
+    } else {
+      result.push(c);
+    }
+  }
+
+  result.trim().to_string()
 }
 
 /// Abbreviates an altitude to feet or flight level (depending on the altitude).

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  abbreviate_altitude, geometry::duration_now, pathfinder::Node,
+  abbreviate_altitude, geometry::duration_now, nato_phonetic, pathfinder::Node,
   wordify::wordify, ExportedDuration,
 };
 
@@ -109,7 +109,7 @@ pub enum CommandReply {
 
   GoAround { runway: String },
   HoldShortRunway { runway: String },
-  ReadyForDeparture { gate: String },
+  ReadyForTaxi { gate: String },
   TaxiToGates { runway: String },
   ArriveInAirspace { direction: String, altitude: f32 },
   TARAResolved { assigned_alt: f32 },
@@ -154,11 +154,12 @@ impl fmt::Display for CommandWithFreq {
           decoded_callsign, runway
         )
       }
-      CommandReply::ReadyForDeparture { gate } => {
+      CommandReply::ReadyForTaxi { gate } => {
         write!(
           f,
-          "Ground, {} is at gate {}, ready to taxi to the active.",
-          gate, decoded_callsign
+          "Ground, {} is at gate {}, ready for taxi.",
+          decoded_callsign,
+          nato_phonetic(gate)
         )
       }
       CommandReply::TaxiToGates { runway } => {
