@@ -309,7 +309,13 @@ impl AircraftKind {
 #[ts(export)]
 pub enum FlightSegment {
   #[default]
-  /// Parked and motionless.
+  /// Inactive and parked.
+  Dormant,
+
+  /// Boarding for departure.
+  Boarding,
+
+  /// Parked and ready for taxi.
   Parked,
 
   /// Taxiing as a departure.
@@ -414,7 +420,7 @@ pub struct Aircraft {
   pub segment: FlightSegment,
 
   #[ts(as = "Option<ExportedDuration>")]
-  pub timer: Option<Duration>,
+  pub flight_time: Option<Duration>,
 }
 
 // Helper methods
@@ -450,7 +456,7 @@ impl Aircraft {
     string
   }
 
-  pub fn random_parked(gate: Gate, rng: &mut Rng, airport: &Airport) -> Self {
+  pub fn random_dormant(gate: Gate, rng: &mut Rng, airport: &Airport) -> Self {
     Self {
       id: Intern::from(Self::random_callsign(rng)),
       is_colliding: false,
@@ -469,9 +475,9 @@ impl Aircraft {
       tcas: TCAS::default(),
 
       frequency: airport.frequencies.ground,
-      segment: FlightSegment::Parked,
+      segment: FlightSegment::Dormant,
 
-      timer: None,
+      flight_time: None,
     }
     .with_synced_targets()
   }

@@ -6,8 +6,8 @@ use crate::{
   entities::world::closest_airport,
   geometry::{
     add_degrees, angle_between_points, calculate_ils_altitude,
-    closest_point_on_line, delta_angle, inverse_degrees, move_point,
-    normalize_angle,
+    closest_point_on_line, delta_angle, duration_now, inverse_degrees,
+    move_point, normalize_angle,
   },
   line::Line,
   pathfinder::{NodeBehavior, NodeKind},
@@ -416,13 +416,13 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
             bundle.events.push(
               AircraftEvent {
                 id: aircraft.id,
-                kind: EventKind::Segment(FlightSegment::Parked),
+                kind: EventKind::Segment(FlightSegment::Dormant),
               }
               .into(),
             );
 
             aircraft.flip_flight_plan();
-            aircraft.timer = None;
+            aircraft.flight_time = None;
           }
 
           // Runway specific
@@ -492,12 +492,27 @@ pub struct AircraftUpdateSegmentEffect;
 impl AircraftEffect for AircraftUpdateSegmentEffect {
   fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
     // The Following states are handled by events:
-    // Parked (effect)
+    // Dormant
+    // Boarding
+    // Parked
     // TaxiDep
     // Takeoff
     // --
     // Land
     // TaxiArr
+
+    // Ensure that we are Boarding if our timer is less than now.
+    if let Some(flight_time) = aircraft.flight_time {
+      if FlightSegment::Dormant == aircraft.segment
+        && duration_now() < flight_time
+      {
+        aircraft.segment = FlightSegment::Boarding;
+      } else if FlightSegment::Boarding == aircraft.segment
+        && duration_now() >= flight_time
+      {
+        aircraft.segment = FlightSegment::Parked;
+      }
+    }
 
     if let AircraftState::Flying = &aircraft.state {
       // If taking off and off the ground, set to departure

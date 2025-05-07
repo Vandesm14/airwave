@@ -838,8 +838,8 @@ export default function Canvas() {
     const isSelected = selectedAircraft() === aircraft.id;
     // TODO: Once we have creation time, implement this as hiding flights that
     // haven't been activated yet.
-    const isActive = aircraft.timer
-      ? Date.now() > aircraft.timer.secs * 1000
+    const isActive = aircraft.flight_time
+      ? Date.now() > aircraft.flight_time.secs * 1000
       : false;
 
     const airport = hardcodedAirport(world.data);

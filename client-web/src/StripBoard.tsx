@@ -42,6 +42,7 @@ type HeaderStrip = {
 };
 
 type StripStatus =
+  | 'Boarding'
   | 'Parked'
   | 'Ground'
   | 'Takeoff'
@@ -58,8 +59,9 @@ type CreateOn = {
   departure: boolean;
   landing: boolean;
   takeoff: boolean;
-  ground: boolean;
+  boarding: boolean;
   parked: boolean;
+  ground: boolean;
 };
 
 function newCreateOn(): CreateOn {
@@ -69,8 +71,9 @@ function newCreateOn(): CreateOn {
     departure: true,
     landing: true,
     takeoff: true,
-    ground: true,
+    boarding: false,
     parked: true,
+    ground: true,
   };
 }
 
@@ -81,8 +84,9 @@ function testStatus(createOn: CreateOn, status: StripStatus) {
     (createOn.departure && status === 'Departure') ||
     (createOn.landing && status === 'Landing') ||
     (createOn.takeoff && status === 'Takeoff') ||
-    (createOn.ground && status === 'Ground') ||
-    (createOn.parked && status === 'Parked')
+    (createOn.boarding && status === 'Boarding') ||
+    (createOn.parked && status === 'Parked') ||
+    (createOn.ground && status === 'Ground')
   );
 }
 
@@ -123,16 +127,12 @@ function statusOfAircraft(
   const isOurDeparture = ourAirspace === aircraft.flight_plan.departing;
   const isOurs = isOurArrival || isOurDeparture;
 
-  const isReady = aircraft.timer
-    ? Date.now() >= aircraft.timer.secs * 1000
-    : false;
-
-  const isParked = !isReady && isOurDeparture && aircraft.segment === 'parked';
+  const isBoarding = isOurDeparture && aircraft.segment === 'boarding';
+  const isParked = isOurDeparture && aircraft.segment === 'parked';
   const isGround =
     (isOurArrival && aircraft.segment === 'taxi-arr') ||
-    (isOurDeparture && aircraft.segment === 'taxi-dep') ||
-    (isReady && isOurDeparture && aircraft.segment === 'parked');
-  const isActive = !!aircraft.timer;
+    (isOurDeparture && aircraft.segment === 'taxi-dep');
+  const isActive = !!aircraft.flight_time;
 
   const isTakeoff = aircraft.segment === 'takeoff';
   const isDeparture = aircraft.segment === 'departure';
@@ -147,7 +147,9 @@ function statusOfAircraft(
     }
 
     if (isOurDeparture) {
+      if (isBoarding) return 'Boarding';
       if (isParked) return 'Parked';
+
       if (isTakeoff) return 'Takeoff';
       if (isDeparture) return 'Departure';
     }
@@ -270,7 +272,7 @@ function Strip(props: StripProps) {
     );
 
     const timer = createMemo(() => {
-      return strip.segment === 'parked'
+      return strip.segment === 'parked' || strip.segment === 'boarding'
         ? strip.timer
         : smallFlightSegment(strip.segment).toUpperCase();
     });
@@ -301,7 +303,7 @@ function Strip(props: StripProps) {
         </div>
         <div class="vertical">
           <span class="frequency">{strip.frequency}</span>
-          <span class="timer">{timer()}</span>
+          <span class="timer">{smallFlightSegment(strip.segment)}</span>
         </div>
         <Show when={deletable()}>
           <div class="vertical end">
@@ -337,8 +339,8 @@ function aircraftToStrip(
     topStatus: '',
     bottomStatus: '',
     frequency: aircraft.frequency,
-    timer: aircraft.timer
-      ? formatTime(Date.now() - aircraft.timer.secs * 1000)
+    timer: aircraft.flight_time
+      ? formatTime(Date.now() - aircraft.flight_time.secs * 1000)
       : '--:--',
     status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
     segment: aircraft.segment,

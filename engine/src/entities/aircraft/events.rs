@@ -462,7 +462,9 @@ impl AircraftEventHandler for HandleAircraftEvent {
         aircraft.segment = *segment;
 
         match segment {
-          FlightSegment::Parked => {}
+          FlightSegment::Dormant => {}
+          FlightSegment::Boarding => {}
+          FlightSegment::Parked => handle_parked_segment(aircraft, bundle),
           FlightSegment::TaxiDep => {}
           FlightSegment::Takeoff => {}
           FlightSegment::Departure => {}
@@ -572,7 +574,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
             bundle.events.push(
               AircraftEvent {
                 id: aircraft.id,
-                kind: EventKind::Segment(FlightSegment::Parked),
+                kind: EventKind::Segment(FlightSegment::Dormant),
               }
               .into(),
             );
@@ -820,6 +822,37 @@ pub fn handle_takeoff_event(
             AircraftEvent::new(aircraft.id, EventKind::TaxiContinue).into(),
           );
         }
+      }
+    }
+  }
+}
+
+pub fn handle_parked_segment(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+  if let AircraftState::Parked { at } = &aircraft.state {
+    if let Some(airspace) =
+      closest_airspace(&bundle.world.airspaces, aircraft.pos)
+    {
+      if let Some(airport) = airspace
+        .airports
+        .iter()
+        .find(|a| a.id == aircraft.flight_plan.departing)
+      {
+        aircraft.frequency = airport.frequencies.ground;
+
+        bundle.events.push(
+          AircraftEvent {
+            id: aircraft.id,
+            kind: EventKind::Callout(CommandWithFreq::new(
+              aircraft.id.to_string(),
+              aircraft.frequency,
+              CommandReply::ReadyForDeparture {
+                gate: at.name.to_string(),
+              },
+              Vec::new(),
+            )),
+          }
+          .into(),
+        );
       }
     }
   }

@@ -305,7 +305,7 @@ impl Runner {
         for terminal in airport.terminals.iter() {
           for gate in terminal.gates.iter() {
             let mut aircraft =
-              Aircraft::random_parked(gate.clone(), &mut self.rng, airport);
+              Aircraft::random_dormant(gate.clone(), &mut self.rng, airport);
             aircraft.flight_plan.departing = airspace.id;
             aircraft.flight_plan.arriving = self
               .rng
@@ -473,7 +473,7 @@ impl Runner {
             .aircraft
             .iter_mut()
             // Only pick inactive aircraft
-            .filter(|a| a.timer.is_none())
+            .filter(|a| a.flight_time.is_none())
             .find(|a| {
               if let AircraftState::Parked { at } = &a.state {
                 at.name == gate.id && a.pos == gate.pos
@@ -510,11 +510,13 @@ impl Runner {
                 )
               {
                 aircraft.flight_plan.arriving = destination.id;
+                aircraft.segment = FlightSegment::Boarding;
 
                 let min_time_seconds = if self.preparing { 0 } else { 60 };
                 let max_time_seconds = 60 * 5;
                 let delay = self.rng.u64(min_time_seconds..=max_time_seconds);
-                aircraft.timer = Some(
+
+                aircraft.flight_time = Some(
                   SystemTime::now()
                     .duration_since(
                       // Set the timer a few minutes into the future.
@@ -525,7 +527,7 @@ impl Runner {
               } else if auto {
                 aircraft.flight_plan.arriving = destination.id;
 
-                aircraft.timer = Some(
+                aircraft.flight_time = Some(
                   SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
                     .unwrap(),

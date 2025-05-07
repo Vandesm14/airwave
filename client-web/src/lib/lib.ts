@@ -211,6 +211,8 @@ export function shortTaxiingState(state: TaxiingState): string {
 
 export function smallFlightSegment(segment: FlightSegment): string {
   switch (segment) {
+    case 'boarding':
+      return 'wait';
     case 'parked':
       return 'park';
     case 'taxi-dep':
