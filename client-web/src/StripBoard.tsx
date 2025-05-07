@@ -303,7 +303,7 @@ function Strip(props: StripProps) {
         </div>
         <div class="vertical">
           <span class="frequency">{strip.frequency}</span>
-          <span class="timer">{smallFlightSegment(strip.segment)}</span>
+          <span class="timer">{timer()}</span>
         </div>
         <Show when={deletable()}>
           <div class="vertical end">
