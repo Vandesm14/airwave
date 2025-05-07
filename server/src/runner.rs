@@ -554,12 +554,12 @@ impl Runner {
 
     if !self.preparing && self.tick_counter % (self.rate * 60) == 0 {
       let diff = self.last_tick.elapsed();
-      let mills = diff.as_millis();
+      let mills = diff.as_micros() as f32 / 1000.0;
       let max = 1.0 / self.rate as f32 * 1000.0;
       let percent = diff.as_secs_f32() / (1.0 / self.rate as f32);
 
       tracing::info!(
-        "Using {}ms of {:.0}ms total tick time ({:.2}%)",
+        "Using {:.2}ms of {:.0}ms total tick time ({:.2}%)",
         mills,
         max,
         percent * 100.0
