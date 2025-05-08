@@ -616,7 +616,45 @@ export default function Canvas() {
       ctx.stroke();
     }
 
-    if (!isActive && !isSelected) return;
+    let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
+    if (!isActive && !isSelected) {
+      ctx.textAlign = 'left';
+      ctx.fillStyle = colors.text_grey;
+
+      // Draw altitude
+      let altitudeIcon = ' ';
+      if (aircraft.altitude < aircraft.target.altitude) {
+        altitudeIcon = '⬈';
+      } else if (aircraft.altitude > aircraft.target.altitude) {
+        altitudeIcon = '⬊';
+      }
+
+      let targetAltitude =
+        aircraft.target.altitude !== aircraft.altitude
+          ? altitudeIcon +
+            Math.round(aircraft.target.altitude / 100)
+              .toString()
+              .padStart(3, '0')
+          : '';
+
+      if (aircraft.tcas === 'climb') {
+        targetAltitude = '⬈' + 'CLB';
+      } else if (aircraft.tcas === 'descend') {
+        targetAltitude = '⬊' + 'DES';
+      } else if (aircraft.tcas === 'hold') {
+        targetAltitude = '⬌' + 'HLD';
+      }
+
+      ctx.fillText(
+        Math.round(aircraft.altitude / 1000)
+          .toString()
+          .padStart(2, '0'),
+        pos[0] + spacing,
+        pos[1] - spacing
+      );
+
+      return;
+    }
 
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
@@ -629,7 +667,6 @@ export default function Canvas() {
     ctx.stroke();
 
     // Draw info
-    let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
     ctx.textAlign = 'left';
     ctx.fillStyle = colors.text_green;
 
