@@ -2,7 +2,13 @@ import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from './whisper/WhisperSTT';
 import { frequencyAtom, isRecordingAtom, useTTSAtom } from './lib/atoms';
 import Chatbox from './Chatbox';
-import { onMount, Show } from 'solid-js';
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  onMount,
+  Show,
+} from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
@@ -14,9 +20,12 @@ import Flights from './Flights';
 export default function App() {
   const whisper = new WhisperSTT();
 
-  let [isRecording, setIsRecording] = useAtom(isRecordingAtom);
-  let [frequency] = useStorageAtom(frequencyAtom);
-  let [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
+  const [isRecording, setIsRecording] = useAtom(isRecordingAtom);
+  const [frequency] = useStorageAtom(frequencyAtom);
+  const [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
+  const [downButtons, setDownButtons] = createSignal<number>(0);
+  const [buttonDiscardFlag, setButtonDiscardFlag] = createSignal(false);
+
   const query = usePing();
   const client = useQueryClient();
 
@@ -90,6 +99,57 @@ export default function App() {
         discardRecording();
       }
     });
+
+    function gameLoop() {
+      const gamepads = navigator.getGamepads();
+      if (gamepads) {
+        const gp = gamepads[0];
+        if (gp) {
+          let newDownButtons = 0;
+          for (const i in gp.buttons) {
+            const button = gp.buttons[i];
+            if (button?.pressed) {
+              newDownButtons++;
+            }
+          }
+
+          if (newDownButtons !== downButtons()) {
+            setDownButtons(newDownButtons);
+          }
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  });
+
+  createEffect(() => {
+    console.log('Buttons:', downButtons());
+
+    // If one button is pressed, use as PTT.
+    if (downButtons() == 1 && !buttonDiscardFlag()) {
+      if (!isRecording()) {
+        startRecording();
+      }
+
+      // If two or more buttons are pressed, stop recording.
+    } else if (downButtons() > 1) {
+      setButtonDiscardFlag(true);
+
+      if (isRecording()) {
+        discardRecording();
+      }
+
+      // If no buttons are pressed, stop recording.
+    } else if (downButtons() == 0) {
+      setButtonDiscardFlag(false);
+
+      if (isRecording()) {
+        stopRecording();
+      }
+    }
   });
 
   async function sendPause() {
