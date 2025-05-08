@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::RangeInclusive};
+use core::ops::RangeInclusive;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -53,28 +53,18 @@ pub fn heading_to_direction(heading: f32) -> &'static str {
   // Normalize the heading to be between 0 and 360
   let normalized_heading = heading.rem_euclid(360.0);
 
-  // Define the directions and their corresponding angle ranges
-  let directions = [
-    ("North", 0.0, 22.5),
-    ("Northeast", 22.5, 67.5),
-    ("East", 67.5, 112.5),
-    ("Southeast", 112.5, 157.5),
-    ("South", 157.5, 202.5),
-    ("Southwest", 202.5, 247.5),
-    ("West", 247.5, 292.5),
-    ("Northwest", 292.5, 337.5),
-    ("North", 337.5, 360.0),
-  ];
-
-  // Find the matching direction
-  for (direction, start, end) in directions.iter() {
-    if normalized_heading >= *start && normalized_heading < *end {
-      return direction;
-    }
+  match normalized_heading {
+    0.0..=22.5 => "North",
+    22.6..=67.5 => "Northeast",
+    67.6..=112.5 => "East",
+    112.6..=157.5 => "Southeast",
+    157.6..=202.5 => "South",
+    202.6..=247.5 => "Southwest",
+    247.6..=292.5 => "West",
+    292.6..=337.5 => "Northwest",
+    337.6..=360.0 => "North",
+    _ => unreachable!(),
   }
-
-  // This should never happen, but we'll return "Unknown" just in case
-  "Unknown"
 }
 
 const NATO_ALPHABET: [(char, &str); 26] = [
