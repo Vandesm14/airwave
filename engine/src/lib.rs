@@ -156,9 +156,18 @@ pub fn abbreviate_altitude(altitude: f32) -> String {
 #[cfg(test)]
 mod tests {
   use crate::{
+    NATO_ALPHABET, NATO_NUMBERS,
     geometry::{angle_between_points, delta_angle, find_line_intersection},
     line::Line,
+    nato_phonetic,
   };
+
+  #[test]
+  fn test_nato_phonetic() {
+    for (c, s) in NATO_NUMBERS.into_iter().chain(NATO_ALPHABET) {
+      assert_eq!(s, nato_phonetic(c.to_string()));
+    }
+  }
 
   mod delta_angle {
     use super::*;
