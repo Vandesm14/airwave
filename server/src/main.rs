@@ -1,10 +1,11 @@
 use core::str::FromStr;
 use std::{fs, path::PathBuf, time::Instant};
 
-use directories::ProjectDirs;
 use glam::Vec2;
 use internment::Intern;
 use tokio::sync::mpsc;
+use tracing_appender::rolling::Rotation;
+use tracing_subscriber::prelude::*;
 use turborand::{SeededCore, rng::Rng};
 
 use engine::{
@@ -12,11 +13,7 @@ use engine::{
   entities::{airport::Airport, airspace::Airspace},
 };
 use server::{
-  CLI, Cli,
-  config::Config,
-  http,
-  job::JobReq,
-  runner::{ArgReqKind, ResKind, Runner, TinyReqKind},
+  config::Config, http, job::JobReq, runner::{ArgReqKind, ResKind, Runner, TinyReqKind}, Cli, CLI, PROJECT_DIRS
 };
 
 #[tokio::main]
@@ -25,36 +22,49 @@ async fn main() {
     address,
     ref audio_path,
     ref config_path,
-    ref log_path,
+    ref logs_path,
+    logs_max_files,
+    logs_rotation,
+    logs_tty_min_level,
+    logs_file_min_level,
   } = *CLI;
 
-  let project_dirs = ProjectDirs::from("com", "airwavegame", "Airwave").expect("unable to retrieve a valid user home directory path from the operating system");
-  let log_dir_path = match log_path {
-    Some(path) => path.into(),
-    None => project_dirs
+  let logs_dir = logs_path.clone().unwrap_or_else(|| {
+    PROJECT_DIRS
       .state_dir()
-      .unwrap_or_else(|| project_dirs.data_local_dir())
-      .join("logs"),
-  };
+      .unwrap_or_else(|| PROJECT_DIRS.data_local_dir())
+      .join("logs")
+  });
 
-  let (file_log_non_blocking, _file_log_guard) = tracing_appender::non_blocking(
-    tracing_appender::rolling::minutely(log_dir_path, "server.log"),
-  );
+  let _log_guard = setup_logging(logs_dir, logs_max_files, logs_rotation.into(),
+    logs_tty_min_level.into(),
+    logs_file_min_level.into(),);
 
-  tracing_subscriber::fmt::fmt()
-    .with_env_filter(
-      tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(
-        |_| {
-          #[cfg(debug_assertions)]
-          return concat!(env!("CARGO_CRATE_NAME"), "=", "trace").into();
-          #[cfg(not(debug_assertions))]
-          return concat!(env!("CARGO_CRATE_NAME"), "=", "info").into();
-        },
-      ),
-    )
-    .with_writer(file_log_non_blocking)
-    .with_ansi(false)
-    .init();
+  // let log_env_filter = tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(
+  //   |_| {
+  //     #[cfg(debug_assertions)]
+  //     return concat!(env!("CARGO_CRATE_NAME"), "=", "trace").into();
+  //     #[cfg(not(debug_assertions))]
+  //     return concat!(env!("CARGO_CRATE_NAME"), "=", "info").into();
+  //   },
+  // );
+
+  // tracing_subscriber::fmt::fmt()
+  //   .with_env_filter(
+  //     tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(
+  //       |_| {
+  //         #[cfg(debug_assertions)]
+  //         return concat!(env!("CARGO_CRATE_NAME"), "=", "trace").into();
+  //         #[cfg(not(debug_assertions))]
+  //         return concat!(env!("CARGO_CRATE_NAME"), "=", "info").into();
+  //       },
+  //     ),
+  //   )
+  //   .with_writer(std::io::stderr.and(file_log_non_blocking))
+  //   .with_ansi(false)
+  //   // .with_file(true)
+  //   // .with_line_number(true)
+  //   .init();
 
   if let Err(e) = dotenv::dotenv() {
     tracing::warn!(".env file was not provided: {}", e);
@@ -172,4 +182,41 @@ async fn main() {
 
   let address = address.unwrap_or(config.server().address());
   let _ = tokio::spawn(http::run(address, get_tx, post_tx)).await;
+}
+
+fn setup_logging(
+  dir: PathBuf,
+  max_files: usize,
+  rotation: Rotation,
+  tty_min_level: tracing::Level,
+  file_min_level: tracing::Level,
+) -> tracing_appender::non_blocking::WorkerGuard {
+  let appender = tracing_appender::rolling::Builder::new()
+    .filename_prefix("server")
+    .filename_suffix("log")
+    .max_log_files(max_files)
+    .rotation(rotation)
+    .build(dir)
+    .expect("unable to setup logging");
+
+  let (nonblocking_appender, appender_guard) = tracing_appender::non_blocking(appender);
+
+  tracing_subscriber::registry()
+    .with(
+      tracing_subscriber::fmt::layer()
+        .with_writer(std::io::stderr)
+        .with_filter(tracing_subscriber::filter::LevelFilter::from_level(tty_min_level)),
+    )
+    .with(
+      tracing_subscriber::fmt::layer()
+        .with_ansi(false)
+        .with_file(true)
+        .with_line_number(true)
+        .with_thread_ids(true)
+        .with_writer(nonblocking_appender)
+        .with_filter(tracing_subscriber::filter::LevelFilter::from_level(file_min_level)),
+    )
+    .init();
+
+  appender_guard
 }
