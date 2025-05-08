@@ -591,7 +591,10 @@ pub fn handle_land_event(
   bundle: &mut Bundle,
   runway_id: Intern<String>,
 ) {
-  if let AircraftState::Flying = aircraft.state {
+  if matches!(
+    aircraft.state,
+    AircraftState::Flying | AircraftState::Landing { .. }
+  ) {
     if let Some(runway) = closest_airport(&bundle.world.airspaces, aircraft.pos)
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
