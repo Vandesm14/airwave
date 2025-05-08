@@ -331,6 +331,10 @@ impl Runner {
   pub fn tick(&mut self) -> Vec<Event> {
     self.last_tick = Instant::now();
 
+    let tick_span =
+      tracing::span!(tracing::Level::TRACE, "tick", tick = self.tick_counter);
+    let _tick_span_guard = tick_span.enter();
+
     let mut commands: Vec<CommandWithFreq> = Vec::new();
 
     // GET
