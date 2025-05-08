@@ -6,6 +6,7 @@ import {
   For,
   JSX,
   Show,
+  Signal,
 } from 'solid-js';
 import { smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
@@ -107,7 +108,7 @@ type AircraftStrip = {
 
 type Strip = HeaderStrip | AircraftStrip;
 
-function newHeader(name: string, id: number): HeaderStrip {
+function newHeader(name: string, id: number): Strip {
   return {
     id,
     type: StripType.Header,
@@ -169,7 +170,7 @@ function statusOfAircraft(
 type StripProps<T extends HeaderStrip | AircraftStrip> = {
   key?: unknown;
 
-  strip: T;
+  strip: Accessor<T>;
   onmousedown?: () => void;
   onmousemove?: () => void;
   ondelete?: () => void;
@@ -180,7 +181,7 @@ type StripProps<T extends HeaderStrip | AircraftStrip> = {
 };
 
 function HeaderStripView(props: StripProps<HeaderStrip>) {
-  const strip = () => props.strip;
+  const strip = props.strip;
   const onmousedown = () => props.onmousedown;
   const onmousemove = () => props.onmousemove;
   const ondelete = () => props.ondelete;
@@ -260,7 +261,7 @@ function HeaderStripView(props: StripProps<HeaderStrip>) {
 }
 
 function AircraftStripView(props: StripProps<AircraftStrip>) {
-  const strip = () => props.strip;
+  const strip = props.strip;
   const onmousedown = () => props.onmousedown;
   const onmousemove = () => props.onmousemove;
   const ondelete = () => props.ondelete;
@@ -407,26 +408,48 @@ const Separator = () => <div class="separator"></div>;
 function createStrips() {
   const [_, setNextId] = makePersisted(createSignal(0));
   const [strips, setStrips] = makePersisted(
-    createSignal<Strip[]>([], { equals: (a, b) => fastDeepEqual(a, b) })
+    createSignal<Array<Signal<Strip>>>([], {
+      equals: (a, b) => fastDeepEqual(a, b),
+    }),
+    {
+      serialize: (data) => {
+        return JSON.stringify(data.map((s) => s[0]()));
+      },
+      deserialize: (data) => {
+        const strips: Array<Strip> = JSON.parse(data);
+        const stripSignals: Array<Signal<Strip>> = strips.map((s) =>
+          createSignal(s)
+        );
+
+        console.log({ strips });
+
+        return stripSignals;
+      },
+    }
   );
 
   function addHeader(name: string) {
     setNextId((nextId) => {
       const id = nextId;
-      setStrips((strips) => [...strips, newHeader(name, id)]);
+      setStrips((strips) => [...strips, createSignal(newHeader(name, id))]);
       return nextId + 1;
     });
   }
 
   function addAircraft(strip: AircraftStrip, headerId: number) {
-    const index = strips().findIndex((s) => s.id === headerId);
+    const index = strips().findIndex((s) => s[0]().id === headerId);
     if (index !== -1) {
       setNextId((nextId) => {
         const id = nextId;
         setStrips((strips) => {
           const before = strips.slice(0, index + 1);
           const after = strips.slice(index + 1);
-          return [...before, { ...strip, id }, ...after];
+          const newStrip: Strip = { ...strip, id };
+          return [
+            ...before,
+            createSignal(newStrip),
+            ...after,
+          ] as Signal<Strip>[];
         });
         return nextId + 1;
       });
@@ -434,7 +457,7 @@ function createStrips() {
   }
 
   function strip(stripId: number) {
-    return strips().find((s) => s.id === stripId);
+    return strips().find((s) => s[0]().id === stripId);
   }
 
   function move(fromId: number, toId: number) {
@@ -449,14 +472,18 @@ function createStrips() {
         // It's the actual object reference we want to move.
 
         // Create a new array without the strip that is being moved.
-        const stripsWithoutFrom = prevStrips.filter((s) => s.id !== fromId);
+        const stripsWithoutFrom = prevStrips.filter(
+          (s) => s[0]().id !== fromId
+        );
 
         // Insert the fromStrip after the toStrip.
         // flatMap is used here: for each strip, if it's the target (toStrip),
         // output an array of [toStrip, fromStrip], otherwise just [strip].
         // This effectively inserts fromStrip after toStrip.
         const newStrips = stripsWithoutFrom.flatMap((currentStrip) =>
-          currentStrip.id === toId ? [currentStrip, fromStrip] : [currentStrip]
+          currentStrip[0]().id === toId
+            ? [currentStrip, fromStrip]
+            : [currentStrip]
         );
 
         return newStrips;
@@ -464,14 +491,10 @@ function createStrips() {
     }
   }
 
-  function update(strip: Strip, stripId: number) {
-    setStrips((strips) => strips.map((s) => (s.id === stripId ? strip : s)));
-  }
-
   function remove(stripId: number) {
-    const index = strips().findIndex((s) => s.id === stripId);
+    const index = strips().findIndex((s) => s[0]().id === stripId);
     if (index !== -1) {
-      setStrips((strips) => strips.filter((s) => s.id !== stripId));
+      setStrips((strips) => strips.filter((s) => s[0]().id !== stripId));
     }
   }
 
@@ -487,7 +510,6 @@ function createStrips() {
     addAircraft,
     move,
     strip,
-    update,
     remove,
     length,
   };
@@ -533,8 +555,8 @@ export default function StripBoard() {
     const selected = selectedAircraft();
     const existing = board
       .strips()
-      .filter((s) => s.type === StripType.Aircraft)
-      .map((s) => s.callsign);
+      .filter((s) => s[0]().type === StripType.Aircraft)
+      .map((s) => (s[0]() as AircraftStrip).callsign);
 
     if (airspace && board.length() > 0) {
       const newStrips: AircraftStrip[] = [];
@@ -567,26 +589,29 @@ export default function StripBoard() {
     const selected = selectedAircraft();
 
     if (airspace && aircrafts.data.length > 0) {
-      let updateStrips: AircraftStrip[] = [];
       let deleteStrips: number[] = [];
-      for (const strip of board.strips()) {
+      for (const s of board.strips()) {
+        const [_, setStrip] = s;
+        const strip = s[0]();
         if (strip.type === StripType.Aircraft) {
           const callsign = strip.callsign;
           const aircraft = aircrafts.data.find((a) => a.id === callsign);
           if (aircraft) {
-            updateStrips.push({
+            // updateStrips.push({
+            //   ...aircraftToStrip(aircraft, airspace, selected),
+            //   id: strip.id,
+            // });
+            const newStrip: Strip = {
               ...aircraftToStrip(aircraft, airspace, selected),
               id: strip.id,
-            });
+            };
+            if (!fastDeepEqual(strip, newStrip)) {
+              setStrip(newStrip);
+            }
           } else {
             deleteStrips.push(strip.id);
           }
         }
-      }
-
-      // Update strips.
-      for (const strip of updateStrips) {
-        board.update(strip, strip.id);
       }
 
       // Delete strips.
@@ -607,8 +632,9 @@ export default function StripBoard() {
   });
 
   function handleDelete(stripId: number) {
-    const strip = board.strip(stripId);
-    if (strip) {
+    const s = board.strip(stripId);
+    if (s) {
+      const strip = s[0]();
       // Deselect aircraft if deleting selected strip.
       if (
         strip.type === StripType.Aircraft &&
@@ -644,8 +670,10 @@ export default function StripBoard() {
 
   function handleEdit(stripId: number, name: string) {
     const strip = board.strip(stripId);
-    if (strip && strip.type === StripType.Header) {
-      board.update({ ...strip, name }, stripId);
+    if (strip) {
+      const s = strip[0]();
+      const newStrip = { ...s, name };
+      strip[1](newStrip);
     }
   }
 
@@ -667,14 +695,21 @@ export default function StripBoard() {
 
   function handleClear() {
     board.setStrips((strips) =>
-      strips.filter((s) =>
-        s.type === StripType.Aircraft ? testStatus(createOn(), s.status) : true
-      )
+      strips.filter((s) => {
+        const strip = s[0]();
+        return strip.type === StripType.Aircraft
+          ? testStatus(createOn(), strip.status)
+          : true;
+      })
     );
   }
 
   const allYours = createMemo(
-    () => board.strips().filter((s) => s.type === StripType.Aircraft).length
+    () =>
+      board.strips().filter((s) => {
+        const strip = s[0]();
+        return strip.type === StripType.Aircraft;
+      }).length
   );
   const allFlying = createMemo(
     () => aircrafts.data.filter((a) => a.state.type === 'flying').length
@@ -713,31 +748,33 @@ export default function StripBoard() {
         </For>
       </Show>
       <For each={board.strips()}>
-        {(strip) => {
+        {(s) => {
+          const strip = s[0];
+
           return (
             <>
-              {strip.type === StripType.Header ? (
+              {strip().type === StripType.Header ? (
                 <HeaderStripView
-                  strip={strip}
-                  onmousedown={() => handleMouseDown(strip.id)}
-                  onmousemove={() => handleMouseMove(strip.id)}
-                  ondelete={() => handleDelete(strip.id)}
-                  onedit={(name) => handleEdit(strip.id, name)}
+                  strip={strip as Accessor<HeaderStrip>}
+                  onmousedown={() => handleMouseDown(strip().id)}
+                  onmousemove={() => handleMouseMove(strip().id)}
+                  ondelete={() => handleDelete(strip().id)}
+                  onedit={(name) => handleEdit(strip().id, name)}
                   dragged={() => (separator() !== null ? dragged() : null)}
-                  deletable={strip.id !== INBOX_ID}
+                  deletable={strip().id !== INBOX_ID}
                 />
               ) : (
                 <AircraftStripView
-                  strip={strip}
-                  onmousedown={() => handleMouseDown(strip.id)}
-                  onmousemove={() => handleMouseMove(strip.id)}
-                  ondelete={() => handleDelete(strip.id)}
-                  onedit={(name) => handleEdit(strip.id, name)}
+                  strip={strip as Accessor<AircraftStrip>}
+                  onmousedown={() => handleMouseDown(strip().id)}
+                  onmousemove={() => handleMouseMove(strip().id)}
+                  ondelete={() => handleDelete(strip().id)}
+                  onedit={(name) => handleEdit(strip().id, name)}
                   dragged={() => (separator() !== null ? dragged() : null)}
-                  deletable={strip.id !== INBOX_ID}
+                  deletable={strip().id !== INBOX_ID}
                 />
               )}
-              {strip.id === separator() ? <Separator /> : null}
+              {strip().id === separator() ? <Separator /> : null}
             </>
           );
         }}
