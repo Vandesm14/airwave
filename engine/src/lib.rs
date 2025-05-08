@@ -123,21 +123,19 @@ pub fn nato_phonetic(string: impl AsRef<str>) -> String {
   let string = string.as_ref();
   let mut result = String::new();
 
-  let nato_alphabet: HashMap<char, &str> = HashMap::from_iter(NATO_ALPHABET);
-  let nato_numbers: HashMap<char, &str> = HashMap::from_iter(NATO_NUMBERS);
-
   for c in string.chars() {
-    if c.is_alphabetic() {
-      let c = c.to_ascii_uppercase();
-      if let Some(nato) = nato_alphabet.get(&c) {
-        result.push_str(nato);
-        result.push(' ');
-      }
-    } else if c.is_numeric() {
-      if let Some(nato) = nato_numbers.get(&c) {
-        result.push_str(nato);
-        result.push(' ');
-      }
+    if let Some(nato) = NATO_ALPHABET
+      .into_iter()
+      .find_map(|(ch, s)| (c == ch).then_some(s))
+    {
+      result.push_str(nato);
+      result.push(' ');
+    } else if let Some(nato) = NATO_NUMBERS
+      .into_iter()
+      .find_map(|(ch, s)| (c == ch).then_some(s))
+    {
+      result.push_str(nato);
+      result.push(' ');
     } else {
       result.push(c);
     }
