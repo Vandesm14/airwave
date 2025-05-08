@@ -96,6 +96,7 @@ export default function App() {
       if (e.key === 'Insert' && isRecording()) {
         stopRecording();
       } else if (e.key === 'Delete' && isRecording()) {
+        setButtonDiscardFlag(true);
         discardRecording();
       }
     });
