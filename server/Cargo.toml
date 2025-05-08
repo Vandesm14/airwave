@@ -39,5 +39,5 @@ toml = "0.8.19"
 union-find = "0.4.3"
 
 [dependencies.tower-http]
-version = "0.6.3"
+version = "0.6.2"
 features = ["cors", "fs", "trace", "compression-br"]
