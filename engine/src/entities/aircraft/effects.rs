@@ -162,11 +162,11 @@ impl AircraftUpdateLandingEffect {
         || distance_to_point.round() != 0.0)
     {
       if angle_to_runway > runway.heading {
-        aircraft.target.heading = add_degrees(runway.heading, 20.0);
+        aircraft.target.heading = add_degrees(runway.heading, 30.0);
       }
 
       if angle_to_runway < runway.heading {
-        aircraft.target.heading = add_degrees(runway.heading, -20.0);
+        aircraft.target.heading = add_degrees(runway.heading, -30.0);
       }
 
       *state = LandingState::Correcting;
