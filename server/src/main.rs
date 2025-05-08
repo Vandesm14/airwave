@@ -13,7 +13,11 @@ use engine::{
   entities::{airport::Airport, airspace::Airspace},
 };
 use server::{
-  config::Config, http, job::JobReq, runner::{ArgReqKind, ResKind, Runner, TinyReqKind}, Cli, CLI, PROJECT_DIRS
+  CLI, Cli, PROJECT_DIRS,
+  config::Config,
+  http,
+  job::JobReq,
+  runner::{ArgReqKind, ResKind, Runner, TinyReqKind},
 };
 
 #[tokio::main]
@@ -36,35 +40,13 @@ async fn main() {
       .join("logs")
   });
 
-  let _log_guard = setup_logging(logs_dir, logs_max_files, logs_rotation.into(),
+  let _log_guard = setup_logging(
+    logs_dir,
+    logs_max_files,
+    logs_rotation.into(),
     logs_tty_min_level.into(),
-    logs_file_min_level.into(),);
-
-  // let log_env_filter = tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(
-  //   |_| {
-  //     #[cfg(debug_assertions)]
-  //     return concat!(env!("CARGO_CRATE_NAME"), "=", "trace").into();
-  //     #[cfg(not(debug_assertions))]
-  //     return concat!(env!("CARGO_CRATE_NAME"), "=", "info").into();
-  //   },
-  // );
-
-  // tracing_subscriber::fmt::fmt()
-  //   .with_env_filter(
-  //     tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(
-  //       |_| {
-  //         #[cfg(debug_assertions)]
-  //         return concat!(env!("CARGO_CRATE_NAME"), "=", "trace").into();
-  //         #[cfg(not(debug_assertions))]
-  //         return concat!(env!("CARGO_CRATE_NAME"), "=", "info").into();
-  //       },
-  //     ),
-  //   )
-  //   .with_writer(std::io::stderr.and(file_log_non_blocking))
-  //   .with_ansi(false)
-  //   // .with_file(true)
-  //   // .with_line_number(true)
-  //   .init();
+    logs_file_min_level.into(),
+  );
 
   if let Err(e) = dotenv::dotenv() {
     tracing::warn!(".env file was not provided: {}", e);
@@ -199,13 +181,16 @@ fn setup_logging(
     .build(dir)
     .expect("unable to setup logging");
 
-  let (nonblocking_appender, appender_guard) = tracing_appender::non_blocking(appender);
+  let (nonblocking_appender, appender_guard) =
+    tracing_appender::non_blocking(appender);
 
   tracing_subscriber::registry()
     .with(
       tracing_subscriber::fmt::layer()
         .with_writer(std::io::stderr)
-        .with_filter(tracing_subscriber::filter::LevelFilter::from_level(tty_min_level)),
+        .with_filter(tracing_subscriber::filter::LevelFilter::from_level(
+          tty_min_level,
+        )),
     )
     .with(
       tracing_subscriber::fmt::layer()
@@ -214,7 +199,9 @@ fn setup_logging(
         .with_line_number(true)
         .with_thread_ids(true)
         .with_writer(nonblocking_appender)
-        .with_filter(tracing_subscriber::filter::LevelFilter::from_level(file_min_level)),
+        .with_filter(tracing_subscriber::filter::LevelFilter::from_level(
+          file_min_level,
+        )),
     )
     .init();
 

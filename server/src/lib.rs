@@ -19,7 +19,9 @@ pub mod runner;
 pub mod signal_gen;
 
 pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);
-pub static PROJECT_DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| ProjectDirs::from("com", "airwavegame", "Airwave").expect("unable to retrieve a valid user home directory path from the operating system"));
+pub static PROJECT_DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
+  ProjectDirs::from("com", "airwavegame", "Airwave").expect("unable to retrieve a valid user home directory path from the operating system")
+});
 
 #[derive(Parser)]
 pub struct Cli {
