@@ -6,6 +6,14 @@
     {
       "user": "Go around.",
       "assistant": "g"
+    },
+    {
+      "user": "Cancel approach.",
+      "assistant": "g"
+    },
+    {
+      "user": "Cancel landing clearence.",
+      "assistant": "g"
     }
   ]
 }
