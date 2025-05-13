@@ -19,6 +19,3 @@ recordings/
 
 # Logs
 mprocs.log
-
-# From Replit
-.cargo
