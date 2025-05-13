@@ -411,12 +411,16 @@ impl AircraftEffect for AircraftUpdateTaxiingEffect {
           NodeBehavior::GoTo => {}
           NodeBehavior::HoldShort => {}
           NodeBehavior::Park => {
+            // bundle.events.push(
+            //   AircraftEvent::new(
+            //     aircraft.id,
+            //     EventKind::Segment(FlightSegment::Parked),
+            //   )
+            //   .into(),
+            // );
             aircraft.state = AircraftState::Parked {
               at: current.clone(),
             };
-
-            aircraft.flip_flight_plan();
-            aircraft.flight_time = None;
           }
 
           // Runway specific

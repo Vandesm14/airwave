@@ -454,17 +454,34 @@ impl AircraftEventHandler for HandleAircraftEvent {
         match segment {
           FlightSegment::Unknown => {}
           FlightSegment::Dormant => {
+            aircraft.flip_flight_plan();
             aircraft.flight_time = None;
           }
           FlightSegment::Boarding => {}
-          FlightSegment::Parked => handle_parked_segment(aircraft, bundle),
+          FlightSegment::Parked => {
+            if bundle.prev.segment == FlightSegment::Boarding {
+              handle_parked_transition(aircraft, bundle);
+            } else if bundle.prev.segment == FlightSegment::TaxiArr {
+              bundle.events.push(
+                AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::Segment(FlightSegment::Dormant),
+                )
+                .into(),
+              );
+            }
+          }
           FlightSegment::TaxiDep => {}
           FlightSegment::Takeoff => {}
           FlightSegment::Departure => {}
           FlightSegment::Climb => {}
           FlightSegment::Cruise => {}
           FlightSegment::Arrival => {}
-          FlightSegment::Approach => handle_approach_segment(aircraft, bundle),
+          FlightSegment::Approach => {
+            if bundle.prev.segment == FlightSegment::Arrival {
+              handle_approach_transition(aircraft, bundle);
+            }
+          }
           FlightSegment::Landing => {}
           FlightSegment::TaxiArr => {}
         }
@@ -790,38 +807,35 @@ pub fn handle_takeoff_event(
   }
 }
 
-pub fn handle_parked_segment(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+pub fn handle_parked_transition(aircraft: &mut Aircraft, bundle: &mut Bundle) {
   if let AircraftState::Parked { at } = &aircraft.state {
-    if let Some(airspace) =
-      closest_airspace(&bundle.world.airspaces, aircraft.pos)
+    if let Some(airport) =
+      closest_airport(&bundle.world.airspaces, aircraft.pos)
     {
-      if let Some(airport) = airspace
-        .airports
-        .iter()
-        .find(|a| a.id == aircraft.flight_plan.departing)
-      {
-        aircraft.frequency = airport.frequencies.ground;
+      aircraft.frequency = airport.frequencies.ground;
 
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::Callout(CommandWithFreq::new(
-              aircraft.id.to_string(),
-              aircraft.frequency,
-              CommandReply::ReadyForTaxi {
-                gate: at.name.to_string(),
-              },
-              Vec::new(),
-            )),
-          }
-          .into(),
-        );
-      }
+      bundle.events.push(
+        AircraftEvent {
+          id: aircraft.id,
+          kind: EventKind::Callout(CommandWithFreq::new(
+            aircraft.id.to_string(),
+            aircraft.frequency,
+            CommandReply::ReadyForTaxi {
+              gate: at.name.to_string(),
+            },
+            Vec::new(),
+          )),
+        }
+        .into(),
+      );
     }
   }
 }
 
-pub fn handle_approach_segment(aircraft: &mut Aircraft, bundle: &mut Bundle) {
+pub fn handle_approach_transition(
+  aircraft: &mut Aircraft,
+  bundle: &mut Bundle,
+) {
   if let Some(airspace) =
     closest_airspace(&bundle.world.airspaces, aircraft.pos)
   {
