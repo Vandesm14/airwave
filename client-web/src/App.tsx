@@ -24,7 +24,6 @@ export default function App() {
   const [frequency] = useStorageAtom(frequencyAtom);
   const [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
   const [downButtons, setDownButtons] = createSignal<number>(0);
-  const [buttonDiscardFlag, setButtonDiscardFlag] = createSignal(false);
 
   const query = usePing();
   const client = useQueryClient();
@@ -96,7 +95,6 @@ export default function App() {
       if (e.key === 'Insert' && isRecording()) {
         stopRecording();
       } else if (e.key === 'Delete' && isRecording()) {
-        setButtonDiscardFlag(true);
         discardRecording();
       }
     });
@@ -115,6 +113,23 @@ export default function App() {
           }
 
           if (newDownButtons !== downButtons()) {
+            // If one button is pressed, use as PTT.
+            if (newDownButtons === 1 && downButtons() === 0) {
+              if (!isRecording()) {
+                startRecording();
+              }
+
+              // If two or more buttons are pressed, stop recording.
+            } else if (newDownButtons === 0 && downButtons() === 1) {
+              if (isRecording()) {
+                stopRecording();
+              }
+            } else if (newDownButtons > 1) {
+              if (isRecording()) {
+                discardRecording();
+              }
+            }
+
             setDownButtons(newDownButtons);
           }
         }
@@ -126,32 +141,7 @@ export default function App() {
     gameLoop();
   });
 
-  createEffect(() => {
-    console.log('Buttons:', downButtons());
-
-    // If one button is pressed, use as PTT.
-    if (downButtons() == 1 && !buttonDiscardFlag()) {
-      if (!isRecording()) {
-        startRecording();
-      }
-
-      // If two or more buttons are pressed, stop recording.
-    } else if (downButtons() > 1) {
-      setButtonDiscardFlag(true);
-
-      if (isRecording()) {
-        discardRecording();
-      }
-
-      // If no buttons are pressed, stop recording.
-    } else if (downButtons() == 0) {
-      setButtonDiscardFlag(false);
-
-      if (isRecording()) {
-        stopRecording();
-      }
-    }
-  });
+  createEffect(() => {});
 
   async function sendPause() {
     await fetch(`${baseAPIPath}/api/pause`, {
