@@ -128,6 +128,11 @@ pub async fn comms_text(
     complete_atc_request(&mut state.tiny_sender, text.clone(), query.frequency)
       .await
   } else {
+    tracing::info!(
+      "Parsing shorthand: {} into {} commands",
+      text,
+      commands.len()
+    );
     commands
   };
 
