@@ -38,7 +38,7 @@ pub const ARRIVAL_ALTITUDE: f32 = 10000.0;
 pub const APPROACH_ALTITUDE: f32 = 3000.0;
 
 pub trait ToText {
-  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
+  fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result;
 }
 
 #[derive(Serialize, Deserialize, TS)]
