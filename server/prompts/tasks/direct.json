@@ -5,19 +5,19 @@
   "examples": [
     {
       "user": "Direct to Sierra, Alpha, Yankee.",
-      "assistant": "d SAY"
+      "assistant": "direct SAY"
     },
     {
       "user": "Direct to road.",
-      "assistant": "d ROAD"
+      "assistant": "direct ROAD"
     },
     {
       "user": "Direct to waypoint one seven five.",
-      "assistant": "d 175"
+      "assistant": "direct 175"
     },
     {
       "user": "Direct to Alpha Seven.",
-      "assistant": "d A7"
+      "assistant": "direct A7"
     }
   ]
 }

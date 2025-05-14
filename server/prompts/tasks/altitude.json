@@ -5,11 +5,11 @@
   "examples": [
     {
       "user": "Climb and maintain 2000 feet.",
-      "assistant": "a 020"
+      "assistant": "alt 020"
     },
     {
       "user": "Maintain flight level 130.",
-      "assistant": "a 130"
+      "assistant": "alt 130"
     }
   ]
 }

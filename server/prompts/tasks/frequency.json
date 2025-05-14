@@ -5,19 +5,19 @@
   "examples": [
     {
       "user": "Tune to 123.4.",
-      "assistant": "f 123.4"
+      "assistant": "freq 123.4"
     },
     {
       "user": "Contact approach on 123.4.",
-      "assistant": "f 123.4"
+      "assistant": "freq 123.4"
     },
     {
       "user": "Contact approach.",
-      "assistant": "f approach"
+      "assistant": "freq approach"
     },
     {
       "user": "Contact center.",
-      "assistant": "f center"
+      "assistant": "freq center"
     }
   ]
 }
