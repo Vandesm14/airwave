@@ -115,6 +115,36 @@ impl Default for AircraftState {
   }
 }
 
+impl ToText for AircraftState {
+  fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
+    match self {
+      Self::Flying => write!(w, "Flying"),
+      Self::Landing { runway, state } => {
+        write!(w, "Landing on {} ({:?})", runway.id, state)
+      }
+      Self::Taxiing {
+        current, waypoints, ..
+      } => {
+        write!(w, "Taxi path: from {} to", current.name)?;
+        if !waypoints.is_empty() {
+          write!(
+            w,
+            " to {}",
+            waypoints
+              .iter()
+              .rev()
+              .map(|w| w.name.to_string())
+              .collect::<Vec<_>>()
+              .join(", ")
+          )?;
+        }
+        Ok(())
+      }
+      Self::Parked { at } => write!(w, "Parked at {}", at.name),
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct FlightPlan {
@@ -373,6 +403,32 @@ pub enum FlightSegment {
   TaxiArr,
 }
 
+impl std::fmt::Display for FlightSegment {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::Unknown => write!(f, "Unknown"),
+      Self::Dormant => write!(f, "Dormant"),
+      Self::Boarding => write!(f, "Boarding"),
+      Self::Parked => write!(f, "Parked"),
+      Self::TaxiDep => write!(f, "Taxiing as Departure"),
+      Self::Takeoff => write!(f, "Takeoff"),
+      Self::Departure => write!(f, "Departure"),
+      Self::Climb => write!(f, "Climb"),
+      Self::Cruise => write!(f, "Cruise"),
+      Self::Arrival => write!(f, "Arrival"),
+      Self::Approach => write!(f, "Approach"),
+      Self::Landing => write!(f, "Landing"),
+      Self::TaxiArr => write!(f, "Taxiing as Arrival"),
+    }
+  }
+}
+
+impl ToText for FlightSegment {
+  fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
+    write!(w, "Flight Segment: {}", self)
+  }
+}
+
 // TODO: Implement these tests into the segment effect in effect.rs.
 impl FlightSegment {
   pub fn on_ground(&self) -> bool {
@@ -474,12 +530,10 @@ impl ToText for Aircraft {
     self.target.to_text(w)?;
     writeln!(w)?;
 
-    // TODO: State
-    // TODO: TCAS
-    // TODO: Flight Plan
-    // TODO: Freq
-    // TODO: Segment
-    // TODO: Flight Time
+    self.state.to_text(w)?;
+    writeln!(w)?;
+    self.segment.to_text(w)?;
+    writeln!(w)?;
 
     Ok(())
   }
