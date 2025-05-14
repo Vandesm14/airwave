@@ -191,21 +191,31 @@ impl Default for FlightPlan {
 
 impl ToText for FlightPlan {
   fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
-    writeln!(w, "Flight Plan: {} to {}", self.departing, self.arriving)?;
-    write!(w, "Waypoints: ")?;
-    for (i, wp) in self
-      .waypoints
-      .iter()
-      .skip(self.waypoint_index)
-      .rev()
-      .enumerate()
-      .rev()
-    {
-      write!(w, "{}", wp.name)?;
-      if i != 0 {
-        write!(w, " ")?;
+    write!(
+      w,
+      "Flight Plan: {} to {} (dep alt: {}ft)",
+      self.departing,
+      self.arriving,
+      self.altitude.round()
+    )?;
+    if !self.waypoints.is_empty() {
+      writeln!(w)?;
+      write!(w, "Waypoints: ")?;
+      for (i, wp) in self
+        .waypoints
+        .iter()
+        .skip(self.waypoint_index)
+        .rev()
+        .enumerate()
+        .rev()
+      {
+        write!(w, "{}", wp.name)?;
+        if i != 0 {
+          write!(w, " ")?;
+        }
       }
     }
+
     Ok(())
   }
 }

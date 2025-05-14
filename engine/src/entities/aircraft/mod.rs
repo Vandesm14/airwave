@@ -11,7 +11,9 @@ use turborand::{TurboRand, rng::Rng};
 
 use crate::{
   KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, ToText,
-  geometry::delta_angle, pathfinder::Node, wayfinder::FlightPlan,
+  geometry::delta_angle,
+  pathfinder::{Node, NodeBehavior, NodeKind},
+  wayfinder::FlightPlan,
 };
 
 use super::airport::{Airport, Gate, Runway};
@@ -133,7 +135,7 @@ impl ToText for AircraftState {
       Self::Taxiing {
         current, waypoints, ..
       } => {
-        write!(w, "Taxi path: from {} to", current.name)?;
+        write!(w, "At {}, taxiing", current.name)?;
         if !waypoints.is_empty() {
           write!(
             w,
@@ -141,7 +143,18 @@ impl ToText for AircraftState {
             waypoints
               .iter()
               .rev()
-              .map(|w| w.name.to_string())
+              .map(|w| {
+                let name = w.name.to_string();
+                let prefix = if w.kind == NodeKind::Gate {
+                  "gate"
+                } else if w.behavior == NodeBehavior::HoldShort {
+                  "short of"
+                } else {
+                  ""
+                };
+
+                format!("{prefix} {name}")
+              })
               .collect::<Vec<_>>()
               .join(", ")
           )?;
