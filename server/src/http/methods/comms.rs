@@ -63,22 +63,11 @@ async fn complete_atc_request(
             );
             match (tasks, readback) {
               // Return the command.
-              (Ok(mut tasks), Ok(readback)) => {
+              (Ok(tasks), Ok(readback)) => {
                 tracing::info!(
                   "Completed request for aircraft {}",
                   aircraft.id
                 );
-                // Fill in the frequencies of custom events.
-                let tasks: Vec<_> = tasks
-                  .drain(..)
-                  .map(|t| {
-                    if let Task::Custom(_, e, a) = t {
-                      Task::Custom(frequency, e, a)
-                    } else {
-                      t
-                    }
-                  })
-                  .collect();
                 messages.push(CommandWithFreq::new(
                   aircraft.id.to_string(),
                   frequency,
