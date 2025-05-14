@@ -613,11 +613,15 @@ impl AircraftEventHandler for HandleAircraftEvent {
             let mut buffer = String::new();
             let _ = aircraft.to_text(&mut buffer);
 
-            tracing::warn!(
-              "Custom event for aircraft: {}: {}",
+            bundle.events.push(Event::Aircraft(AircraftEvent::new(
               aircraft.id,
-              buffer
-            );
+              EventKind::Callout(CommandWithFreq::new(
+                aircraft.id.to_string(),
+                aircraft.frequency,
+                CommandReply::Blank { text: buffer },
+                Vec::new(),
+              )),
+            )));
           }
 
           _ => {}
