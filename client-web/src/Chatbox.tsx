@@ -177,7 +177,15 @@ export default function Chatbox({
               >
                 {m.id}
               </span>
-              <span class="text">{m.reply}</span>
+              <span class="text">
+                {m.reply
+                  .trim()
+                  .split('\n')
+                  .map((line, i, arr) =>
+                    i === arr.length - 1 ? line : [line, <br />]
+                  )
+                  .flat()}
+              </span>
             </div>
           ))}
       </div>
