@@ -606,13 +606,11 @@ impl Runner {
 
   fn execute_command(&mut self, command: CommandWithFreq) {
     let id = Intern::from_ref(&command.id);
-    if self
-      .engine
-      .game
-      .aircraft
-      .iter()
-      .any(|a| a.id == id && a.frequency == command.frequency)
-    {
+    if self.engine.game.aircraft.iter().any(|a| {
+      a.id == id
+        && (command.tasks.iter().any(|t| matches!(t, Task::Custom(..)))
+          || a.frequency == command.frequency)
+    }) {
       self.engine.events.extend(
         command
           .tasks
