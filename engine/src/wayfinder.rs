@@ -190,9 +190,9 @@ impl Default for FlightPlan {
 }
 
 impl ToText for FlightPlan {
-  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    writeln!(f, "Flight Plan: {} to {}", self.departing, self.arriving)?;
-    write!(f, "Waypoints: ")?;
+  fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
+    writeln!(w, "Flight Plan: {} to {}", self.departing, self.arriving)?;
+    write!(w, "Waypoints: ")?;
     for (i, wp) in self
       .waypoints
       .iter()
@@ -200,9 +200,9 @@ impl ToText for FlightPlan {
       .enumerate()
       .rev()
     {
-      write!(f, "{}", wp.name)?;
+      write!(w, "{}", wp.name)?;
       if i != 0 {
-        write!(f, " ")?;
+        write!(w, " ")?;
       }
     }
     Ok(())
