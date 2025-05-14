@@ -197,6 +197,7 @@ impl ToText for FlightPlan {
       .waypoints
       .iter()
       .skip(self.waypoint_index)
+      .rev()
       .enumerate()
       .rev()
     {
