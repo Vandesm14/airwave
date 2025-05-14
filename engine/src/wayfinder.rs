@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  TRANSITION_ALTITUDE,
+  TRANSITION_ALTITUDE, ToText,
   entities::aircraft::{Aircraft, events::EventKind},
   geometry::{angle_between_points, delta_angle, normalize_angle},
   pathfinder::{Node, NodeBehavior, NodeKind},
@@ -186,6 +186,26 @@ impl Default for FlightPlan {
       speed: 450.0,
       altitude: TRANSITION_ALTITUDE,
     }
+  }
+}
+
+impl ToText for FlightPlan {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    writeln!(f, "Flight Plan: {} to {}", self.departing, self.arriving)?;
+    write!(f, "Waypoints: ")?;
+    for (i, wp) in self
+      .waypoints
+      .iter()
+      .skip(self.waypoint_index)
+      .enumerate()
+      .rev()
+    {
+      write!(f, "{}", wp.name)?;
+      if i != 0 {
+        write!(f, " ")?;
+      }
+    }
+    Ok(())
   }
 }
 

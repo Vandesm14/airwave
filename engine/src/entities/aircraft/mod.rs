@@ -10,8 +10,8 @@ use ts_rs::TS;
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, geometry::delta_angle,
-  pathfinder::Node, wayfinder::FlightPlan,
+  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, ToText,
+  geometry::delta_angle, pathfinder::Node, wayfinder::FlightPlan,
 };
 
 use super::airport::{Airport, Gate, Runway};
@@ -22,6 +22,16 @@ pub struct AircraftTargets {
   pub heading: f32,
   pub speed: f32,
   pub altitude: f32,
+}
+
+impl ToText for AircraftTargets {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "Targets: {}° {}kt {}ft",
+      self.heading, self.speed, self.altitude
+    )
+  }
 }
 
 #[derive(
@@ -354,6 +364,28 @@ pub struct Aircraft {
   pub airspace: Option<Intern<String>>,
 
   pub flight_time: Option<usize>,
+}
+
+impl ToText for Aircraft {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    writeln!(f, "Callsign: {}", self.id)?;
+    writeln!(
+      f,
+      "Current: {}° {}kt {}ft",
+      self.heading, self.speed, self.altitude
+    )?;
+    self.target.to_text(f)?;
+    writeln!(f)?;
+
+    // TODO: State
+    // TODO: TCAS
+    // TODO: Flight Plan
+    // TODO: Freq
+    // TODO: Segment
+    // TODO: Flight Time
+
+    Ok(())
+  }
 }
 
 // Helper methods

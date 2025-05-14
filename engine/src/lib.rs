@@ -42,6 +42,10 @@ pub const APPROACH_ALTITUDE: f32 = 3000.0;
 
 pub const MAX_TAXI_SPEED: f32 = 20.0;
 
+pub trait ToText {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
+}
+
 #[derive(Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename = "Vec2")]
