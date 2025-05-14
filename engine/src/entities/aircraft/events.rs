@@ -606,13 +606,12 @@ impl AircraftEventHandler for HandleAircraftEvent {
 
       // Custom
       EventKind::Custom(custom, args) => {
-        dbg!(custom, args);
-
         tracing::info!("Custom event for aircraft: {}", custom);
+        #[allow(clippy::single_match)]
         match custom.as_str() {
           "totext" => {
             let mut buffer = String::new();
-            aircraft.to_text(&mut buffer);
+            let _ = aircraft.to_text(&mut buffer);
 
             tracing::warn!(
               "Custom event for aircraft: {}: {}",
