@@ -6,7 +6,7 @@ use turborand::TurboRand;
 
 use crate::{
   APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, WEST_CRUISE_ALTITUDE,
+  NAUTICALMILES_TO_FEET, ToText, WEST_CRUISE_ALTITUDE,
   command::{CommandReply, CommandWithFreq, Task},
   engine::{Bundle, Event},
   entities::world::{
@@ -78,6 +78,9 @@ pub enum EventKind {
   // External
   // TODO: I think the engine can handle this instead internally.
   Delete,
+
+  /// A custom event triggered by the program or the user.
+  Custom(Intern<String>, Vec<String>),
 }
 
 impl From<Task> for EventKind {
@@ -100,6 +103,7 @@ impl From<Task> for EventKind {
       Task::TaxiContinue => EventKind::TaxiContinue,
       Task::TaxiHold => EventKind::TaxiHold { and_state: true },
       Task::LineUp(x) => EventKind::LineUp(x),
+      Task::Custom(x, y) => EventKind::Custom(x, y),
       Task::Delete => EventKind::Delete,
     }
   }
@@ -598,6 +602,27 @@ impl AircraftEventHandler for HandleAircraftEvent {
         bundle
           .events
           .push(AircraftEvent::new(aircraft.id, EventKind::Delete).into());
+      }
+
+      // Custom
+      EventKind::Custom(custom, args) => {
+        dbg!(custom, args);
+
+        tracing::info!("Custom event for aircraft: {}", custom);
+        match custom.as_str() {
+          "totext" => {
+            let mut buffer = String::new();
+            aircraft.to_text(&mut buffer);
+
+            tracing::warn!(
+              "Custom event for aircraft: {}: {}",
+              aircraft.id,
+              buffer
+            );
+          }
+
+          _ => {}
+        }
       }
     }
   }
