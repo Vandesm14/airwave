@@ -10,7 +10,7 @@ use axum::{
   extract::{Query, State},
 };
 use engine::{
-  command::{CommandReply, CommandWithFreq},
+  command::{CommandReply, CommandWithFreq, Task},
   duration_now,
 };
 use internment::Intern;
@@ -63,11 +63,22 @@ async fn complete_atc_request(
             );
             match (tasks, readback) {
               // Return the command.
-              (Ok(tasks), Ok(readback)) => {
+              (Ok(mut tasks), Ok(readback)) => {
                 tracing::info!(
                   "Completed request for aircraft {}",
                   aircraft.id
                 );
+                // Fill in the frequencies of custom events.
+                let tasks: Vec<_> = tasks
+                  .drain(..)
+                  .map(|t| {
+                    if let Task::Custom(_, e, a) = t {
+                      Task::Custom(frequency, e, a)
+                    } else {
+                      t
+                    }
+                  })
+                  .collect();
                 messages.push(CommandWithFreq::new(
                   aircraft.id.to_string(),
                   frequency,

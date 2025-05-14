@@ -327,7 +327,8 @@ fn parse_custom(mut parts: Iter<&str>) -> Option<Task> {
       let event = Intern::from(first.replace("/", ""));
       let args = parts.map(|a| a.to_owned().to_owned()).collect::<Vec<_>>();
 
-      return Some(Task::Custom(event, args));
+      // The frequency of custom events is filled in by the server.
+      return Some(Task::Custom(0.0, event, args));
     } else {
       // If the first part is not a slash, it is not a custom event.
       return None;
@@ -873,11 +874,12 @@ mod tests {
     // Alias variants.
     assert_eq!(
       parse_tasks("/event"),
-      vec![Task::Custom(Intern::from_ref("event"), vec![])]
+      vec![Task::Custom(0.0, Intern::from_ref("event"), vec![])]
     );
     assert_eq!(
       parse_tasks("/event arg1 arg2"),
       vec![Task::Custom(
+        0.0,
         Intern::from_ref("event"),
         vec!["arg1".to_owned(), "arg2".to_owned()]
       )]

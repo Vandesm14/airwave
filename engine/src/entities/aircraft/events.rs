@@ -80,7 +80,7 @@ pub enum EventKind {
   Delete,
 
   /// A custom event triggered by the program or the user.
-  Custom(Intern<String>, Vec<String>),
+  Custom(f32, Intern<String>, Vec<String>),
 }
 
 impl From<Task> for EventKind {
@@ -103,7 +103,7 @@ impl From<Task> for EventKind {
       Task::TaxiContinue => EventKind::TaxiContinue,
       Task::TaxiHold => EventKind::TaxiHold { and_state: true },
       Task::LineUp(x) => EventKind::LineUp(x),
-      Task::Custom(x, y) => EventKind::Custom(x, y),
+      Task::Custom(f, e, a) => EventKind::Custom(f, e, a),
       Task::Delete => EventKind::Delete,
     }
   }
@@ -605,7 +605,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
       }
 
       // Custom
-      EventKind::Custom(custom, args) => {
+      EventKind::Custom(freq, custom, args) => {
         tracing::info!("Custom event for aircraft: {}", custom);
         #[allow(clippy::single_match)]
         match custom.as_str() {
@@ -617,7 +617,7 @@ impl AircraftEventHandler for HandleAircraftEvent {
               aircraft.id,
               EventKind::Callout(CommandWithFreq::new(
                 aircraft.id.to_string(),
-                aircraft.frequency,
+                *freq,
                 CommandReply::Blank { text: buffer },
                 Vec::new(),
               )),
