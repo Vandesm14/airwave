@@ -14,6 +14,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use engine::{
+  ToText,
   command::Tasks,
   entities::aircraft::{Aircraft, AircraftState},
 };
@@ -111,7 +112,11 @@ pub struct Example {
 
 impl core::fmt::Display for Example {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "User: {}\n Assistant:{}", self.user, self.assistant)?;
+    write!(
+      f,
+      "---\nUser:\n{}\n\nAssistant:\n{}",
+      self.user, self.assistant
+    )?;
 
     Ok(())
   }
@@ -171,6 +176,7 @@ impl Prompter {
     for path in object.imports {
       let lines = Self::load_prompt(path.into())?;
       full_prompt.extend(lines);
+      full_prompt.push("".to_string());
     }
 
     full_prompt.extend(object.prompt);
@@ -191,13 +197,13 @@ impl Prompter {
       Self::load_prompt_as_string("server/prompts/splitter.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
-      tracing::warn!("{result}");
-
+      // Response format: "<callsign> <atc req>; <callsign> <atc req>; ..."
       let requests: Vec<CallsignAndRequest> =
         result.split(';').fold(Vec::new(), |mut acc, r| {
           let mut r = r.trim().split(' ');
           let callsign = r.next();
-          let request = r.collect();
+          let request: Vec<&str> = r.collect();
+          let request = request.join(" ").trim().to_owned();
 
           if let Some(callsign) = callsign {
             acc.push(CallsignAndRequest {
@@ -215,21 +221,23 @@ impl Prompter {
     }
   }
 
-  pub async fn generate_readback(message: String) -> Result<String, Error> {
-    let prompt =
-      Self::load_prompt_as_string("server/prompts/readback.json".into())?;
-    let result = send_chatgpt_request(prompt.clone(), message).await?;
-    if let Some(result) = result {
-      Ok(result)
+  fn split_readback_reply(res: String) -> Option<(String, String)> {
+    let lines = res.replace("Tasks:", "").replace("Reply:", "");
+    let mut lines = lines.split('\n').map(|s| s.trim());
+    let tasks = lines.next();
+    let reply = lines.next();
+
+    if let Some((tasks, reply)) = tasks.zip(reply) {
+      Some((tasks.trim().to_owned(), reply.trim().to_owned()))
     } else {
-      Err(Error::NoResult(prompt))
+      None
     }
   }
 
-  pub async fn parse_into_tasks(
+  pub async fn prompt_tasks_and_reply(
     split: CallsignAndRequest,
     aircraft: &Aircraft,
-  ) -> Result<Tasks, Error> {
+  ) -> Result<(Tasks, String), Error> {
     let mode = if matches!(
       aircraft.state,
       AircraftState::Flying | AircraftState::Landing { .. }
@@ -247,18 +255,29 @@ impl Prompter {
     let path = format!("server/prompts/{mode}.json");
     let prompt = Self::load_prompt_as_string(path.clone().into())?;
 
-    let result =
-      send_chatgpt_request(prompt.clone(), split.request.clone()).await?;
-    if let Some(result) = result {
-      tracing::info!("prompt result ({}): {:?}", aircraft.id, result);
-      let tasks: Tasks = parse_tasks(&result);
-      if tasks.is_empty() {
-        tracing::warn!("prompt tasks  ({}): empty", aircraft.id);
-      } else {
-        tracing::info!("prompt tasks  ({}): {:?}", aircraft.id, tasks.clone());
-      }
+    let mut aircraft_state = String::new();
+    aircraft.to_text(&mut aircraft_state).map_err(|e| {
+      tracing::error!("failed to convert aircraft to text: {}", e);
+      Error::NoResult("Failed to convert aircraft to text".into())
+    })?;
 
-      Ok(tasks.clone())
+    let user_prompt = format!(
+      "**Aircraft State:**\n{}\n**ATC Command:** {}",
+      aircraft_state, split.request
+    );
+
+    let result = send_chatgpt_request(prompt.clone(), user_prompt).await?;
+    if let Some(res) = result {
+      tracing::info!("prompt result ({}): {:?}", aircraft.id, res);
+      let res = Self::split_readback_reply(res);
+      if let Some((tasks_str, reply)) = res {
+        let tasks: Tasks = parse_tasks(&tasks_str);
+        tracing::info!("prompt tasks  ({}): {:?}", aircraft.id, tasks.clone());
+
+        Ok((tasks.clone(), reply))
+      } else {
+        Err(Error::NoResult("TODO: NO".to_owned()))
+      }
     } else {
       tracing::error!("no prompt result for: {}", aircraft.id);
       Err(Error::NoResult(prompt))

@@ -57,30 +57,18 @@ async fn complete_atc_request(
         match res {
           Ok(ResKind::OneAircraft(Some(aircraft))) => {
             // Parse the command from the message.
-            let (tasks, readback) = tokio::join!(
-              Prompter::parse_into_tasks(req.clone(), &aircraft),
-              Prompter::generate_readback(req.request)
-            );
-            match (tasks, readback) {
-              // Return the command.
-              (Ok(tasks), Ok(readback)) => {
-                tracing::info!(
-                  "Completed request for aircraft {}",
-                  aircraft.id
-                );
-                messages.push(CommandWithFreq::new(
-                  aircraft.id.to_string(),
-                  frequency,
-                  CommandReply::WithCallsign { text: readback },
-                  tasks,
-                ))
-              }
-              (Err(err), _) => {
-                tracing::error!("Unable to parse tasks: {}", err);
-              }
-              (_, Err(err)) => {
-                tracing::error!("Unable to generate readback: {}", err);
-              }
+            let result =
+              Prompter::prompt_tasks_and_reply(req.clone(), &aircraft).await;
+            if let Ok((tasks, readback)) = result {
+              tracing::info!("Completed request for aircraft {}", aircraft.id);
+              messages.push(CommandWithFreq::new(
+                aircraft.id.to_string(),
+                frequency,
+                CommandReply::WithCallsign { text: readback },
+                tasks,
+              ))
+            } else {
+              tracing::error!("Unable to parse result");
             }
           }
           _ => {
