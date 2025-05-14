@@ -41,7 +41,7 @@ pub enum Task {
   Takeoff(Intern<String>),
   LineUp(Intern<String>),
 
-  Custom(Intern<String>, Vec<String>),
+  Custom(f32, Intern<String>, Vec<String>),
 
   Delete,
 }
