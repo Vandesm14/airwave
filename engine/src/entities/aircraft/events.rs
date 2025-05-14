@@ -460,19 +460,23 @@ pub fn handle_aircraft_event(
     }
 
     // Custom
-    EventKind::Custom(custom, args) =>
-    {
+    EventKind::Custom(custom, args) => {
+      tracing::info!("Custom event for aircraft: {}", custom);
       #[allow(clippy::single_match)]
       match custom.as_str() {
         "totext" => {
           let mut buffer = String::new();
           let _ = aircraft.to_text(&mut buffer);
 
-          tracing::warn!(
-            "Custom event for aircraft: {}: {}",
+          events.push(Event::Aircraft(AircraftEvent::new(
             aircraft.id,
-            buffer
-          );
+            EventKind::Callout(CommandWithFreq::new(
+              aircraft.id.to_string(),
+              aircraft.frequency,
+              CommandReply::Blank { text: buffer },
+              Vec::new(),
+            )),
+          )));
         }
 
         _ => {}
