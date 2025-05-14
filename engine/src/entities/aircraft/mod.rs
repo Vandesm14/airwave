@@ -28,8 +28,10 @@ impl ToText for AircraftTargets {
   fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
     write!(
       w,
-      "Targets: {}° {}kt {}ft",
-      self.heading, self.speed, self.altitude
+      "Targets: {:}° {}kt {}ft",
+      self.heading.round(),
+      self.speed.round(),
+      self.altitude.round()
     )
   }
 }
@@ -369,10 +371,14 @@ pub struct Aircraft {
 impl ToText for Aircraft {
   fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
     writeln!(w, "Callsign: {}", self.id)?;
+    self.flight_plan.to_text(w)?;
+    writeln!(w)?;
     writeln!(
       w,
       "Current: {}° {}kt {}ft",
-      self.heading, self.speed, self.altitude
+      self.heading.round(),
+      self.speed.round(),
+      self.altitude.round()
     )?;
     self.target.to_text(w)?;
     writeln!(w)?;
