@@ -5,11 +5,11 @@
   "examples": [
     {
       "user": "Maintain 200 knots.",
-      "assistant": "s 200"
+      "assistant": "spd 200"
     },
     {
       "user": "Increase speed to 250 knots.",
-      "assistant": "s 250"
+      "assistant": "spd 250"
     }
   ]
 }
