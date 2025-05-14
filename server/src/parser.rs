@@ -319,6 +319,24 @@ fn parse_delete(mut parts: Iter<&str>) -> Option<Task> {
   None
 }
 
+// Parse `/<event> <...args>`
+fn parse_custom(mut parts: Iter<&str>) -> Option<Task> {
+  let first = parts.next();
+  if let Some(first) = first {
+    if first.starts_with('/') {
+      let event = Intern::from(first.replace("/", ""));
+      let args = parts.map(|a| a.to_owned().to_owned()).collect::<Vec<_>>();
+
+      return Some(Task::Custom(event, args));
+    } else {
+      // If the first part is not a slash, it is not a custom event.
+      return None;
+    }
+  }
+
+  None
+}
+
 /// Parses a set of tasks.
 pub fn parse_tasks<T>(tasks_str: T) -> Vec<Task>
 where
@@ -342,6 +360,7 @@ where
     parse_takeoff,
     parse_line_up,
     parse_delete,
+    parse_custom,
   ];
 
   let items = tasks_str.as_ref().split(',');
@@ -847,5 +866,24 @@ mod tests {
     assert_eq!(parse_tasks("delete 27L"), vec![]);
     assert_eq!(parse_tasks("delete 27L ABCD"), vec![]);
     assert_eq!(parse_tasks("delete ABCD"), vec![]);
+  }
+
+  #[test]
+  fn parse_custom() {
+    // Alias variants.
+    assert_eq!(
+      parse_tasks("/event"),
+      vec![Task::Custom(Intern::from_ref("event"), vec![])]
+    );
+    assert_eq!(
+      parse_tasks("/event arg1 arg2"),
+      vec![Task::Custom(
+        Intern::from_ref("event"),
+        vec!["arg1".to_owned(), "arg2".to_owned()]
+      )]
+    );
+
+    // Invalid.
+    assert_eq!(parse_tasks("event"), vec![]);
   }
 }
