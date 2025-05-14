@@ -37,6 +37,10 @@ pub const TRANSITION_ALTITUDE: f32 = 18000.0;
 pub const ARRIVAL_ALTITUDE: f32 = 10000.0;
 pub const APPROACH_ALTITUDE: f32 = 3000.0;
 
+pub trait ToText {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
+}
+
 #[derive(Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename = "Vec2")]

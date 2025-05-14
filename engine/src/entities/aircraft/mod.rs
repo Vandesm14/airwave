@@ -10,7 +10,7 @@ use ts_rs::TS;
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  ExportedDuration, KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
+  ExportedDuration, KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE, ToText,
   pathfinder::Node, wayfinder::VORData,
 };
 
@@ -22,6 +22,16 @@ pub struct AircraftTargets {
   pub heading: f32,
   pub speed: f32,
   pub altitude: f32,
+}
+
+impl ToText for AircraftTargets {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "Targets: {}° {}kt {}ft",
+      self.heading, self.speed, self.altitude
+    )
+  }
 }
 
 #[derive(
@@ -136,6 +146,26 @@ impl Default for FlightPlan {
       speed: 250.0,
       altitude: TRANSITION_ALTITUDE,
     }
+  }
+}
+
+impl ToText for FlightPlan {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    writeln!(f, "Flight Plan: {} to {}", self.departing, self.arriving)?;
+    write!(f, "Waypoints: ")?;
+    for (i, wp) in self
+      .waypoints
+      .iter()
+      .skip(self.waypoint_index)
+      .enumerate()
+      .rev()
+    {
+      write!(f, "{}", wp.name)?;
+      if i != 0 {
+        write!(f, " ")?;
+      }
+    }
+    Ok(())
   }
 }
 
@@ -424,6 +454,28 @@ pub struct Aircraft {
 
   #[ts(as = "Option<ExportedDuration>")]
   pub flight_time: Option<Duration>,
+}
+
+impl ToText for Aircraft {
+  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    writeln!(f, "Callsign: {}", self.id)?;
+    writeln!(
+      f,
+      "Current: {}° {}kt {}ft",
+      self.heading, self.speed, self.altitude
+    )?;
+    self.target.to_text(f)?;
+    writeln!(f)?;
+
+    // TODO: State
+    // TODO: TCAS
+    // TODO: Flight Plan
+    // TODO: Freq
+    // TODO: Segment
+    // TODO: Flight Time
+
+    Ok(())
+  }
 }
 
 // Helper methods
