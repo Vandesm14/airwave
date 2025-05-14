@@ -205,7 +205,7 @@ impl ToText for FlightPlan {
       self.altitude.round()
     )?;
     if !self.waypoints.is_empty() {
-      writeln!(w);
+      writeln!(w)?;
       write!(w, "Waypoints: ")?;
       for (i, wp) in self
         .waypoints
