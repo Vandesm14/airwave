@@ -123,6 +123,8 @@ impl Default for AircraftState {
 
 impl ToText for AircraftState {
   fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
+    write!(w, "State: ")?;
+
     match self {
       Self::Flying => write!(w, "Flying"),
       Self::Landing { runway, state } => {
@@ -317,7 +319,7 @@ impl std::fmt::Display for FlightSegment {
 
 impl ToText for FlightSegment {
   fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
-    write!(w, "Flight Segment: {}", self)
+    write!(w, "Phase: {}", self)
   }
 }
 
@@ -429,15 +431,21 @@ impl ToText for Aircraft {
     writeln!(w, "Callsign: {}", self.id)?;
     self.flight_plan.to_text(w)?;
     writeln!(w)?;
-    writeln!(
-      w,
-      "Current: {}° {}kt {}ft",
-      self.heading.round(),
-      self.speed.round(),
-      self.altitude.round()
-    )?;
-    self.target.to_text(w)?;
-    writeln!(w)?;
+
+    if matches!(
+      self.state,
+      AircraftState::Flying | AircraftState::Landing { .. }
+    ) {
+      writeln!(
+        w,
+        "Current: {}° {}kt {}ft",
+        self.heading.round(),
+        self.speed.round(),
+        self.altitude.round()
+      )?;
+      self.target.to_text(w)?;
+      writeln!(w)?;
+    }
 
     self.state.to_text(w)?;
     writeln!(w)?;
