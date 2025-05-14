@@ -395,6 +395,19 @@ where
       let rest = parts.join(" ");
       let rest = rest.trim();
       let tasks = parse_tasks(rest);
+
+      // Fill in the frequencies of custom events.
+      let tasks: Vec<_> = tasks
+        .into_iter()
+        .map(|t| {
+          if let Task::Custom(_, e, a) = t {
+            Task::Custom(frequency, e, a)
+          } else {
+            t
+          }
+        })
+        .collect();
+
       if !tasks.is_empty() {
         commands.push(CommandWithFreq::new(
           callsign.to_owned(),
