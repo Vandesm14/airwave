@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
+  ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET, ToText,
   WEST_CRUISE_ALTITUDE,
   command::{CommandReply, CommandWithFreq, Task},
   engine::Event,
@@ -34,7 +34,9 @@ pub enum EventKind {
   Altitude(f32),
   AltitudeAtOrBelow(f32),
   AltitudeAtOrAbove(f32),
-  ResumeOwnNavigation { diversion: bool },
+  ResumeOwnNavigation {
+    diversion: bool,
+  },
   Direct(Intern<String>),
   AmendAndFollow(Vec<Node<VORData>>),
 
@@ -47,7 +49,9 @@ pub enum EventKind {
   // Taxiing
   Taxi(Vec<Node<()>>),
   TaxiContinue,
-  TaxiHold { and_state: bool },
+  TaxiHold {
+    and_state: bool,
+  },
   LineUp(Intern<String>),
 
   // Requests
@@ -63,6 +67,9 @@ pub enum EventKind {
   // External
   // TODO: I think the engine can handle this instead internally.
   Delete,
+
+  /// A custom event triggered by the program or the user.
+  Custom(Intern<String>, Vec<String>),
 }
 
 impl From<Task> for EventKind {
@@ -85,6 +92,7 @@ impl From<Task> for EventKind {
       Task::TaxiContinue => EventKind::TaxiContinue,
       Task::TaxiHold => EventKind::TaxiHold { and_state: true },
       Task::LineUp(x) => EventKind::LineUp(x),
+      Task::Custom(x, y) => EventKind::Custom(x, y),
       Task::Delete => EventKind::Delete,
     }
   }
@@ -449,6 +457,26 @@ pub fn handle_aircraft_event(
       tracing::info!("Deleting aircraft: {}", aircraft.id);
       // This is handled outside of the engine.
       events.push(AircraftEvent::new(aircraft.id, EventKind::Delete).into());
+    }
+
+    // Custom
+    EventKind::Custom(custom, args) =>
+    {
+      #[allow(clippy::single_match)]
+      match custom.as_str() {
+        "totext" => {
+          let mut buffer = String::new();
+          let _ = aircraft.to_text(&mut buffer);
+
+          tracing::warn!(
+            "Custom event for aircraft: {}: {}",
+            aircraft.id,
+            buffer
+          );
+        }
+
+        _ => {}
+      }
     }
   }
 }
