@@ -11,7 +11,8 @@ use turborand::{TurboRand, rng::Rng};
 
 use crate::{
   ExportedDuration, KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE, ToText,
-  pathfinder::Node, wayfinder::VORData,
+  pathfinder::{Node, NodeBehavior, NodeKind},
+  wayfinder::VORData,
 };
 
 use super::airport::{Airport, Gate, Runway};
@@ -127,7 +128,7 @@ impl ToText for AircraftState {
       Self::Taxiing {
         current, waypoints, ..
       } => {
-        write!(w, "Taxi path: from {} to", current.name)?;
+        write!(w, "At {}, taxiing", current.name)?;
         if !waypoints.is_empty() {
           write!(
             w,
@@ -135,7 +136,18 @@ impl ToText for AircraftState {
             waypoints
               .iter()
               .rev()
-              .map(|w| w.name.to_string())
+              .map(|w| {
+                let name = w.name.to_string();
+                let prefix = if w.kind == NodeKind::Gate {
+                  "gate"
+                } else if w.behavior == NodeBehavior::HoldShort {
+                  "short of"
+                } else {
+                  ""
+                };
+
+                format!("{prefix} {name}")
+              })
               .collect::<Vec<_>>()
               .join(", ")
           )?;
@@ -185,21 +197,31 @@ impl Default for FlightPlan {
 
 impl ToText for FlightPlan {
   fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
-    writeln!(w, "Flight Plan: {} to {}", self.departing, self.arriving)?;
-    write!(w, "Waypoints: ")?;
-    for (i, wp) in self
-      .waypoints
-      .iter()
-      .skip(self.waypoint_index)
-      .rev()
-      .enumerate()
-      .rev()
-    {
-      write!(w, "{}", wp.name)?;
-      if i != 0 {
-        write!(w, " ")?;
+    write!(
+      w,
+      "Flight Plan: {} to {} (dep alt: {}ft)",
+      self.departing,
+      self.arriving,
+      self.altitude.round()
+    )?;
+    if !self.waypoints.is_empty() {
+      writeln!(w);
+      write!(w, "Waypoints: ")?;
+      for (i, wp) in self
+        .waypoints
+        .iter()
+        .skip(self.waypoint_index)
+        .rev()
+        .enumerate()
+        .rev()
+      {
+        write!(w, "{}", wp.name)?;
+        if i != 0 {
+          write!(w, " ")?;
+        }
       }
     }
+
     Ok(())
   }
 }
