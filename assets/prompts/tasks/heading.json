@@ -5,7 +5,7 @@
   "examples": [
     {
       "user": "Turn left heading 200.",
-      "assistant": "t 200"
+      "assistant": "turn 200"
     }
   ]
 }
