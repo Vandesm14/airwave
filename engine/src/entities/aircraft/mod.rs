@@ -25,9 +25,9 @@ pub struct AircraftTargets {
 }
 
 impl ToText for AircraftTargets {
-  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+  fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
     write!(
-      f,
+      w,
       "Targets: {}° {}kt {}ft",
       self.heading, self.speed, self.altitude
     )
@@ -367,15 +367,15 @@ pub struct Aircraft {
 }
 
 impl ToText for Aircraft {
-  fn to_text(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    writeln!(f, "Callsign: {}", self.id)?;
+  fn to_text(&self, w: &mut dyn std::fmt::Write) -> std::fmt::Result {
+    writeln!(w, "Callsign: {}", self.id)?;
     writeln!(
-      f,
+      w,
       "Current: {}° {}kt {}ft",
       self.heading, self.speed, self.altitude
     )?;
-    self.target.to_text(f)?;
-    writeln!(f)?;
+    self.target.to_text(w)?;
+    writeln!(w)?;
 
     // TODO: State
     // TODO: TCAS
