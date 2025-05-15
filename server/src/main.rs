@@ -10,7 +10,7 @@ use turborand::{SeededCore, rng::Rng};
 
 use engine::{
   AIRSPACE_RADIUS,
-  entities::{airport::Airport, airspace::Airspace},
+  entities::{airport::Airport, airspace::Airspace, world::AirspaceStatus},
 };
 use server::{
   CLI, Cli, PROJECT_DIRS,
@@ -135,12 +135,27 @@ async fn main() {
   }
 
   main_airport.id = player_airspace.id;
-  player_airspace.airports.push(main_airport.clone());
+
+  let main_frequencies = main_airport.frequencies.clone();
+  let main_id = main_airport.id;
+
+  player_airspace.airports.push(main_airport);
   runner.world.airspaces.push(player_airspace);
 
-  runner.generate_airspaces(&mut world_rng, &main_airport.frequencies);
+  runner.generate_airspaces(&mut world_rng, &main_frequencies);
   runner.generate_waypoints();
+
+  // This inserts statuses for all airspaces including main.
   runner.world.reset_statuses();
+
+  runner.world.airspace_statuses.insert(
+    main_id,
+    AirspaceStatus {
+      arrival: *config.world().arrivals(),
+      departure: *config.world().departures(),
+    },
+  );
+
   runner.fill_gates();
 
   //
@@ -161,6 +176,8 @@ async fn main() {
   );
 
   tracing::info!("Starting game loop...");
+
+  runner.game.paused = config.world().paused();
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
   let address = address.unwrap_or(config.server().address());

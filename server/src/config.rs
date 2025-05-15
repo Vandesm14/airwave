@@ -3,7 +3,10 @@ use std::{
   path::Path,
 };
 
-use engine::entities::airport::Frequencies;
+use engine::entities::{
+  airport::Frequencies,
+  world::{ArrivalStatus, DepartureStatus},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -62,6 +65,12 @@ pub struct WorldConfig {
   seed: WorldSeed,
   #[serde(default)]
   airport: Option<String>,
+  #[serde(default)]
+  paused: bool,
+  #[serde(default)]
+  arrivals: ArrivalStatus,
+  #[serde(default)]
+  departures: DepartureStatus,
 }
 
 impl WorldConfig {
@@ -71,6 +80,18 @@ impl WorldConfig {
 
   pub fn airport(&self) -> Option<&str> {
     self.airport.as_deref()
+  }
+
+  pub fn paused(&self) -> bool {
+    self.paused
+  }
+
+  pub fn arrivals(&self) -> &ArrivalStatus {
+    &self.arrivals
+  }
+
+  pub fn departures(&self) -> &DepartureStatus {
+    &self.departures
   }
 }
 
