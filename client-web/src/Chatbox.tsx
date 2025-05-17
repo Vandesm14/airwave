@@ -135,10 +135,12 @@ export default function Chatbox({
   }
 
   function handleSendMessage(text: string) {
-    if (text.length === 7 && /\w{3}\d{4}/.test(text)) {
-      setSelectedAircraft(text);
+    const trimmed = text.trim();
+
+    if (trimmed.length === 7 && /\w{3}\d{4}/.test(trimmed)) {
+      setSelectedAircraft(trimmed);
     } else {
-      sendMessage(text);
+      sendMessage(trimmed);
     }
 
     resetText();
@@ -183,7 +185,7 @@ export default function Chatbox({
         <input
           type="text"
           value={text()}
-          oninput={(e) => setText(e.currentTarget.value.trim())}
+          oninput={(e) => setText(e.currentTarget.value)}
           onkeydown={(e) => e.key === 'Enter' && handleSendMessage(text())}
           ref={chatboxInput}
           placeholder="Type a message..."
