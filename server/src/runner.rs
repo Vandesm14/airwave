@@ -123,7 +123,7 @@ pub struct Runner {
   pub rate: usize,
   pub tick_counter: usize,
 
-  spawns: SignalGenerator,
+  pub spawns: SignalGenerator,
 }
 
 impl Runner {
@@ -514,20 +514,13 @@ impl Runner {
                 )
               {
                 aircraft.flight_plan.arriving = destination.id;
-                aircraft.segment = FlightSegment::Boarding;
 
                 let min_time_seconds = if self.preparing { 0 } else { 60 };
                 let max_time_seconds = 60 * 5;
                 let delay = self.rng.u64(min_time_seconds..=max_time_seconds);
 
-                aircraft.flight_time = Some(
-                  SystemTime::now()
-                    .duration_since(
-                      // Set the timer a few minutes into the future.
-                      SystemTime::UNIX_EPOCH - Duration::from_secs(delay),
-                    )
-                    .unwrap(),
-                );
+                aircraft.flight_time =
+                  Some(duration_now() + Duration::from_secs(delay));
               } else if auto {
                 aircraft.flight_plan.arriving = destination.id;
                 aircraft.flight_time = Some(duration_now());

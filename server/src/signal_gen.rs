@@ -29,4 +29,9 @@ impl SignalGenerator {
       false
     }
   }
+
+  pub fn reset(&mut self) {
+    self.last_tick = 0;
+    self.first = true;
+  }
 }
