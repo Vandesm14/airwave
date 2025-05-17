@@ -2,7 +2,7 @@ use std::{
   collections::HashMap,
   ops::Div,
   path::PathBuf,
-  time::{Duration, Instant, SystemTime},
+  time::{Duration, Instant},
 };
 
 use glam::Vec2;
