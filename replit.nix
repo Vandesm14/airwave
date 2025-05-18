@@ -3,6 +3,6 @@
     pkgs.pkg-config
     pkgs.openssl
     pkgs.nodePackages.pnpm
-    pkgs.zellij
+    pkgs.mprocs
   ];
 }
