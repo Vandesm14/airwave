@@ -23,7 +23,8 @@ use server::{
 #[tokio::main]
 async fn main() {
   let Cli {
-    ref address,
+    address_ipv4,
+    address_ipv6,
     ref audio_path,
     ref config_path,
     ref logs_path,
@@ -181,8 +182,11 @@ async fn main() {
   runner.game.paused = config.world().paused();
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
-  let address = if address.is_empty() { config.server().address().to_vec() } else { address.to_vec() };
-  let _ = tokio::spawn(http::run(address, get_tx, post_tx)).await;
+  let address_ipv4 = address_ipv4.unwrap_or(config.server().address_ipv4);
+  let address_ipv6 = address_ipv6.unwrap_or(config.server().address_ipv6);
+
+  let _ =
+    tokio::spawn(http::run(address_ipv4, address_ipv6, get_tx, post_tx)).await;
 }
 
 fn setup_logging(

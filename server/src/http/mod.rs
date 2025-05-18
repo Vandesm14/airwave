@@ -23,7 +23,8 @@ use engine::engine::UICommand;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
 pub async fn run(
-  address: Vec<SocketAddr>,
+  address_ipv4: SocketAddr,
+  address_ipv6: SocketAddr,
   get_sender: GetSender,
   post_sender: PostSender,
 ) {
@@ -55,14 +56,16 @@ pub async fn run(
       .layer(cors),
   );
 
-  let listener = tokio::net::TcpListener::bind(address.as_slice()).await.unwrap();
+  let listener4 = tokio::net::TcpListener::bind(address_ipv4).await.unwrap();
+  let listener6 = tokio::net::TcpListener::bind(address_ipv6).await.unwrap();
 
-  tracing::info!("Listening on:");
-  for a in address {
-    tracing::info!("    - {a}");
-  }
+  tracing::info!("Listening on {address_ipv4} and {address_ipv6}");
 
-  axum::serve(listener, app).await.unwrap();
+  tokio::try_join!(
+    axum::serve(listener4, app.clone()),
+    axum::serve(listener6, app),
+  )
+  .unwrap();
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

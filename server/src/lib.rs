@@ -25,9 +25,12 @@ pub static PROJECT_DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 
 #[derive(Parser)]
 pub struct Cli {
-  /// The socket addresses to bind the WebSocket server to.
-  #[arg(short, long)]
-  pub address: Vec<SocketAddr>,
+  /// The socket IPv4 address to bind the WebSocket server to.
+  #[arg(short, long, default_value = None)]
+  pub address_ipv4: Option<SocketAddr>,
+  /// The socket IPv6 address to bind the WebSocket server to.
+  #[arg(short, long, default_value = None)]
+  pub address_ipv6: Option<SocketAddr>,
 
   /// Whether to and where to record incomming audio to.
   #[arg(long, default_value = None)]

@@ -97,25 +97,26 @@ impl WorldConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ServerAddress(Vec<SocketAddr>);
-
-impl Default for ServerAddress {
-  fn default() -> Self {
-    Self(vec![
-      SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001),
-      SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 9001),
-    ])
-  }
-}
-
-#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ServerConfig {
-  #[serde(default)]
-  address: ServerAddress,
+  #[serde(default = "default_ipv4")]
+  pub address_ipv4: SocketAddr,
+  #[serde(default = "default_ipv6")]
+  pub address_ipv6: SocketAddr,
 }
 
-impl ServerConfig {
-  pub fn address(&self) -> &[SocketAddr] {
-    &self.address.0
+impl Default for ServerConfig {
+  fn default() -> Self {
+    Self {
+      address_ipv4: default_ipv4(),
+      address_ipv6: default_ipv6(),
+    }
   }
+}
+
+fn default_ipv4() -> SocketAddr {
+  SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001)
+}
+
+fn default_ipv6() -> SocketAddr {
+  SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 9001)
 }
