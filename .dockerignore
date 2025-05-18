@@ -1,8 +1,0 @@
-# Backend
-
-target/
-
-# Frontend
-
-client-web/dist
-client-web/node_modules
