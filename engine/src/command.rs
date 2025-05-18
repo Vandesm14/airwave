@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  ExportedDuration, abbreviate_altitude, geometry::duration_now, nato_phonetic,
+  ExportedDuration, abbreviate_altitude, duration_now, nato_phonetic,
   pathfinder::Node, wordify::wordify,
 };
 

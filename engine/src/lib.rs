@@ -1,4 +1,5 @@
 use core::ops::RangeInclusive;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -47,6 +48,10 @@ pub struct ExportedVec2(f32, f32);
 pub struct ExportedDuration {
   secs: f32,
   nanos: f32,
+}
+
+pub fn duration_now() -> Duration {
+  SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
 }
 
 pub fn heading_to_direction(heading: f32) -> &'static str {

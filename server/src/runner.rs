@@ -16,6 +16,7 @@ use engine::{
   AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
   WORLD_RADIUS,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
+  duration_now,
   engine::{Engine, EngineConfig, Event},
   entities::{
     aircraft::{
@@ -26,7 +27,7 @@ use engine::{
     airspace::Airspace,
     world::{AirspaceStatus, ArrivalStatus, DepartureStatus, Game, World},
   },
-  geometry::{Translate, circle_circle_intersection, duration_now},
+  geometry::{Translate, circle_circle_intersection},
   pathfinder::{Node, NodeBehavior, NodeKind},
 };
 

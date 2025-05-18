@@ -1,16 +1,9 @@
-use std::{
-  f32::consts::PI,
-  time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::f32::consts::PI;
 
 use glam::Vec2;
 use turborand::{TurboRand, rng::Rng};
 
 use crate::line::Line;
-
-pub fn duration_now() -> Duration {
-  SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
-}
 
 pub fn normalize_angle(angle: f32) -> f32 {
   (360.0 + angle) % 360.0
