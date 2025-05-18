@@ -1,3 +1,4 @@
+use core::net::Ipv6Addr;
 use std::{
   net::{IpAddr, Ipv4Addr, SocketAddr},
   path::Path,
@@ -95,23 +96,26 @@ impl WorldConfig {
   }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
-pub struct ServerAddress(SocketAddr);
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ServerAddress(Vec<SocketAddr>);
 
 impl Default for ServerAddress {
   fn default() -> Self {
-    Self(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001))
+    Self(vec![
+      SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001),
+      SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 9001),
+    ])
   }
 }
 
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ServerConfig {
   #[serde(default)]
   address: ServerAddress,
 }
 
 impl ServerConfig {
-  pub fn address(&self) -> SocketAddr {
-    self.address.0
+  pub fn address(&self) -> &[SocketAddr] {
+    &self.address.0
   }
 }
