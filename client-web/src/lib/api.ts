@@ -16,18 +16,20 @@ const defaultURL = `${window.location.protocol}//${window.location.hostname}:900
 const search = new URLSearchParams(window.location.search);
 export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;
 
+export type ServerTicks = { ticks: number; lastFetch: number };
+
 // Misc
 export const getPing = '/api/ping';
 export function usePing() {
-  return createQuery<boolean>(() => ({
+  return createQuery<undefined | ServerTicks>(() => ({
     queryKey: [getPing],
     queryFn: async () => {
       try {
         const result = await fetch(`${baseAPIPath}${getPing}`);
-        if (!result.ok) return false;
-        return (await result.text()) === 'pong';
+        if (!result.ok) return undefined;
+        return { ticks: parseInt(await result.text()), lastFetch: Date.now() };
       } catch {
-        return false;
+        return undefined;
       }
     },
     staleTime: 2000,

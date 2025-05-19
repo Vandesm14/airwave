@@ -6,11 +6,13 @@ import { Runway } from '../../bindings/Runway';
 import { TaxiingState } from '../../bindings/TaxiingState';
 import { Vec2 } from '../../bindings/Vec2';
 import { World } from '../../bindings/World';
+import { ServerTicks } from './api';
 
 export const timeScale = 1;
 
 export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
+export const TICK_RATE_TPS = 15;
 
 // TODO: remove this
 export const HARD_CODED_AIRPORT = 'KSFO';
@@ -40,6 +42,21 @@ export function hardcodedAirport(
   }
 
   return undefined;
+}
+
+export function ticksAsMs(ticks: number): number {
+  return (ticks / TICK_RATE_TPS) * 1000;
+}
+
+export function realTimeTicks(
+  server_ticks: ServerTicks,
+  ticks: number
+): number {
+  const elapsed = Date.now() - server_ticks.lastFetch;
+  const elapsed_ticks = (elapsed / 1000) * TICK_RATE_TPS;
+  const current_ticks = server_ticks.ticks + elapsed_ticks;
+
+  return ((current_ticks - ticks) / 15) * 1000;
 }
 
 export function dbg<T>(a: T, note?: string): T {
@@ -159,9 +176,9 @@ export function calculateDistance(a: Vec2, b: Vec2): number {
   return Math.sqrt(Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2));
 }
 
-export function formatTime(duration: number): string {
-  const isNegative = duration < 0;
-  let absDuration = Math.abs(duration);
+export function formatTime(durationMs: number): string {
+  const isNegative = durationMs < 0;
+  let absDuration = Math.abs(durationMs);
   let durationSeconds = Math.floor(absDuration / 1000);
   let seconds = (durationSeconds % 60).toString().padStart(2, '0');
   let minutes = Math.floor(durationSeconds / 60)

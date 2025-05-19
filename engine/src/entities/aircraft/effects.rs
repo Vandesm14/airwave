@@ -501,11 +501,11 @@ impl AircraftEffect for AircraftUpdateSegmentEffect {
     if let AircraftState::Parked { .. } = aircraft.state {
       if let Some(flight_time) = aircraft.flight_time {
         // Assert Boarding.
-        if duration_now() < flight_time {
+        if bundle.tick < flight_time {
           segment = Some(FlightSegment::Boarding);
 
           // Assert Parked.
-        } else if duration_now() >= flight_time {
+        } else if bundle.tick >= flight_time {
           segment = Some(FlightSegment::Parked);
         }
       }

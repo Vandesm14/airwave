@@ -1,7 +1,7 @@
 pub mod effects;
 pub mod events;
 
-use std::{ops::Sub, time::Duration};
+use std::ops::Sub;
 
 use glam::Vec2;
 use internment::Intern;
@@ -10,8 +10,8 @@ use ts_rs::TS;
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  ExportedDuration, KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
-  pathfinder::Node, wayfinder::VORData,
+  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE, pathfinder::Node,
+  wayfinder::VORData,
 };
 
 use super::airport::{Airport, Gate, Runway};
@@ -422,8 +422,7 @@ pub struct Aircraft {
   pub frequency: f32,
   pub segment: FlightSegment,
 
-  #[ts(as = "Option<ExportedDuration>")]
-  pub flight_time: Option<Duration>,
+  pub flight_time: Option<usize>,
 }
 
 // Helper methods

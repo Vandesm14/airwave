@@ -39,7 +39,7 @@ use crate::{
   signal_gen::SignalGenerator,
 };
 
-pub const AIRPORT_SPAWN_CHANCE: f64 = 0.8;
+pub const DEPARTURE_SPAWN_CHANCE: f64 = 0.8;
 // TODO: Remove this since it's 100%?
 pub const NON_AUTO_DEPARTURE_CHANCE: f64 = 1.0;
 pub const ARRIVE_TO_NON_AUTO_CHANCE: f64 = 0.2;
@@ -92,7 +92,7 @@ pub enum ResKind {
   Any,
   Err,
 
-  Pong,
+  Pong(usize),
 
   // Aircraft
   Aircraft(Vec<Aircraft>),
@@ -346,15 +346,8 @@ impl Runner {
         .iter()
         .flat_map(|a| a.airports.iter().map(|ar| (a.auto, ar)));
       for (auto, airport) in airports {
-        let do_spawn = self.rng.chance(AIRPORT_SPAWN_CHANCE);
+        let do_spawn = self.rng.chance(DEPARTURE_SPAWN_CHANCE);
         if !do_spawn {
-          continue;
-        }
-
-        let do_non_auto_spawn = self.rng.chance(NON_AUTO_DEPARTURE_CHANCE);
-        // Only use dedicated spawn rate for manual airspaces if we are
-        // preparing via `self.quick_start()`.
-        if !auto && self.preparing && !do_non_auto_spawn {
           continue;
         }
 
@@ -362,15 +355,17 @@ impl Runner {
           .terminals
           .iter()
           .flat_map(|t| t.gates.iter().filter(|g| !g.available));
-        let gate = self.rng.sample_iter(gates);
-        if let Some(gate) = gate {
+        let random_gate = self.rng.sample_iter(gates);
+        if let Some(gate) = random_gate {
           let aircraft = self
             .game
             .aircraft
             .iter_mut()
-            // Only pick inactive aircraft
-            .filter(|a| a.flight_time.is_none())
+            .filter(|a| {
+              a.flight_time.is_none() && a.segment == FlightSegment::Dormant
+            })
             .find(|a| {
+              // Find the aircraft that is parked at the gate.
               if let AircraftState::Parked { at } = &a.state {
                 at.name == gate.id && a.pos == gate.pos
               } else {
@@ -392,8 +387,9 @@ impl Runner {
                   if go_to_non_auto { !a.auto } else { a.auto }
                 }));
             if let Some(destination) = destination {
-              if !self.preparing
-                && !auto
+              // If we are preparing, only schedule departures from auto
+              // airspaces.
+              if (auto || !self.preparing)
                 && matches!(
                   self.world.airspace_statuses.get(&airport.id),
                   Some(AirspaceStatus {
@@ -402,34 +398,40 @@ impl Runner {
                   })
                 )
               {
+                aircraft.flight_plan.departing = airport.id;
                 aircraft.flight_plan.arriving = destination.id;
 
                 let min_time_seconds = if self.preparing { 0 } else { 60 };
                 let max_time_seconds = 60 * 5;
-                let delay = self.rng.u64(min_time_seconds..=max_time_seconds);
+                let delay_seconds =
+                  self.rng.usize(min_time_seconds..=max_time_seconds);
+                let delay = delay_seconds * self.rate;
 
-                aircraft.flight_time =
-                  Some(duration_now() + Duration::from_secs(delay));
-              } else if auto {
-                aircraft.flight_plan.arriving = destination.id;
-                aircraft.flight_time = Some(duration_now());
-
-                self.engine.events.push(Event::Aircraft(AircraftEvent::new(
-                  aircraft.id,
-                  EventKind::QuickDepart,
-                )));
+                aircraft.flight_time = Some(self.tick_counter + delay);
               }
-            } else {
-              // TODO: Do we want to keep this for visibility?
-              // tracing::warn!("No destination available for {:?}", aircraft.id);
             }
           }
-        } else {
-          // TODO: Do we want to keep this for vis or remove?
-          // tracing::warn!(
-          //   "No departures available for {:?} (gates are empty)",
-          //   airport.id
-          // );
+        }
+      }
+    }
+
+    // QuickDepart based on Flight Time.
+    if self.preparing {
+      for aircraft in self
+        .game
+        .aircraft
+        .iter_mut()
+        .filter(|a| a.flight_time.is_some_and(|t| self.tick_counter >= t))
+      {
+        if self
+          .world
+          .airspaces
+          .iter()
+          .any(|a| a.id == aircraft.flight_plan.departing && a.auto)
+        {
+          self.engine.events.push(
+            AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into(),
+          );
         }
       }
     }
@@ -453,7 +455,7 @@ impl Runner {
       };
 
       match incoming.req() {
-        TinyReqKind::Ping => incoming.reply(ResKind::Pong),
+        TinyReqKind::Ping => incoming.reply(ResKind::Pong(self.tick_counter)),
         TinyReqKind::Pause => {
           self.game.paused = !self.game.paused;
         }
@@ -537,10 +539,13 @@ impl Runner {
     }
 
     let dt = 1.0 / self.rate as f32;
-    let events =
-      self
-        .engine
-        .tick(&mut self.world, &mut self.game, &mut self.rng, dt);
+    let events = self.engine.tick(
+      &mut self.world,
+      &mut self.game,
+      &mut self.rng,
+      dt,
+      self.tick_counter,
+    );
 
     // Run through all callout events and broadcast them
     self.messages.extend(

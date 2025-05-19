@@ -8,7 +8,7 @@ import {
   Show,
   Signal,
 } from 'solid-js';
-import { smallFlightSegment } from './lib/lib';
+import { realTimeTicks, smallFlightSegment, TICK_RATE_TPS } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
@@ -18,7 +18,7 @@ import {
   nauticalMilesToFeet,
 } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
-import { getAircraft, useWorld } from './lib/api';
+import { getAircraft, ServerTicks, usePing, useWorld } from './lib/api';
 import { Aircraft } from '../bindings/Aircraft';
 import { Airspace } from '../bindings/Airspace';
 import { makePersisted } from '@solid-primitives/storage';
@@ -284,9 +284,10 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
   );
 
   const timer = createMemo(() => {
-    return strip().segment === 'parked' || strip().segment === 'boarding'
-      ? strip().timer
-      : smallFlightSegment(strip().segment).toUpperCase();
+    // return strip().segment === 'parked' || strip().segment === 'boarding'
+    //   ? strip().timer
+    //   : smallFlightSegment(strip().segment).toUpperCase();
+    return strip().timer;
   });
 
   const id = () => strip().id;
@@ -345,7 +346,8 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
 function aircraftToStrip(
   aircraft: Aircraft,
   airspace: Airspace,
-  selectedAircraft: string
+  selectedAircraft: string,
+  server_ticks: ServerTicks
 ) {
   const data: AircraftStrip = {
     // Default and will be set by adding it into Strips.
@@ -359,7 +361,7 @@ function aircraftToStrip(
     bottomStatus: '',
     frequency: aircraft.frequency,
     timer: aircraft.flight_time
-      ? formatTime(Date.now() - aircraft.flight_time.secs * 1000)
+      ? formatTime(realTimeTicks(server_ticks, aircraft.flight_time))
       : '--:--',
     status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
     segment: aircraft.segment,
@@ -533,6 +535,8 @@ export default function StripBoard() {
   const query = useWorld();
   const [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
+  const serverTicks = usePing();
+
   // Prefill the strips with default headers.
   createEffect(() => {
     if (board.length() === 0 && aircrafts.data.length > 0) {
@@ -573,7 +577,9 @@ export default function StripBoard() {
             status: statusOfAircraft(aircraft, airspace.id, selected),
             aircraft: structuredClone(unwrap(aircraft)),
           });
-          newStrips.push(aircraftToStrip(aircraft, airspace, selected));
+          newStrips.push(
+            aircraftToStrip(aircraft, airspace, selected, serverTicks.data!)
+          );
         }
       }
 
@@ -602,7 +608,12 @@ export default function StripBoard() {
             //   id: strip.id,
             // });
             const newStrip: Strip = {
-              ...aircraftToStrip(aircraft, airspace, selected),
+              ...aircraftToStrip(
+                aircraft,
+                airspace,
+                selected,
+                serverTicks.data!
+              ),
               id: strip.id,
             };
             if (!fastDeepEqual(strip, newStrip)) {

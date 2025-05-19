@@ -28,7 +28,7 @@ import {
   toRadians,
 } from './lib/lib';
 import colors from './lib/colors';
-import { useAircraftWithRate, useWorld } from './lib/api';
+import { useAircraftWithRate, usePing, useWorld } from './lib/api';
 import { Airspace } from '../bindings/Airspace';
 import { Runway } from '../bindings/Runway';
 import { Aircraft } from '../bindings/Aircraft';
@@ -65,6 +65,8 @@ export default function Canvas() {
   let [lastFpsUpdate, setLastFpsUpdate] = createSignal(Date.now());
   let [frameCount, setFrameCount] = createSignal(0);
   let [currentFps, setCurrentFps] = createSignal(0);
+
+  const serverTicks = usePing();
 
   function clickToSelectAircraft(e: MouseEvent) {
     // Convert the cursor position to your coordinate system
@@ -621,30 +623,6 @@ export default function Canvas() {
       ctx.textAlign = 'left';
       ctx.fillStyle = colors.text_grey;
 
-      // Draw altitude
-      let altitudeIcon = ' ';
-      if (aircraft.altitude < aircraft.target.altitude) {
-        altitudeIcon = '⬈';
-      } else if (aircraft.altitude > aircraft.target.altitude) {
-        altitudeIcon = '⬊';
-      }
-
-      let targetAltitude =
-        aircraft.target.altitude !== aircraft.altitude
-          ? altitudeIcon +
-            Math.round(aircraft.target.altitude / 100)
-              .toString()
-              .padStart(3, '0')
-          : '';
-
-      if (aircraft.tcas === 'climb') {
-        targetAltitude = '⬈' + 'CLB';
-      } else if (aircraft.tcas === 'descend') {
-        targetAltitude = '⬊' + 'DES';
-      } else if (aircraft.tcas === 'hold') {
-        targetAltitude = '⬌' + 'HLD';
-      }
-
       ctx.fillText(
         Math.round(aircraft.altitude / 1000)
           .toString()
@@ -886,7 +864,7 @@ export default function Canvas() {
     // TODO: Once we have creation time, implement this as hiding flights that
     // haven't been activated yet.
     const isActive = aircraft.flight_time
-      ? Date.now() > aircraft.flight_time.secs * 1000
+      ? serverTicks.data!.ticks > aircraft.flight_time
       : false;
 
     const airport = hardcodedAirport(world.data);

@@ -35,10 +35,16 @@ pub struct Bundle<'a> {
 
   pub rng: &'a mut Rng,
   pub dt: f32,
+  pub tick: usize,
 }
 
 impl<'a> Bundle<'a> {
-  pub fn from_world(world: &'a World, rng: &'a mut Rng, dt: f32) -> Self {
+  pub fn from_world(
+    world: &'a World,
+    rng: &'a mut Rng,
+    dt: f32,
+    tick: usize,
+  ) -> Self {
     let prev = Aircraft::default();
     Self {
       prev,
@@ -46,6 +52,7 @@ impl<'a> Bundle<'a> {
       world,
       rng,
       dt,
+      tick,
     }
   }
 }
@@ -126,6 +133,7 @@ impl Engine {
     game: &mut Game,
     rng: &mut Rng,
     dt: f32,
+    tick: usize,
   ) -> Vec<Event> {
     self.compute_available_gates(&game.aircraft, world);
 
@@ -133,7 +141,7 @@ impl Engine {
       tracing::trace!("tick events: {:?}", self.events);
     }
 
-    let mut bundle = Bundle::from_world(world, rng, dt);
+    let mut bundle = Bundle::from_world(world, rng, dt, tick);
     if self.config.run_collisions() {
       self.handle_tcas(&mut game.aircraft, &mut bundle);
     }

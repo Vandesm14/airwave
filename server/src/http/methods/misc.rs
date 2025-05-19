@@ -13,8 +13,8 @@ pub async fn ping_pong(
     .recv()
     .await;
 
-  if let Ok(ResKind::Pong) = res {
-    Ok("pong".to_string())
+  if let Ok(ResKind::Pong(ticks)) = res {
+    Ok(ticks.to_string())
   } else {
     Err(http::StatusCode::INTERNAL_SERVER_ERROR)
   }
