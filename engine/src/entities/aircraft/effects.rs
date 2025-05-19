@@ -221,7 +221,7 @@ impl Aircraft {
           // Runway specific
           NodeBehavior::LineUp => {
             if current.kind == NodeKind::Runway {
-              if let Some(runway) = closest_airport(&airspaces, self.pos)
+              if let Some(runway) = closest_airport(airspaces, self.pos)
                 .and_then(|x| x.runways.iter().find(|r| r.id == current.name))
               {
                 self.heading = runway.heading;
@@ -304,7 +304,7 @@ impl Aircraft {
 
     // Assert Taxi.
     if let AircraftState::Taxiing { .. } = self.state {
-      let airport = closest_airport(&airspaces, self.pos);
+      let airport = closest_airport(airspaces, self.pos);
       if let Some(airport) = airport {
         // Assert TaxiDep.
         if airport.id == self.flight_plan.departing {
@@ -318,7 +318,7 @@ impl Aircraft {
     }
 
     if let AircraftState::Flying = self.state {
-      let airspace = closest_airspace(&airspaces, self.pos)
+      let airspace = closest_airspace(airspaces, self.pos)
         .filter(|a| {
           a.pos.distance_squared(self.pos) <= AIRSPACE_RADIUS.powf(2.0)
         })
