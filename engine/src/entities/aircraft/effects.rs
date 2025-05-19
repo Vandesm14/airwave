@@ -4,8 +4,11 @@ use crate::{
   AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
   NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
-  engine::Bundle,
-  entities::world::{closest_airport, closest_airspace},
+  engine::Event,
+  entities::{
+    airspace::Airspace,
+    world::{closest_airport, closest_airspace},
+  },
   geometry::{
     add_degrees, angle_between_points, calculate_ils_altitude,
     closest_point_on_line, delta_angle, inverse_degrees, move_point,
@@ -20,42 +23,36 @@ use super::{
   events::{AircraftEvent, EventKind},
 };
 
-pub trait AircraftEffect {
-  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle);
-}
-
-pub struct AircraftUpdateFromTargetsEffect;
-impl AircraftEffect for AircraftUpdateFromTargetsEffect {
-  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let dt = aircraft.dt_enroute(bundle.dt);
-
+// Engine Effects.
+impl Aircraft {
+  pub fn update_from_targets(&mut self, dt: f32) {
     // In feet per second
-    let climb_speed = aircraft.dt_climb_speed(dt);
+    let climb_speed = self.dt_climb_speed(dt);
     // In degrees per second
-    let turn_speed = aircraft.dt_turn_speed(dt);
+    let turn_speed = self.dt_turn_speed(dt);
     // In knots per second
-    let speed_speed = aircraft.dt_speed_speed(dt);
+    let speed_speed = self.dt_speed_speed(dt);
 
-    let mut altitude = aircraft.altitude;
-    let mut heading = aircraft.heading;
-    let mut speed = aircraft.speed;
+    let mut altitude = self.altitude;
+    let mut heading = self.heading;
+    let mut speed = self.speed;
 
-    let target_altitude = match aircraft.tcas {
-      TCAS::Idle | TCAS::Warning => aircraft.target.altitude,
-      TCAS::Hold => aircraft.altitude,
-      TCAS::Climb => aircraft.altitude + 1000.0,
-      TCAS::Descend => aircraft.altitude - 1000.0,
+    let target_altitude = match self.tcas {
+      TCAS::Idle | TCAS::Warning => self.target.altitude,
+      TCAS::Hold => self.altitude,
+      TCAS::Climb => self.altitude + 1000.0,
+      TCAS::Descend => self.altitude - 1000.0,
     };
 
     // Snap values if they're close enough
     if (altitude - target_altitude).abs() < climb_speed {
       altitude = target_altitude;
     }
-    if (heading - aircraft.target.heading).abs() < turn_speed {
-      heading = aircraft.target.heading;
+    if (heading - self.target.heading).abs() < turn_speed {
+      heading = self.target.heading;
     }
-    if (speed - aircraft.target.speed).abs() < speed_speed {
-      speed = aircraft.target.speed;
+    if (speed - self.target.speed).abs() < speed_speed {
+      speed = self.target.speed;
     }
 
     // Change if not equal
@@ -66,56 +63,330 @@ impl AircraftEffect for AircraftUpdateFromTargetsEffect {
         altitude -= climb_speed;
       }
     }
-    if heading != aircraft.target.heading {
-      let delta_angle = delta_angle(heading, aircraft.target.heading);
+    if heading != self.target.heading {
+      let delta_angle = delta_angle(heading, self.target.heading);
       if delta_angle < 0.0 {
         heading -= turn_speed;
       } else {
         heading += turn_speed;
       }
     }
-    if speed != aircraft.target.speed {
-      if speed < aircraft.target.speed {
+    if speed != self.target.speed {
+      if speed < self.target.speed {
         speed += speed_speed;
       } else {
         speed -= speed_speed;
       }
     }
 
-    if altitude != aircraft.altitude {
-      aircraft.altitude = altitude;
+    if altitude != self.altitude {
+      self.altitude = altitude;
     }
-    if heading != aircraft.heading {
-      aircraft.heading = normalize_angle(heading);
+    if heading != self.heading {
+      self.heading = normalize_angle(heading);
     }
-    if speed != aircraft.speed {
-      aircraft.speed = speed;
+    if speed != self.speed {
+      self.speed = speed;
     }
   }
-}
 
-pub struct AircraftUpdatePositionEffect;
-impl AircraftEffect for AircraftUpdatePositionEffect {
-  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let dt = aircraft.dt_enroute(bundle.dt);
-
+  pub fn update_position(&mut self, dt: f32) {
     let pos = move_point(
-      aircraft.pos,
-      aircraft.heading,
-      aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt,
+      self.pos,
+      self.heading,
+      self.speed * KNOT_TO_FEET_PER_SECOND * dt,
     );
 
-    if pos != aircraft.pos {
-      aircraft.pos = pos;
+    if pos != self.pos {
+      self.pos = pos;
+    }
+  }
+
+  pub fn prune_waypoints(&mut self) {
+    if let AircraftState::Flying = &mut self.state {
+      let flight_plan = &mut self.flight_plan;
+      if flight_plan.waypoints.len() < 2 {
+        return;
+      }
+
+      let mut skip_amount = 0;
+      for (i, wp) in flight_plan.waypoints.windows(2).enumerate() {
+        let a = wp.first().unwrap();
+        let b = wp.last().unwrap();
+
+        // Distance between waypoint A and B
+        let wp_distance = a.data.pos.distance_squared(b.data.pos);
+        // Distance between the aircraft and waypoint B
+        let distance = self.pos.distance_squared(b.data.pos);
+
+        // If the aircraft is closer to B than A is to B, just go to B
+        if distance < wp_distance {
+          skip_amount = i + 1;
+        }
+      }
+
+      // Only set if we are skipping new waypoints. Don't decrease the index.
+      if skip_amount > flight_plan.waypoint_index {
+        flight_plan.set_index(skip_amount);
+      }
+
+      // Update targets based on waypoint limits.
+      self.target = self.target_waypoint_limits();
+    }
+  }
+
+  pub fn update_flying(&mut self, events: &mut Vec<Event>, dt: f32) {
+    if self.altitude < 2000.0 {
+      return;
+    }
+
+    let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND * dt;
+
+    self.prune_waypoints();
+
+    if let AircraftState::Flying = &mut self.state {
+      if let Some(current) = self.flight_plan.waypoint() {
+        let heading = angle_between_points(self.pos, current.data.pos);
+
+        self.target.heading = heading;
+
+        let distance = self.pos.distance_squared(current.data.pos);
+        let movement_speed = speed_in_feet.powf(2.0);
+
+        if movement_speed >= distance {
+          self.pos = current.data.pos;
+
+          for e in current.data.events.iter() {
+            events.push(AircraftEvent::new(self.id, e.clone()).into());
+          }
+
+          self.flight_plan.inc_index();
+        }
+      }
+    }
+  }
+
+  pub fn update_taxiing(
+    &mut self,
+    events: &mut Vec<Event>,
+    airspaces: &[Airspace],
+    dt: f32,
+  ) {
+    let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND * dt;
+    if let AircraftState::Taxiing {
+      waypoints, current, ..
+    } = &mut self.state
+    {
+      let waypoint = waypoints.last().cloned();
+      if let Some(waypoint) = waypoint {
+        let heading = angle_between_points(self.pos, waypoint.data);
+
+        self.heading = heading;
+        self.target.heading = heading;
+
+        let distance = self.pos.distance_squared(waypoint.data);
+        let movement_speed = speed_in_feet.powf(2.0);
+
+        if movement_speed >= distance {
+          if let Some(wp) = waypoints.pop() {
+            *current = wp;
+          }
+        }
+        // Only hold if we are not stopped and we are at or below taxi speed.
+      } else if self.speed > 0.0 && self.speed <= 20.0 {
+        events.push(
+          AircraftEvent {
+            id: self.id,
+            kind: EventKind::TaxiHold { and_state: true },
+          }
+          .into(),
+        );
+
+        match current.behavior {
+          NodeBehavior::GoTo => {}
+          NodeBehavior::HoldShort => {}
+          NodeBehavior::Park => {
+            // bundle.events.push(
+            //   AircraftEvent::new(
+            //     aircraft.id,
+            //     EventKind::Segment(FlightSegment::Parked),
+            //   )
+            //   .into(),
+            // );
+            self.state = AircraftState::Parked {
+              at: current.clone(),
+            };
+          }
+
+          // Runway specific
+          NodeBehavior::LineUp => {
+            if current.kind == NodeKind::Runway {
+              if let Some(runway) = closest_airport(&airspaces, self.pos)
+                .and_then(|x| x.runways.iter().find(|r| r.id == current.name))
+              {
+                self.heading = runway.heading;
+                self.target.heading = runway.heading;
+              }
+            }
+          }
+          NodeBehavior::Takeoff => {
+            if current.kind == NodeKind::Runway {
+              events.push(
+                AircraftEvent::new(self.id, EventKind::Takeoff(current.name))
+                  .into(),
+              );
+            }
+          }
+        }
+      }
+    }
+
+    if let AircraftState::Taxiing { waypoints, .. } = &self.state {
+      let waypoint = waypoints.last();
+      if let Some(waypoint) = waypoint {
+        let distance = self.pos.distance_squared(waypoint.data);
+
+        match waypoint.behavior {
+          NodeBehavior::GoTo => {}
+          NodeBehavior::Park => {}
+          NodeBehavior::HoldShort => {
+            if distance <= 250.0_f32.powf(2.0) {
+              events.push(
+                AircraftEvent {
+                  id: self.id,
+                  kind: EventKind::TaxiHold { and_state: true },
+                }
+                .into(),
+              );
+              if let AircraftState::Taxiing { waypoints, .. } = &mut self.state
+              {
+                if let Some(last) = waypoints.last_mut() {
+                  last.behavior = NodeBehavior::GoTo;
+                }
+              }
+            }
+          }
+
+          // Runway specific
+          NodeBehavior::LineUp => {}
+          NodeBehavior::Takeoff => {}
+        }
+      }
+    }
+  }
+
+  pub fn update_segment(
+    &mut self,
+    events: &mut Vec<Event>,
+    airspaces: &[Airspace],
+    tick: usize,
+  ) {
+    let mut segment: Option<FlightSegment> = None;
+
+    // Assert Dormant.
+    if self.flight_time.is_none() {
+      segment = Some(FlightSegment::Dormant);
+    }
+
+    // Assert Boarding and Parked.
+    if let AircraftState::Parked { .. } = self.state {
+      if let Some(flight_time) = self.flight_time {
+        // Assert Boarding.
+        if tick < flight_time {
+          segment = Some(FlightSegment::Boarding);
+
+          // Assert Parked.
+        } else if tick >= flight_time {
+          segment = Some(FlightSegment::Parked);
+        }
+      }
+    }
+
+    // Assert Taxi.
+    if let AircraftState::Taxiing { .. } = self.state {
+      let airport = closest_airport(&airspaces, self.pos);
+      if let Some(airport) = airport {
+        // Assert TaxiDep.
+        if airport.id == self.flight_plan.departing {
+          segment = Some(FlightSegment::TaxiDep);
+
+        // Assert TaxiArr.
+        } else if airport.id == self.flight_plan.arriving {
+          segment = Some(FlightSegment::TaxiArr);
+        }
+      }
+    }
+
+    if let AircraftState::Flying = self.state {
+      let airspace = closest_airspace(&airspaces, self.pos)
+        .filter(|a| {
+          a.pos.distance_squared(self.pos) <= AIRSPACE_RADIUS.powf(2.0)
+        })
+        .filter(|_| self.altitude <= TRANSITION_ALTITUDE)
+        .filter(|a| {
+          a.id == self.flight_plan.departing
+            || a.id == self.flight_plan.arriving
+        });
+      if let Some(airspace) = airspace {
+        // Assert Departure.
+        if airspace.id == self.flight_plan.departing {
+          segment = Some(FlightSegment::Departure);
+
+        // Assert Approach.
+        } else if airspace.id == self.flight_plan.arriving {
+          segment = Some(FlightSegment::Approach);
+        }
+
+        // Assert Climb.
+      } else if self.altitude < self.target.altitude {
+        segment = Some(FlightSegment::Climb);
+
+        // Assert Cruise.
+      } else if self.altitude == self.target.altitude
+        && self.altitude >= MIN_CRUISE_ALTITUDE
+      {
+        segment = Some(FlightSegment::Cruise);
+
+        // Assert Arrival.
+      } else if self.altitude <= MIN_CRUISE_ALTITUDE
+        || self.altitude >= self.target.altitude
+      {
+        segment = Some(FlightSegment::Arrival);
+      }
+
+      // Assert Takeoff.
+      if self.altitude == 0.0 {
+        segment = Some(FlightSegment::Takeoff);
+      }
+    }
+
+    // Assert Landing.
+    if let AircraftState::Landing { .. } = self.state {
+      segment = Some(FlightSegment::Landing);
+    }
+
+    let segment = segment.unwrap_or_default();
+    if segment != self.segment {
+      if segment == FlightSegment::Unknown {
+        tracing::warn!("Aircraft has an unknown segment: {:#?}", self);
+      }
+
+      events.push(
+        AircraftEvent {
+          id: self.id,
+          kind: EventKind::Segment(segment),
+        }
+        .into(),
+      );
     }
   }
 }
 
-pub struct AircraftUpdateLandingEffect;
-impl AircraftUpdateLandingEffect {
-  fn state_before_turn(aircraft: &mut Aircraft, _: &mut Bundle, dt: f32) {
-    let degrees_per_sec = aircraft.dt_turn_speed(dt);
-    let AircraftState::Landing { runway, state } = &mut aircraft.state else {
+// Landing Effect
+impl Aircraft {
+  fn state_before_turn(&mut self, dt: f32) {
+    let degrees_per_sec = self.dt_turn_speed(dt);
+    let AircraftState::Landing { runway, state } = &mut self.state else {
       unreachable!("outer function asserts that aircraft is landing")
     };
 
@@ -130,57 +401,56 @@ impl AircraftUpdateLandingEffect {
 
     let turning_radius = 360.0 / degrees_per_sec;
     let turning_radius =
-      turning_radius * aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
+      turning_radius * self.speed * KNOT_TO_FEET_PER_SECOND * dt;
     let turning_radius = turning_radius / (2.0 * PI);
     let turning_radius = turning_radius * 2.0;
 
-    let delta_ang = delta_angle(aircraft.heading, runway.heading);
+    let delta_ang = delta_angle(self.heading, runway.heading);
     let percent_of = delta_ang.abs() / 180.0;
     let percent_of = (percent_of * PI + PI * 1.5).sin() / 2.0 + 0.5;
     let turn_distance = turning_radius * percent_of;
     let turn_distance = turn_distance.powf(2.0);
 
-    let closest_point =
-      closest_point_on_line(aircraft.pos, ils_line.0, ils_line.1);
-    let distance_to_point = aircraft.pos.distance_squared(closest_point);
+    let closest_point = closest_point_on_line(self.pos, ils_line.0, ils_line.1);
+    let distance_to_point = self.pos.distance_squared(closest_point);
 
     if distance_to_point <= turn_distance {
-      aircraft.target.heading = runway.heading;
+      self.target.heading = runway.heading;
 
       *state = LandingState::Turning;
-    } else if aircraft.speed > aircraft.target.speed {
-      aircraft.target.heading = aircraft.heading;
+    } else if self.speed > self.target.speed {
+      self.target.heading = self.heading;
 
       *state = LandingState::BeforeTurn;
     }
 
     let angle_to_runway =
-      inverse_degrees(angle_between_points(runway.end(), aircraft.pos));
+      inverse_degrees(angle_between_points(runway.end(), self.pos));
 
-    if aircraft.heading.round() == runway.heading
+    if self.heading.round() == runway.heading
       && (angle_to_runway.round() != runway.heading
         || distance_to_point.round() != 0.0)
     {
       if angle_to_runway > runway.heading {
-        aircraft.target.heading = add_degrees(runway.heading, 30.0);
+        self.target.heading = add_degrees(runway.heading, 30.0);
       }
 
       if angle_to_runway < runway.heading {
-        aircraft.target.heading = add_degrees(runway.heading, -30.0);
+        self.target.heading = add_degrees(runway.heading, -30.0);
       }
 
       *state = LandingState::Correcting;
     }
 
     if distance_to_point <= 50_f32.powf(2.0)
-      && aircraft.heading.round() == runway.heading
+      && self.heading.round() == runway.heading
     {
       *state = LandingState::Localizer;
     }
   }
 
-  fn state_touchdown(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let AircraftState::Landing { runway, state } = &mut aircraft.state else {
+  fn state_touchdown(&mut self, events: &mut Vec<Event>) {
+    let AircraftState::Landing { runway, state } = &mut self.state else {
       unreachable!("outer function asserts that aircraft is landing")
     };
 
@@ -188,14 +458,14 @@ impl AircraftUpdateLandingEffect {
       return;
     }
 
-    let distance_to_end = aircraft.pos.distance_squared(runway.end());
+    let distance_to_end = self.pos.distance_squared(runway.end());
 
     // If we have passed the start of the runway (landed),
     // set our state to taxiing.
     if distance_to_end <= runway.length.powf(2.0) {
-      bundle.events.push(
+      events.push(
         AircraftEvent {
-          id: aircraft.id,
+          id: self.id,
           kind: EventKind::Touchdown,
         }
         .into(),
@@ -205,8 +475,8 @@ impl AircraftUpdateLandingEffect {
     }
   }
 
-  fn state_go_around(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let AircraftState::Landing { runway, state } = &mut aircraft.state else {
+  fn state_go_around(&mut self, events: &mut Vec<Event>) {
+    let AircraftState::Landing { runway, state } = &mut self.state else {
       unreachable!("outer function asserts that aircraft is landing")
     };
 
@@ -214,24 +484,24 @@ impl AircraftUpdateLandingEffect {
       return;
     }
 
-    let distance_to_runway = aircraft.pos.distance(runway.start);
+    let distance_to_runway = self.pos.distance(runway.start);
     let target_altitude = calculate_ils_altitude(distance_to_runway);
 
     // If we are too high, go around.
-    if aircraft.altitude - target_altitude > 100.0 {
-      bundle.events.push(
+    if self.altitude - target_altitude > 100.0 {
+      events.push(
         AircraftEvent {
-          id: aircraft.id,
+          id: self.id,
           kind: EventKind::GoAround,
         }
         .into(),
       );
-      bundle.events.push(
+      events.push(
         AircraftEvent {
-          id: aircraft.id,
+          id: self.id,
           kind: EventKind::Callout(CommandWithFreq::new(
-            aircraft.id.to_string(),
-            aircraft.frequency,
+            self.id.to_string(),
+            self.frequency,
             CommandReply::GoAround {
               runway: runway.id.to_string(),
             },
@@ -287,305 +557,13 @@ impl AircraftUpdateLandingEffect {
       }
     }
   }
-}
 
-impl AircraftEffect for AircraftUpdateLandingEffect {
-  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let dt = aircraft.dt_enroute(bundle.dt);
-
-    if let AircraftState::Landing { .. } = &aircraft.state {
-      Self::state_touchdown(aircraft, bundle);
-      Self::state_go_around(aircraft, bundle);
-      Self::state_before_turn(aircraft, bundle, dt);
-      Self::state_glideslope(aircraft, dt);
-    }
-  }
-}
-
-pub struct AircraftUpdateFlyingEffect;
-impl AircraftUpdateFlyingEffect {
-  fn prune_waypoints(aircraft: &mut Aircraft) {
-    if let AircraftState::Flying = &mut aircraft.state {
-      let flight_plan = &mut aircraft.flight_plan;
-      if flight_plan.waypoints.len() < 2 {
-        return;
-      }
-
-      let mut skip_amount = 0;
-      for (i, wp) in flight_plan.waypoints.windows(2).enumerate() {
-        let a = wp.first().unwrap();
-        let b = wp.last().unwrap();
-
-        // Distance between waypoint A and B
-        let wp_distance = a.data.pos.distance_squared(b.data.pos);
-        // Distance between the aircraft and waypoint B
-        let distance = aircraft.pos.distance_squared(b.data.pos);
-
-        // If the aircraft is closer to B than A is to B, just go to B
-        if distance < wp_distance {
-          skip_amount = i + 1;
-        }
-      }
-
-      // Only set if we are skipping new waypoints. Don't decrease the index.
-      if skip_amount > flight_plan.waypoint_index {
-        flight_plan.set_index(skip_amount);
-      }
-
-      // Update targets based on waypoint limits.
-      aircraft.target = aircraft.target_waypoint_limits();
-    }
-  }
-}
-
-impl AircraftEffect for AircraftUpdateFlyingEffect {
-  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    if aircraft.altitude < 2000.0 {
-      return;
-    }
-
-    let dt = aircraft.dt_enroute(bundle.dt);
-    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND * dt;
-
-    AircraftUpdateFlyingEffect::prune_waypoints(aircraft);
-
-    if let AircraftState::Flying = &mut aircraft.state {
-      if let Some(current) = aircraft.flight_plan.waypoint() {
-        let heading = angle_between_points(aircraft.pos, current.data.pos);
-
-        aircraft.target.heading = heading;
-
-        let distance = aircraft.pos.distance_squared(current.data.pos);
-        let movement_speed = speed_in_feet.powf(2.0);
-
-        if movement_speed >= distance {
-          aircraft.pos = current.data.pos;
-
-          for e in current.data.events.iter() {
-            bundle
-              .events
-              .push(AircraftEvent::new(aircraft.id, e.clone()).into());
-          }
-
-          aircraft.flight_plan.inc_index();
-        }
-      }
-    }
-  }
-}
-
-pub struct AircraftUpdateTaxiingEffect;
-impl AircraftEffect for AircraftUpdateTaxiingEffect {
-  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let speed_in_feet = aircraft.speed * KNOT_TO_FEET_PER_SECOND * bundle.dt;
-    if let AircraftState::Taxiing {
-      waypoints, current, ..
-    } = &mut aircraft.state
-    {
-      let waypoint = waypoints.last().cloned();
-      if let Some(waypoint) = waypoint {
-        let heading = angle_between_points(aircraft.pos, waypoint.data);
-
-        aircraft.heading = heading;
-        aircraft.target.heading = heading;
-
-        let distance = aircraft.pos.distance_squared(waypoint.data);
-        let movement_speed = speed_in_feet.powf(2.0);
-
-        if movement_speed >= distance {
-          if let Some(wp) = waypoints.pop() {
-            *current = wp;
-          }
-        }
-        // Only hold if we are not stopped and we are at or below taxi speed.
-      } else if aircraft.speed > 0.0 && aircraft.speed <= 20.0 {
-        bundle.events.push(
-          AircraftEvent {
-            id: aircraft.id,
-            kind: EventKind::TaxiHold { and_state: true },
-          }
-          .into(),
-        );
-
-        match current.behavior {
-          NodeBehavior::GoTo => {}
-          NodeBehavior::HoldShort => {}
-          NodeBehavior::Park => {
-            // bundle.events.push(
-            //   AircraftEvent::new(
-            //     aircraft.id,
-            //     EventKind::Segment(FlightSegment::Parked),
-            //   )
-            //   .into(),
-            // );
-            aircraft.state = AircraftState::Parked {
-              at: current.clone(),
-            };
-          }
-
-          // Runway specific
-          NodeBehavior::LineUp => {
-            if current.kind == NodeKind::Runway {
-              if let Some(runway) =
-                closest_airport(&bundle.world.airspaces, aircraft.pos)
-                  .and_then(|x| x.runways.iter().find(|r| r.id == current.name))
-              {
-                aircraft.heading = runway.heading;
-                aircraft.target.heading = runway.heading;
-              }
-            }
-          }
-          NodeBehavior::Takeoff => {
-            if current.kind == NodeKind::Runway {
-              bundle.events.push(
-                AircraftEvent::new(
-                  aircraft.id,
-                  EventKind::Takeoff(current.name),
-                )
-                .into(),
-              );
-            }
-          }
-        }
-      }
-    }
-
-    if let AircraftState::Taxiing { waypoints, .. } = &aircraft.state {
-      let waypoint = waypoints.last();
-      if let Some(waypoint) = waypoint {
-        let distance = aircraft.pos.distance_squared(waypoint.data);
-
-        match waypoint.behavior {
-          NodeBehavior::GoTo => {}
-          NodeBehavior::Park => {}
-          NodeBehavior::HoldShort => {
-            if distance <= 250.0_f32.powf(2.0) {
-              bundle.events.push(
-                AircraftEvent {
-                  id: aircraft.id,
-                  kind: EventKind::TaxiHold { and_state: true },
-                }
-                .into(),
-              );
-              if let AircraftState::Taxiing { waypoints, .. } =
-                &mut aircraft.state
-              {
-                if let Some(last) = waypoints.last_mut() {
-                  last.behavior = NodeBehavior::GoTo;
-                }
-              }
-            }
-          }
-
-          // Runway specific
-          NodeBehavior::LineUp => {}
-          NodeBehavior::Takeoff => {}
-        }
-      }
-    }
-  }
-}
-
-pub struct AircraftUpdateSegmentEffect;
-impl AircraftEffect for AircraftUpdateSegmentEffect {
-  fn run(aircraft: &mut Aircraft, bundle: &mut Bundle) {
-    let mut segment: Option<FlightSegment> = None;
-
-    // Assert Dormant.
-    if aircraft.flight_time.is_none() {
-      segment = Some(FlightSegment::Dormant);
-    }
-
-    // Assert Boarding and Parked.
-    if let AircraftState::Parked { .. } = aircraft.state {
-      if let Some(flight_time) = aircraft.flight_time {
-        // Assert Boarding.
-        if bundle.tick < flight_time {
-          segment = Some(FlightSegment::Boarding);
-
-          // Assert Parked.
-        } else if bundle.tick >= flight_time {
-          segment = Some(FlightSegment::Parked);
-        }
-      }
-    }
-
-    // Assert Taxi.
-    if let AircraftState::Taxiing { .. } = aircraft.state {
-      let airport = closest_airport(&bundle.world.airspaces, aircraft.pos);
-      if let Some(airport) = airport {
-        // Assert TaxiDep.
-        if airport.id == aircraft.flight_plan.departing {
-          segment = Some(FlightSegment::TaxiDep);
-
-        // Assert TaxiArr.
-        } else if airport.id == aircraft.flight_plan.arriving {
-          segment = Some(FlightSegment::TaxiArr);
-        }
-      }
-    }
-
-    if let AircraftState::Flying = aircraft.state {
-      let airspace = closest_airspace(&bundle.world.airspaces, aircraft.pos)
-        .filter(|a| {
-          a.pos.distance_squared(aircraft.pos) <= AIRSPACE_RADIUS.powf(2.0)
-        })
-        .filter(|_| aircraft.altitude <= TRANSITION_ALTITUDE)
-        .filter(|a| {
-          a.id == aircraft.flight_plan.departing
-            || a.id == aircraft.flight_plan.arriving
-        });
-      if let Some(airspace) = airspace {
-        // Assert Departure.
-        if airspace.id == aircraft.flight_plan.departing {
-          segment = Some(FlightSegment::Departure);
-
-        // Assert Approach.
-        } else if airspace.id == aircraft.flight_plan.arriving {
-          segment = Some(FlightSegment::Approach);
-        }
-
-        // Assert Climb.
-      } else if aircraft.altitude < aircraft.target.altitude {
-        segment = Some(FlightSegment::Climb);
-
-        // Assert Cruise.
-      } else if aircraft.altitude == aircraft.target.altitude
-        && aircraft.altitude >= MIN_CRUISE_ALTITUDE
-      {
-        segment = Some(FlightSegment::Cruise);
-
-        // Assert Arrival.
-      } else if aircraft.altitude <= MIN_CRUISE_ALTITUDE
-        || aircraft.altitude >= aircraft.target.altitude
-      {
-        segment = Some(FlightSegment::Arrival);
-      }
-
-      // Assert Takeoff.
-      if aircraft.altitude == 0.0 {
-        segment = Some(FlightSegment::Takeoff);
-      }
-    }
-
-    // Assert Landing.
-    if let AircraftState::Landing { .. } = aircraft.state {
-      segment = Some(FlightSegment::Landing);
-    }
-
-    let segment = segment.unwrap_or_default();
-    if segment != aircraft.segment {
-      if segment == FlightSegment::Unknown {
-        tracing::warn!("Aircraft has an unknown segment: {:#?}", aircraft);
-      }
-
-      bundle.events.push(
-        AircraftEvent {
-          id: aircraft.id,
-          kind: EventKind::Segment(segment),
-        }
-        .into(),
-      );
+  pub fn update_landing(&mut self, events: &mut Vec<Event>, dt: f32) {
+    if let AircraftState::Landing { .. } = &self.state {
+      Self::state_touchdown(self, events);
+      Self::state_go_around(self, events);
+      Self::state_before_turn(self, dt);
+      Self::state_glideslope(self, dt);
     }
   }
 }

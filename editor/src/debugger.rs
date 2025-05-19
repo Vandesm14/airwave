@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use editor::draw::Draw;
 use engine::{
   AIRSPACE_RADIUS, APPROACH_ALTITUDE,
@@ -7,9 +5,7 @@ use engine::{
   engine::Engine,
   entities::{
     aircraft::{Aircraft, AircraftState, FlightPlan, LandingState},
-    airport::Airport,
     airspace::Airspace,
-    world::{Game, World},
   },
   geometry::move_point,
 };
@@ -19,41 +15,9 @@ use nannou_egui::{
   Egui,
   egui::{self, Id, Widget},
 };
-use turborand::rng::Rng;
 
 pub fn main() {
   nannou::app(model).update(update).run();
-}
-
-struct Runner {
-  tick_counter: usize,
-  rate: usize,
-
-  airports: HashMap<String, Airport>,
-  world: World,
-  game: Game,
-  engine: Engine,
-
-  rng: Rng,
-}
-
-impl Default for Runner {
-  fn default() -> Self {
-    let mut airports = HashMap::new();
-    airports.insert("KSEA".to_string(), Airport::default());
-
-    Self {
-      tick_counter: 0,
-      rate: 15,
-
-      airports,
-      world: World::default(),
-      game: Game::default(),
-      engine: Engine::default(),
-
-      rng: Rng::new(),
-    }
-  }
 }
 
 struct HeldKeys {
@@ -63,8 +27,8 @@ struct HeldKeys {
 }
 
 struct Model {
+  engine: Engine,
   egui: Egui,
-  runner: Runner,
 
   snapshots: Vec<Vec<Aircraft>>,
   snapshot_index: usize,
@@ -91,7 +55,7 @@ fn model(app: &App) -> Model {
   let window = app.window(window_id).unwrap();
   let egui = Egui::from_window(&window);
 
-  let mut runner = Runner {
+  let mut engine = Engine {
     airports: load_assets().airports,
     ..Default::default()
   };
@@ -104,7 +68,7 @@ fn model(app: &App) -> Model {
     auto: false,
   };
 
-  let airport = runner.airports.get("ksfo").unwrap().clone();
+  let airport = engine.airports.get("ksfo").unwrap().clone();
 
   let aircraft = Aircraft {
     id: Intern::from_ref("AAL1234"),
@@ -130,29 +94,22 @@ fn model(app: &App) -> Model {
   }
   .with_synced_targets();
 
-  runner.game.aircraft.push(aircraft);
+  engine.game.aircraft.push(aircraft);
   airspace.airports.push(airport);
-  runner.world.airspaces.push(airspace);
+  engine.world.airspaces.push(airspace);
 
   let mut snapshots = Vec::new();
-  for i in 0..runner.rate * 60 * 20 {
-    if i % runner.rate == 0 {
-      snapshots.push(runner.game.aircraft.clone());
+  for i in 0..engine.tick_rate_tps * 60 * 20 {
+    if i % engine.tick_rate_tps == 0 {
+      snapshots.push(engine.game.aircraft.clone());
     }
 
-    let dt = 1.0 / runner.rate as f32;
-    runner.engine.tick(
-      &mut runner.world,
-      &mut runner.game,
-      &mut runner.rng,
-      dt,
-      runner.tick_counter,
-    );
+    engine.tick();
   }
 
   Model {
+    engine,
     egui,
-    runner,
 
     snapshots,
     snapshot_index: 0,
@@ -276,7 +233,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
   let draw = app.draw();
   draw.background().color(BLACK);
 
-  model.runner.world.draw(&draw, model.scale, model.shift_pos);
+  model.engine.world.draw(&draw, model.scale, model.shift_pos);
   if let Some(snapshot) = model.snapshots.get(model.snapshot_index) {
     for aircraft in snapshot.iter() {
       aircraft.draw(&draw, model.scale, model.shift_pos);

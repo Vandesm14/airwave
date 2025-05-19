@@ -526,10 +526,6 @@ impl Aircraft {
     }
   }
 
-  pub fn dt_enroute(&self, dt: f32) -> f32 {
-    dt
-  }
-
   /// Outputs the distance in feet traveled until the current speed matches
   /// the new speed.
   pub fn distance_to_change_speed(&self, new_speed: f32) -> f32 {

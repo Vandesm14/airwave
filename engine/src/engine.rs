@@ -15,52 +15,13 @@ use crate::{
   entities::{
     aircraft::{
       Aircraft, AircraftState, TCAS, TaxiingState,
-      effects::{
-        AircraftEffect, AircraftUpdateFlyingEffect,
-        AircraftUpdateFromTargetsEffect, AircraftUpdateLandingEffect,
-        AircraftUpdatePositionEffect, AircraftUpdateSegmentEffect,
-        AircraftUpdateTaxiingEffect,
-      },
-      events::{
-        AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
-      },
+      events::{AircraftEvent, EventKind, handle_aircraft_event},
     },
     airport::Airport,
     world::{Game, World, closest_airport},
   },
   geometry::{angle_between_points, delta_angle},
 };
-
-#[derive(Debug)]
-pub struct Bundle<'a> {
-  pub prev: Aircraft,
-
-  pub events: Vec<Event>,
-  pub world: &'a World,
-
-  pub rng: &'a mut Rng,
-  pub dt: f32,
-  pub tick: usize,
-}
-
-impl<'a> Bundle<'a> {
-  pub fn from_world(
-    world: &'a World,
-    rng: &'a mut Rng,
-    dt: f32,
-    tick: usize,
-  ) -> Self {
-    let prev = Aircraft::default();
-    Self {
-      prev,
-      events: Vec::new(),
-      world,
-      rng,
-      dt,
-      tick,
-    }
-  }
-}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -136,7 +97,7 @@ pub struct Engine {
 
   pub events: Vec<Event>,
 
-  last_tick: Instant,
+  pub last_tick: Instant,
   pub tick_counter: usize,
   pub tick_rate_tps: usize,
 }
@@ -189,17 +150,15 @@ impl Engine {
       tracing::span!(tracing::Level::TRACE, "tick", tick = self.tick_counter);
     let _tick_span_guard = tick_span.enter();
 
-    let mut new_events: Vec<Event> = Vec::new();
+    let mut events: Vec<Event> = Vec::new();
     self.compute_available_gates();
 
     if self.config.show_logs() && !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
 
-    // let mut bundle =
-    //   Bundle::from_world(&self.world, &mut self.rng, dt, self.tick_counter);
     if self.config.run_collisions() {
-      new_events.extend(self.handle_tcas());
+      events.extend(self.handle_tcas());
     }
 
     for aircraft in self.game.aircraft.iter_mut() {
@@ -212,17 +171,28 @@ impl Engine {
         Event::UiEvent(_) => None,
       }) {
         if event.id == aircraft.id {
-          // HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
+          handle_aircraft_event(
+            aircraft,
+            &prev,
+            &event.kind,
+            &mut events,
+            &self.world,
+            &mut self.rng,
+          );
         }
       }
 
       // Run through all effects
-      // AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
-      // AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
-      // AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
-      // AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
-      // AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
-      // AircraftUpdateSegmentEffect::run(aircraft, &mut bundle);
+      aircraft.update_taxiing(&mut events, &self.world.airspaces, dt);
+      aircraft.update_landing(&mut events, dt);
+      aircraft.update_flying(&mut events, dt);
+      aircraft.update_from_targets(dt);
+      aircraft.update_position(dt);
+      aircraft.update_segment(
+        &mut events,
+        &self.world.airspaces,
+        self.tick_counter,
+      );
     }
 
     if self.config.run_collisions() {
@@ -230,12 +200,12 @@ impl Engine {
     }
 
     // Capture the left over events and actions for next time
-    if self.config.show_logs() && !new_events.is_empty() {
+    if self.config.show_logs() && !events.is_empty() {
       // TODO: decide if we want to keep this or discard this.
       // tracing::info!("new events: {:?}", bundle.events);
     }
 
-    self.events = new_events;
+    self.events = events;
     self.events.clone()
   }
 }
