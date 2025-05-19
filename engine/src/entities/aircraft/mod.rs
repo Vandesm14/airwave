@@ -420,6 +420,8 @@ pub struct Aircraft {
 
   pub frequency: f32,
   pub segment: FlightSegment,
+  #[ts(as = "Option<String>")]
+  pub airspace: Option<Intern<String>>,
 
   pub flight_time: Option<usize>,
 }
@@ -476,6 +478,7 @@ impl Aircraft {
 
       frequency: airport.frequencies.ground,
       segment: FlightSegment::Dormant,
+      airspace: None,
 
       flight_time: None,
     }

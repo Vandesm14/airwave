@@ -566,4 +566,8 @@ impl Aircraft {
       Self::state_glideslope(self, dt);
     }
   }
+
+  pub fn update_airspace(&mut self, airspaces: &[Airspace]) {
+    self.airspace = closest_airspace(airspaces, self.pos).map(|a| a.id);
+  }
 }
