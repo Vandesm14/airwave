@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   ops::Div,
   path::PathBuf,
   time::{Duration, Instant},
@@ -13,8 +12,8 @@ use tokio::sync::mpsc::error::TryRecvError;
 use turborand::{TurboRand, rng::Rng};
 
 use engine::{
-  AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
-  WORLD_RADIUS,
+  AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, DEFAULT_TICK_RATE_TPS,
+  NAUTICALMILES_TO_FEET, WORLD_RADIUS,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, EngineConfig, Event},
   entities::{
@@ -24,7 +23,7 @@ use engine::{
     },
     airport::Frequencies,
     airspace::Airspace,
-    world::{AirspaceStatus, ArrivalStatus, DepartureStatus, Game, World},
+    world::{AirspaceStatus, ArrivalStatus, DepartureStatus, World},
   },
   geometry::{Translate, circle_circle_intersection},
   pathfinder::{Node, NodeBehavior, NodeKind},
@@ -125,8 +124,13 @@ impl Runner {
     save_to: Option<PathBuf>,
     rng: Rng,
   ) -> Self {
+    let engine = Engine {
+      rng,
+      ..Default::default()
+    };
+
     Self {
-      engine: Engine::default(),
+      engine,
       messages: RingBuffer::new(30),
 
       preparing: false,
@@ -410,22 +414,29 @@ impl Runner {
       };
 
       match incoming.req() {
-        TinyReqKind::Ping => incoming.reply(ResKind::Pong(self.tick_counter)),
+        TinyReqKind::Ping => {
+          incoming.reply(ResKind::Pong(self.engine.tick_counter))
+        }
         TinyReqKind::Pause => {
-          self.game.paused = !self.game.paused;
+          self.engine.game.paused = !self.engine.game.paused;
         }
 
         // Aircraft
         TinyReqKind::Aircraft => {
-          incoming.reply(ResKind::Aircraft(self.game.aircraft.clone()));
+          incoming.reply(ResKind::Aircraft(self.engine.game.aircraft.clone()));
         }
         TinyReqKind::OneAircraft(id) => {
-          let aircraft =
-            self.game.aircraft.iter().find(|a| a.id == *id).cloned();
+          let aircraft = self
+            .engine
+            .game
+            .aircraft
+            .iter()
+            .find(|a| a.id == *id)
+            .cloned();
           incoming.reply(ResKind::OneAircraft(aircraft));
         }
         TinyReqKind::AirspaceStatus(id) => {
-          let status = self.world.airspace_statuses.get(id);
+          let status = self.engine.world.airspace_statuses.get(id);
           if let Some(status) = status {
             incoming.reply(ResKind::AirspaceStatus(*status))
           } else {
@@ -434,7 +445,7 @@ impl Runner {
         }
         TinyReqKind::ArrivalStatus(id, status) => {
           if let Some(airspace_status) =
-            self.world.airspace_statuses.get_mut(id)
+            self.engine.world.airspace_statuses.get_mut(id)
           {
             airspace_status.arrival = *status;
 
@@ -445,7 +456,7 @@ impl Runner {
         }
         TinyReqKind::DepartureStatus(id, status) => {
           if let Some(airspace_status) =
-            self.world.airspace_statuses.get_mut(id)
+            self.engine.world.airspace_statuses.get_mut(id)
           {
             airspace_status.departure = *status;
 
@@ -460,7 +471,7 @@ impl Runner {
           self.messages.iter().cloned().map(|m| m.into()).collect(),
         )),
         TinyReqKind::World => {
-          incoming.reply(ResKind::World(self.world.clone()))
+          incoming.reply(ResKind::World(self.engine.world.clone()))
         }
       }
     }
@@ -514,11 +525,12 @@ impl Runner {
     // TODO: self.save_world();
 
     // Log performance of engine.
-    if !self.preparing && self.perf_log.tick(self.tick_counter) {
-      let diff = self.last_tick.elapsed();
+    if !self.preparing && self.perf_log.tick(self.engine.tick_counter) {
+      let diff = self.engine.last_tick.elapsed();
       let mills = diff.as_micros() as f32 / 1000.0;
-      let max = 1.0 / self.rate as f32 * 1000.0;
-      let percent = diff.as_secs_f32() / (1.0 / self.rate as f32);
+      let max = 1.0 / self.engine.tick_rate_tps as f32 * 1000.0;
+      let percent =
+        diff.as_secs_f32() / (1.0 / self.engine.tick_rate_tps as f32);
 
       tracing::info!(
         "Using {:.2}ms of {:.0}ms total tick time ({:.2}%)",
@@ -528,7 +540,7 @@ impl Runner {
       );
     }
 
-    self.tick_counter += 1;
+    self.engine.tick_counter += 1;
 
     events.clone()
   }
@@ -543,7 +555,8 @@ impl Runner {
 
     let max_time_hours = size_nm / base_speed_knots;
     let max_time_secs = max_time_hours * 60.0 * 60.0;
-    let max_ticks = (max_time_secs * self.rate as f32).ceil() as usize;
+    let max_ticks =
+      (max_time_secs * self.engine.tick_rate_tps as f32).ceil() as usize;
 
     for _ in 0..max_ticks {
       for event in self.tick().drain(..) {
@@ -553,9 +566,10 @@ impl Runner {
         }) = event
         {
           if let Some(aircraft) =
-            self.game.aircraft.iter_mut().find(|a| a.id == id)
+            self.engine.game.aircraft.iter_mut().find(|a| a.id == id)
           {
             if let Some(airspace) = self
+              .engine
               .world
               .airspaces
               .iter()
@@ -569,7 +583,7 @@ impl Runner {
 
                 self.preparing = false;
 
-                return self.tick_counter;
+                return self.engine.tick_counter;
               }
             }
           }
@@ -579,15 +593,15 @@ impl Runner {
 
     self.preparing = false;
 
-    self.tick_counter
+    self.engine.tick_counter
   }
 
   pub fn begin_loop(&mut self) {
     self.engine.config = EngineConfig::Full;
 
     loop {
-      if Instant::now() - self.last_tick
-        >= Duration::from_secs_f32(1.0 / self.rate as f32)
+      if Instant::now() - self.engine.last_tick
+        >= Duration::from_secs_f32(1.0 / self.engine.tick_rate_tps as f32)
       {
         self.tick();
       }
@@ -608,13 +622,14 @@ impl Runner {
       } = event
       {
         let index = self
+          .engine
           .game
           .aircraft
           .iter()
           .enumerate()
           .find_map(|(i, a)| (a.id == *id).then_some(i));
         if let Some(index) = index {
-          self.game.aircraft.swap_remove(index);
+          self.engine.game.aircraft.swap_remove(index);
         }
       }
     }
@@ -623,6 +638,7 @@ impl Runner {
   fn execute_command(&mut self, command: CommandWithFreq) {
     let id = Intern::from_ref(&command.id);
     if self
+      .engine
       .game
       .aircraft
       .iter()

@@ -97,7 +97,7 @@ async fn main() {
     rng,
   );
 
-  runner.load_assets();
+  runner.engine.load_assets();
 
   let mut player_airspace = Airspace {
     id: Intern::from_ref("KSFO"),
@@ -108,7 +108,7 @@ async fn main() {
   };
 
   let mut main_airport: Airport = match config.world().airport() {
-    Some(id) => match runner.airport(id) {
+    Some(id) => match runner.engine.airport(id) {
       Some(airport) => {
         tracing::info!(r#"Using airport: "{}""#, airport.id);
         airport.clone()
@@ -120,7 +120,7 @@ async fn main() {
         std::process::exit(1);
       }
     },
-    None => match runner.default_airport() {
+    None => match runner.engine.default_airport() {
       Some(airport) => {
         tracing::info!(r#"Using default airport: "{}""#, airport.id);
         airport.clone()
@@ -141,15 +141,15 @@ async fn main() {
   let main_id = main_airport.id;
 
   player_airspace.airports.push(main_airport);
-  runner.world.airspaces.push(player_airspace);
+  runner.engine.world.airspaces.push(player_airspace);
 
   runner.generate_airspaces(&mut world_rng, &main_frequencies);
   runner.generate_waypoints();
 
   // This inserts statuses for all airspaces including main.
-  runner.world.reset_statuses();
+  runner.engine.world.reset_statuses();
 
-  runner.world.airspace_statuses.insert(
+  runner.engine.world.airspace_statuses.insert(
     main_id,
     AirspaceStatus {
       arrival: *config.world().arrivals(),
@@ -165,7 +165,7 @@ async fn main() {
   let start = Instant::now();
   let ticks_ran = runner.quick_start();
   let duration = start.elapsed();
-  let simulated_seconds = ticks_ran as f32 / runner.rate as f32;
+  let simulated_seconds = ticks_ran as f32 / runner.engine.tick_rate_tps as f32;
   let simulated_minutes = (simulated_seconds / 60.0).floor();
   tracing::info!(
     "Simulated {} ticks (relative time: {:.0}m{:.0}s) in {:.2} secs (approx. {:.2}x speed).",
@@ -179,7 +179,7 @@ async fn main() {
   tracing::info!("Starting game loop...");
 
   runner.reset_signal_gens();
-  runner.game.paused = config.world().paused();
+  runner.engine.game.paused = config.world().paused();
   tokio::task::spawn_blocking(move || runner.begin_loop());
 
   let address_ipv4 = address_ipv4.unwrap_or(config.server().address_ipv4);
