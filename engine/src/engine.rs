@@ -28,27 +28,18 @@ use crate::{
 #[serde(tag = "type", content = "value")]
 /// UI Commands come from the frontend and are handled within the engine.
 pub enum UICommand {
-  Purchase(usize),
-
   Pause,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// UI Events are sent from the engine to the frontend.
 pub enum UIEvent {
-  // Inbound
-  Purchase(usize),
-
-  // Outbound
-  Funds(usize),
-
   Pause,
 }
 
 impl From<UICommand> for UIEvent {
   fn from(value: UICommand) -> Self {
     match value {
-      UICommand::Purchase(aircraft_id) => Self::Purchase(aircraft_id),
       UICommand::Pause => Self::Pause,
     }
   }
