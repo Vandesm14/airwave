@@ -78,6 +78,18 @@ impl Draw for Runway {
       .end(glam_to_geom(scale_point(self.end(), offset, scale)))
       .weight(200.0 * scale)
       .color(color::rgb::<u8>(RUNWAY_COLOR, RUNWAY_COLOR, RUNWAY_COLOR));
+
+    // Draw the ILS line
+    draw
+      .line()
+      .start(glam_to_geom(scale_point(self.start, offset, scale)))
+      .end(glam_to_geom(scale_point(
+        move_point(self.start, self.heading, -NAUTICALMILES_TO_FEET * 20.0),
+        offset,
+        scale,
+      )))
+      .weight(1.0)
+      .color(color::rgb::<u8>(0x30, 0x87, 0xf2));
   }
 
   fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
@@ -201,7 +213,7 @@ impl Draw for Airport {
 impl Draw for Aircraft {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
     let pos = scale_point(self.pos, offset, scale);
-    let point_scale = (6.0_f32).max(3000.0 * scale);
+    let point_scale = (6.0_f32).max(3000.0 * scale).min(20.0);
 
     draw
       .rect()
