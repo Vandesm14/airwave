@@ -15,7 +15,10 @@ use engine::{
 };
 use internment::Intern;
 use nannou::prelude::*;
-use nannou_egui::Egui;
+use nannou_egui::{
+  Egui,
+  egui::{self, Id, Widget},
+};
 use turborand::rng::Rng;
 
 pub fn main() {
@@ -62,6 +65,9 @@ struct HeldKeys {
 struct Model {
   egui: Egui,
   runner: Runner,
+
+  snapshots: Vec<Vec<Aircraft>>,
+  snapshot_index: usize,
 
   is_mouse_down: bool,
   is_over_ui: bool,
@@ -128,7 +134,12 @@ fn model(app: &App) -> Model {
   airspace.airports.push(airport);
   runner.world.airspaces.push(airspace);
 
-  for _ in 0..runner.rate * 60 * 5 {
+  let mut snapshots = Vec::new();
+  for i in 0..runner.rate * 60 * 20 {
+    if i % runner.rate == 0 {
+      snapshots.push(runner.game.aircraft.clone());
+    }
+
     let dt = 1.0 / runner.rate as f32;
     let events = runner.engine.tick(
       &mut runner.world,
@@ -139,11 +150,12 @@ fn model(app: &App) -> Model {
     );
   }
 
-  println!("{:#?}", runner.game.aircraft);
-
   Model {
     egui,
     runner,
+
+    snapshots,
+    snapshot_index: 0,
 
     is_mouse_down: false,
     is_over_ui: false,
@@ -163,17 +175,26 @@ fn model(app: &App) -> Model {
 
 fn update(_app: &App, model: &mut Model, update: Update) {
   model.egui.set_elapsed_time(update.since_start);
-  let _ = model.egui.begin_frame();
+  let ctx = model.egui.begin_frame();
 
-  // if let Some(mutex) = GLOBAL_CHANNEL.get() {
-  //   if let Ok(chan) = mutex.lock() {
-  //     while let Ok(airport) = chan.try_recv() {
-  //       model.airport = airport;
-  //       model.airport.extend_all();
-  //       model.airport.calculate_waypoints();
-  //     }
-  //   }
-  // }
+  let side_panel =
+    egui::panel::SidePanel::new(egui::panel::Side::Left, Id::new("side_panel"))
+      .show(&ctx, |ui| {
+        ui.label(format!("{:#?}", model.snapshots.get(model.snapshot_index)));
+      });
+
+  let bottom_panel = egui::panel::TopBottomPanel::new(
+    egui::panel::TopBottomSide::Bottom,
+    Id::new("bottom_panel"),
+  )
+  .show(&ctx, |ui| {
+    ui.spacing_mut().slider_width = ui.available_width() - 60.0;
+    egui::Slider::new(&mut model.snapshot_index, 0..=model.snapshots.len() - 1)
+      .ui(ui);
+  });
+
+  model.is_over_ui =
+    side_panel.response.hovered() || bottom_panel.response.hovered();
 }
 
 fn real_mouse_pos(app: &App, model: &Model) -> glam::Vec2 {
@@ -256,8 +277,10 @@ fn view(app: &App, model: &Model, frame: Frame) {
   draw.background().color(BLACK);
 
   model.runner.world.draw(&draw, model.scale, model.shift_pos);
-  for aircraft in model.runner.game.aircraft.iter() {
-    aircraft.draw(&draw, model.scale, model.shift_pos);
+  if let Some(snapshot) = model.snapshots.get(model.snapshot_index) {
+    for aircraft in snapshot.iter() {
+      aircraft.draw(&draw, model.scale, model.shift_pos);
+    }
   }
 
   draw.to_frame(app, &frame).unwrap();
