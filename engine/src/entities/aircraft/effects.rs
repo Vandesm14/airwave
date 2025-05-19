@@ -5,10 +5,7 @@ use crate::{
   NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
   engine::Event,
-  entities::{
-    airspace::Airspace,
-    world::{closest_airport, closest_airspace},
-  },
+  entities::{airport::Airport, world::closest_airport},
   geometry::{
     add_degrees, angle_between_points, calculate_ils_altitude,
     closest_point_on_line, delta_angle, inverse_degrees, move_point,
@@ -169,7 +166,7 @@ impl Aircraft {
   pub fn update_taxiing(
     &mut self,
     events: &mut Vec<Event>,
-    airspaces: &[Airspace],
+    airports: &[Airport],
     dt: f32,
   ) {
     let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND * dt;
@@ -221,7 +218,7 @@ impl Aircraft {
           // Runway specific
           NodeBehavior::LineUp => {
             if current.kind == NodeKind::Runway {
-              if let Some(runway) = closest_airport(airspaces, self.pos)
+              if let Some(runway) = closest_airport(airports, self.pos)
                 .and_then(|x| x.runways.iter().find(|r| r.id == current.name))
               {
                 self.heading = runway.heading;
@@ -278,7 +275,7 @@ impl Aircraft {
   pub fn update_segment(
     &mut self,
     events: &mut Vec<Event>,
-    airspaces: &[Airspace],
+    airports: &[Airport],
     tick: usize,
   ) {
     let mut segment: Option<FlightSegment> = None;
@@ -304,7 +301,7 @@ impl Aircraft {
 
     // Assert Taxi.
     if let AircraftState::Taxiing { .. } = self.state {
-      let airport = closest_airport(airspaces, self.pos);
+      let airport = closest_airport(airports, self.pos);
       if let Some(airport) = airport {
         // Assert TaxiDep.
         if airport.id == self.flight_plan.departing {
@@ -318,22 +315,22 @@ impl Aircraft {
     }
 
     if let AircraftState::Flying = self.state {
-      let airspace = closest_airspace(airspaces, self.pos)
+      let airport = closest_airport(airports, self.pos)
         .filter(|a| {
-          a.pos.distance_squared(self.pos) <= AIRSPACE_RADIUS.powf(2.0)
+          a.center.distance_squared(self.pos) <= AIRSPACE_RADIUS.powf(2.0)
         })
         .filter(|_| self.altitude <= TRANSITION_ALTITUDE)
         .filter(|a| {
           a.id == self.flight_plan.departing
             || a.id == self.flight_plan.arriving
         });
-      if let Some(airspace) = airspace {
+      if let Some(airport) = airport {
         // Assert Departure.
-        if airspace.id == self.flight_plan.departing {
+        if airport.id == self.flight_plan.departing {
           segment = Some(FlightSegment::Departure);
 
         // Assert Approach.
-        } else if airspace.id == self.flight_plan.arriving {
+        } else if airport.id == self.flight_plan.arriving {
           segment = Some(FlightSegment::Approach);
         }
 
@@ -567,7 +564,7 @@ impl Aircraft {
     }
   }
 
-  pub fn update_airspace(&mut self, airspaces: &[Airspace]) {
-    self.airspace = closest_airspace(airspaces, self.pos).map(|a| a.id);
+  pub fn update_airspace(&mut self, airports: &[Airport]) {
+    self.airspace = closest_airport(airports, self.pos).map(|a| a.id);
   }
 }

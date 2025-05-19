@@ -263,6 +263,7 @@ local airport = airport({
     ground = 118.6,
     center = 118.7,
   },
+  auto = false,
   center = { 600, -100 },
 
   runways = {

@@ -1,17 +1,12 @@
 use core::str::FromStr;
 use std::{fs, path::PathBuf, time::Instant};
 
-use glam::Vec2;
-use internment::Intern;
 use tokio::sync::mpsc;
 use tracing_appender::rolling::Rotation;
 use tracing_subscriber::prelude::*;
 use turborand::{SeededCore, rng::Rng};
 
-use engine::{
-  AIRSPACE_RADIUS,
-  entities::{airport::Airport, airspace::Airspace, world::AirspaceStatus},
-};
+use engine::entities::{airport::Airport, world::AirportStatus};
 use server::{
   CLI, Cli, PROJECT_DIRS,
   config::Config,
@@ -99,14 +94,6 @@ async fn main() {
 
   runner.engine.load_assets();
 
-  let mut player_airspace = Airspace {
-    id: Intern::from_ref("KSFO"),
-    pos: Vec2::ZERO,
-    radius: AIRSPACE_RADIUS,
-    airports: vec![],
-    auto: false,
-  };
-
   let mut main_airport: Airport = match config.world().airport() {
     Some(id) => match runner.engine.airport(id) {
       Some(airport) => {
@@ -135,23 +122,20 @@ async fn main() {
     main_airport.frequencies = frequencies.clone();
   }
 
-  main_airport.id = player_airspace.id;
-
   let main_frequencies = main_airport.frequencies.clone();
   let main_id = main_airport.id;
 
-  player_airspace.airports.push(main_airport);
-  runner.engine.world.airspaces.push(player_airspace);
+  runner.engine.world.airports.push(main_airport);
 
-  runner.generate_airspaces(&mut world_rng, &main_frequencies);
+  runner.generate_airports(&mut world_rng, &main_frequencies);
   runner.generate_waypoints();
 
-  // This inserts statuses for all airspaces including main.
+  // This inserts statuses for all airports including main.
   runner.engine.world.reset_statuses();
 
-  runner.engine.world.airspace_statuses.insert(
+  runner.engine.world.airport_statuses.insert(
     main_id,
-    AirspaceStatus {
+    AirportStatus {
       arrival: *config.world().arrivals(),
       departure: *config.world().departures(),
     },

@@ -8,25 +8,20 @@ import {
   Show,
   Signal,
 } from 'solid-js';
-import { realTimeTicks } from './lib/lib';
+import { hardcodedAirport, realTimeTicks } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
-import {
-  calculateDistance,
-  formatTime,
-  hardcodedAirspace,
-  nauticalMilesToFeet,
-} from './lib/lib';
+import { calculateDistance, formatTime, nauticalMilesToFeet } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, ServerTicks, usePing, useWorld } from './lib/api';
 import { Aircraft } from '../bindings/Aircraft';
-import { Airspace } from '../bindings/Airspace';
 import { makePersisted } from '@solid-primitives/storage';
 import { FlightSegment } from '../bindings/FlightSegment';
 import { unwrap } from 'solid-js/store';
 import fastDeepEqual from 'fast-deep-equal';
 
 import './StripBoard.scss';
+import { Airport } from '../bindings/Airport';
 
 const INBOX_ID = 0;
 
@@ -345,7 +340,7 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
 
 function aircraftToStrip(
   aircraft: Aircraft,
-  airspace: Airspace,
+  airport: Airport,
   selectedAircraft: string,
   server_ticks: ServerTicks
 ) {
@@ -363,7 +358,7 @@ function aircraftToStrip(
     timer: aircraft.flight_time
       ? formatTime(realTimeTicks(server_ticks, aircraft.flight_time))
       : '--:--',
-    status: statusOfAircraft(aircraft, airspace.id, selectedAircraft),
+    status: statusOfAircraft(aircraft, airport.id, selectedAircraft),
     segment: aircraft.segment,
   };
 
@@ -390,7 +385,7 @@ function aircraftToStrip(
     data.topStatus = '----';
   }
 
-  let distance = calculateDistance(aircraft.pos, airspace.pos);
+  let distance = calculateDistance(aircraft.pos, airport.center);
 
   if (aircraft.state.type === 'flying' || aircraft.state.type === 'landing') {
     data.distance = (distance / nauticalMilesToFeet).toFixed(1).slice(0, 4);
@@ -555,7 +550,7 @@ export default function StripBoard() {
 
   // Create strips for aircraft that are our responsibility.
   createEffect(() => {
-    const airspace = hardcodedAirspace(query.data!);
+    const airspace = hardcodedAirport(query.data!);
     const selected = selectedAircraft();
     const existing = board
       .strips()
@@ -596,7 +591,7 @@ export default function StripBoard() {
 
   // Update aircraft strips.
   createEffect(() => {
-    const airspace = hardcodedAirspace(query.data!);
+    const airspace = hardcodedAirport(query.data!);
     const selected = selectedAircraft();
 
     if (airspace && aircrafts.data.length > 0) {

@@ -45,7 +45,7 @@ pub async fn get_world(
   }
 }
 
-pub async fn get_airspace_status(
+pub async fn get_airport_status(
   State(mut state): State<AppState>,
   Path(id): Path<String>,
 ) -> Result<String, http::StatusCode> {

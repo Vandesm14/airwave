@@ -14,6 +14,7 @@ import {
   onMount,
 } from 'solid-js';
 import {
+  AIRSPACE_RADIUS,
   calculateSquaredDistance,
   HARD_CODED_AIRPORT,
   hardcodedAirport,
@@ -29,13 +30,13 @@ import {
 } from './lib/lib';
 import colors from './lib/colors';
 import { useAircraftWithRate, usePing, useWorld } from './lib/api';
-import { Airspace } from '../bindings/Airspace';
 import { Runway } from '../bindings/Runway';
 import { Aircraft } from '../bindings/Aircraft';
 import { Terminal } from '../bindings/Terminal';
 import { Gate } from '../bindings/Gate';
 import { Taxiway } from '../bindings/Taxiway';
 import { World } from '../bindings/World';
+import { Airport } from '../bindings/Airport';
 
 const groundScale = 5.0;
 
@@ -385,9 +386,9 @@ export default function Canvas() {
     }
   }
 
-  function drawAirspace(ctx: Ctx, airspace: Airspace) {
+  function drawAirspace(ctx: Ctx, airspace: Airport) {
     resetTransform(ctx);
-    let pos = scalePoint(airspace.pos);
+    let pos = scalePoint(airspace.center);
     ctx.strokeStyle = colors.special.airspace;
 
     let aircraft = aircrafts.data.find((a) => a.id === selectedAircraft());
@@ -400,7 +401,7 @@ export default function Canvas() {
     }
 
     ctx.beginPath();
-    ctx.arc(pos[0], pos[1], scaleFeetToPixels(airspace.radius), 0, Math.PI * 2);
+    ctx.arc(pos[0], pos[1], scaleFeetToPixels(AIRSPACE_RADIUS), 0, Math.PI * 2);
     ctx.stroke();
 
     // Draw airspace name
@@ -410,7 +411,7 @@ export default function Canvas() {
     ctx.fillText(
       airspace.id,
       pos[0],
-      pos[1] - scaleFeetToPixels(airspace.radius) - 20
+      pos[1] - scaleFeetToPixels(AIRSPACE_RADIUS) - 20
     );
   }
 
@@ -1024,18 +1025,16 @@ export default function Canvas() {
   }
 
   function drawTower(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
-    for (let airspace of world.airspaces) {
-      drawAirspace(ctx, airspace);
-
-      for (let airport of airspace.airports) {
-        for (let runway of airport.runways) {
-          drawRunway(ctx, runway);
-        }
-      }
-    }
-
     for (let waypoint of world.waypoints) {
       drawWaypoint(ctx, waypoint.name, waypoint.data, colors.special.waypoint);
+    }
+
+    for (let airport of world.airports) {
+      drawAirspace(ctx, airport);
+
+      for (let runway of airport.runways) {
+        drawRunway(ctx, runway);
+      }
     }
 
     for (let aircraft of aircrafts.filter(
@@ -1056,22 +1055,18 @@ export default function Canvas() {
   }
 
   function drawGround(ctx: Ctx, world: World, aircrafts: Array<Aircraft>) {
-    for (let airspace of world.airspaces) {
-      drawAirspace(ctx, airspace);
-
-      for (let airport of airspace.airports) {
-        for (let taxiway of airport.taxiways) {
-          drawTaxiway(ctx, taxiway);
-        }
-        for (let runway of airport.runways) {
-          drawRunwayGround(ctx, runway);
-        }
-        for (let terminal of airport.terminals) {
-          drawTerminal(ctx, terminal);
-        }
-        for (let taxiway of airport.taxiways) {
-          drawTaxiwayLabel(ctx, taxiway);
-        }
+    for (let airport of world.airports) {
+      for (let taxiway of airport.taxiways) {
+        drawTaxiway(ctx, taxiway);
+      }
+      for (let runway of airport.runways) {
+        drawRunwayGround(ctx, runway);
+      }
+      for (let terminal of airport.terminals) {
+        drawTerminal(ctx, terminal);
+      }
+      for (let taxiway of airport.taxiways) {
+        drawTaxiwayLabel(ctx, taxiway);
       }
     }
 

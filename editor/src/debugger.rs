@@ -3,10 +3,7 @@ use engine::{
   AIRSPACE_RADIUS, APPROACH_ALTITUDE,
   assets::load_assets,
   engine::Engine,
-  entities::{
-    aircraft::{Aircraft, AircraftState, FlightPlan, LandingState},
-    airspace::Airspace,
-  },
+  entities::aircraft::{Aircraft, AircraftState, FlightPlan, LandingState},
   geometry::move_point,
 };
 use internment::Intern;
@@ -60,14 +57,6 @@ fn model(app: &App) -> Model {
     ..Default::default()
   };
 
-  let mut airspace = Airspace {
-    id: Intern::from_ref("KSFO"),
-    pos: glam::Vec2::ZERO,
-    radius: AIRSPACE_RADIUS,
-    airports: vec![],
-    auto: false,
-  };
-
   let airport = engine.airports.get("ksfo").unwrap().clone();
 
   let aircraft = Aircraft {
@@ -95,8 +84,7 @@ fn model(app: &App) -> Model {
   .with_synced_targets();
 
   engine.game.aircraft.push(aircraft);
-  airspace.airports.push(airport);
-  engine.world.airspaces.push(airspace);
+  engine.world.airports.push(airport);
 
   let mut snapshots = Vec::new();
   for i in 0..engine.tick_rate_tps * 60 * 20 {

@@ -22,8 +22,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
     },
     airport::Frequencies,
-    airspace::Airspace,
-    world::{AirspaceStatus, ArrivalStatus, DepartureStatus, World},
+    world::{AirportStatus, ArrivalStatus, DepartureStatus, World},
   },
   geometry::{Translate, circle_circle_intersection},
   pathfinder::{Node, NodeBehavior, NodeKind},
@@ -98,7 +97,7 @@ pub enum ResKind {
   // Other State
   Messages(Vec<OutgoingCommandReply>),
   World(World),
-  AirspaceStatus(AirspaceStatus),
+  AirspaceStatus(AirportStatus),
 }
 
 #[derive(Debug)]
@@ -150,12 +149,12 @@ impl Runner {
     self.perf_log.set_first();
   }
 
-  pub fn generate_airspaces(
+  pub fn generate_airports(
     &mut self,
     world_rng: &mut Rng,
     config_frequencies: &Frequencies,
   ) {
-    let airspace_names = [
+    let airport_names = [
       // "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
       // "EGLC", "EGNV", "EGNT", "EGGP", "EGCC", "EGKK", "EGHI",
       "KLAX", "KPHL", "KJFK", "KMGM", "KCLT", "KDFW", "KATL", "KMCO", "EGLL",
@@ -177,18 +176,18 @@ impl Runner {
       .clone();
     airport.frequencies = frequencies;
 
-    // Generate randomly positioned uncontrolled airspaces.
-    for airspace_name in airspace_names {
+    // Generate randomly positioned uncontrolled airports..
+    for airport_name in airport_names {
       // TODO: This is a brute-force approach. A better solution would be to use
       //       some form of jitter or other, potentially, less infinite-loop-prone
       //       solution.
 
       let mut i = 0;
 
-      let airspace_position = 'outer: loop {
+      let airport_position = 'outer: loop {
         if i >= 1000 {
           tracing::error!(
-            "Unable to find a place for airspace '{airspace_name}'"
+            "Unable to find a place for airport '{airport_name}'"
           );
           std::process::exit(1);
         }
@@ -200,10 +199,10 @@ impl Runner {
           (world_rng.f32() - 0.5) * WORLD_RADIUS,
         );
 
-        for airport in self.engine.world.airspaces.iter() {
+        for airport in self.engine.world.airports.iter() {
           if circle_circle_intersection(
             position,
-            airport.pos,
+            airport.center,
             AIRSPACE_RADIUS + AIRSPACE_PADDING_RADIUS,
             AIRSPACE_RADIUS + AIRSPACE_PADDING_RADIUS,
           ) {
@@ -214,20 +213,11 @@ impl Runner {
         break position;
       };
 
-      let mut airspace = Airspace {
-        id: Intern::from_ref(airspace_name),
-        pos: airspace_position,
-        radius: NAUTICALMILES_TO_FEET * 30.0,
-        airports: Vec::with_capacity(1),
-        auto: true,
-      };
-
       let mut airport = airport.clone();
-      airport.id = airspace.id;
-      airport.translate(airspace.pos);
-      airspace.airports.push(airport);
-
-      self.engine.world.airspaces.push(airspace);
+      airport.id = Intern::from_ref(airport_name);
+      airport.translate(airport_position);
+      airport.auto = true;
+      self.engine.world.airports.push(airport);
     }
   }
 
@@ -236,14 +226,18 @@ impl Runner {
     let min_distance = NAUTICALMILES_TO_FEET * 15.0;
 
     let mut waypoints: Vec<Vec2> = Vec::new();
-    for airspace in self.engine.world.airspaces.iter().combinations(2) {
-      let first = airspace.first().unwrap();
-      let second = airspace.last().unwrap();
-      let count =
-        first.pos.distance(second.pos).div(separation).ceil() as usize - 1;
+    for airport in self.engine.world.airports.iter().combinations(2) {
+      let first = airport.first().unwrap();
+      let second = airport.last().unwrap();
+      let count = first.center.distance(second.center).div(separation).ceil()
+        as usize
+        - 1;
       for i in 1..count {
-        waypoints
-          .push(first.pos.move_towards(second.pos, separation * i as f32));
+        waypoints.push(
+          first
+            .center
+            .move_towards(second.center, separation * i as f32),
+        );
       }
     }
 
@@ -254,9 +248,9 @@ impl Runner {
         !self
           .engine
           .world
-          .airspaces
+          .airports
           .iter()
-          .any(|a| a.pos.distance_squared(*w) < AIRSPACE_RADIUS.powf(2.0))
+          .any(|a| a.center.distance_squared(*w) < AIRSPACE_RADIUS.powf(2.0))
       })
       .enumerate()
       .map(|(i, w)| {
@@ -273,26 +267,24 @@ impl Runner {
 
   pub fn fill_gates(&mut self) {
     let mut aircrafts: Vec<Aircraft> = Vec::new();
-    for airspace in self.engine.world.airspaces.iter() {
-      for airport in airspace.airports.iter() {
-        for terminal in airport.terminals.iter() {
-          for gate in terminal.gates.iter() {
-            let mut aircraft = Aircraft::random_dormant(
-              gate.clone(),
-              &mut self.engine.rng,
-              airport,
-            );
-            aircraft.flight_plan.departing = airspace.id;
-            aircraft.flight_plan.arriving = self
-              .engine
-              .rng
-              .sample(&self.engine.world.airspaces)
-              .filter(|a| a.auto && a.id != airspace.id)
-              .map(|a| a.id)
-              .unwrap_or_default();
+    for airport in self.engine.world.airports.iter() {
+      for terminal in airport.terminals.iter() {
+        for gate in terminal.gates.iter() {
+          let mut aircraft = Aircraft::random_dormant(
+            gate.clone(),
+            &mut self.engine.rng,
+            airport,
+          );
+          aircraft.flight_plan.departing = airport.id;
+          aircraft.flight_plan.arriving = self
+            .engine
+            .rng
+            .sample(&self.engine.world.airports)
+            .filter(|a| a.auto && a.id != airport.id)
+            .map(|a| a.id)
+            .unwrap_or_default();
 
-            aircrafts.push(aircraft);
-          }
+          aircrafts.push(aircraft);
         }
       }
     }
@@ -305,13 +297,8 @@ impl Runner {
   fn do_spawns(&mut self) {
     // If spawn tick, do spawns.
     if self.spawns.tick(self.engine.tick_counter) {
-      let airports = self
-        .engine
-        .world
-        .airspaces
-        .iter()
-        .flat_map(|a| a.airports.iter().map(|ar| (a.auto, ar)));
-      for (auto, airport) in airports {
+      let airports = self.engine.world.airports.iter();
+      for airport in airports {
         let do_spawn = self.engine.rng.chance(DEPARTURE_SPAWN_CHANCE);
         if !do_spawn {
           continue;
@@ -341,11 +328,11 @@ impl Runner {
             });
 
           if let Some(aircraft) = aircraft {
-            // Chance for a flight to go to a non-auto airspace.
+            // Chance for a flight to go to a non-auto airports.
             let go_to_non_auto =
               self.engine.rng.chance(ARRIVE_TO_NON_AUTO_CHANCE);
             let destination = self.engine.rng.sample_iter(
-              self.engine.world.airspaces.iter().filter(|a| {
+              self.engine.world.airports.iter().filter(|a| {
                 if a.id == aircraft.flight_plan.departing {
                   return false;
                 }
@@ -355,11 +342,11 @@ impl Runner {
             );
             if let Some(destination) = destination {
               // If we are preparing, only schedule departures from auto
-              // airspaces.
-              if (auto || !self.preparing)
+              // airports.
+              if (airport.auto || !self.preparing)
                 && matches!(
-                  self.engine.world.airspace_statuses.get(&airport.id),
-                  Some(AirspaceStatus {
+                  self.engine.world.airport_statuses.get(&airport.id),
+                  Some(AirportStatus {
                     departure: DepartureStatus::Normal,
                     ..
                   })
@@ -390,7 +377,7 @@ impl Runner {
         if self
           .engine
           .world
-          .airspaces
+          .airports
           .iter()
           .any(|a| a.id == aircraft.flight_plan.departing && a.auto)
         {
@@ -436,7 +423,7 @@ impl Runner {
           incoming.reply(ResKind::OneAircraft(aircraft));
         }
         TinyReqKind::AirspaceStatus(id) => {
-          let status = self.engine.world.airspace_statuses.get(id);
+          let status = self.engine.world.airport_statuses.get(id);
           if let Some(status) = status {
             incoming.reply(ResKind::AirspaceStatus(*status))
           } else {
@@ -444,10 +431,10 @@ impl Runner {
           }
         }
         TinyReqKind::ArrivalStatus(id, status) => {
-          if let Some(airspace_status) =
-            self.engine.world.airspace_statuses.get_mut(id)
+          if let Some(airport_status) =
+            self.engine.world.airport_statuses.get_mut(id)
           {
-            airspace_status.arrival = *status;
+            airport_status.arrival = *status;
 
             incoming.reply(ResKind::Any);
           } else {
@@ -455,10 +442,10 @@ impl Runner {
           }
         }
         TinyReqKind::DepartureStatus(id, status) => {
-          if let Some(airspace_status) =
-            self.engine.world.airspace_statuses.get_mut(id)
+          if let Some(airport_status) =
+            self.engine.world.airport_statuses.get_mut(id)
           {
-            airspace_status.departure = *status;
+            airport_status.departure = *status;
 
             incoming.reply(ResKind::Any);
           } else {
@@ -568,16 +555,16 @@ impl Runner {
           if let Some(aircraft) =
             self.engine.game.aircraft.iter_mut().find(|a| a.id == id)
           {
-            if let Some(airspace) = self
+            if let Some(airport) = self
               .engine
               .world
-              .airspaces
+              .airports
               .iter()
               .find(|a| a.id == aircraft.flight_plan.arriving)
             {
-              if !airspace.auto {
+              if !airport.auto {
                 tracing::info!(
-                  "Quick start interrupted by {}. Aircraft entered non-auto airspace.",
+                  "Quick start interrupted by {}. Aircraft entered non-auto airport.",
                   aircraft.id
                 );
 

@@ -10,10 +10,8 @@ use crate::{
   command::{CommandReply, CommandWithFreq, Task},
   engine::Event,
   entities::{
-    airspace::Airspace,
-    world::{
-      AirspaceStatus, ArrivalStatus, World, closest_airport, closest_airspace,
-    },
+    airport::Airport,
+    world::{AirportStatus, ArrivalStatus, World, closest_airport},
   },
   geometry::{angle_between_points, delta_angle, inverse_degrees, move_point},
   heading_to_direction,
@@ -170,7 +168,7 @@ pub fn handle_aircraft_event(
       aircraft.frequency = *frequency;
     }
     EventKind::NamedFrequency(frq) => {
-      if let Some(frequency) = closest_airport(&world.airspaces, aircraft.pos)
+      if let Some(frequency) = closest_airport(&world.airports, aircraft.pos)
         .and_then(|x| x.frequencies.try_from_string(frq))
       {
         aircraft.frequency = frequency;
@@ -182,11 +180,11 @@ pub fn handle_aircraft_event(
       // TODO: Reimplement
       if let AircraftState::Flying = aircraft.state {
         let departure = world
-          .airspaces
+          .airports
           .iter()
           .find(|a| a.id == aircraft.flight_plan.departing);
         let arrival = world
-          .airspaces
+          .airports
           .iter()
           .find(|a| a.id == aircraft.flight_plan.arriving);
 
@@ -194,9 +192,8 @@ pub fn handle_aircraft_event(
           let auto_approach = arrival.auto;
 
           let main_course_heading =
-            angle_between_points(departure.pos, arrival.pos);
-          let runways =
-            arrival.airports.first().map(|a| a.runways.iter()).unwrap();
+            angle_between_points(departure.center, arrival.center);
+          let runways = arrival.runways.iter();
 
           let mut smallest_angle = f32::MAX;
           let mut closest = None;
@@ -212,11 +209,11 @@ pub fn handle_aircraft_event(
           let runway = closest.unwrap();
 
           let transition_sid = departure
-            .pos
-            .move_towards(arrival.pos, NAUTICALMILES_TO_FEET * 30.0);
+            .center
+            .move_towards(arrival.center, NAUTICALMILES_TO_FEET * 30.0);
           let transition_star = arrival
-            .pos
-            .move_towards(departure.pos, NAUTICALMILES_TO_FEET * 30.0);
+            .center
+            .move_towards(departure.center, NAUTICALMILES_TO_FEET * 30.0);
           let transition_iaf = move_point(
             runway.start,
             inverse_degrees(runway.heading),
@@ -233,9 +230,7 @@ pub fn handle_aircraft_event(
             .with_actions(vec![
               EventKind::SpeedAtOrAbove(AircraftKind::A21N.stats().max_speed),
               EventKind::AltitudeAtOrAbove(cruise_alt),
-              EventKind::Frequency(
-                departure.airports.first().unwrap().frequencies.center,
-              ),
+              EventKind::Frequency(departure.frequencies.center),
             ]);
 
           let wp_star = new_vor(Intern::from_ref("STAR"), transition_star)
@@ -254,7 +249,7 @@ pub fn handle_aircraft_event(
 
           // Generate track waypoints.
           let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
-          let mut cmp = departure.pos;
+          let mut cmp = departure.center;
 
           let mut waypoints = Vec::new();
           while let Some(closest) = world
@@ -271,7 +266,7 @@ pub fn handle_aircraft_event(
                     <= 45.0
                   // Ensure the waypoint doesn't take us too far.
                   && delta_angle(
-                    angle_between_points(w.data, arrival.pos),
+                    angle_between_points(w.data, arrival.center),
                     main_course_heading,
                   )
                   .abs()
@@ -294,7 +289,7 @@ pub fn handle_aircraft_event(
           }
 
           waypoints.push(wp_star);
-          // Only add auto-vectors if we are arriving at an auto airspace.
+          // Only add auto-vectors if we are arriving at an auto airport.
           if auto_approach {
             waypoints.push(wp_vctr);
           }
@@ -328,7 +323,7 @@ pub fn handle_aircraft_event(
 
     // Transitions
     EventKind::Land(runway) => {
-      handle_land_event(aircraft, *runway, &world.airspaces)
+      handle_land_event(aircraft, *runway, &world.airports)
     }
     EventKind::GoAround => {
       if let AircraftState::Landing { .. } = aircraft.state {
@@ -354,12 +349,12 @@ pub fn handle_aircraft_event(
     }
     EventKind::Touchdown => {
       if let AircraftState::Landing { .. } = aircraft.state {
-        handle_touchdown_event(aircraft, &world.airspaces, events);
+        handle_touchdown_event(aircraft, &world.airports, events);
       }
     }
     EventKind::Takeoff(runway) => {
       if let AircraftState::Taxiing { .. } = aircraft.state {
-        handle_takeoff_event(aircraft, *runway, events, &world.airspaces);
+        handle_takeoff_event(aircraft, *runway, events, &world.airports);
       }
     }
 
@@ -368,13 +363,13 @@ pub fn handle_aircraft_event(
       if let AircraftState::Taxiing { .. } | AircraftState::Parked { .. } =
         aircraft.state
       {
-        if let Some(airport) = closest_airport(&world.airspaces, aircraft.pos) {
+        if let Some(airport) = closest_airport(&world.airports, aircraft.pos) {
           handle_taxi_event(
             aircraft,
             waypoints,
             &airport.pathfinder,
             events,
-            &world.airspaces,
+            &world.airports,
           );
         }
       }
@@ -466,7 +461,7 @@ pub fn handle_aircraft_event(
         FlightSegment::Boarding => {}
         FlightSegment::Parked => {
           if prev.segment == FlightSegment::Boarding {
-            handle_parked_transition(aircraft, &world.airspaces, events);
+            handle_parked_transition(aircraft, &world.airports, events);
           } else if prev.segment == FlightSegment::TaxiArr {
             events.push(
               AircraftEvent::new(
@@ -497,21 +492,17 @@ pub fn handle_aircraft_event(
     EventKind::QuickDepart => {
       if let AircraftState::Parked { .. } = &aircraft.state {
         let departure = world
-          .airspaces
+          .airports
           .iter()
           .find(|a| a.id == aircraft.flight_plan.departing);
         let arrival = world
-          .airspaces
+          .airports
           .iter()
           .find(|a| a.id == aircraft.flight_plan.arriving);
         if let Some((departure, arrival)) = departure.zip(arrival) {
           let departure_angle =
-            angle_between_points(departure.pos, arrival.pos);
-          let runways = departure
-            .airports
-            .first()
-            .map(|a| a.runways.iter())
-            .unwrap();
+            angle_between_points(departure.center, arrival.center);
+          let runways = departure.runways.iter();
 
           let mut smallest_angle = f32::MAX;
           let mut closest = None;
@@ -546,20 +537,15 @@ pub fn handle_aircraft_event(
             EventKind::Takeoff(runway.id),
           )));
         } else {
-          tracing::error!("No arrival airspace found for {:?}", aircraft.id);
+          tracing::error!("No arrival airport found for {:?}", aircraft.id);
         }
       }
     }
     EventKind::QuickArrive => {
       let arrival = world
-        .airspaces
+        .airports
         .iter()
-        .find(|a| a.id == aircraft.flight_plan.arriving)
-        .and_then(|a| {
-          a.airports
-            .iter()
-            .find(|a| a.id == aircraft.flight_plan.arriving)
-        });
+        .find(|a| a.id == aircraft.flight_plan.arriving);
       if let Some(arrival) = arrival {
         let available_gate = arrival
           .terminals
@@ -606,13 +592,13 @@ pub fn handle_aircraft_event(
 pub fn handle_land_event(
   aircraft: &mut Aircraft,
   runway_id: Intern<String>,
-  airspaces: &[Airspace],
+  airports: &[Airport],
 ) {
   if matches!(
     aircraft.state,
     AircraftState::Flying | AircraftState::Landing { .. }
   ) {
-    if let Some(runway) = closest_airport(airspaces, aircraft.pos)
+    if let Some(runway) = closest_airport(airports, aircraft.pos)
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       aircraft.state = AircraftState::Landing {
@@ -625,16 +611,16 @@ pub fn handle_land_event(
 
 pub fn handle_touchdown_event(
   aircraft: &mut Aircraft,
-  airspaces: &[Airspace],
+  airports: &[Airport],
   events: &mut Vec<Event>,
 ) {
   let AircraftState::Landing { runway, .. } = &mut aircraft.state else {
     unreachable!("outer function asserts that aircraft is landing")
   };
 
-  let airspace = closest_airspace(airspaces, aircraft.pos);
-  if let Some(airspace) = airspace {
-    if airspace.auto {
+  let airport = closest_airport(airports, aircraft.pos);
+  if let Some(airport) = airport {
+    if airport.auto {
       events.push(Event::Aircraft(AircraftEvent::new(
         aircraft.id,
         EventKind::QuickArrive,
@@ -666,7 +652,7 @@ pub fn handle_taxi_event(
   waypoint_strings: &[Node<()>],
   pathfinder: &Pathfinder,
   events: &mut Vec<Event>,
-  airspaces: &[Airspace],
+  airports: &[Airport],
 ) {
   if let AircraftState::Taxiing { current, .. }
   | AircraftState::Parked { at: current, .. } = &aircraft.state
@@ -718,7 +704,7 @@ pub fn handle_taxi_event(
     // (otherwise it will be the enterance on the apron but not the gate)
     if let Some(last) = all_waypoints.last() {
       if last.kind == NodeKind::Gate {
-        if let Some(airport) = closest_airport(airspaces, aircraft.pos) {
+        if let Some(airport) = closest_airport(airports, aircraft.pos) {
           if let Some(gate) = airport
             .terminals
             .iter()
@@ -773,14 +759,14 @@ pub fn handle_takeoff_event(
   aircraft: &mut Aircraft,
   runway_id: Intern<String>,
   events: &mut Vec<Event>,
-  airspaces: &[Airspace],
+  airports: &[Airport],
 ) {
   if let AircraftState::Taxiing {
     current, waypoints, ..
   } = &mut aircraft.state
   {
     // If we are at the runway
-    if let Some(runway) = closest_airport(airspaces, aircraft.pos)
+    if let Some(runway) = closest_airport(airports, aircraft.pos)
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       if NodeKind::Runway == current.kind && current.name == runway_id {
@@ -813,11 +799,11 @@ pub fn handle_takeoff_event(
 
 pub fn handle_parked_transition(
   aircraft: &mut Aircraft,
-  airspaces: &[Airspace],
+  airports: &[Airport],
   events: &mut Vec<Event>,
 ) {
   if let AircraftState::Parked { at } = &aircraft.state {
-    if let Some(airport) = closest_airport(airspaces, aircraft.pos) {
+    if let Some(airport) = closest_airport(airports, aircraft.pos) {
       aircraft.frequency = airport.frequencies.ground;
 
       events.push(
@@ -845,9 +831,9 @@ pub fn handle_approach_transition(
   events: &mut Vec<Event>,
   rng: &mut Rng,
 ) {
-  if let Some(airspace) = closest_airspace(&world.airspaces, aircraft.pos) {
-    // If we are not arriving at the right airspace, ignore this event.
-    if airspace.id != aircraft.flight_plan.arriving {
+  if let Some(airport) = closest_airport(&world.airports, aircraft.pos) {
+    // If we are not arriving at the right airport, ignore this event.
+    if airport.id != aircraft.flight_plan.arriving {
       return;
     }
 
@@ -855,14 +841,13 @@ pub fn handle_approach_transition(
     // we might be better off using more concrete logic in the effect
     // instead of relying on this in case that logic fails.
     aircraft.segment = FlightSegment::Approach;
-    aircraft.frequency =
-      airspace.airports.first().unwrap().frequencies.approach;
+    aircraft.frequency = airport.frequencies.approach;
 
-    if !airspace.auto {
+    if !airport.auto {
       if matches!(
-        world.airspace_statuses.get(&airspace.id),
-        Some(AirspaceStatus {
-          // If airspace is accepting inbounds.
+        world.airport_statuses.get(&airport.id),
+        Some(AirportStatus {
+          // If airport is accepting inbounds.
           arrival: ArrivalStatus::Normal,
           ..
         })
@@ -874,10 +859,10 @@ pub fn handle_approach_transition(
         aircraft.flight_plan.clear_waypoints();
 
         aircraft.target.heading =
-          angle_between_points(aircraft.pos, airspace.pos);
+          angle_between_points(aircraft.pos, airport.center);
 
         let direction = heading_to_direction(angle_between_points(
-          airspace.pos,
+          airport.center,
           aircraft.pos,
         ))
         .to_owned();
@@ -896,9 +881,9 @@ pub fn handle_approach_transition(
           EventKind::Callout(command),
         )));
       } else {
-        // If not accepted, go to a random airspace.
+        // If not accepted, go to a random airport.
         let arrival = rng
-          .sample_iter(world.airspaces.iter().filter(|a| a.auto))
+          .sample_iter(world.airports.iter().filter(|a| a.auto))
           .map(|a| a.id);
         if let Some(arrival) = arrival {
           // Use our old arrival as our departure.

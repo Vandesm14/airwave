@@ -3,7 +3,6 @@ use engine::{
   entities::{
     aircraft::Aircraft,
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
-    airspace::Airspace,
     world::World,
   },
   geometry::move_point,
@@ -207,6 +206,17 @@ impl Draw for Airport {
     for gate in self.terminals.iter().flat_map(|t| t.gates.iter()) {
       gate.draw_label(draw, scale, offset);
     }
+
+    let radius = AIRSPACE_RADIUS * scale * 2.0;
+
+    draw
+      .ellipse()
+      .x_y(center.x, center.y)
+      .width(radius)
+      .height(radius)
+      .color(color::rgba::<u8>(0, 0, 0, 0))
+      .stroke_weight(2.0)
+      .stroke(color::rgb::<u8>(0x22, 0x22, 0x22));
   }
 }
 
@@ -239,30 +249,10 @@ impl Draw for Aircraft {
   }
 }
 
-impl Draw for Airspace {
-  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
-    let pos = scale_point(self.pos, offset, scale);
-    let radius = AIRSPACE_RADIUS * scale * 2.0;
-
-    draw
-      .ellipse()
-      .x_y(pos.x, pos.y)
-      .width(radius)
-      .height(radius)
-      .color(color::rgba::<u8>(0, 0, 0, 0))
-      .stroke_weight(2.0)
-      .stroke(color::rgb::<u8>(0xaa, 0x22, 0x22));
-  }
-}
-
 impl Draw for World {
   fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
-    for airspace in self.airspaces.iter() {
-      airspace.draw(draw, scale, offset);
-
-      for airport in airspace.airports.iter() {
-        airport.draw(draw, scale, offset);
-      }
+    for airport in self.airports.iter() {
+      airport.draw(draw, scale, offset);
     }
   }
 }

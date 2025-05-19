@@ -10,7 +10,7 @@ import { World } from '../../bindings/World';
 import { OutgoingCommandReply } from '../../bindings/OutgoingCommandReply';
 import { ArrivalStatus } from '../../bindings/ArrivalStatus';
 import { DepartureStatus } from '../../bindings/DepartureStatus';
-import { AirspaceStatus } from '../../bindings/AirspaceStatus';
+import { AirportStatus } from '../../bindings/AirportStatus';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
@@ -124,21 +124,20 @@ export function useMessages() {
   }));
 }
 
-export const getAirspaceStatusKey = `/api/status`;
-export const getAirspaceStatus = (id: string) =>
-  `${getAirspaceStatusKey}/${id}`;
-export function useAirspaceStatus(id: string) {
-  return createQuery<AirspaceStatus>(() => ({
-    queryKey: [getAirspaceStatusKey],
+export const getAirportStatusKey = `/api/status`;
+export const getAirportStatus = (id: string) => `${getAirportStatusKey}/${id}`;
+export function useAirportStatus(id: string) {
+  return createQuery<AirportStatus>(() => ({
+    queryKey: [getAirportStatusKey],
     queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}${getAirspaceStatus(id)}`);
+      const result = await fetch(`${baseAPIPath}${getAirportStatus(id)}`);
       if (!result.ok) return [];
       return result.json();
     },
     initialData: {
       arrival: 'normal',
       departure: 'normal',
-    } as AirspaceStatus,
+    } as AirportStatus,
     staleTime: 2000,
     refetchInterval: 2000,
     refetchOnMount: 'always',
@@ -160,14 +159,14 @@ export function useArrivalStatus() {
         method: 'POST',
       }),
     onMutate: ({ status }: { id: string; status: ArrivalStatus }) =>
-      client.setQueryData<AirspaceStatus>([getAirspaceStatusKey], (old) => {
+      client.setQueryData<AirportStatus>([getAirportStatusKey], (old) => {
         if (old) {
           old.arrival = status;
         }
         return old;
       }),
     onSettled: () =>
-      client.invalidateQueries({ queryKey: [getAirspaceStatusKey] }),
+      client.invalidateQueries({ queryKey: [getAirportStatusKey] }),
   }));
 }
 
@@ -190,13 +189,13 @@ export function useDepartureStatus() {
         method: 'POST',
       }),
     onMutate: ({ status }: { id: string; status: DepartureStatus }) =>
-      client.setQueryData<AirspaceStatus>([getAirspaceStatusKey], (old) => {
+      client.setQueryData<AirportStatus>([getAirportStatusKey], (old) => {
         if (old) {
           old.departure = status;
         }
         return old;
       }),
     onSettled: () =>
-      client.invalidateQueries({ queryKey: [getAirspaceStatusKey] }),
+      client.invalidateQueries({ queryKey: [getAirportStatusKey] }),
   }));
 }

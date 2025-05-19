@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
+  AIRSPACE_RADIUS,
   geometry::{Translate, move_point},
   line::Line,
   pathfinder::{Object, Pathfinder},
@@ -57,6 +58,7 @@ pub struct Airport {
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
   pub terminals: Vec<Terminal>,
+  pub auto: bool,
 
   #[serde(skip)]
   pub pathfinder: Pathfinder,
@@ -91,6 +93,7 @@ impl Airport {
       taxiways: Vec::new(),
       terminals: Vec::new(),
       frequencies: Frequencies::default(),
+      auto: false,
 
       pathfinder: Pathfinder::new(),
     }
@@ -125,6 +128,11 @@ impl Airport {
     nodes.extend(self.terminals.iter().map(|g| g.clone().into()));
 
     self.pathfinder.calculate(nodes);
+  }
+
+  pub fn contains_point(&self, point: Vec2) -> bool {
+    let distance = point.distance_squared(self.center);
+    distance <= AIRSPACE_RADIUS.powf(2.0)
   }
 }
 

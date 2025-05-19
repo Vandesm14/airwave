@@ -1,5 +1,4 @@
 import { Airport } from '../../bindings/Airport';
-import { Airspace } from '../../bindings/Airspace';
 import { FlightSegment } from '../../bindings/FlightSegment';
 import { LandingState } from '../../bindings/LandingState';
 import { Runway } from '../../bindings/Runway';
@@ -13,35 +12,15 @@ export const timeScale = 1;
 export const nauticalMilesToFeet = 6076.115;
 export const knotToFeetPerSecond = 1.68781 * timeScale;
 export const TICK_RATE_TPS = 15;
+export const AIRSPACE_RADIUS = nauticalMilesToFeet * 30;
 
 // TODO: remove this
 export const HARD_CODED_AIRPORT = 'KSFO';
-export function hardcodedAirspace(
-  world: World | undefined
-): Airspace | undefined {
-  if (!world) return undefined;
-  for (let airspace of world.airspaces) {
-    if (airspace.id === HARD_CODED_AIRPORT) {
-      return airspace;
-    }
-  }
-
-  return undefined;
-}
 export function hardcodedAirport(
   world: World | undefined
 ): Airport | undefined {
   if (!world) return undefined;
-  for (let airspace of world.airspaces) {
-    let airport = airspace.airports.find(
-      (airport) => airport.id === HARD_CODED_AIRPORT
-    );
-    if (airport) {
-      return airport;
-    }
-  }
-
-  return undefined;
+  return world.airports.find((airport) => airport.id === HARD_CODED_AIRPORT);
 }
 
 export function ticksAsMs(ticks: number): number {
@@ -261,8 +240,8 @@ export function smallFlightSegment(segment: FlightSegment): string {
 
 export function DefaultWorld(): World {
   return {
-    airspaces: [],
+    airports: [],
     waypoints: [],
-    airspace_statuses: {},
+    airport_statuses: {},
   };
 }

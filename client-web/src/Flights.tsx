@@ -1,7 +1,7 @@
 import './Flights.scss';
 import { createSignal, Show } from 'solid-js';
 import {
-  useAirspaceStatus,
+  useAirportStatus,
   useArrivalStatus,
   useDepartureStatus,
 } from './lib/api';
@@ -12,7 +12,7 @@ import { DepartureStatus } from '../bindings/DepartureStatus';
 export default function Flights() {
   const [show, setShow] = createSignal(false);
 
-  const airspaceStatus = useAirspaceStatus(HARD_CODED_AIRPORT);
+  const airspaceStatus = useAirportStatus(HARD_CODED_AIRPORT);
 
   const setArrivalStatus = useArrivalStatus();
   const setDepartureStatus = useDepartureStatus();

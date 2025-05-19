@@ -175,7 +175,7 @@ impl Engine {
 
       // Run through all effects
       // State effects
-      aircraft.update_taxiing(&mut events, &self.world.airspaces, dt);
+      aircraft.update_taxiing(&mut events, &self.world.airports, dt);
       aircraft.update_landing(&mut events, dt);
       aircraft.update_flying(&mut events, dt);
 
@@ -184,10 +184,10 @@ impl Engine {
       aircraft.update_position(dt);
       aircraft.update_segment(
         &mut events,
-        &self.world.airspaces,
+        &self.world.airports,
         self.tick_counter,
       );
-      aircraft.update_airspace(&self.world.airspaces);
+      aircraft.update_airspace(&self.world.airports);
     }
 
     if self.config.run_collisions() {
@@ -210,9 +210,8 @@ impl Engine {
   pub fn compute_available_gates(&mut self) {
     for gate in self
       .world
-      .airspaces
+      .airports
       .iter_mut()
-      .flat_map(|a| a.airports.iter_mut())
       .flat_map(|a| a.terminals.iter_mut())
       .flat_map(|t| t.gates.iter_mut())
     {
@@ -345,8 +344,8 @@ impl Engine {
       // Skip checking aircraft that are both parked or not at the same airport.
       if matches!(aircraft.state, AircraftState::Parked { .. })
         && matches!(other_aircraft.state, AircraftState::Parked { .. })
-        || closest_airport(&self.world.airspaces, aircraft.pos).map(|a| a.id)
-          != closest_airport(&self.world.airspaces, other_aircraft.pos)
+        || closest_airport(&self.world.airports, aircraft.pos).map(|a| a.id)
+          != closest_airport(&self.world.airports, other_aircraft.pos)
             .map(|a| a.id)
       {
         continue;

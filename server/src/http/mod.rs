@@ -12,7 +12,7 @@ use methods::{
   comms::{comms_text, comms_voice},
   misc::{ping_pong, post_pause},
   state::{
-    get_airspace_status, get_messages, get_world, post_arrival_status,
+    get_airport_status, get_messages, get_world, post_arrival_status,
     post_departure_status,
   },
 };
@@ -45,7 +45,7 @@ pub async fn run(
       // State
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
-      .route("/status/{id}", get(get_airspace_status))
+      .route("/status/{id}", get(get_airport_status))
       .route("/status/arrival/{id}/{status}", post(post_arrival_status))
       .route(
         "/status/departure/{id}/{status}",
