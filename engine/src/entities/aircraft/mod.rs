@@ -492,6 +492,15 @@ impl Aircraft {
     self.flight_plan.departing = a;
     self.flight_plan.arriving = d;
   }
+
+  pub fn find_airport<'a>(
+    &self,
+    airports: &'a [Airport],
+  ) -> Option<&'a Airport> {
+    airports
+      .iter()
+      .find(|a| self.airspace.is_some_and(|id| a.id == id))
+  }
 }
 
 // Performance stats

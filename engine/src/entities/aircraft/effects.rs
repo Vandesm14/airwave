@@ -218,7 +218,9 @@ impl Aircraft {
           // Runway specific
           NodeBehavior::LineUp => {
             if current.kind == NodeKind::Runway {
-              if let Some(runway) = closest_airport(airports, self.pos)
+              if let Some(runway) = airports
+                .iter()
+                .find(|a| self.airspace.is_some_and(|id| a.id == id))
                 .and_then(|x| x.runways.iter().find(|r| r.id == current.name))
               {
                 self.heading = runway.heading;
@@ -301,29 +303,27 @@ impl Aircraft {
 
     // Assert Taxi.
     if let AircraftState::Taxiing { .. } = self.state {
-      let airport = closest_airport(airports, self.pos);
-      if let Some(airport) = airport {
+      if let Some(airspace) = self.airspace {
         // Assert TaxiDep.
-        if airport.id == self.flight_plan.departing {
+        if airspace == self.flight_plan.departing {
           segment = Some(FlightSegment::TaxiDep);
 
         // Assert TaxiArr.
-        } else if airport.id == self.flight_plan.arriving {
+        } else if airspace == self.flight_plan.arriving {
           segment = Some(FlightSegment::TaxiArr);
         }
       }
     }
 
     if let AircraftState::Flying = self.state {
-      let airport = closest_airport(airports, self.pos)
-        .filter(|a| {
-          a.center.distance_squared(self.pos) <= AIRSPACE_RADIUS.powf(2.0)
-        })
+      let airport = airports
+        .iter()
         .filter(|_| self.altitude <= TRANSITION_ALTITUDE)
         .filter(|a| {
           a.id == self.flight_plan.departing
             || a.id == self.flight_plan.arriving
-        });
+        })
+        .find(|a| self.airspace.is_some_and(|id| a.id == id));
       if let Some(airport) = airport {
         // Assert Departure.
         if airport.id == self.flight_plan.departing {

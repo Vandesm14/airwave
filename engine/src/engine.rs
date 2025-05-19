@@ -18,7 +18,7 @@ use crate::{
       events::{AircraftEvent, EventKind, handle_aircraft_event},
     },
     airport::Airport,
-    world::{Game, World, closest_airport},
+    world::{Game, World},
   },
   geometry::{angle_between_points, delta_angle},
 };
@@ -344,9 +344,7 @@ impl Engine {
       // Skip checking aircraft that are both parked or not at the same airport.
       if matches!(aircraft.state, AircraftState::Parked { .. })
         && matches!(other_aircraft.state, AircraftState::Parked { .. })
-        || closest_airport(&self.world.airports, aircraft.pos).map(|a| a.id)
-          != closest_airport(&self.world.airports, other_aircraft.pos)
-            .map(|a| a.id)
+        || aircraft.airspace != other_aircraft.airspace
       {
         continue;
       }

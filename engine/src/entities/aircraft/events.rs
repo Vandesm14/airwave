@@ -11,7 +11,7 @@ use crate::{
   engine::Event,
   entities::{
     airport::Airport,
-    world::{AirportStatus, ArrivalStatus, World, closest_airport},
+    world::{AirportStatus, ArrivalStatus, World},
   },
   geometry::{angle_between_points, delta_angle, inverse_degrees, move_point},
   heading_to_direction,
@@ -168,7 +168,10 @@ pub fn handle_aircraft_event(
       aircraft.frequency = *frequency;
     }
     EventKind::NamedFrequency(frq) => {
-      if let Some(frequency) = closest_airport(&world.airports, aircraft.pos)
+      if let Some(frequency) = world
+        .airports
+        .iter()
+        .find(|a| aircraft.airspace.is_some_and(|id| a.id == id))
         .and_then(|x| x.frequencies.try_from_string(frq))
       {
         aircraft.frequency = frequency;
@@ -363,7 +366,7 @@ pub fn handle_aircraft_event(
       if let AircraftState::Taxiing { .. } | AircraftState::Parked { .. } =
         aircraft.state
       {
-        if let Some(airport) = closest_airport(&world.airports, aircraft.pos) {
+        if let Some(airport) = aircraft.find_airport(&world.airports) {
           handle_taxi_event(
             aircraft,
             waypoints,
@@ -598,7 +601,8 @@ pub fn handle_land_event(
     aircraft.state,
     AircraftState::Flying | AircraftState::Landing { .. }
   ) {
-    if let Some(runway) = closest_airport(airports, aircraft.pos)
+    if let Some(runway) = aircraft
+      .find_airport(airports)
       .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
     {
       aircraft.state = AircraftState::Landing {
@@ -614,12 +618,11 @@ pub fn handle_touchdown_event(
   airports: &[Airport],
   events: &mut Vec<Event>,
 ) {
-  let AircraftState::Landing { runway, .. } = &mut aircraft.state else {
+  let AircraftState::Landing { runway, .. } = &aircraft.state else {
     unreachable!("outer function asserts that aircraft is landing")
   };
 
-  let airport = closest_airport(airports, aircraft.pos);
-  if let Some(airport) = airport {
+  if let Some(airport) = aircraft.find_airport(airports) {
     if airport.auto {
       events.push(Event::Aircraft(AircraftEvent::new(
         aircraft.id,
@@ -704,7 +707,7 @@ pub fn handle_taxi_event(
     // (otherwise it will be the enterance on the apron but not the gate)
     if let Some(last) = all_waypoints.last() {
       if last.kind == NodeKind::Gate {
-        if let Some(airport) = closest_airport(airports, aircraft.pos) {
+        if let Some(airport) = aircraft.find_airport(airports) {
           if let Some(gate) = airport
             .terminals
             .iter()
@@ -761,14 +764,16 @@ pub fn handle_takeoff_event(
   events: &mut Vec<Event>,
   airports: &[Airport],
 ) {
+  let runway = aircraft
+    .find_airport(airports)
+    .and_then(|x| x.runways.iter().find(|r| r.id == runway_id));
+
   if let AircraftState::Taxiing {
     current, waypoints, ..
   } = &mut aircraft.state
   {
     // If we are at the runway
-    if let Some(runway) = closest_airport(airports, aircraft.pos)
-      .and_then(|x| x.runways.iter().find(|r| r.id == runway_id))
-    {
+    if let Some(runway) = runway {
       if NodeKind::Runway == current.kind && current.name == runway_id {
         aircraft.target.speed = aircraft.flight_plan.speed;
         aircraft.target.altitude = aircraft.flight_plan.altitude;
@@ -803,7 +808,7 @@ pub fn handle_parked_transition(
   events: &mut Vec<Event>,
 ) {
   if let AircraftState::Parked { at } = &aircraft.state {
-    if let Some(airport) = closest_airport(airports, aircraft.pos) {
+    if let Some(airport) = aircraft.find_airport(airports) {
       aircraft.frequency = airport.frequencies.ground;
 
       events.push(
@@ -831,7 +836,7 @@ pub fn handle_approach_transition(
   events: &mut Vec<Event>,
   rng: &mut Rng,
 ) {
-  if let Some(airport) = closest_airport(&world.airports, aircraft.pos) {
+  if let Some(airport) = aircraft.find_airport(&world.airports) {
     // If we are not arriving at the right airport, ignore this event.
     if airport.id != aircraft.flight_plan.arriving {
       return;
