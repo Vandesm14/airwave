@@ -141,7 +141,7 @@ fn model(app: &App) -> Model {
     }
 
     let dt = 1.0 / runner.rate as f32;
-    let events = runner.engine.tick(
+    runner.engine.tick(
       &mut runner.world,
       &mut runner.game,
       &mut runner.rng,
