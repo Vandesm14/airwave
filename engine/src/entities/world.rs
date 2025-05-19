@@ -9,19 +9,6 @@ use crate::pathfinder::Node;
 
 use super::{aircraft::Aircraft, airport::Airport};
 
-pub fn closest_airport(airports: &[Airport], point: Vec2) -> Option<&Airport> {
-  let mut closest: Option<&Airport> = None;
-  let mut distance = f32::MAX;
-  for airport in airports.iter().filter(|a| a.contains_point(point)) {
-    if airport.center.distance_squared(point) < distance {
-      distance = airport.center.distance_squared(point);
-      closest = Some(airport);
-    }
-  }
-
-  closest
-}
-
 pub fn calculate_airport_waypoints(airports: &mut [Airport]) {
   for airport in airports.iter_mut() {
     airport.calculate_waypoints();
@@ -77,6 +64,19 @@ impl World {
         .airport_statuses
         .insert(airport.id, AirportStatus::default());
     }
+  }
+
+  pub fn closest_airport(&self, point: Vec2) -> Option<&Airport> {
+    let mut closest: Option<&Airport> = None;
+    let mut distance = f32::MAX;
+    for airport in self.airports.iter().filter(|a| a.contains_point(point)) {
+      if airport.center.distance_squared(point) < distance {
+        distance = airport.center.distance_squared(point);
+        closest = Some(airport);
+      }
+    }
+
+    closest
   }
 }
 

@@ -175,19 +175,15 @@ impl Engine {
 
       // Run through all effects
       // State effects
-      aircraft.update_taxiing(&mut events, &self.world.airports, dt);
+      aircraft.update_taxiing(&mut events, &self.world, dt);
       aircraft.update_landing(&mut events, dt);
       aircraft.update_flying(&mut events, dt);
 
       // General effects
       aircraft.update_from_targets(dt);
       aircraft.update_position(dt);
-      aircraft.update_segment(
-        &mut events,
-        &self.world.airports,
-        self.tick_counter,
-      );
-      aircraft.update_airspace(&self.world.airports);
+      aircraft.update_segment(&mut events, &self.world, self.tick_counter);
+      aircraft.update_airspace(&self.world);
     }
 
     if self.config.run_collisions() {

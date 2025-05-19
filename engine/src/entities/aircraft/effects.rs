@@ -5,7 +5,7 @@ use crate::{
   TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
   engine::Event,
-  entities::{airport::Airport, world::closest_airport},
+  entities::world::World,
   geometry::{
     add_degrees, angle_between_points, calculate_ils_altitude,
     closest_point_on_line, delta_angle, inverse_degrees, move_point,
@@ -166,7 +166,7 @@ impl Aircraft {
   pub fn update_taxiing(
     &mut self,
     events: &mut Vec<Event>,
-    airports: &[Airport],
+    world: &World,
     dt: f32,
   ) {
     let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND * dt;
@@ -218,7 +218,8 @@ impl Aircraft {
           // Runway specific
           NodeBehavior::LineUp => {
             if current.kind == NodeKind::Runway {
-              if let Some(runway) = airports
+              if let Some(runway) = world
+                .airports
                 .iter()
                 .find(|a| self.airspace.is_some_and(|id| a.id == id))
                 .and_then(|x| x.runways.iter().find(|r| r.id == current.name))
@@ -277,7 +278,7 @@ impl Aircraft {
   pub fn update_segment(
     &mut self,
     events: &mut Vec<Event>,
-    airports: &[Airport],
+    world: &World,
     tick: usize,
   ) {
     let mut segment: Option<FlightSegment> = None;
@@ -316,7 +317,8 @@ impl Aircraft {
     }
 
     if let AircraftState::Flying = self.state {
-      let airport = airports
+      let airport = world
+        .airports
         .iter()
         .filter(|_| self.altitude <= TRANSITION_ALTITUDE)
         .filter(|a| {
@@ -564,7 +566,7 @@ impl Aircraft {
     }
   }
 
-  pub fn update_airspace(&mut self, airports: &[Airport]) {
-    self.airspace = closest_airport(airports, self.pos).map(|a| a.id);
+  pub fn update_airspace(&mut self, world: &World) {
+    self.airspace = world.closest_airport(self.pos).map(|a| a.id);
   }
 }
