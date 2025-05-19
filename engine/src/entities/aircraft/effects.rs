@@ -1,8 +1,8 @@
 use std::f32::consts::PI;
 
 use crate::{
-  AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
+  TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
   engine::Event,
   entities::{airport::Airport, world::closest_airport},
