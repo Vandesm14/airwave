@@ -441,7 +441,7 @@ impl Pathfinder {
       //   );
       // }
 
-      let first_path = paths.first().map(|p| {
+      paths.first().map(|p| {
         let mut p = p.clone();
         p.path = p
           .path
@@ -460,18 +460,7 @@ impl Pathfinder {
           .collect();
 
         p
-      });
-      // TODO: Do we still need observability into this?
-      // if let Some(first_path) = &first_path {
-      //   tracing::info!(
-      //     "found path from {:?} to {:?}: {:?}",
-      //     display_node_vec2(&from),
-      //     display_node_vec2(&to),
-      //     display_vec_node_vec2(&first_path.path)
-      //   );
-      // }
-
-      first_path
+      })
     } else {
       None
     }
