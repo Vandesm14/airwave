@@ -1,5 +1,11 @@
 use engine::{
-  entities::airport::{Airport, Gate, Runway, Taxiway, Terminal},
+  AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
+  entities::{
+    aircraft::Aircraft,
+    airport::{Airport, Gate, Runway, Taxiway, Terminal},
+    airspace::Airspace,
+    world::World,
+  },
   geometry::move_point,
 };
 use glam::Vec2;
@@ -188,6 +194,63 @@ impl Draw for Airport {
     }
     for gate in self.terminals.iter().flat_map(|t| t.gates.iter()) {
       gate.draw_label(draw, scale, offset);
+    }
+  }
+}
+
+impl Draw for Aircraft {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    let pos = scale_point(self.pos, offset, scale);
+    let point_scale = (6.0_f32).max(3000.0 * scale);
+
+    draw
+      .rect()
+      .x_y(pos.x, pos.y)
+      .width(point_scale)
+      .height(point_scale)
+      .color(color::GREEN);
+
+    draw
+      .line()
+      .start(glam_to_geom(pos))
+      .end(glam_to_geom(scale_point(
+        move_point(
+          self.pos,
+          self.heading,
+          (self.speed / 60.0) * NAUTICALMILES_TO_FEET,
+        ),
+        offset,
+        scale,
+      )))
+      .weight(2.0)
+      .color(color::GREEN);
+  }
+}
+
+impl Draw for Airspace {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    let pos = scale_point(self.pos, offset, scale);
+    let radius = AIRSPACE_RADIUS * scale * 2.0;
+
+    draw
+      .ellipse()
+      .x_y(pos.x, pos.y)
+      .width(radius)
+      .height(radius)
+      .color(color::rgba::<u8>(0, 0, 0, 0))
+      .stroke_weight(2.0)
+      .stroke(color::rgb::<u8>(0xaa, 0x22, 0x22));
+  }
+}
+
+impl Draw for World {
+  fn draw(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    for airspace in self.airspaces.iter() {
+      airspace.draw(draw, scale, offset);
+
+      for airport in airspace.airports.iter() {
+        airport.draw(draw, scale, offset);
+      }
     }
   }
 }

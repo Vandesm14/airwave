@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs, path::Path};
 
-use engine::{
+use crate::{
   compile::{setup_lua, try_compile_airport},
   entities::airport::Airport,
   geometry::Translate,

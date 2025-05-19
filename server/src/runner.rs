@@ -15,6 +15,7 @@ use turborand::{TurboRand, rng::Rng};
 use engine::{
   AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
   WORLD_RADIUS,
+  assets::load_assets,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, EngineConfig, Event},
   entities::{
@@ -31,7 +32,6 @@ use engine::{
 };
 
 use crate::{
-  assets::load_assets,
   job::{JobQueue, JobReq},
   merge_points,
   ring::RingBuffer,

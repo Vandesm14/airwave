@@ -406,7 +406,6 @@ impl TCAS {
 pub struct Aircraft {
   #[ts(as = "String")]
   pub id: Intern<String>,
-  pub is_colliding: bool,
 
   #[ts(as = "(f32, f32)")]
   pub pos: Vec2,
@@ -461,7 +460,6 @@ impl Aircraft {
   pub fn random_dormant(gate: Gate, rng: &mut Rng, airport: &Airport) -> Self {
     Self {
       id: Intern::from(Self::random_callsign(rng)),
-      is_colliding: false,
 
       pos: gate.pos,
       speed: 0.0,

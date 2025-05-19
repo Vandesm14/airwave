@@ -4,6 +4,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+pub mod assets;
 pub mod command;
 pub mod compile;
 pub mod engine;

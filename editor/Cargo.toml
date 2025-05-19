@@ -5,14 +5,20 @@ edition.workspace = true
 publish.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "debugger"
+path = "src/debugger.rs"
+
 [dependencies]
 engine = { path = "../engine" }
 
 clap.workspace = true
 glam.workspace = true
+internment.workspace = true
 mlua.workspace = true
 serde_json.workspace = true
 serde.workspace = true
+turborand.workspace = true
 
 nannou = "0.19.0"
 nannou_egui = "0.19.0"

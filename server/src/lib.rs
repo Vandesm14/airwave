@@ -8,7 +8,6 @@ use glam::Vec2;
 use itertools::Itertools;
 use union_find::{QuickUnionUf, UnionBySize, UnionFind};
 
-pub mod assets;
 pub mod config;
 pub mod http;
 pub mod job;
