@@ -15,7 +15,6 @@ use turborand::{TurboRand, rng::Rng};
 use engine::{
   AIRSPACE_PADDING_RADIUS, AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
   WORLD_RADIUS,
-  assets::load_assets,
   command::{CommandWithFreq, OutgoingCommandReply, Task},
   engine::{Engine, EngineConfig, Event},
   entities::{
@@ -23,7 +22,7 @@ use engine::{
       Aircraft, AircraftKind, AircraftState, FlightSegment,
       events::{AircraftEvent, EventKind},
     },
-    airport::{Airport, Frequencies},
+    airport::Frequencies,
     airspace::Airspace,
     world::{AirspaceStatus, ArrivalStatus, DepartureStatus, Game, World},
   },
@@ -105,10 +104,6 @@ pub enum ResKind {
 
 #[derive(Debug)]
 pub struct Runner {
-  pub airports: HashMap<String, Airport>,
-
-  pub world: World,
-  pub game: Game,
   pub engine: Engine,
   pub messages: RingBuffer<CommandWithFreq>,
 
@@ -118,11 +113,6 @@ pub struct Runner {
   pub post_queue: JobQueue<ArgReqKind, ResKind>,
 
   pub save_to: Option<PathBuf>,
-  pub rng: Rng,
-
-  last_tick: Instant,
-  pub rate: usize,
-  pub tick_counter: usize,
 
   spawns: SignalGenerator,
   perf_log: SignalGenerator,
@@ -135,13 +125,7 @@ impl Runner {
     save_to: Option<PathBuf>,
     rng: Rng,
   ) -> Self {
-    let rate = 15;
-
     Self {
-      airports: HashMap::new(),
-
-      world: World::default(),
-      game: Game::default(),
       engine: Engine::default(),
       messages: RingBuffer::new(30),
 
@@ -151,43 +135,15 @@ impl Runner {
       post_queue: JobQueue::new(post_rcv),
 
       save_to,
-      rng,
 
-      last_tick: Instant::now(),
-      rate,
-      tick_counter: 0,
-
-      // Spawn rate is 60 + 15 seconds to make it less robotic.
-      spawns: SignalGenerator::new(rate * SPAWN_RATE_SECONDS),
-      perf_log: SignalGenerator::new(rate * PERF_LOG_SECONDS),
+      spawns: SignalGenerator::new(DEFAULT_TICK_RATE_TPS * SPAWN_RATE_SECONDS),
+      perf_log: SignalGenerator::new(DEFAULT_TICK_RATE_TPS * PERF_LOG_SECONDS),
     }
   }
 
   pub fn reset_signal_gens(&mut self) {
     self.spawns.set_first();
     self.perf_log.set_first();
-  }
-
-  pub fn load_assets(&mut self) {
-    let assets = load_assets();
-
-    self.airports = assets.airports;
-  }
-
-  pub fn airport(&self, id: impl AsRef<str>) -> Option<&Airport> {
-    self.airports.get(id.as_ref())
-  }
-
-  pub fn default_airport(&self) -> Option<&Airport> {
-    self.airport("default")
-  }
-
-  pub fn add_aircraft(&mut self, mut aircraft: Aircraft) {
-    while self.game.aircraft.iter().any(|a| a.id == aircraft.id) {
-      aircraft.id = Intern::from(Aircraft::random_callsign(&mut self.rng));
-    }
-
-    self.game.aircraft.push(aircraft);
   }
 
   pub fn generate_airspaces(
@@ -211,6 +167,7 @@ impl Runner {
     };
 
     let mut airport = self
+      .engine
       .default_airport()
       .expect("Could not find default airport.")
       .clone();
@@ -239,7 +196,7 @@ impl Runner {
           (world_rng.f32() - 0.5) * WORLD_RADIUS,
         );
 
-        for airport in self.world.airspaces.iter() {
+        for airport in self.engine.world.airspaces.iter() {
           if circle_circle_intersection(
             position,
             airport.pos,
@@ -266,7 +223,7 @@ impl Runner {
       airport.translate(airspace.pos);
       airspace.airports.push(airport);
 
-      self.world.airspaces.push(airspace);
+      self.engine.world.airspaces.push(airspace);
     }
   }
 
@@ -275,7 +232,7 @@ impl Runner {
     let min_distance = NAUTICALMILES_TO_FEET * 15.0;
 
     let mut waypoints: Vec<Vec2> = Vec::new();
-    for airspace in self.world.airspaces.iter().combinations(2) {
+    for airspace in self.engine.world.airspaces.iter().combinations(2) {
       let first = airspace.first().unwrap();
       let second = airspace.last().unwrap();
       let count =
@@ -291,6 +248,7 @@ impl Runner {
       .drain(..)
       .filter(|w| {
         !self
+          .engine
           .world
           .airspaces
           .iter()
@@ -306,21 +264,25 @@ impl Runner {
         )
       });
 
-    self.world.waypoints = waypoints.collect();
+    self.engine.world.waypoints = waypoints.collect();
   }
 
   pub fn fill_gates(&mut self) {
     let mut aircrafts: Vec<Aircraft> = Vec::new();
-    for airspace in self.world.airspaces.iter() {
+    for airspace in self.engine.world.airspaces.iter() {
       for airport in airspace.airports.iter() {
         for terminal in airport.terminals.iter() {
           for gate in terminal.gates.iter() {
-            let mut aircraft =
-              Aircraft::random_dormant(gate.clone(), &mut self.rng, airport);
+            let mut aircraft = Aircraft::random_dormant(
+              gate.clone(),
+              &mut self.engine.rng,
+              airport,
+            );
             aircraft.flight_plan.departing = airspace.id;
             aircraft.flight_plan.arriving = self
+              .engine
               .rng
-              .sample(&self.world.airspaces)
+              .sample(&self.engine.world.airspaces)
               .filter(|a| a.auto && a.id != airspace.id)
               .map(|a| a.id)
               .unwrap_or_default();
@@ -332,20 +294,21 @@ impl Runner {
     }
 
     for aircraft in aircrafts.drain(..) {
-      self.add_aircraft(aircraft);
+      self.engine.add_aircraft(aircraft);
     }
   }
 
   fn do_spawns(&mut self) {
     // If spawn tick, do spawns.
-    if self.spawns.tick(self.tick_counter) {
+    if self.spawns.tick(self.engine.tick_counter) {
       let airports = self
+        .engine
         .world
         .airspaces
         .iter()
         .flat_map(|a| a.airports.iter().map(|ar| (a.auto, ar)));
       for (auto, airport) in airports {
-        let do_spawn = self.rng.chance(DEPARTURE_SPAWN_CHANCE);
+        let do_spawn = self.engine.rng.chance(DEPARTURE_SPAWN_CHANCE);
         if !do_spawn {
           continue;
         }
@@ -354,9 +317,10 @@ impl Runner {
           .terminals
           .iter()
           .flat_map(|t| t.gates.iter().filter(|g| !g.available));
-        let random_gate = self.rng.sample_iter(gates);
+        let random_gate = self.engine.rng.sample_iter(gates);
         if let Some(gate) = random_gate {
           let aircraft = self
+            .engine
             .game
             .aircraft
             .iter_mut()
@@ -374,23 +338,23 @@ impl Runner {
 
           if let Some(aircraft) = aircraft {
             // Chance for a flight to go to a non-auto airspace.
-            let go_to_non_auto = self.rng.chance(ARRIVE_TO_NON_AUTO_CHANCE);
-            let destination =
-              self
-                .rng
-                .sample_iter(self.world.airspaces.iter().filter(|a| {
-                  if a.id == aircraft.flight_plan.departing {
-                    return false;
-                  }
+            let go_to_non_auto =
+              self.engine.rng.chance(ARRIVE_TO_NON_AUTO_CHANCE);
+            let destination = self.engine.rng.sample_iter(
+              self.engine.world.airspaces.iter().filter(|a| {
+                if a.id == aircraft.flight_plan.departing {
+                  return false;
+                }
 
-                  if go_to_non_auto { !a.auto } else { a.auto }
-                }));
+                if go_to_non_auto { !a.auto } else { a.auto }
+              }),
+            );
             if let Some(destination) = destination {
               // If we are preparing, only schedule departures from auto
               // airspaces.
               if (auto || !self.preparing)
                 && matches!(
-                  self.world.airspace_statuses.get(&airport.id),
+                  self.engine.world.airspace_statuses.get(&airport.id),
                   Some(AirspaceStatus {
                     departure: DepartureStatus::Normal,
                     ..
@@ -403,10 +367,10 @@ impl Runner {
                 let min_time_seconds = if self.preparing { 0 } else { 60 };
                 let max_time_seconds = 60 * 5;
                 let delay_seconds =
-                  self.rng.usize(min_time_seconds..=max_time_seconds);
-                let delay = delay_seconds * self.rate;
+                  self.engine.rng.usize(min_time_seconds..=max_time_seconds);
+                let delay = delay_seconds * self.engine.tick_rate_tps;
 
-                aircraft.flight_time = Some(self.tick_counter + delay);
+                aircraft.flight_time = Some(self.engine.tick_counter + delay);
               }
             }
           }
@@ -416,13 +380,11 @@ impl Runner {
 
     // QuickDepart based on Flight Time.
     if self.preparing {
-      for aircraft in self
-        .game
-        .aircraft
-        .iter_mut()
-        .filter(|a| a.flight_time.is_some_and(|t| self.tick_counter >= t))
-      {
+      for aircraft in self.engine.game.aircraft.iter_mut().filter(|a| {
+        a.flight_time.is_some_and(|t| self.engine.tick_counter >= t)
+      }) {
         if self
+          .engine
           .world
           .airspaces
           .iter()
@@ -437,12 +399,6 @@ impl Runner {
   }
 
   pub fn tick(&mut self) -> Vec<Event> {
-    self.last_tick = Instant::now();
-
-    let tick_span =
-      tracing::span!(tracing::Level::TRACE, "tick", tick = self.tick_counter);
-    let _tick_span_guard = tick_span.enter();
-
     let mut commands: Vec<CommandWithFreq> = Vec::new();
 
     // GET
@@ -529,7 +485,7 @@ impl Runner {
       }
     }
 
-    if self.game.paused {
+    if self.engine.game.paused {
       return Vec::new();
     }
 
@@ -537,14 +493,7 @@ impl Runner {
       self.execute_command(command);
     }
 
-    let dt = 1.0 / self.rate as f32;
-    let events = self.engine.tick(
-      &mut self.world,
-      &mut self.game,
-      &mut self.rng,
-      dt,
-      self.tick_counter,
-    );
+    let events = self.engine.tick();
 
     // Run through all callout events and broadcast them
     self.messages.extend(

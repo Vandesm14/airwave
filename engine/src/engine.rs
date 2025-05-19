@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+  collections::{HashMap, HashSet},
+  time::Instant,
+};
 
 use glam::Vec2;
 use internment::Intern;
@@ -7,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use turborand::rng::Rng;
 
 use crate::{
-  KNOT_TO_FEET_PER_SECOND,
+  DEFAULT_TICK_RATE_TPS, KNOT_TO_FEET_PER_SECOND,
+  assets::load_assets,
   entities::{
     aircraft::{
       Aircraft, AircraftState, TCAS, TaxiingState,
@@ -21,6 +25,7 @@ use crate::{
         AircraftEvent, AircraftEventHandler, EventKind, HandleAircraftEvent,
       },
     },
+    airport::Airport,
     world::{Game, World, closest_airport},
   },
   geometry::{angle_between_points, delta_angle},
@@ -120,35 +125,86 @@ impl EngineConfig {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone)]
 pub struct Engine {
-  pub events: Vec<Event>,
+  pub airports: HashMap<String, Airport>,
   pub config: EngineConfig,
+  pub rng: Rng,
+
+  pub world: World,
+  pub game: Game,
+
+  pub events: Vec<Event>,
+
+  last_tick: Instant,
+  pub tick_counter: usize,
+  pub tick_rate_tps: usize,
+}
+
+impl Default for Engine {
+  fn default() -> Self {
+    Self {
+      airports: Default::default(),
+      config: Default::default(),
+      rng: Default::default(),
+      world: Default::default(),
+      game: Default::default(),
+      events: Default::default(),
+      last_tick: Instant::now(),
+      tick_counter: Default::default(),
+      tick_rate_tps: DEFAULT_TICK_RATE_TPS,
+    }
+  }
 }
 
 impl Engine {
-  pub fn tick(
-    &mut self,
-    world: &mut World,
-    game: &mut Game,
-    rng: &mut Rng,
-    dt: f32,
-    tick: usize,
-  ) -> Vec<Event> {
-    self.compute_available_gates(&game.aircraft, world);
+  pub fn load_assets(&mut self) {
+    let assets = load_assets();
+
+    self.airports = assets.airports;
+  }
+
+  pub fn airport(&self, id: impl AsRef<str>) -> Option<&Airport> {
+    self.airports.get(id.as_ref())
+  }
+
+  pub fn default_airport(&self) -> Option<&Airport> {
+    self.airport("default")
+  }
+
+  pub fn add_aircraft(&mut self, mut aircraft: Aircraft) {
+    while self.game.aircraft.iter().any(|a| a.id == aircraft.id) {
+      aircraft.id = Intern::from(Aircraft::random_callsign(&mut self.rng));
+    }
+
+    self.game.aircraft.push(aircraft);
+  }
+
+  pub fn tick(&mut self) -> Vec<Event> {
+    // TODO: use real DT.
+    let dt = 1.0 / self.tick_rate_tps as f32;
+    self.last_tick = Instant::now();
+
+    let tick_span =
+      tracing::span!(tracing::Level::TRACE, "tick", tick = self.tick_counter);
+    let _tick_span_guard = tick_span.enter();
+
+    let mut new_events: Vec<Event> = Vec::new();
+    self.compute_available_gates();
 
     if self.config.show_logs() && !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
 
-    let mut bundle = Bundle::from_world(world, rng, dt, tick);
+    // let mut bundle =
+    //   Bundle::from_world(&self.world, &mut self.rng, dt, self.tick_counter);
     if self.config.run_collisions() {
-      self.handle_tcas(&mut game.aircraft, &mut bundle);
+      new_events.extend(self.handle_tcas());
     }
 
-    for aircraft in game.aircraft.iter_mut() {
+    for aircraft in self.game.aircraft.iter_mut() {
       // Capture the previous state
-      bundle.prev = aircraft.clone();
+      let prev = aircraft.clone();
 
       // Run through all events
       for event in self.events.iter().filter_map(|e| match e {
@@ -156,46 +212,46 @@ impl Engine {
         Event::UiEvent(_) => None,
       }) {
         if event.id == aircraft.id {
-          HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
+          // HandleAircraftEvent::run(aircraft, &event.kind, &mut bundle);
         }
       }
 
       // Run through all effects
-      AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
-      AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
-      AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
-      AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
-      AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
-      AircraftUpdateSegmentEffect::run(aircraft, &mut bundle);
+      // AircraftUpdateTaxiingEffect::run(aircraft, &mut bundle);
+      // AircraftUpdateLandingEffect::run(aircraft, &mut bundle);
+      // AircraftUpdateFlyingEffect::run(aircraft, &mut bundle);
+      // AircraftUpdateFromTargetsEffect::run(aircraft, &mut bundle);
+      // AircraftUpdatePositionEffect::run(aircraft, &mut bundle);
+      // AircraftUpdateSegmentEffect::run(aircraft, &mut bundle);
     }
 
     if self.config.run_collisions() {
-      self.taxi_collisions(&mut game.aircraft, &mut bundle);
+      self.taxi_collisions();
     }
 
     // Capture the left over events and actions for next time
-    if self.config.show_logs() && !bundle.events.is_empty() {
+    if self.config.show_logs() && !new_events.is_empty() {
       // TODO: decide if we want to keep this or discard this.
       // tracing::info!("new events: {:?}", bundle.events);
     }
 
-    self.events = core::mem::take(&mut bundle.events);
+    self.events = new_events;
     self.events.clone()
   }
+}
 
-  pub fn compute_available_gates(
-    &mut self,
-    aircrafts: &[Aircraft],
-    world: &mut World,
-  ) {
-    for gate in world
+// Effects
+impl Engine {
+  pub fn compute_available_gates(&mut self) {
+    for gate in self
+      .world
       .airspaces
       .iter_mut()
       .flat_map(|a| a.airports.iter_mut())
       .flat_map(|a| a.terminals.iter_mut())
       .flat_map(|t| t.gates.iter_mut())
     {
-      let aircraft = aircrafts.iter().find(|a| {
+      let aircraft = self.game.aircraft.iter().find(|a| {
         if let AircraftState::Parked { at, .. } = &a.state {
           at.name == gate.id && a.pos == gate.pos
         } else {
@@ -207,13 +263,10 @@ impl Engine {
     }
   }
 
-  pub fn handle_tcas(
-    &mut self,
-    aircrafts: &mut [Aircraft],
-    bundle: &mut Bundle,
-  ) {
+  pub fn handle_tcas(&mut self) -> Vec<Event> {
+    let mut events: Vec<Event> = Vec::new();
     let mut collisions: HashMap<Intern<String>, TCAS> = HashMap::new();
-    for pair in aircrafts.iter().combinations(2) {
+    for pair in self.game.aircraft.iter().combinations(2) {
       let aircraft = pair.first().unwrap();
       let other_aircraft = pair.last().unwrap();
 
@@ -286,12 +339,12 @@ impl Engine {
       }
     }
 
-    aircrafts.iter_mut().for_each(|aircraft| {
+    self.game.aircraft.iter_mut().for_each(|aircraft| {
       if let Some(tcas) = collisions.get(&aircraft.id) {
         aircraft.tcas = *tcas;
       } else if !aircraft.tcas.is_idle() {
         if aircraft.tcas.is_ra() {
-          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+          events.push(Event::Aircraft(AircraftEvent::new(
             aircraft.id,
             EventKind::CalloutTARA,
           )));
@@ -300,17 +353,18 @@ impl Engine {
         aircraft.tcas = TCAS::Idle;
       }
     });
+
+    events
   }
 
   // FIXME: There's a bug here when aircraft land it spits out a ton of
   // TaxiContinue events. Not sure why.
-  pub fn taxi_collisions(
-    &mut self,
-    aircrafts: &mut [Aircraft],
-    bundle: &mut Bundle,
-  ) {
+  pub fn taxi_collisions(&mut self) -> Vec<Event> {
+    let mut events: Vec<Event> = Vec::new();
     let mut collisions: HashSet<Intern<String>> = HashSet::new();
-    for pair in aircrafts
+    for pair in self
+      .game
+      .aircraft
       .iter()
       .filter(|a| {
         matches!(
@@ -326,8 +380,8 @@ impl Engine {
       // Skip checking aircraft that are both parked or not at the same airport.
       if matches!(aircraft.state, AircraftState::Parked { .. })
         && matches!(other_aircraft.state, AircraftState::Parked { .. })
-        || closest_airport(&bundle.world.airspaces, aircraft.pos).map(|a| a.id)
-          != closest_airport(&bundle.world.airspaces, other_aircraft.pos)
+        || closest_airport(&self.world.airspaces, aircraft.pos).map(|a| a.id)
+          != closest_airport(&self.world.airspaces, other_aircraft.pos)
             .map(|a| a.id)
       {
         continue;
@@ -374,11 +428,11 @@ impl Engine {
       }
     }
 
-    for aircraft in aircrafts.iter_mut() {
+    for aircraft in self.game.aircraft.iter_mut() {
       if let AircraftState::Taxiing { state, .. } = &mut aircraft.state {
         if collisions.contains(&aircraft.id) && state == &TaxiingState::Armed {
           *state = TaxiingState::Stopped;
-          bundle.events.push(Event::Aircraft(AircraftEvent::new(
+          events.push(Event::Aircraft(AircraftEvent::new(
             aircraft.id,
             EventKind::TaxiHold { and_state: false },
           )));
@@ -386,7 +440,7 @@ impl Engine {
           && matches!(state, TaxiingState::Override | TaxiingState::Stopped)
         {
           if matches!(state, TaxiingState::Stopped) {
-            bundle.events.push(Event::Aircraft(AircraftEvent::new(
+            events.push(Event::Aircraft(AircraftEvent::new(
               aircraft.id,
               EventKind::TaxiContinue,
             )));
@@ -396,5 +450,7 @@ impl Engine {
         }
       }
     }
+
+    events
   }
 }

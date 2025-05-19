@@ -15,6 +15,8 @@ pub mod pathfinder;
 pub mod wayfinder;
 pub mod wordify;
 
+pub const DEFAULT_TICK_RATE_TPS: usize = 15;
+
 pub const NAUTICALMILES_TO_FEET: f32 = 6076.115;
 pub const KNOT_TO_FEET_PER_SECOND: f32 = 1.68781;
 
