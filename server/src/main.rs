@@ -178,7 +178,7 @@ async fn main() {
 
   tracing::info!("Starting game loop...");
 
-  runner.spawns.reset();
+  runner.reset_signal_gens();
   runner.game.paused = config.world().paused();
   tokio::task::spawn_blocking(move || runner.begin_loop());
 

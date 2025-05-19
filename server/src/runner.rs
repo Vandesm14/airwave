@@ -44,6 +44,7 @@ pub const AIRPORT_SPAWN_CHANCE: f64 = 0.8;
 pub const NON_AUTO_DEPARTURE_CHANCE: f64 = 1.0;
 pub const ARRIVE_TO_NON_AUTO_CHANCE: f64 = 0.2;
 pub const SPAWN_RATE_SECONDS: usize = 75;
+pub const PERF_LOG_SECONDS: usize = 60;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -124,7 +125,8 @@ pub struct Runner {
   pub rate: usize,
   pub tick_counter: usize,
 
-  pub spawns: SignalGenerator,
+  spawns: SignalGenerator,
+  perf_log: SignalGenerator,
 }
 
 impl Runner {
@@ -158,7 +160,13 @@ impl Runner {
 
       // Spawn rate is 60 + 15 seconds to make it less robotic.
       spawns: SignalGenerator::new(rate * SPAWN_RATE_SECONDS),
+      perf_log: SignalGenerator::new(rate * PERF_LOG_SECONDS),
     }
+  }
+
+  pub fn reset_signal_gens(&mut self) {
+    self.spawns.set_first();
+    self.perf_log.set_first();
   }
 
   pub fn load_assets(&mut self) {
@@ -329,6 +337,104 @@ impl Runner {
     }
   }
 
+  fn do_spawns(&mut self) {
+    // If spawn tick, do spawns.
+    if self.spawns.tick(self.tick_counter) {
+      let airports = self
+        .world
+        .airspaces
+        .iter()
+        .flat_map(|a| a.airports.iter().map(|ar| (a.auto, ar)));
+      for (auto, airport) in airports {
+        let do_spawn = self.rng.chance(AIRPORT_SPAWN_CHANCE);
+        if !do_spawn {
+          continue;
+        }
+
+        let do_non_auto_spawn = self.rng.chance(NON_AUTO_DEPARTURE_CHANCE);
+        // Only use dedicated spawn rate for manual airspaces if we are
+        // preparing via `self.quick_start()`.
+        if !auto && self.preparing && !do_non_auto_spawn {
+          continue;
+        }
+
+        let gates = airport
+          .terminals
+          .iter()
+          .flat_map(|t| t.gates.iter().filter(|g| !g.available));
+        let gate = self.rng.sample_iter(gates);
+        if let Some(gate) = gate {
+          let aircraft = self
+            .game
+            .aircraft
+            .iter_mut()
+            // Only pick inactive aircraft
+            .filter(|a| a.flight_time.is_none())
+            .find(|a| {
+              if let AircraftState::Parked { at } = &a.state {
+                at.name == gate.id && a.pos == gate.pos
+              } else {
+                false
+              }
+            });
+
+          if let Some(aircraft) = aircraft {
+            // Chance for a flight to go to a non-auto airspace.
+            let go_to_non_auto = self.rng.chance(ARRIVE_TO_NON_AUTO_CHANCE);
+            let destination =
+              self
+                .rng
+                .sample_iter(self.world.airspaces.iter().filter(|a| {
+                  if a.id == aircraft.flight_plan.departing {
+                    return false;
+                  }
+
+                  if go_to_non_auto { !a.auto } else { a.auto }
+                }));
+            if let Some(destination) = destination {
+              if !self.preparing
+                && !auto
+                && matches!(
+                  self.world.airspace_statuses.get(&airport.id),
+                  Some(AirspaceStatus {
+                    departure: DepartureStatus::Normal,
+                    ..
+                  })
+                )
+              {
+                aircraft.flight_plan.arriving = destination.id;
+
+                let min_time_seconds = if self.preparing { 0 } else { 60 };
+                let max_time_seconds = 60 * 5;
+                let delay = self.rng.u64(min_time_seconds..=max_time_seconds);
+
+                aircraft.flight_time =
+                  Some(duration_now() + Duration::from_secs(delay));
+              } else if auto {
+                aircraft.flight_plan.arriving = destination.id;
+                aircraft.flight_time = Some(duration_now());
+
+                self.engine.events.push(Event::Aircraft(AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::QuickDepart,
+                )));
+              }
+            } else {
+              // TODO: Do we want to keep this for visibility?
+              // tracing::warn!("No destination available for {:?}", aircraft.id);
+            }
+          }
+        } else {
+          // TODO: Do we want to keep this for vis or remove?
+          // tracing::warn!(
+          //   "No departures available for {:?} (gates are empty)",
+          //   airport.id
+          // );
+        }
+      }
+    }
+  }
+
   pub fn tick(&mut self) -> Vec<Event> {
     self.last_tick = Instant::now();
 
@@ -450,106 +556,12 @@ impl Runner {
         .cloned(),
     );
 
-    // If spawn tick, do spawns.
-    if self.spawns.tick(self.tick_counter) {
-      let airports = self
-        .world
-        .airspaces
-        .iter()
-        .flat_map(|a| a.airports.iter().map(|ar| (a.auto, ar)));
-      for (auto, airport) in airports {
-        let do_spawn = self.rng.chance(AIRPORT_SPAWN_CHANCE);
-        if !do_spawn {
-          continue;
-        }
-
-        let do_non_auto_spawn = self.rng.chance(NON_AUTO_DEPARTURE_CHANCE);
-        // Only use dedicated spawn rate for manual airspaces if we are
-        // preparing via `self.quick_start()`.
-        if !auto && self.preparing && !do_non_auto_spawn {
-          continue;
-        }
-
-        let gates = airport
-          .terminals
-          .iter()
-          .flat_map(|t| t.gates.iter().filter(|g| !g.available));
-        let gate = self.rng.sample_iter(gates);
-        if let Some(gate) = gate {
-          let aircraft = self
-            .game
-            .aircraft
-            .iter_mut()
-            // Only pick inactive aircraft
-            .filter(|a| a.flight_time.is_none())
-            .find(|a| {
-              if let AircraftState::Parked { at } = &a.state {
-                at.name == gate.id && a.pos == gate.pos
-              } else {
-                false
-              }
-            });
-
-          if let Some(aircraft) = aircraft {
-            // Chance for a flight to go to a non-auto airspace.
-            let go_to_non_auto = self.rng.chance(ARRIVE_TO_NON_AUTO_CHANCE);
-            let destination =
-              self
-                .rng
-                .sample_iter(self.world.airspaces.iter().filter(|a| {
-                  if a.id == aircraft.flight_plan.departing {
-                    return false;
-                  }
-
-                  if go_to_non_auto { !a.auto } else { a.auto }
-                }));
-            if let Some(destination) = destination {
-              if !self.preparing
-                && !auto
-                && matches!(
-                  self.world.airspace_statuses.get(&airport.id),
-                  Some(AirspaceStatus {
-                    departure: DepartureStatus::Normal,
-                    ..
-                  })
-                )
-              {
-                aircraft.flight_plan.arriving = destination.id;
-
-                let min_time_seconds = if self.preparing { 0 } else { 60 };
-                let max_time_seconds = 60 * 5;
-                let delay = self.rng.u64(min_time_seconds..=max_time_seconds);
-
-                aircraft.flight_time =
-                  Some(duration_now() + Duration::from_secs(delay));
-              } else if auto {
-                aircraft.flight_plan.arriving = destination.id;
-                aircraft.flight_time = Some(duration_now());
-
-                self.engine.events.push(Event::Aircraft(AircraftEvent::new(
-                  aircraft.id,
-                  EventKind::QuickDepart,
-                )));
-              }
-            } else {
-              // TODO: Do we want to keep this for visibility?
-              // tracing::warn!("No destination available for {:?}", aircraft.id);
-            }
-          }
-        } else {
-          // TODO: Do we want to keep this for vis or remove?
-          // tracing::warn!(
-          //   "No departures available for {:?} (gates are empty)",
-          //   airport.id
-          // );
-        }
-      }
-    }
-
+    self.do_spawns();
     self.cleanup(events.iter());
     // TODO: self.save_world();
 
-    if !self.preparing && self.tick_counter % (self.rate * 60) == 0 {
+    // Log performance of engine.
+    if !self.preparing && self.perf_log.tick(self.tick_counter) {
       let diff = self.last_tick.elapsed();
       let mills = diff.as_micros() as f32 / 1000.0;
       let max = 1.0 / self.rate as f32 * 1000.0;
