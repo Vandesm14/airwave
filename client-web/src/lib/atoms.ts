@@ -35,10 +35,6 @@ export let radarAtom = atom<RadarConfig>({
 export let isRecordingAtom = atom(false);
 export let useTTSAtom = atom(false);
 export let frequencyAtom = atom(118.5);
-export let controlAtom = atom({
-  airspace: atom('KSFO'),
-  frequency: atom(118.5),
-});
 
 export let renderAtom = atom<{
   doInitialDraw: boolean;

@@ -386,16 +386,16 @@ export default function Canvas() {
     }
   }
 
-  function drawAirspace(ctx: Ctx, airspace: Airport) {
+  function drawAirspace(ctx: Ctx, airport: Airport) {
     resetTransform(ctx);
-    let pos = scalePoint(airspace.center);
+    let pos = scalePoint(airport.center);
     ctx.strokeStyle = colors.special.airspace;
 
     let aircraft = aircrafts.data.find((a) => a.id === selectedAircraft());
     if (
       aircraft &&
-      (aircraft.flight_plan.departing === airspace.id ||
-        aircraft.flight_plan.arriving === airspace.id)
+      (aircraft.flight_plan.departing === airport.id ||
+        aircraft.flight_plan.arriving === airport.id)
     ) {
       ctx.strokeStyle = colors.line_yellow;
     }
@@ -404,12 +404,12 @@ export default function Canvas() {
     ctx.arc(pos[0], pos[1], scaleFeetToPixels(AIRSPACE_RADIUS), 0, Math.PI * 2);
     ctx.stroke();
 
-    // Draw airspace name
+    // Draw airport name
     ctx.fillStyle = '#777';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(
-      airspace.id,
+      airport.id,
       pos[0],
       pos[1] - scaleFeetToPixels(AIRSPACE_RADIUS) - 20
     );

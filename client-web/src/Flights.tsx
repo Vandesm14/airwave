@@ -12,7 +12,7 @@ import { DepartureStatus } from '../bindings/DepartureStatus';
 export default function Flights() {
   const [show, setShow] = createSignal(false);
 
-  const airspaceStatus = useAirportStatus(HARD_CODED_AIRPORT);
+  const airportStatus = useAirportStatus(HARD_CODED_AIRPORT);
 
   const setArrivalStatus = useArrivalStatus();
   const setDepartureStatus = useDepartureStatus();
@@ -29,7 +29,7 @@ export default function Flights() {
           <div class="row">
             <h2>Arrivals:</h2>
             <select
-              value={airspaceStatus.data.arrival}
+              value={airportStatus.data.arrival}
               onchange={(e) =>
                 setArrivalStatus.mutate({
                   id: HARD_CODED_AIRPORT,
@@ -44,7 +44,7 @@ export default function Flights() {
           <div class="row">
             <h2>Departures:</h2>
             <select
-              value={airspaceStatus.data.departure}
+              value={airportStatus.data.departure}
               onchange={(e) =>
                 setDepartureStatus.mutate({
                   id: HARD_CODED_AIRPORT,

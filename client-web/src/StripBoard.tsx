@@ -8,9 +8,9 @@ import {
   Show,
   Signal,
 } from 'solid-js';
-import { hardcodedAirport, realTimeTicks } from './lib/lib';
+import { HARD_CODED_AIRPORT, hardcodedAirport, realTimeTicks } from './lib/lib';
 import { useAtom } from 'solid-jotai';
-import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
+import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import { calculateDistance, formatTime, nauticalMilesToFeet } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, ServerTicks, usePing, useWorld } from './lib/api';
@@ -114,13 +114,13 @@ function newHeader(name: string, id: number): Strip {
 
 function statusOfAircraft(
   aircraft: Aircraft,
-  ourAirspace: string,
+  ourAirport: string,
   selectedAircraft: string
 ): StripStatus {
   const isSelected = aircraft.id === selectedAircraft;
 
-  const isOurArrival = ourAirspace === aircraft.flight_plan.arriving;
-  const isOurDeparture = ourAirspace === aircraft.flight_plan.departing;
+  const isOurArrival = ourAirport === aircraft.flight_plan.arriving;
+  const isOurDeparture = ourAirport === aircraft.flight_plan.departing;
   const isOurs = isOurArrival || isOurDeparture;
 
   const isBoarding = isOurDeparture && aircraft.segment === 'boarding';
@@ -266,9 +266,6 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
-  let [control] = useAtom(controlAtom);
-  let [airspace] = useAtom(control().airspace);
-
   const handleMouseDown = () => {
     setSelectedAircraft(strip().callsign);
     onmousedown()?.();
@@ -302,7 +299,7 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
         dragged: dragged()?.() === id(),
         theirs: dimmer(),
         selected: selected(),
-        departure: airspace() === departing(),
+        departure: HARD_CODED_AIRPORT === departing(),
       }}
       onmousedown={handleMouseDown}
       onmousemove={() => onmousemove()?.()}
@@ -550,14 +547,14 @@ export default function StripBoard() {
 
   // Create strips for aircraft that are our responsibility.
   createEffect(() => {
-    const airspace = hardcodedAirport(query.data!);
+    const airport = hardcodedAirport(query.data!);
     const selected = selectedAircraft();
     const existing = board
       .strips()
       .filter((s) => s[0]().type === StripType.Aircraft)
       .map((s) => (s[0]() as AircraftStrip).callsign);
 
-    if (airspace && board.length() > 0) {
+    if (airport && board.length() > 0) {
       const newStrips: AircraftStrip[] = [];
       for (const aircraft of aircrafts.data) {
         if (
@@ -565,20 +562,15 @@ export default function StripBoard() {
           (aircraft.id === selected ||
             testStatus(
               createOn(),
-              statusOfAircraft(aircraft, airspace.id, selected)
+              statusOfAircraft(aircraft, airport.id, selected)
             ))
         ) {
           console.log('create:', {
-            status: statusOfAircraft(aircraft, airspace.id, selected),
+            status: statusOfAircraft(aircraft, airport.id, selected),
             aircraft: structuredClone(unwrap(aircraft)),
           });
           newStrips.push(
-            aircraftToStrip(
-              aircraft,
-              airspace,
-              selected,
-              ping.data.server_ticks
-            )
+            aircraftToStrip(aircraft, airport, selected, ping.data.server_ticks)
           );
         }
       }
@@ -591,10 +583,10 @@ export default function StripBoard() {
 
   // Update aircraft strips.
   createEffect(() => {
-    const airspace = hardcodedAirport(query.data!);
+    const airport = hardcodedAirport(query.data!);
     const selected = selectedAircraft();
 
-    if (airspace && aircrafts.data.length > 0) {
+    if (airport && aircrafts.data.length > 0) {
       let deleteStrips: number[] = [];
       for (const s of board.strips()) {
         const [_, setStrip] = s;
@@ -603,14 +595,10 @@ export default function StripBoard() {
           const callsign = strip.callsign;
           const aircraft = aircrafts.data.find((a) => a.id === callsign);
           if (aircraft) {
-            // updateStrips.push({
-            //   ...aircraftToStrip(aircraft, airspace, selected),
-            //   id: strip.id,
-            // });
             const newStrip: Strip = {
               ...aircraftToStrip(
                 aircraft,
-                airspace,
+                airport,
                 selected,
                 ping.data.server_ticks
               ),
