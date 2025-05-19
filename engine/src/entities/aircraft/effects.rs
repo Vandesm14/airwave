@@ -4,7 +4,6 @@ use crate::{
   AIRSPACE_RADIUS, KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE,
   NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
-  duration_now,
   engine::Bundle,
   entities::world::{closest_airport, closest_airspace},
   geometry::{
