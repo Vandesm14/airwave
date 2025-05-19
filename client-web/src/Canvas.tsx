@@ -66,7 +66,7 @@ export default function Canvas() {
   let [frameCount, setFrameCount] = createSignal(0);
   let [currentFps, setCurrentFps] = createSignal(0);
 
-  const serverTicks = usePing();
+  const ping = usePing();
 
   function clickToSelectAircraft(e: MouseEvent) {
     // Convert the cursor position to your coordinate system
@@ -864,7 +864,7 @@ export default function Canvas() {
     // TODO: Once we have creation time, implement this as hiding flights that
     // haven't been activated yet.
     const isActive = aircraft.flight_time
-      ? serverTicks.data!.ticks > aircraft.flight_time
+      ? ping.data.server_ticks.ticks > aircraft.flight_time
       : false;
 
     const airport = hardcodedAirport(world.data);

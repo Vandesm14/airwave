@@ -17,20 +17,27 @@ const search = new URLSearchParams(window.location.search);
 export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;
 
 export type ServerTicks = { ticks: number; lastFetch: number };
+export type Ping = { connected: boolean; server_ticks: ServerTicks };
 
 // Misc
 export const getPing = '/api/ping';
 export function usePing() {
-  return createQuery<undefined | ServerTicks>(() => ({
+  return createQuery<Ping>(() => ({
     queryKey: [getPing],
     queryFn: async () => {
+      const server_ticks = { ticks: 0, lastFetch: Date.now() };
       try {
         const result = await fetch(`${baseAPIPath}${getPing}`);
-        if (!result.ok) return undefined;
-        return { ticks: parseInt(await result.text()), lastFetch: Date.now() };
+        if (!result.ok) return { connected: false, server_ticks };
+        server_ticks.ticks = parseInt(await result.text());
+        return { connected: true, server_ticks };
       } catch {
-        return undefined;
+        return { connected: false, server_ticks };
       }
+    },
+    initialData: {
+      connected: false,
+      server_ticks: { ticks: 0, lastFetch: Date.now() },
     },
     staleTime: 2000,
     refetchInterval: 2000,

@@ -8,7 +8,7 @@ import {
   Show,
   Signal,
 } from 'solid-js';
-import { realTimeTicks, smallFlightSegment, TICK_RATE_TPS } from './lib/lib';
+import { realTimeTicks } from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { controlAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import {
@@ -535,7 +535,7 @@ export default function StripBoard() {
   const query = useWorld();
   const [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
 
-  const serverTicks = usePing();
+  const ping = usePing();
 
   // Prefill the strips with default headers.
   createEffect(() => {
@@ -578,7 +578,12 @@ export default function StripBoard() {
             aircraft: structuredClone(unwrap(aircraft)),
           });
           newStrips.push(
-            aircraftToStrip(aircraft, airspace, selected, serverTicks.data!)
+            aircraftToStrip(
+              aircraft,
+              airspace,
+              selected,
+              ping.data.server_ticks
+            )
           );
         }
       }
@@ -612,7 +617,7 @@ export default function StripBoard() {
                 aircraft,
                 airspace,
                 selected,
-                serverTicks.data!
+                ping.data.server_ticks
               ),
               id: strip.id,
             };

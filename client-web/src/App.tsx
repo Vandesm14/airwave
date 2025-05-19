@@ -2,7 +2,13 @@ import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from './whisper/WhisperSTT';
 import { frequencyAtom, isRecordingAtom, useTTSAtom } from './lib/atoms';
 import Chatbox from './Chatbox';
-import { createEffect, createSignal, onMount, Show } from 'solid-js';
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  onMount,
+  Show,
+} from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
@@ -147,9 +153,13 @@ export default function App() {
     setUseTTS((useTTS) => !useTTS);
   }
 
+  const isConnected = createMemo(
+    () => query.data !== undefined && query.data.connected
+  );
+
   return (
     <>
-      <Show when={query.data}>
+      <Show when={isConnected()}>
         <div class="container left">
           <Flights />
           <div class="spacer"></div>
@@ -186,7 +196,7 @@ export default function App() {
           <FreqSelector></FreqSelector>
         </div>
       </Show>
-      <Show when={!query.data}>
+      <Show when={!isConnected()}>
         <div class="connection-message">
           <h1>Connecting to server...</h1>
           <h2>Retrying: {baseAPIPath}</h2>
