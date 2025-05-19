@@ -8,7 +8,12 @@ import {
   Show,
   Signal,
 } from 'solid-js';
-import { HARD_CODED_AIRPORT, hardcodedAirport, realTimeTicks } from './lib/lib';
+import {
+  HARD_CODED_AIRPORT,
+  hardcodedAirport,
+  realTimeTicks,
+  smallFlightSegment,
+} from './lib/lib';
 import { useAtom } from 'solid-jotai';
 import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import { calculateDistance, formatTime, nauticalMilesToFeet } from './lib/lib';
@@ -276,10 +281,9 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
   );
 
   const timer = createMemo(() => {
-    // return strip().segment === 'parked' || strip().segment === 'boarding'
-    //   ? strip().timer
-    //   : smallFlightSegment(strip().segment).toUpperCase();
-    return strip().timer;
+    return strip().segment === 'parked' || strip().segment === 'boarding'
+      ? strip().timer
+      : smallFlightSegment(strip().segment).toUpperCase();
   });
 
   const id = () => strip().id;
