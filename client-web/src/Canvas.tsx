@@ -334,7 +334,6 @@ export default function Canvas() {
         drawCompass(ctx);
       }
 
-      drawCollodingMessage(ctx, aircrafts.data);
       drawFPS(ctx);
     }
   }
@@ -604,19 +603,6 @@ export default function Canvas() {
       dotSize,
       dotSize
     );
-
-    // Draw the collision circle
-    if (aircraft.state.type === 'flying' && aircraft.is_colliding) {
-      ctx.beginPath();
-      ctx.arc(
-        pos[0],
-        pos[1],
-        scaleFeetToPixels(nauticalMilesToFeet * 4),
-        0,
-        Math.PI * 2
-      );
-      ctx.stroke();
-    }
 
     let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
     if (!isActive && !isSelected) {
@@ -1034,19 +1020,6 @@ export default function Canvas() {
 
       ctx.beginPath();
       ctx.moveTo(pos[0], pos[1]);
-    }
-  }
-
-  function drawCollodingMessage(ctx: Ctx, aircrafts: Array<Aircraft>) {
-    let names: Array<String> = aircrafts
-      .filter((a) => a.is_colliding)
-      .map((a) => a.id);
-    if (names.length > 0) {
-      ctx.font = `900 ${24}px monospace`;
-      let message = `SEPARATION WARNING: ${names.join(', ')}`;
-      ctx.fillStyle = 'red';
-      ctx.textAlign = 'center';
-      ctx.fillText(message, 0, -canvas.height * 0.5 + 100);
     }
   }
 
