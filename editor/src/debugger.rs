@@ -94,10 +94,8 @@ fn model(app: &App) -> Model {
     speed: 0.0,
     heading: gate.heading,
     altitude: 0.0,
-    state: AircraftState::Taxiing {
-      current: Node::new(gate.id, NodeKind::Gate, NodeBehavior::Park, gate.pos),
-      waypoints: Vec::new(),
-      state: TaxiingState::default(),
+    state: AircraftState::Parked {
+      at: Node::default().with_name(gate.id).with_kind(NodeKind::Gate),
     },
     flight_plan: FlightPlan::new(
       Intern::from_ref("KDEF"),
