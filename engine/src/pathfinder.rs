@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use glam::Vec2;
 use internment::Intern;
 use petgraph::{
@@ -378,9 +376,6 @@ impl Pathfinder {
           Some(max_intermediates_magic_number),
         );
 
-      let mut count = 0;
-
-      let main_start = Instant::now();
       let mut paths: Vec<PathfinderPath> = paths
         .map(|path| {
           path
@@ -440,7 +435,6 @@ impl Pathfinder {
         })
         // Filter out paths that don't fulfill our requirements
         .filter(|path| {
-          count += 1;
           let mut pos = pos;
           let mut heading = heading;
 
@@ -477,14 +471,6 @@ impl Pathfinder {
           true
         })
         .collect();
-
-      let main_start = main_start.elapsed();
-      tracing::info!(
-        "filtered results to {} paths (out of {} total) in {:.2}ms",
-        paths.len(),
-        count,
-        main_start.as_secs_f32() * 1000.0
-      );
 
       // TODO: The distance function is broken for some reason so we won't
       // sort by it for now until its fixed.
