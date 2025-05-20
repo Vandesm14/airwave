@@ -641,7 +641,6 @@ pub fn handle_taxi_event(
   events: &mut Vec<Event>,
   world: &World,
 ) {
-  println!("taxiing {:?}", waypoint_strings);
   if let AircraftState::Taxiing { current, .. }
   | AircraftState::Parked { at: current, .. } = &aircraft.state
   {

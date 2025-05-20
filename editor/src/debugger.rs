@@ -21,44 +21,6 @@ use nannou_egui::{
 };
 
 pub fn main() {
-  nannou::app(model).update(update).run();
-}
-
-struct HeldKeys {
-  ctrl: bool,
-  shift: bool,
-  alt: bool,
-}
-
-struct Model {
-  engine: Engine,
-  egui: Egui,
-
-  snapshots: Vec<Vec<Aircraft>>,
-  snapshot_index: usize,
-
-  is_mouse_down: bool,
-  is_over_ui: bool,
-
-  drag_anchor: Option<glam::Vec2>,
-  old_shift_pos: glam::Vec2,
-  shift_pos: glam::Vec2,
-  scale: f32,
-
-  held_keys: HeldKeys,
-}
-
-fn model(app: &App) -> Model {
-  // Create window
-  let window_id = app
-    .new_window()
-    .view(view)
-    .raw_event(raw_window_event)
-    .build()
-    .unwrap();
-  let window = app.window(window_id).unwrap();
-  let egui = Egui::from_window(&window);
-
   let mut engine = Engine {
     airports: load_assets().airports,
     ..Default::default()
@@ -152,29 +114,65 @@ fn model(app: &App) -> Model {
   }
 
   println!("Ready.");
-
-  Model {
-    engine,
-    egui,
-
-    snapshots,
-    snapshot_index: 0,
-
-    is_mouse_down: false,
-    is_over_ui: false,
-
-    drag_anchor: None,
-    old_shift_pos: glam::Vec2::default(),
-    shift_pos: glam::Vec2::default(),
-    scale: 0.1,
-
-    held_keys: HeldKeys {
-      ctrl: false,
-      shift: false,
-      alt: false,
-    },
-  }
 }
+
+struct HeldKeys {
+  ctrl: bool,
+  shift: bool,
+  alt: bool,
+}
+
+struct Model {
+  engine: Engine,
+  egui: Egui,
+
+  snapshots: Vec<Vec<Aircraft>>,
+  snapshot_index: usize,
+
+  is_mouse_down: bool,
+  is_over_ui: bool,
+
+  drag_anchor: Option<glam::Vec2>,
+  old_shift_pos: glam::Vec2,
+  shift_pos: glam::Vec2,
+  scale: f32,
+
+  held_keys: HeldKeys,
+}
+
+// fn model(app: &App) -> Model {
+//   // Create window
+//   let window_id = app
+//     .new_window()
+//     .view(view)
+//     .raw_event(raw_window_event)
+//     .build()
+//     .unwrap();
+//   let window = app.window(window_id).unwrap();
+//   let egui = Egui::from_window(&window);
+
+//   Model {
+//     engine,
+//     egui,
+
+//     snapshots,
+//     snapshot_index: 0,
+
+//     is_mouse_down: false,
+//     is_over_ui: false,
+
+//     drag_anchor: None,
+//     old_shift_pos: glam::Vec2::default(),
+//     shift_pos: glam::Vec2::default(),
+//     scale: 0.1,
+
+//     held_keys: HeldKeys {
+//       ctrl: false,
+//       shift: false,
+//       alt: false,
+//     },
+//   }
+// }
 
 fn update(_app: &App, model: &mut Model, update: Update) {
   model.egui.set_elapsed_time(update.since_start);

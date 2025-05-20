@@ -418,6 +418,8 @@ impl Pathfinder {
         })
         .collect();
 
+      println!("iterated {} paths", paths.len());
+
       // TODO: The distance function is broken for some reason so we won't
       // sort by it for now until its fixed.
       //
