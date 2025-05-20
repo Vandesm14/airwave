@@ -1,4 +1,5 @@
 import { Airport } from '../../bindings/Airport';
+import { AirportStatus } from '../../bindings/AirportStatus';
 import { FlightSegment } from '../../bindings/FlightSegment';
 import { LandingState } from '../../bindings/LandingState';
 import { Runway } from '../../bindings/Runway';
@@ -243,5 +244,14 @@ export function DefaultWorld(): World {
     airports: [],
     waypoints: [],
     airport_statuses: {},
+  };
+}
+
+export function DefaultAirportStatus(): AirportStatus {
+  return {
+    divert_arrivals: false,
+    delay_departures: false,
+    automate_air: false,
+    automate_ground: false,
   };
 }

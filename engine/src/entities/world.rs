@@ -19,86 +19,39 @@ pub fn calculate_airport_waypoints(airports: &mut [Airport]) {
   Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
 )]
 #[ts(export)]
-#[serde(rename_all = "kebab-case")]
-pub enum ArrivalStatus {
-  #[default]
-  Automated,
-  Normal,
-  Divert,
-}
-
-#[derive(
-  Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
-)]
-#[ts(export)]
-#[serde(rename_all = "kebab-case")]
-pub enum DepartureStatus {
-  #[default]
-  Automated,
-  Normal,
-  Delay,
-}
-
-#[derive(
-  Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
-)]
-#[ts(export)]
 pub struct AirportStatus {
-  pub arrival: ArrivalStatus,
-  pub departure: DepartureStatus,
+  pub divert_arrivals: bool,
+  pub delay_departures: bool,
+  pub automate_air: bool,
+  pub automate_ground: bool,
 }
 
 impl AirportStatus {
   pub fn all_auto() -> Self {
     Self {
-      arrival: ArrivalStatus::Automated,
-      departure: DepartureStatus::Automated,
+      divert_arrivals: false,
+      delay_departures: false,
+      automate_air: true,
+      automate_ground: true,
     }
   }
 
   pub fn all_normal() -> Self {
     Self {
-      arrival: ArrivalStatus::Normal,
-      departure: DepartureStatus::Normal,
+      divert_arrivals: false,
+      delay_departures: false,
+      automate_air: false,
+      automate_ground: false,
     }
   }
 
-  pub fn auto_arrivals(&self) -> bool {
-    matches!(self.arrival, ArrivalStatus::Automated)
-  }
-
-  pub fn auto_departures(&self) -> bool {
-    matches!(self.departure, DepartureStatus::Automated)
-  }
-
-  pub fn normal_arrivals(&self) -> bool {
-    matches!(self.arrival, ArrivalStatus::Normal)
-  }
-
-  pub fn normal_departures(&self) -> bool {
-    matches!(self.departure, DepartureStatus::Normal)
-  }
-
-  pub fn divert_arrivals(&self) -> bool {
-    matches!(self.arrival, ArrivalStatus::Divert)
-  }
-
-  pub fn delay_departures(&self) -> bool {
-    matches!(self.departure, DepartureStatus::Delay)
-  }
-
-  pub fn nominal_arrivals(&self) -> bool {
-    matches!(
-      self.arrival,
-      ArrivalStatus::Normal | ArrivalStatus::Automated
-    )
-  }
-
-  pub fn nominal_departures(&self) -> bool {
-    matches!(
-      self.departure,
-      DepartureStatus::Normal | DepartureStatus::Automated
-    )
+  pub fn all_diverted() -> Self {
+    Self {
+      divert_arrivals: true,
+      delay_departures: true,
+      automate_air: false,
+      automate_ground: false,
+    }
   }
 }
 
@@ -141,52 +94,12 @@ impl World {
       .filter(|a| point.distance_squared(a.center) <= AIRSPACE_RADIUS.powf(2.0))
   }
 
-  pub fn automated_arrivals(&self, airport_id: Intern<String>) -> bool {
+  pub fn airport_status(&self, airport_id: Intern<String>) -> AirportStatus {
     self
       .airport_statuses
       .get(&airport_id)
-      .map(|s| s.auto_arrivals())
-      .unwrap_or(true)
-  }
-
-  pub fn automated_departures(&self, airport_id: Intern<String>) -> bool {
-    self
-      .airport_statuses
-      .get(&airport_id)
-      .map(|s| s.auto_departures())
-      .unwrap_or(true)
-  }
-
-  pub fn nominal_arrivals(&self, airport_id: Intern<String>) -> bool {
-    self
-      .airport_statuses
-      .get(&airport_id)
-      .map(|s| s.nominal_arrivals())
-      .unwrap_or(false)
-  }
-
-  pub fn nominal_departures(&self, airport_id: Intern<String>) -> bool {
-    self
-      .airport_statuses
-      .get(&airport_id)
-      .map(|s| s.nominal_departures())
-      .unwrap_or(false)
-  }
-
-  pub fn divert_arrivals(&self, airport_id: Intern<String>) -> bool {
-    self
-      .airport_statuses
-      .get(&airport_id)
-      .map(|s| s.divert_arrivals())
-      .unwrap_or(false)
-  }
-
-  pub fn delay_departures(&self, airport_id: Intern<String>) -> bool {
-    self
-      .airport_statuses
-      .get(&airport_id)
-      .map(|s| s.delay_departures())
-      .unwrap_or(false)
+      .copied()
+      .unwrap_or_default()
   }
 }
 

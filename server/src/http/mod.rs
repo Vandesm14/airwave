@@ -11,10 +11,7 @@ use methods::{
   aircraft::{get_aircraft, get_one_aircraft},
   comms::{comms_text, comms_voice},
   misc::{ping_pong, post_pause},
-  state::{
-    get_airport_status, get_messages, get_world, post_arrival_status,
-    post_departure_status,
-  },
+  state::{get_airport_status, get_messages, get_world, post_airport_status},
 };
 use serde::{Deserialize, Serialize};
 use shared::{AppState, GetSender, PostSender};
@@ -46,11 +43,7 @@ pub async fn run(
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
       .route("/status/{id}", get(get_airport_status))
-      .route("/status/arrival/{id}/{status}", post(post_arrival_status))
-      .route(
-        "/status/departure/{id}/{status}",
-        post(post_departure_status),
-      )
+      .route("/status/{id}/{status}", post(post_airport_status))
       .with_state(AppState::new(get_sender, post_sender))
       .layer(CompressionLayer::new())
       .layer(cors),

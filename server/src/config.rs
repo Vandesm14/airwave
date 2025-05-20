@@ -4,10 +4,7 @@ use std::{
   path::Path,
 };
 
-use engine::entities::{
-  airport::Frequencies,
-  world::{ArrivalStatus, DepartureStatus},
-};
+use engine::entities::{airport::Frequencies, world::AirportStatus};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -61,6 +58,29 @@ impl Default for WorldSeed {
 }
 
 #[derive(Clone, Default, Serialize, Deserialize)]
+pub struct AirportStatusConfig {
+  #[serde(default)]
+  divert_arrivals: bool,
+  #[serde(default)]
+  delay_departures: bool,
+  #[serde(default)]
+  automate_air: bool,
+  #[serde(default)]
+  automate_ground: bool,
+}
+
+impl From<AirportStatusConfig> for AirportStatus {
+  fn from(value: AirportStatusConfig) -> Self {
+    Self {
+      divert_arrivals: value.divert_arrivals,
+      delay_departures: value.delay_departures,
+      automate_air: value.automate_air,
+      automate_ground: value.automate_ground,
+    }
+  }
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WorldConfig {
   #[serde(default)]
   seed: WorldSeed,
@@ -68,10 +88,8 @@ pub struct WorldConfig {
   airport: Option<String>,
   #[serde(default)]
   paused: bool,
-  #[serde(default = "normal_arrival_status")]
-  arrivals: ArrivalStatus,
-  #[serde(default = "normal_departure_status")]
-  departures: DepartureStatus,
+  #[serde(default)]
+  status: AirportStatusConfig,
 }
 
 impl WorldConfig {
@@ -87,12 +105,8 @@ impl WorldConfig {
     self.paused
   }
 
-  pub fn arrivals(&self) -> &ArrivalStatus {
-    &self.arrivals
-  }
-
-  pub fn departures(&self) -> &DepartureStatus {
-    &self.departures
+  pub fn status(&self) -> AirportStatus {
+    self.status.clone().into()
   }
 }
 
@@ -119,12 +133,4 @@ fn default_ipv4() -> SocketAddr {
 
 fn default_ipv6() -> SocketAddr {
   SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 9001)
-}
-
-fn normal_arrival_status() -> ArrivalStatus {
-  ArrivalStatus::Normal
-}
-
-fn normal_departure_status() -> DepartureStatus {
-  DepartureStatus::Normal
 }

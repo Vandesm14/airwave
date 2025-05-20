@@ -762,53 +762,51 @@ pub fn handle_approach_transition(
       .get(&airport.id)
       .copied()
       .unwrap_or_default();
-    if !status.auto_arrivals() {
-      if status.normal_arrivals() {
-        // TODO: This clears all waypoints to force the player to deal
-        // with the approach rather than use its automated routing.
-        // This might break future implementations of routing and
-        // waypoints so please check this TODO when that happens.
-        aircraft.flight_plan.clear_waypoints();
+    if !status.divert_arrivals {
+      // TODO: This clears all waypoints to force the player to deal
+      // with the approach rather than use its automated routing.
+      // This might break future implementations of routing and
+      // waypoints so please check this TODO when that happens.
+      aircraft.flight_plan.clear_waypoints();
 
-        aircraft.target.heading =
-          angle_between_points(aircraft.pos, airport.center);
+      aircraft.target.heading =
+        angle_between_points(aircraft.pos, airport.center);
 
-        let direction = heading_to_direction(angle_between_points(
-          airport.center,
-          aircraft.pos,
-        ))
-        .to_owned();
-        let command = CommandWithFreq::new(
-          Intern::to_string(&aircraft.id),
-          aircraft.frequency,
-          CommandReply::ArriveInAirspace {
-            direction,
-            altitude: aircraft.altitude,
-          },
-          Vec::new(),
-        );
+      let direction = heading_to_direction(angle_between_points(
+        airport.center,
+        aircraft.pos,
+      ))
+      .to_owned();
+      let command = CommandWithFreq::new(
+        Intern::to_string(&aircraft.id),
+        aircraft.frequency,
+        CommandReply::ArriveInAirspace {
+          direction,
+          altitude: aircraft.altitude,
+        },
+        Vec::new(),
+      );
 
+      events.push(Event::Aircraft(AircraftEvent::new(
+        aircraft.id,
+        EventKind::Callout(command),
+      )));
+    } else {
+      // If diverted, go to a random automated airport.
+      let arrival = rng
+        .sample_iter(world.airports.iter().filter(|a| a.id != airport.id))
+        .map(|a| a.id);
+      if let Some(arrival) = arrival {
+        // Use our old arrival as our departure.
+        aircraft.flip_flight_plan();
+        // Set our new arrival.
+        aircraft.flight_plan.arriving = arrival;
+
+        // Recompute waypoints.
         events.push(Event::Aircraft(AircraftEvent::new(
           aircraft.id,
-          EventKind::Callout(command),
+          EventKind::ResumeOwnNavigation { diversion: true },
         )));
-      } else if status.divert_arrivals() {
-        // If not accepted, go to a random automated airport.
-        let arrival = rng
-          .sample_iter(world.airports.iter().filter(|a| a.id != airport.id))
-          .map(|a| a.id);
-        if let Some(arrival) = arrival {
-          // Use our old arrival as our departure.
-          aircraft.flip_flight_plan();
-          // Set our new arrival.
-          aircraft.flight_plan.arriving = arrival;
-
-          // Recompute waypoints.
-          events.push(Event::Aircraft(AircraftEvent::new(
-            aircraft.id,
-            EventKind::ResumeOwnNavigation { diversion: true },
-          )));
-        }
       }
     }
   }

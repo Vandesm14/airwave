@@ -572,7 +572,9 @@ impl Aircraft {
     world: &World,
   ) {
     if matches!(self.segment, FlightSegment::Approach)
-      && self.airspace.is_some_and(|a| world.automated_arrivals(a))
+      && self
+        .airspace
+        .is_some_and(|a| world.airport_status(a).automate_air)
     {
       if let Some(airport) = world
         .airports
@@ -618,7 +620,9 @@ impl Aircraft {
 
   pub fn update_auto_ground(&mut self, events: &mut Vec<Event>, world: &World) {
     if matches!(self.segment, FlightSegment::TaxiArr)
-      && self.airspace.is_some_and(|a| world.automated_arrivals(a))
+      && self
+        .airspace
+        .is_some_and(|a| world.airport_status(a).automate_ground)
     {
       if let AircraftState::Taxiing { waypoints, .. } = &self.state {
         if self.speed <= MAX_TAXI_SPEED

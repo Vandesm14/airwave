@@ -6,7 +6,7 @@ use tracing_appender::rolling::Rotation;
 use tracing_subscriber::prelude::*;
 use turborand::{SeededCore, rng::Rng};
 
-use engine::entities::{airport::Airport, world::AirportStatus};
+use engine::entities::airport::Airport;
 use server::{
   CLI, Cli, PROJECT_DIRS,
   config::Config,
@@ -133,13 +133,11 @@ async fn main() {
   // This inserts statuses for all airports including main.
   runner.engine.world.reset_statuses();
 
-  runner.engine.world.airport_statuses.insert(
-    main_id,
-    AirportStatus {
-      arrival: *config.world().arrivals(),
-      departure: *config.world().departures(),
-    },
-  );
+  runner
+    .engine
+    .world
+    .airport_statuses
+    .insert(main_id, config.world().status());
 
   runner.fill_gates();
 

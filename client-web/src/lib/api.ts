@@ -8,9 +8,8 @@ import fastDeepEqual from 'fast-deep-equal';
 import { Aircraft } from '../../bindings/Aircraft';
 import { World } from '../../bindings/World';
 import { OutgoingCommandReply } from '../../bindings/OutgoingCommandReply';
-import { ArrivalStatus } from '../../bindings/ArrivalStatus';
-import { DepartureStatus } from '../../bindings/DepartureStatus';
 import { AirportStatus } from '../../bindings/AirportStatus';
+import { DefaultAirportStatus } from './lib';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
@@ -134,10 +133,7 @@ export function useAirportStatus(id: string) {
       if (!result.ok) return [];
       return result.json();
     },
-    initialData: {
-      arrival: 'normal',
-      departure: 'normal',
-    } as AirportStatus,
+    initialData: DefaultAirportStatus(),
     staleTime: 2000,
     refetchInterval: 2000,
     refetchOnMount: 'always',
@@ -146,54 +142,21 @@ export function useAirportStatus(id: string) {
   }));
 }
 
-export const postArrivalStatusKey = `/api/status/arrival`;
-export const postArrivalStatus = (id: string, status: ArrivalStatus) =>
-  `${postArrivalStatusKey}/${id}/${status}`;
-export function useArrivalStatus() {
+export const postAirportStatusKey = `/api/status`;
+export const postAirportStatus = (id: string, status: AirportStatus) =>
+  `${postAirportStatusKey}/${id}/${JSON.stringify(status)}`;
+export function useSetAirportStatus() {
   const client = useQueryClient();
 
   return createMutation(() => ({
-    mutationKey: [postArrivalStatusKey],
-    mutationFn: async ({ id, status }: { id: string; status: ArrivalStatus }) =>
-      await fetch(`${baseAPIPath}${postArrivalStatus(id, status)}`, {
+    mutationKey: [postAirportStatusKey],
+    mutationFn: async ({ id, status }: { id: string; status: AirportStatus }) =>
+      await fetch(`${baseAPIPath}${postAirportStatus(id, status)}`, {
         method: 'POST',
       }),
-    onMutate: ({ status }: { id: string; status: ArrivalStatus }) =>
-      client.setQueryData<AirportStatus>([getAirportStatusKey], (old) => {
-        if (old) {
-          old.arrival = status;
-        }
-        return old;
-      }),
-    onSettled: () =>
-      client.invalidateQueries({ queryKey: [getAirportStatusKey] }),
-  }));
-}
-
-export const postDepartureStatusKey = `/api/status/departure`;
-export const postDepartureStatus = (id: string, status: DepartureStatus) =>
-  `${postDepartureStatusKey}/${id}/${status}`;
-export function useDepartureStatus() {
-  const client = useQueryClient();
-
-  return createMutation(() => ({
-    mutationKey: [postDepartureStatusKey],
-    mutationFn: async ({
-      id,
-      status,
-    }: {
-      id: string;
-      status: DepartureStatus;
-    }) =>
-      await fetch(`${baseAPIPath}${postDepartureStatus(id, status)}`, {
-        method: 'POST',
-      }),
-    onMutate: ({ status }: { id: string; status: DepartureStatus }) =>
-      client.setQueryData<AirportStatus>([getAirportStatusKey], (old) => {
-        if (old) {
-          old.departure = status;
-        }
-        return old;
+    onMutate: ({ status }: { id: string; status: AirportStatus }) =>
+      client.setQueryData<AirportStatus>([getAirportStatusKey], () => {
+        return status;
       }),
     onSettled: () =>
       client.invalidateQueries({ queryKey: [getAirportStatusKey] }),

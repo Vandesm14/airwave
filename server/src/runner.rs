@@ -22,7 +22,7 @@ use engine::{
       events::{AircraftEvent, EventKind},
     },
     airport::Frequencies,
-    world::{AirportStatus, ArrivalStatus, DepartureStatus, World},
+    world::{AirportStatus, World},
   },
   geometry::{Translate, circle_circle_intersection},
   pathfinder::{Node, NodeBehavior, NodeKind},
@@ -68,9 +68,8 @@ pub enum TinyReqKind {
   // Other State
   Messages,
   World,
-  AirspaceStatus(Intern<String>),
-  DepartureStatus(Intern<String>, DepartureStatus),
-  ArrivalStatus(Intern<String>, ArrivalStatus),
+  AirportStatus(Intern<String>),
+  SetAirportStatus(Intern<String>, AirportStatus),
 }
 
 #[derive(Debug, Clone)]
@@ -343,7 +342,8 @@ impl Runner {
                   return false;
                 }
 
-                let is_auto = self.engine.world.automated_arrivals(a.id);
+                let is_auto =
+                  self.engine.world.airport_status(a.id).automate_air;
                 if go_to_non_auto { !is_auto } else { is_auto }
               }),
             );
@@ -352,8 +352,12 @@ impl Runner {
               // airports, otherwise choose airports with normal or automated
               // departure status.
               if (!self.preparing
-                || self.engine.world.automated_departures(airport.id))
-                && self.engine.world.nominal_departures(airport.id)
+                || self.engine.world.airport_status(airport.id).automate_ground)
+                && !self
+                  .engine
+                  .world
+                  .airport_status(destination.id)
+                  .delay_departures
               {
                 aircraft.flight_plan.departing = airport.id;
                 aircraft.flight_plan.arriving = destination.id;
@@ -374,23 +378,24 @@ impl Runner {
   }
 
   fn auto_depart(&mut self) {
-    // QuickDepart based on Flight Time.
-    for aircraft in
-      self.engine.game.aircraft.iter_mut().filter(|a| {
-        a.flight_time.is_some_and(|t| self.engine.tick_counter >= t)
-      })
-    {
-      if self
-        .engine
-        .world
-        .automated_departures(aircraft.flight_plan.departing)
-      {
-        self
-          .engine
-          .events
-          .push(AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into());
-      }
-    }
+    // TODO: Remove if I forget to.
+    // // QuickDepart based on Flight Time.
+    // for aircraft in
+    //   self.engine.game.aircraft.iter_mut().filter(|a| {
+    //     a.flight_time.is_some_and(|t| self.engine.tick_counter >= t)
+    //   })
+    // {
+    //   if self
+    //     .engine
+    //     .world
+    //     .automated_departures(aircraft.flight_plan.departing)
+    //   {
+    //     self
+    //       .engine
+    //       .events
+    //       .push(AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into());
+    //   }
+    // }
   }
 
   pub fn tick(&mut self) -> Vec<Event> {
@@ -427,7 +432,7 @@ impl Runner {
             .cloned();
           incoming.reply(ResKind::OneAircraft(aircraft));
         }
-        TinyReqKind::AirspaceStatus(id) => {
+        TinyReqKind::AirportStatus(id) => {
           let status = self.engine.world.airport_statuses.get(id);
           if let Some(status) = status {
             incoming.reply(ResKind::AirspaceStatus(*status))
@@ -435,22 +440,11 @@ impl Runner {
             incoming.reply(ResKind::Err);
           }
         }
-        TinyReqKind::ArrivalStatus(id, status) => {
+        TinyReqKind::SetAirportStatus(id, status) => {
           if let Some(airport_status) =
             self.engine.world.airport_statuses.get_mut(id)
           {
-            airport_status.arrival = *status;
-
-            incoming.reply(ResKind::Any);
-          } else {
-            incoming.reply(ResKind::Err);
-          }
-        }
-        TinyReqKind::DepartureStatus(id, status) => {
-          if let Some(airport_status) =
-            self.engine.world.airport_statuses.get_mut(id)
-          {
-            airport_status.departure = *status;
+            *airport_status = *status;
 
             incoming.reply(ResKind::Any);
           } else {
@@ -576,7 +570,7 @@ impl Runner {
               .iter()
               .find(|a| a.id == aircraft.flight_plan.arriving)
             {
-              if !self.engine.world.automated_arrivals(airport.id) {
+              if !self.engine.world.airport_status(airport.id).automate_air {
                 tracing::info!(
                   "Quick start interrupted by {}. Aircraft entered non-auto airport.",
                   aircraft.id

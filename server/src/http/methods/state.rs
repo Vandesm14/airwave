@@ -2,7 +2,7 @@ use axum::{
   extract::{Path, State},
   http,
 };
-use engine::entities::world::{ArrivalStatus, DepartureStatus};
+use engine::entities::world::AirportStatus;
 use internment::Intern;
 
 use crate::{
@@ -50,7 +50,7 @@ pub async fn get_airport_status(
   Path(id): Path<String>,
 ) -> Result<String, http::StatusCode> {
   let res = JobReq::send(
-    TinyReqKind::AirspaceStatus(Intern::from(id)),
+    TinyReqKind::AirportStatus(Intern::from(id)),
     &mut state.tiny_sender,
   )
   .recv()
@@ -66,29 +66,12 @@ pub async fn get_airport_status(
   }
 }
 
-pub async fn post_arrival_status(
+pub async fn post_airport_status(
   State(mut state): State<AppState>,
-  Path((id, status)): Path<(String, ArrivalStatus)>,
+  Path((id, status)): Path<(String, AirportStatus)>,
 ) -> Result<(), http::StatusCode> {
   let res = JobReq::send(
-    TinyReqKind::ArrivalStatus(Intern::from(id), status),
-    &mut state.tiny_sender,
-  )
-  .recv()
-  .await;
-  if let Ok(ResKind::Any) = res {
-    Ok(())
-  } else {
-    Err(http::StatusCode::INTERNAL_SERVER_ERROR)
-  }
-}
-
-pub async fn post_departure_status(
-  State(mut state): State<AppState>,
-  Path((id, status)): Path<(String, DepartureStatus)>,
-) -> Result<(), http::StatusCode> {
-  let res = JobReq::send(
-    TinyReqKind::DepartureStatus(Intern::from(id), status),
+    TinyReqKind::SetAirportStatus(Intern::from(id), status),
     &mut state.tiny_sender,
   )
   .recv()
