@@ -18,7 +18,7 @@ use engine::{
   engine::{Engine, EngineConfig, Event},
   entities::{
     aircraft::{
-      Aircraft, AircraftKind, AircraftState, FlightSegment,
+      Aircraft, AircraftState, FlightSegment,
       events::{AircraftEvent, EventKind},
     },
     airport::Frequencies,
