@@ -728,8 +728,11 @@ impl Aircraft {
           }
         }
       } else if matches!(self.segment, FlightSegment::TaxiDep) {
-        if let AircraftState::Taxiing { current, .. } = &self.state {
-          if current.kind == NodeKind::Runway {
+        if let AircraftState::Taxiing {
+          current, waypoints, ..
+        } = &self.state
+        {
+          if current.kind == NodeKind::Runway && waypoints.is_empty() {
             events.push(
               AircraftEvent::new(self.id, EventKind::Takeoff(current.name))
                 .into(),
