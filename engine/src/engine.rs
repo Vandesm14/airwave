@@ -144,7 +144,7 @@ impl Engine {
     let mut events: Vec<Event> = Vec::new();
     self.compute_available_gates();
 
-    if self.config.show_logs() && !self.events.is_empty() {
+    if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
     }
 
@@ -192,12 +192,6 @@ impl Engine {
 
     if self.config.run_collisions() {
       self.taxi_collisions();
-    }
-
-    // Capture the left over events and actions for next time
-    if self.config.show_logs() && !events.is_empty() {
-      // TODO: decide if we want to keep this or discard this.
-      // println!("new events: {:?}", events);
     }
 
     self.events = events;
