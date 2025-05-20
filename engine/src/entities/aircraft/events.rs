@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  APPROACH_ALTITUDE, ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, WEST_CRUISE_ALTITUDE,
+  ARRIVAL_ALTITUDE, EAST_CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
+  WEST_CRUISE_ALTITUDE,
   command::{CommandReply, CommandWithFreq, Task},
   engine::Event,
   entities::world::World,
-  geometry::{angle_between_points, delta_angle, inverse_degrees, move_point},
+  geometry::{angle_between_points, delta_angle},
   heading_to_direction,
   pathfinder::{
     Node, NodeBehavior, NodeKind, Pathfinder, display_node_vec2,
@@ -70,8 +70,6 @@ pub enum EventKind {
   // Configuration and Automation
   /// Teleports an aircraft from its gate to the takeoff phase.
   QuickDepart,
-  /// Teleports an aircraft from the approach phase to a gate.
-  QuickArrive,
 
   // External
   // TODO: I think the engine can handle this instead internally.
@@ -189,24 +187,8 @@ pub fn handle_aircraft_event(
           .find(|a| a.id == aircraft.flight_plan.arriving);
 
         if let Some((departure, arrival)) = departure.zip(arrival) {
-          let auto_approach = world.automated_arrivals(arrival.id);
-
           let main_course_heading =
             angle_between_points(departure.center, arrival.center);
-          let runways = arrival.runways.iter();
-
-          let mut smallest_angle = f32::MAX;
-          let mut closest = None;
-          for runway in runways {
-            let diff = delta_angle(runway.heading, main_course_heading).abs();
-            if diff < smallest_angle {
-              smallest_angle = diff;
-              closest = Some(runway);
-            }
-          }
-
-          // If an airport doesn't have a runway, we have other problems.
-          let runway = closest.unwrap();
 
           let transition_sid = departure
             .center
@@ -214,12 +196,6 @@ pub fn handle_aircraft_event(
           let transition_star = arrival
             .center
             .move_towards(departure.center, NAUTICALMILES_TO_FEET * 30.0);
-          let transition_iaf = move_point(
-            runway.start,
-            inverse_degrees(runway.heading),
-            NAUTICALMILES_TO_FEET * 15.0,
-          );
-          let transition_vctr = transition_star.lerp(transition_iaf, 0.5);
 
           let cruise_alt = if (0.0..180.0).contains(&main_course_heading) {
             EAST_CRUISE_ALTITUDE
@@ -336,7 +312,7 @@ pub fn handle_aircraft_event(
     }
     EventKind::Touchdown => {
       if let AircraftState::Landing { .. } = aircraft.state {
-        handle_touchdown_event(aircraft, events, world);
+        handle_touchdown_event(aircraft);
       }
     }
     EventKind::Takeoff(runway) => {
@@ -528,44 +504,6 @@ pub fn handle_aircraft_event(
         }
       }
     }
-    EventKind::QuickArrive => {
-      // let arrival = world
-      //   .airports
-      //   .iter()
-      //   .find(|a| a.id == aircraft.flight_plan.arriving);
-      // if let Some(arrival) = arrival {
-      //   let available_gate = arrival
-      //     .terminals
-      //     .iter()
-      //     .flat_map(|t| t.gates.iter())
-      //     .find(|g| g.available);
-      //   if let Some(gate) = available_gate {
-      //     aircraft.state = AircraftState::Parked {
-      //       at: Node::new(
-      //         gate.id,
-      //         NodeKind::Gate,
-      //         NodeBehavior::Park,
-      //         gate.pos,
-      //       ),
-      //     };
-
-      //     aircraft.pos = gate.pos;
-
-      //     aircraft.speed = 0.0;
-      //     aircraft.heading = gate.heading;
-      //     aircraft.altitude = 0.0;
-      //     aircraft.sync_targets_to_vals();
-
-      //     aircraft.flip_flight_plan();
-      //   } else {
-      //     tracing::error!(
-      //       "No available gates for {} at {}",
-      //       aircraft.id,
-      //       aircraft.flight_plan.arriving
-      //     );
-      //   }
-      // }
-    }
 
     // External
     EventKind::Delete => {
@@ -597,23 +535,10 @@ pub fn handle_land_event(
   }
 }
 
-pub fn handle_touchdown_event(
-  aircraft: &mut Aircraft,
-  events: &mut Vec<Event>,
-  world: &World,
-) {
+pub fn handle_touchdown_event(aircraft: &mut Aircraft) {
   let AircraftState::Landing { runway, .. } = &aircraft.state else {
     unreachable!("outer function asserts that aircraft is landing")
   };
-
-  if let Some(airport) = aircraft.find_airport(&world.airports) {
-    if world.automated_arrivals(airport.id) {
-      events.push(Event::Aircraft(AircraftEvent::new(
-        aircraft.id,
-        EventKind::QuickArrive,
-      )));
-    }
-  }
 
   aircraft.target.altitude = 0.0;
   aircraft.altitude = 0.0;

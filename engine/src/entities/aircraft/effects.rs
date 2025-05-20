@@ -207,13 +207,6 @@ impl Aircraft {
           NodeBehavior::GoTo => {}
           NodeBehavior::HoldShort => {}
           NodeBehavior::Park => {
-            // bundle.events.push(
-            //   AircraftEvent::new(
-            //     aircraft.id,
-            //     EventKind::Segment(FlightSegment::Parked),
-            //   )
-            //   .into(),
-            // );
             self.state = AircraftState::Parked {
               at: current.clone(),
             };
