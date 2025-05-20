@@ -638,8 +638,13 @@ impl Aircraft {
       if matches!(self.segment, FlightSegment::TaxiArr)
         && self.speed <= MAX_TAXI_SPEED
       {
-        if let AircraftState::Taxiing { waypoints, .. } = &self.state {
-          if !waypoints.iter().any(|w| w.kind == NodeKind::Gate) {
+        if let AircraftState::Taxiing {
+          current, waypoints, ..
+        } = &self.state
+        {
+          if !waypoints.iter().any(|w| w.kind == NodeKind::Gate)
+            && current.kind != NodeKind::Gate
+          {
             if let Some(airport) = world
               .airports
               .iter()
@@ -651,7 +656,7 @@ impl Aircraft {
                 .flat_map(|t| t.gates.iter())
                 .find(|g| g.available);
               if let Some(gate) = available_gate {
-                tracing::info!("taxi arrival: {}", self.id);
+                // tracing::info!("taxi arrival: {}", self.id);
                 events.push(
                   AircraftEvent::new(
                     self.id,
@@ -726,7 +731,7 @@ impl Aircraft {
                   let other =
                     airport.pathfinder.graph.node_weight(other).unwrap();
 
-                  tracing::info!("taxi departure: {}", self.id);
+                  // tracing::info!("taxi departure: {}", self.id);
                   events.push(
                     AircraftEvent::new(
                       self.id,
