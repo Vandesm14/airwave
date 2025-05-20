@@ -848,18 +848,15 @@ export default function Canvas() {
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     const isSelected = selectedAircraft() === aircraft.id;
-    // TODO: Once we have creation time, implement this as hiding flights that
-    // haven't been activated yet.
-    const isActive = aircraft.flight_time
-      ? ping.data.server_ticks.ticks > aircraft.flight_time
-      : false;
-
     const airport = hardcodedAirport(world.data);
 
     resetTransform(ctx);
     let pos = scalePoint(aircraft.pos);
     // let taxi_yellow = '#ffff00';
-    let taxi_color = isActive ? '#ffffff' : colors.text_light_grey;
+    let taxi_color =
+      aircraft.segment !== 'dormant' ? '#ffffff' : colors.text_dark_grey;
+    taxi_color =
+      aircraft.segment === 'boarding' ? colors.text_light_grey : taxi_color;
     taxi_color = isSelected ? colors.text_yellow : taxi_color;
 
     let callsign_color =
