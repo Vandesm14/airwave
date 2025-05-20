@@ -1,13 +1,13 @@
 use editor::draw::Draw;
 use engine::{
-  NAUTICALMILES_TO_FEET,
+  AIRSPACE_RADIUS, APPROACH_ALTITUDE, NAUTICALMILES_TO_FEET,
   assets::load_assets,
   engine::Engine,
   entities::{
     aircraft::{Aircraft, AircraftState, FlightPlan},
     world::AirportStatus,
   },
-  geometry::Translate,
+  geometry::{Translate, move_point},
 };
 use glam::Vec2;
 use internment::Intern;
@@ -61,59 +61,54 @@ fn model(app: &App) -> Model {
     ..Default::default()
   };
 
-  let airport = engine.airports.get("ksfo").unwrap().clone();
-  let mut kdef_airport = engine.airports.get("default").unwrap().clone();
-  kdef_airport.translate(Vec2::splat(NAUTICALMILES_TO_FEET * 100.0));
+  let main_airport = engine.airports.get("default").unwrap().clone();
+  let mut far_airport = engine.airports.get("ksfo").unwrap().clone();
+  far_airport.translate(Vec2::splat(NAUTICALMILES_TO_FEET * 100.0));
 
-  // let aircraft = Aircraft {
-  //   id: Intern::from_ref("AAL1234"),
-  //   pos: move_point(glam::Vec2::ZERO, 45.0, AIRSPACE_RADIUS),
-  //   speed: 250.0,
-  //   heading: 270.0,
-  //   altitude: APPROACH_ALTITUDE,
-  //   state: AircraftState::Flying,
-  //   flight_plan: FlightPlan::new(
-  //     Intern::from_ref("KDEF"),
-  //     Intern::from_ref("KSFO"),
-  //   ),
-  //   flight_time: Some(0),
-  //   ..Default::default()
-  // }
-  // .with_synced_targets();
-
-  let gate = airport
-    .terminals
-    .iter()
-    .flat_map(|t| t.gates.iter())
-    .next()
-    .unwrap();
-  let aircraft = Aircraft {
-    id: Intern::from_ref("AAL1234"),
-    pos: gate.pos,
-    speed: 0.0,
-    heading: gate.heading,
-    altitude: 0.0,
-    state: AircraftState::Parked { at: gate.into() },
-    flight_plan: FlightPlan::new(
-      Intern::from_ref("KSFO"),
-      Intern::from_ref("KDEF"),
-    ),
+  let arrival_aircraft = Aircraft {
+    id: Intern::from_ref("ARR1234"),
+    pos: move_point(main_airport.center, 45.0, AIRSPACE_RADIUS),
+    speed: 250.0,
+    heading: 270.0,
+    altitude: APPROACH_ALTITUDE,
+    state: AircraftState::Flying,
+    flight_plan: FlightPlan::new(far_airport.id, main_airport.id),
     flight_time: Some(0),
     ..Default::default()
   }
   .with_synced_targets();
 
-  engine.game.aircraft.push(aircraft);
+  let gate = main_airport
+    .terminals
+    .iter()
+    .flat_map(|t| t.gates.iter())
+    .next()
+    .unwrap();
+  let departure_aircraft = Aircraft {
+    id: Intern::from_ref("DEP1234"),
+    pos: gate.pos,
+    speed: 0.0,
+    heading: gate.heading,
+    altitude: 0.0,
+    state: AircraftState::Parked { at: gate.into() },
+    flight_plan: FlightPlan::new(main_airport.id, far_airport.id),
+    flight_time: Some(0),
+    ..Default::default()
+  }
+  .with_synced_targets();
+
+  engine.game.aircraft.push(arrival_aircraft);
+  engine.game.aircraft.push(departure_aircraft);
   engine
     .world
     .airport_statuses
-    .insert(airport.id, AirportStatus::all_auto());
+    .insert(main_airport.id, AirportStatus::all_auto());
   engine
     .world
     .airport_statuses
-    .insert(kdef_airport.id, AirportStatus::all_auto());
-  engine.world.airports.push(airport);
-  engine.world.airports.push(kdef_airport);
+    .insert(far_airport.id, AirportStatus::all_auto());
+  engine.world.airports.push(main_airport);
+  engine.world.airports.push(far_airport);
 
   let mut snapshots = Vec::new();
   for i in 0..engine.tick_rate_tps * 60 * 20 {
@@ -156,7 +151,9 @@ fn update(_app: &App, model: &mut Model, update: Update) {
   let side_panel =
     egui::panel::SidePanel::new(egui::panel::Side::Left, Id::new("side_panel"))
       .show(&ctx, |ui| {
-        ui.label(format!("{:#?}", model.snapshots.get(model.snapshot_index)));
+        egui::ScrollArea::vertical().show(ui, |ui| {
+          ui.label(format!("{:#?}", model.snapshots.get(model.snapshot_index)));
+        });
       });
 
   let bottom_panel = egui::panel::TopBottomPanel::new(
