@@ -341,6 +341,7 @@ impl Engine {
       let aircraft = pair.first().unwrap();
       let other_aircraft = pair.last().unwrap();
 
+      // Skip checking aircraft that are not in the same airspace.
       if aircraft.airspace != other_aircraft.airspace {
         continue;
       }
@@ -348,7 +349,14 @@ impl Engine {
       // Skip checking aircraft that are both parked or not at the same airport.
       if matches!(aircraft.state, AircraftState::Parked { .. })
         && matches!(other_aircraft.state, AircraftState::Parked { .. })
-        || aircraft.airspace != other_aircraft.airspace
+      {
+        continue;
+      }
+
+      // Skip checking aircraft within automated airports.
+      if aircraft
+        .airspace
+        .is_some_and(|id| !self.world.airport_status(id).automate_ground)
       {
         continue;
       }
