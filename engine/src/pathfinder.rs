@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use glam::Vec2;
 use internment::Intern;
 use petgraph::{
@@ -322,16 +324,29 @@ impl Pathfinder {
         std::hash::RandomState,
       >(&self.graph, from_node.0, to_node.0, 0, None);
 
-      let mut paths: Vec<PathfinderPath> = paths
+      let mut count = 0;
+
+      let mut map_to_weights = Duration::ZERO;
+      let mut map_to_waypoints = Duration::ZERO;
+      let mut map_to_paths = Duration::ZERO;
+      let mut filter_paths = Duration::ZERO;
+
+      let main_start = Instant::now();
+      let paths = paths
         .map(|path| {
-          path
+          let start = Instant::now();
+          let path = path
             .into_iter()
             .map(|wp| (wp, self.graph.node_weight(wp).unwrap()))
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+
+          map_to_weights += start.elapsed();
+          path
         })
         // Generate a list of waypoints for each path
         .map(|path| {
-          let mut waypoints: Vec<Node<Vec2>> = Vec::new();
+          let start = Instant::now();
+          let mut waypoints: Vec<Node<Vec2>> = Vec::with_capacity(path.len());
 
           let mut first = path.first().unwrap();
           for next in path.iter().skip(1) {
@@ -352,10 +367,12 @@ impl Pathfinder {
             first = next;
           }
 
+          map_to_waypoints += start.elapsed();
           waypoints
         })
         // Turn the Vec<Node<Vec2>> paths into PathfinderPaths
         .map(|path| {
+          let start = Instant::now();
           let mut pos = pos;
           let mut heading = heading;
 
@@ -373,14 +390,19 @@ impl Pathfinder {
             first = wp;
           }
 
-          PathfinderPath {
+          let path = PathfinderPath {
             path,
             final_heading: heading,
             final_pos: pos,
-          }
+          };
+
+          map_to_paths += start.elapsed();
+          path
         })
         // Filter out paths that don't fulfill our requirements
         .filter(|path| {
+          count += 1;
+          let start = Instant::now();
           let mut pos = pos;
           let mut heading = heading;
 
@@ -399,12 +421,14 @@ impl Pathfinder {
             if first.kind != NodeKind::Gate
               && delta_angle(heading, angle).abs() >= 175.0
             {
+              filter_paths += start.elapsed();
               return false;
             }
 
             // If the waypoint is a runway and we haven't instructed to go to
             // it, don't use this path.
             if wp.kind == NodeKind::Runway && !to.name_and_kind_eq(wp) {
+              filter_paths += start.elapsed();
               return false;
             }
 
@@ -414,11 +438,64 @@ impl Pathfinder {
             first = wp;
           }
 
+          filter_paths += start.elapsed();
           true
-        })
-        .collect();
+        });
 
-      println!("iterated {} paths", paths.len());
+      let mut paths: Vec<_> = paths.collect();
+
+      let main_start = main_start.elapsed();
+
+      let total_weights_ms = map_to_weights.as_secs_f32() * 1000.0;
+      let total_waypoints_ms = map_to_waypoints.as_secs_f32() * 1000.0;
+      let total_paths_ms = map_to_paths.as_secs_f32() * 1000.0;
+      let total_filter_ms = filter_paths.as_secs_f32() * 1000.0;
+
+      let avg_weights_us = if count > 0 {
+        total_weights_ms / count as f32
+      } else {
+        0.0
+      } * 1000.0;
+      let avg_waypoints_us = if count > 0 {
+        total_waypoints_ms / count as f32
+      } else {
+        0.0
+      } * 1000.0;
+      let avg_paths_us = if count > 0 {
+        total_paths_ms / count as f32
+      } else {
+        0.0
+      } * 1000.0;
+      let avg_filter_us = if count > 0 {
+        total_filter_ms / count as f32
+      } else {
+        0.0
+      } * 1000.0;
+
+      println!();
+      println!(
+        "map_to_weights: {:.2}ms ({:.2}us)",
+        total_weights_ms, avg_weights_us
+      );
+      println!(
+        "map_to_waypoints: {:.2}ms ({:.2}us)",
+        total_waypoints_ms, avg_waypoints_us
+      );
+      println!(
+        "map_to_paths: {:.2}ms ({:.2}us)",
+        total_paths_ms, avg_paths_us
+      );
+      println!(
+        "filter_paths: {:.2}ms ({:.2}us)",
+        total_filter_ms, avg_filter_us
+      );
+
+      println!();
+      println!(
+        "filtered {count} into {} paths in {:.2}ms",
+        paths.len(),
+        main_start.as_secs_f32() * 1000.0
+      );
 
       // TODO: The distance function is broken for some reason so we won't
       // sort by it for now until its fixed.
