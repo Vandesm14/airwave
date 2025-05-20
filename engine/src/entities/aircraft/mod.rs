@@ -459,7 +459,7 @@ impl Aircraft {
     string
   }
 
-  pub fn random_dormant(gate: Gate, rng: &mut Rng, airport: &Airport) -> Self {
+  pub fn random_dormant(gate: &Gate, rng: &mut Rng, airport: &Airport) -> Self {
     Self {
       id: Intern::from(Self::random_callsign(rng)),
 

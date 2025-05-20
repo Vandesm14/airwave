@@ -1,5 +1,7 @@
 use std::f32::consts::PI;
 
+use petgraph::visit::{EdgeRef, IntoNodeReferences};
+
 use crate::{
   KNOT_TO_FEET_PER_SECOND, MAX_TAXI_SPEED, MIN_CRUISE_ALTITUDE,
   NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
@@ -619,39 +621,119 @@ impl Aircraft {
   }
 
   pub fn update_auto_ground(&mut self, events: &mut Vec<Event>, world: &World) {
-    if matches!(self.segment, FlightSegment::TaxiArr)
-      && self
-        .airspace
-        .is_some_and(|a| world.airport_status(a).automate_ground)
+    if self
+      .airspace
+      .is_some_and(|a| world.airport_status(a).automate_ground)
     {
-      if let AircraftState::Taxiing { waypoints, .. } = &self.state {
-        if self.speed <= MAX_TAXI_SPEED
-          && !waypoints.iter().any(|w| w.kind == NodeKind::Gate)
-        {
+      if matches!(self.segment, FlightSegment::TaxiArr)
+        && self.speed <= MAX_TAXI_SPEED
+      {
+        if let AircraftState::Taxiing { waypoints, .. } = &self.state {
+          if !waypoints.iter().any(|w| w.kind == NodeKind::Gate) {
+            if let Some(airport) = world
+              .airports
+              .iter()
+              .find(|a| self.airspace.is_some_and(|id| id == a.id))
+            {
+              let available_gate = airport
+                .terminals
+                .iter()
+                .flat_map(|t| t.gates.iter())
+                .find(|g| g.available);
+              if let Some(gate) = available_gate {
+                events.push(
+                  AircraftEvent::new(
+                    self.id,
+                    EventKind::Taxi(vec![Node::new(
+                      gate.id,
+                      NodeKind::Gate,
+                      NodeBehavior::GoTo,
+                      (),
+                    )]),
+                  )
+                  .into(),
+                );
+              }
+            }
+          }
+        }
+      } else if matches!(self.segment, FlightSegment::Parked) {
+        if let AircraftState::Parked { .. } = &self.state {
           if let Some(airport) = world
             .airports
             .iter()
             .find(|a| self.airspace.is_some_and(|id| id == a.id))
           {
-            let available_gate = airport
-              .terminals
+            let departure = world
+              .airports
               .iter()
-              .flat_map(|t| t.gates.iter())
-              .find(|g| g.available);
-            if let Some(gate) = available_gate {
-              events.push(
-                AircraftEvent::new(
-                  self.id,
-                  EventKind::Taxi(vec![Node::new(
-                    gate.id,
-                    NodeKind::Gate,
-                    NodeBehavior::GoTo,
-                    (),
-                  )]),
-                )
-                .into(),
-              );
+              .find(|a| a.id == self.flight_plan.departing);
+            let arrival = world
+              .airports
+              .iter()
+              .find(|a| a.id == self.flight_plan.arriving);
+            if let Some((departure, arrival)) = departure.zip(arrival) {
+              let departure_angle =
+                angle_between_points(departure.center, arrival.center);
+              let runways = departure.runways.iter();
+
+              let mut smallest_angle = f32::MAX;
+              let mut closest = None;
+              for runway in runways {
+                let diff = delta_angle(runway.heading, departure_angle).abs();
+                if diff < smallest_angle {
+                  smallest_angle = diff;
+                  closest = Some(runway);
+                }
+              }
+
+              // If an airport doesn't have a runway, we have other problems.
+              let runway = closest.unwrap();
+              let node_index = airport
+                .pathfinder
+                .graph
+                .node_references()
+                .find(|(_, w)| w.name_and_kind_eq(&Node::<Line>::from(runway)))
+                .map(|(i, _)| i);
+              if let Some(index) = node_index {
+                let mut points =
+                  airport.pathfinder.graph.edges(index).collect::<Vec<_>>();
+                points.sort_by(|a, b| {
+                  let dist_a = a.weight().distance_squared(runway.start);
+                  let dist_b = b.weight().distance_squared(runway.start);
+                  dist_a
+                    .partial_cmp(&dist_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+                });
+
+                if let Some(closest) = points.first() {
+                  let other = if closest.source() == index {
+                    closest.target()
+                  } else {
+                    closest.source()
+                  };
+                  let other =
+                    airport.pathfinder.graph.node_weight(other).unwrap();
+
+                  events.push(
+                    AircraftEvent::new(
+                      self.id,
+                      EventKind::Taxi(vec![other.into(), runway.into()]),
+                    )
+                    .into(),
+                  );
+                }
+              }
             }
+          }
+        }
+      } else if matches!(self.segment, FlightSegment::TaxiDep) {
+        if let AircraftState::Taxiing { current, .. } = &self.state {
+          if current.kind == NodeKind::Runway {
+            events.push(
+              AircraftEvent::new(self.id, EventKind::Takeoff(current.name))
+                .into(),
+            );
           }
         }
       }

@@ -111,8 +111,8 @@ impl<T> Node<T> {
   }
 }
 
-impl From<Gate> for Node<Vec2> {
-  fn from(value: Gate) -> Self {
+impl From<&Gate> for Node<Vec2> {
+  fn from(value: &Gate) -> Self {
     Self {
       name: value.id,
       kind: NodeKind::Gate,
@@ -122,13 +122,57 @@ impl From<Gate> for Node<Vec2> {
   }
 }
 
-impl From<Gate> for Node<Line> {
-  fn from(value: Gate) -> Self {
+impl From<&Gate> for Node<Line> {
+  fn from(value: &Gate) -> Self {
     Self {
       name: value.id,
       kind: NodeKind::Gate,
       behavior: NodeBehavior::Park,
       data: Line::new(value.pos, value.pos),
+    }
+  }
+}
+
+impl From<&Runway> for Node<Line> {
+  fn from(value: &Runway) -> Self {
+    Self {
+      name: value.id,
+      kind: NodeKind::Runway,
+      behavior: NodeBehavior::GoTo,
+      data: Line::new(value.start, value.end()),
+    }
+  }
+}
+
+impl From<&Gate> for Node<()> {
+  fn from(value: &Gate) -> Self {
+    Self {
+      name: value.id,
+      kind: NodeKind::Gate,
+      behavior: NodeBehavior::Park,
+      data: (),
+    }
+  }
+}
+
+impl From<&Runway> for Node<()> {
+  fn from(value: &Runway) -> Self {
+    Self {
+      name: value.id,
+      kind: NodeKind::Runway,
+      behavior: NodeBehavior::GoTo,
+      data: (),
+    }
+  }
+}
+
+impl From<&Node<Line>> for Node<()> {
+  fn from(value: &Node<Line>) -> Self {
+    Self {
+      name: value.name,
+      kind: value.kind,
+      behavior: value.behavior,
+      data: (),
     }
   }
 }
@@ -289,7 +333,7 @@ impl Pathfinder {
 
       if let Object::Terminal(terminal) = current {
         for gate in terminal.gates.iter() {
-          let gate_node = graph.add_node(gate.clone().into());
+          let gate_node = graph.add_node(gate.into());
           let intersection =
             closest_point_on_line(gate.pos, terminal.apron.0, terminal.apron.1);
 

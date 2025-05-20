@@ -1,14 +1,15 @@
 use editor::draw::Draw;
 use engine::{
-  AIRSPACE_RADIUS, APPROACH_ALTITUDE,
+  NAUTICALMILES_TO_FEET,
   assets::load_assets,
   engine::Engine,
   entities::{
     aircraft::{Aircraft, AircraftState, FlightPlan},
     world::AirportStatus,
   },
-  geometry::move_point,
+  geometry::Translate,
 };
+use glam::Vec2;
 use internment::Intern;
 use nannou::prelude::*;
 use nannou_egui::{
@@ -61,16 +62,41 @@ fn model(app: &App) -> Model {
   };
 
   let airport = engine.airports.get("ksfo").unwrap().clone();
+  let mut kdef_airport = engine.airports.get("default").unwrap().clone();
+  kdef_airport.translate(Vec2::splat(NAUTICALMILES_TO_FEET * 100.0));
+
+  // let aircraft = Aircraft {
+  //   id: Intern::from_ref("AAL1234"),
+  //   pos: move_point(glam::Vec2::ZERO, 45.0, AIRSPACE_RADIUS),
+  //   speed: 250.0,
+  //   heading: 270.0,
+  //   altitude: APPROACH_ALTITUDE,
+  //   state: AircraftState::Flying,
+  //   flight_plan: FlightPlan::new(
+  //     Intern::from_ref("KDEF"),
+  //     Intern::from_ref("KSFO"),
+  //   ),
+  //   flight_time: Some(0),
+  //   ..Default::default()
+  // }
+  // .with_synced_targets();
+
+  let gate = airport
+    .terminals
+    .iter()
+    .flat_map(|t| t.gates.iter())
+    .next()
+    .unwrap();
   let aircraft = Aircraft {
     id: Intern::from_ref("AAL1234"),
-    pos: move_point(glam::Vec2::ZERO, 45.0, AIRSPACE_RADIUS),
-    speed: 250.0,
-    heading: 270.0,
-    altitude: APPROACH_ALTITUDE,
-    state: AircraftState::Flying,
+    pos: gate.pos,
+    speed: 0.0,
+    heading: gate.heading,
+    altitude: 0.0,
+    state: AircraftState::Parked { at: gate.into() },
     flight_plan: FlightPlan::new(
-      Intern::from_ref("KDEF"),
       Intern::from_ref("KSFO"),
+      Intern::from_ref("KDEF"),
     ),
     flight_time: Some(0),
     ..Default::default()
@@ -82,11 +108,16 @@ fn model(app: &App) -> Model {
     .world
     .airport_statuses
     .insert(airport.id, AirportStatus::all_auto());
+  engine
+    .world
+    .airport_statuses
+    .insert(kdef_airport.id, AirportStatus::all_auto());
   engine.world.airports.push(airport);
+  engine.world.airports.push(kdef_airport);
 
   let mut snapshots = Vec::new();
   for i in 0..engine.tick_rate_tps * 60 * 20 {
-    if i % engine.tick_rate_tps == 0 {
+    if i % engine.tick_rate_tps == 0 && i > 0 {
       snapshots.push(engine.game.aircraft.clone());
     }
 

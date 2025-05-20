@@ -280,11 +280,8 @@ impl Runner {
     for airport in self.engine.world.airports.iter() {
       for terminal in airport.terminals.iter() {
         for gate in terminal.gates.iter() {
-          let mut aircraft = Aircraft::random_dormant(
-            gate.clone(),
-            &mut self.engine.rng,
-            airport,
-          );
+          let mut aircraft =
+            Aircraft::random_dormant(gate, &mut self.engine.rng, airport);
           aircraft.flight_plan.departing = airport.id;
           aircraft.flight_plan.arriving = self
             .engine

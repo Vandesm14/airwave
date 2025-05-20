@@ -79,6 +79,8 @@ impl Translate for Airport {
       terminal.translate(offset);
     }
 
+    self.calculate_waypoints();
+
     self
   }
 }
