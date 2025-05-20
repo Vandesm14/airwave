@@ -246,6 +246,12 @@ impl Draw for Aircraft {
       )))
       .weight(2.0)
       .color(color::GREEN);
+
+    self.draw_label(draw, scale, offset);
+  }
+
+  fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
+    draw_label(self.id.to_string(), self.pos, draw, scale, offset);
   }
 }
 
