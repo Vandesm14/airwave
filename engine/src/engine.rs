@@ -186,8 +186,8 @@ impl Engine {
       // General effects
       aircraft.update_from_targets(dt);
       aircraft.update_position(dt);
-      aircraft.update_segment(&mut events, &self.world, self.tick_counter);
       aircraft.update_airspace(&self.world);
+      aircraft.update_segment(&mut events, &self.world, self.tick_counter);
     }
 
     if self.config.run_collisions() {
