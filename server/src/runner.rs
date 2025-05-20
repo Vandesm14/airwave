@@ -114,6 +114,9 @@ pub struct Runner {
 
   spawns: SignalGenerator,
   perf_log: SignalGenerator,
+
+  last_perf_tick: usize,
+  perf_tick_time_ms: Duration,
 }
 
 impl Runner {
@@ -141,6 +144,9 @@ impl Runner {
 
       spawns: SignalGenerator::new(DEFAULT_TICK_RATE_TPS * SPAWN_RATE_SECONDS),
       perf_log: SignalGenerator::new(DEFAULT_TICK_RATE_TPS * PERF_LOG_SECONDS),
+
+      last_perf_tick: 0,
+      perf_tick_time_ms: Duration::default(),
     }
   }
 
@@ -388,6 +394,7 @@ impl Runner {
   }
 
   pub fn tick(&mut self) -> Vec<Event> {
+    let tick_start = Instant::now();
     let mut commands: Vec<CommandWithFreq> = Vec::new();
 
     // GET
@@ -510,13 +517,16 @@ impl Runner {
     self.cleanup(events.iter());
     // TODO: self.save_world();
 
+    let tick_duration = tick_start.elapsed();
+    self.perf_tick_time_ms += tick_duration;
+
     // Log performance of engine.
     if !self.preparing && self.perf_log.tick(self.engine.tick_counter) {
-      let diff = self.engine.last_tick.elapsed();
-      let mills = diff.as_micros() as f32 / 1000.0;
+      let diff = self.perf_tick_time_ms.as_secs_f32()
+        / (self.engine.tick_counter - self.last_perf_tick) as f32;
+      let mills = diff * 1000.0;
       let max = 1.0 / self.engine.tick_rate_tps as f32 * 1000.0;
-      let percent =
-        diff.as_secs_f32() / (1.0 / self.engine.tick_rate_tps as f32);
+      let percent = diff / (1.0 / self.engine.tick_rate_tps as f32);
 
       tracing::info!(
         "Using {:.2}ms of {:.0}ms total tick time ({:.2}%)",
@@ -524,6 +534,9 @@ impl Runner {
         max,
         percent * 100.0
       );
+
+      self.last_perf_tick = self.engine.tick_counter;
+      self.perf_tick_time_ms = Duration::default();
     }
 
     self.engine.tick_counter += 1;
