@@ -130,9 +130,6 @@ async fn main() {
   runner.generate_airports(&mut world_rng, &main_frequencies);
   runner.generate_waypoints();
 
-  // This inserts statuses for all airports including main.
-  runner.engine.world.reset_statuses();
-
   runner
     .engine
     .world

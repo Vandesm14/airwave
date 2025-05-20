@@ -66,15 +66,6 @@ pub struct World {
 }
 
 impl World {
-  pub fn reset_statuses(&mut self) {
-    self.airport_statuses.clear();
-    for airport in self.airports.iter() {
-      self
-        .airport_statuses
-        .insert(airport.id, AirportStatus::default());
-    }
-  }
-
   pub fn closest_airport(&self, point: Vec2) -> Option<&Airport> {
     let mut closest: Option<&Airport> = None;
     let mut distance = f32::MAX;

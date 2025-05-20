@@ -222,6 +222,11 @@ impl Runner {
       airport.id = Intern::from_ref(airport_name);
       airport.translate(airport_position);
 
+      self
+        .engine
+        .world
+        .airport_statuses
+        .insert(airport.id, AirportStatus::all_auto());
       self.engine.world.airports.push(airport);
     }
   }
@@ -378,24 +383,24 @@ impl Runner {
   }
 
   fn auto_depart(&mut self) {
-    // TODO: Remove if I forget to.
-    // // QuickDepart based on Flight Time.
-    // for aircraft in
-    //   self.engine.game.aircraft.iter_mut().filter(|a| {
-    //     a.flight_time.is_some_and(|t| self.engine.tick_counter >= t)
-    //   })
-    // {
-    //   if self
-    //     .engine
-    //     .world
-    //     .automated_departures(aircraft.flight_plan.departing)
-    //   {
-    //     self
-    //       .engine
-    //       .events
-    //       .push(AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into());
-    //   }
-    // }
+    // QuickDepart based on Flight Time.
+    for aircraft in
+      self.engine.game.aircraft.iter_mut().filter(|a| {
+        a.flight_time.is_some_and(|t| self.engine.tick_counter >= t)
+      })
+    {
+      if self
+        .engine
+        .world
+        .airport_status(aircraft.flight_plan.departing)
+        .automate_ground
+      {
+        self
+          .engine
+          .events
+          .push(AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into());
+      }
+    }
   }
 
   pub fn tick(&mut self) -> Vec<Event> {
