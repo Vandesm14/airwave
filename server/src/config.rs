@@ -68,9 +68,9 @@ pub struct WorldConfig {
   airport: Option<String>,
   #[serde(default)]
   paused: bool,
-  #[serde(default)]
+  #[serde(default = "normal_arrival_status")]
   arrivals: ArrivalStatus,
-  #[serde(default)]
+  #[serde(default = "normal_departure_status")]
   departures: DepartureStatus,
 }
 
@@ -119,4 +119,12 @@ fn default_ipv4() -> SocketAddr {
 
 fn default_ipv6() -> SocketAddr {
   SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 9001)
+}
+
+fn normal_arrival_status() -> ArrivalStatus {
+  ArrivalStatus::Normal
+}
+
+fn normal_departure_status() -> DepartureStatus {
+  DepartureStatus::Normal
 }

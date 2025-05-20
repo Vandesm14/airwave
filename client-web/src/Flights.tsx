@@ -39,6 +39,7 @@ export default function Flights() {
             >
               <option value="normal">Normal</option>
               <option value="divert">Divert</option>
+              <option value="automated">Automated</option>
             </select>
           </div>
           <div class="row">
@@ -54,6 +55,7 @@ export default function Flights() {
             >
               <option value="normal">Normal</option>
               <option value="delay">Delay</option>
+              <option value="automated">Automated</option>
             </select>
           </div>
         </Show>

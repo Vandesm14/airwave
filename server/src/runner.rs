@@ -216,7 +216,7 @@ impl Runner {
       let mut airport = airport.clone();
       airport.id = Intern::from_ref(airport_name);
       airport.translate(airport_position);
-      airport.auto = true;
+
       self.engine.world.airports.push(airport);
     }
   }
@@ -280,7 +280,7 @@ impl Runner {
             .engine
             .rng
             .sample(&self.engine.world.airports)
-            .filter(|a| a.auto && a.id != airport.id)
+            .filter(|a| a.id != airport.id)
             .map(|a| a.id)
             .unwrap_or_default();
 
@@ -337,20 +337,17 @@ impl Runner {
                   return false;
                 }
 
-                if go_to_non_auto { !a.auto } else { a.auto }
+                let is_auto = self.engine.world.automated_arrivals(a.id);
+                if go_to_non_auto { !is_auto } else { is_auto }
               }),
             );
             if let Some(destination) = destination {
               // If we are preparing, only schedule departures from auto
-              // airports.
-              if (airport.auto || !self.preparing)
-                && matches!(
-                  self.engine.world.airport_statuses.get(&airport.id),
-                  Some(AirportStatus {
-                    departure: DepartureStatus::Normal,
-                    ..
-                  })
-                )
+              // airports, otherwise choose airports with normal or automated
+              // departure status.
+              if (!self.preparing
+                || self.engine.world.automated_departures(airport.id))
+                && self.engine.world.nominal_departures(airport.id)
               {
                 aircraft.flight_plan.departing = airport.id;
                 aircraft.flight_plan.arriving = destination.id;
@@ -368,23 +365,24 @@ impl Runner {
         }
       }
     }
+  }
 
+  fn auto_depart(&mut self) {
     // QuickDepart based on Flight Time.
-    if self.preparing {
-      for aircraft in self.engine.game.aircraft.iter_mut().filter(|a| {
+    for aircraft in
+      self.engine.game.aircraft.iter_mut().filter(|a| {
         a.flight_time.is_some_and(|t| self.engine.tick_counter >= t)
-      }) {
-        if self
+      })
+    {
+      if self
+        .engine
+        .world
+        .automated_departures(aircraft.flight_plan.departing)
+      {
+        self
           .engine
-          .world
-          .airports
-          .iter()
-          .any(|a| a.id == aircraft.flight_plan.departing && a.auto)
-        {
-          self.engine.events.push(
-            AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into(),
-          );
-        }
+          .events
+          .push(AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into());
       }
     }
   }
@@ -508,6 +506,7 @@ impl Runner {
     );
 
     self.do_spawns();
+    self.auto_depart();
     self.cleanup(events.iter());
     // TODO: self.save_world();
 
@@ -537,11 +536,13 @@ impl Runner {
 
     self.engine.config = EngineConfig::Minimal;
 
-    let size_nm = (WORLD_RADIUS) / NAUTICALMILES_TO_FEET;
-    let base_speed_knots = AircraftKind::A21N.stats().max_speed;
+    // let size_nm = (WORLD_RADIUS) / NAUTICALMILES_TO_FEET;
+    // let base_speed_knots = AircraftKind::A21N.stats().max_speed;
+    // let max_time_hours = size_nm / base_speed_knots;
 
-    let max_time_hours = size_nm / base_speed_knots;
-    let max_time_secs = max_time_hours * 60.0 * 60.0;
+    // TODO: This ensures that the max time is 30 minutes, but should change
+    // once we have a quicker engine loop, then we can quick start quicker.
+    let max_time_secs = 60.0 * 30.0;
     let max_ticks =
       (max_time_secs * self.engine.tick_rate_tps as f32).ceil() as usize;
 
@@ -562,7 +563,7 @@ impl Runner {
               .iter()
               .find(|a| a.id == aircraft.flight_plan.arriving)
             {
-              if !airport.auto {
+              if !self.engine.world.automated_arrivals(airport.id) {
                 tracing::info!(
                   "Quick start interrupted by {}. Aircraft entered non-auto airport.",
                   aircraft.id

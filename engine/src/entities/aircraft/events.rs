@@ -9,7 +9,7 @@ use crate::{
   NAUTICALMILES_TO_FEET, WEST_CRUISE_ALTITUDE,
   command::{CommandReply, CommandWithFreq, Task},
   engine::Event,
-  entities::world::{AirportStatus, ArrivalStatus, World},
+  entities::world::World,
   geometry::{angle_between_points, delta_angle, inverse_degrees, move_point},
   heading_to_direction,
   pathfinder::{
@@ -189,7 +189,7 @@ pub fn handle_aircraft_event(
           .find(|a| a.id == aircraft.flight_plan.arriving);
 
         if let Some((departure, arrival)) = departure.zip(arrival) {
-          let auto_approach = arrival.auto;
+          let auto_approach = world.automated_arrivals(arrival.id);
 
           let main_course_heading =
             angle_between_points(departure.center, arrival.center);
@@ -618,7 +618,7 @@ pub fn handle_touchdown_event(
   };
 
   if let Some(airport) = aircraft.find_airport(&world.airports) {
-    if airport.auto {
+    if world.automated_arrivals(airport.id) {
       events.push(Event::Aircraft(AircraftEvent::new(
         aircraft.id,
         EventKind::QuickArrive,
@@ -843,15 +843,13 @@ pub fn handle_approach_transition(
     aircraft.segment = FlightSegment::Approach;
     aircraft.frequency = airport.frequencies.approach;
 
-    if !airport.auto {
-      if matches!(
-        world.airport_statuses.get(&airport.id),
-        Some(AirportStatus {
-          // If airport is accepting inbounds.
-          arrival: ArrivalStatus::Normal,
-          ..
-        })
-      ) {
+    let status = world
+      .airport_statuses
+      .get(&airport.id)
+      .copied()
+      .unwrap_or_default();
+    if !status.auto_arrivals() {
+      if status.normal_arrivals() {
         // TODO: This clears all waypoints to force the player to deal
         // with the approach rather than use its automated routing.
         // This might break future implementations of routing and
@@ -880,10 +878,10 @@ pub fn handle_approach_transition(
           aircraft.id,
           EventKind::Callout(command),
         )));
-      } else {
-        // If not accepted, go to a random airport.
+      } else if status.divert_arrivals() {
+        // If not accepted, go to a random automated airport.
         let arrival = rng
-          .sample_iter(world.airports.iter().filter(|a| a.auto))
+          .sample_iter(world.airports.iter().filter(|a| a.id != airport.id))
           .map(|a| a.id);
         if let Some(arrival) = arrival {
           // Use our old arrival as our departure.

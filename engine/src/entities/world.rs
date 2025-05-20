@@ -22,6 +22,7 @@ pub fn calculate_airport_waypoints(airports: &mut [Airport]) {
 #[serde(rename_all = "kebab-case")]
 pub enum ArrivalStatus {
   #[default]
+  Automated,
   Normal,
   Divert,
 }
@@ -33,6 +34,7 @@ pub enum ArrivalStatus {
 #[serde(rename_all = "kebab-case")]
 pub enum DepartureStatus {
   #[default]
+  Automated,
   Normal,
   Delay,
 }
@@ -44,6 +46,46 @@ pub enum DepartureStatus {
 pub struct AirportStatus {
   pub arrival: ArrivalStatus,
   pub departure: DepartureStatus,
+}
+
+impl AirportStatus {
+  pub fn auto_arrivals(&self) -> bool {
+    matches!(self.arrival, ArrivalStatus::Automated)
+  }
+
+  pub fn auto_departures(&self) -> bool {
+    matches!(self.departure, DepartureStatus::Automated)
+  }
+
+  pub fn normal_arrivals(&self) -> bool {
+    matches!(self.arrival, ArrivalStatus::Normal)
+  }
+
+  pub fn normal_departures(&self) -> bool {
+    matches!(self.departure, DepartureStatus::Normal)
+  }
+
+  pub fn divert_arrivals(&self) -> bool {
+    matches!(self.arrival, ArrivalStatus::Divert)
+  }
+
+  pub fn delay_departures(&self) -> bool {
+    matches!(self.departure, DepartureStatus::Delay)
+  }
+
+  pub fn nominal_arrivals(&self) -> bool {
+    matches!(
+      self.arrival,
+      ArrivalStatus::Normal | ArrivalStatus::Automated
+    )
+  }
+
+  pub fn nominal_departures(&self) -> bool {
+    matches!(
+      self.departure,
+      DepartureStatus::Normal | DepartureStatus::Automated
+    )
+  }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
@@ -77,6 +119,54 @@ impl World {
     }
 
     closest
+  }
+
+  pub fn automated_arrivals(&self, airport_id: Intern<String>) -> bool {
+    self
+      .airport_statuses
+      .get(&airport_id)
+      .map(|s| s.auto_arrivals())
+      .unwrap_or(true)
+  }
+
+  pub fn automated_departures(&self, airport_id: Intern<String>) -> bool {
+    self
+      .airport_statuses
+      .get(&airport_id)
+      .map(|s| s.auto_departures())
+      .unwrap_or(true)
+  }
+
+  pub fn nominal_arrivals(&self, airport_id: Intern<String>) -> bool {
+    self
+      .airport_statuses
+      .get(&airport_id)
+      .map(|s| s.nominal_arrivals())
+      .unwrap_or(false)
+  }
+
+  pub fn nominal_departures(&self, airport_id: Intern<String>) -> bool {
+    self
+      .airport_statuses
+      .get(&airport_id)
+      .map(|s| s.nominal_departures())
+      .unwrap_or(false)
+  }
+
+  pub fn divert_arrivals(&self, airport_id: Intern<String>) -> bool {
+    self
+      .airport_statuses
+      .get(&airport_id)
+      .map(|s| s.divert_arrivals())
+      .unwrap_or(false)
+  }
+
+  pub fn delay_departures(&self, airport_id: Intern<String>) -> bool {
+    self
+      .airport_statuses
+      .get(&airport_id)
+      .map(|s| s.delay_departures())
+      .unwrap_or(false)
   }
 }
 

@@ -58,7 +58,6 @@ pub struct Airport {
   pub runways: Vec<Runway>,
   pub taxiways: Vec<Taxiway>,
   pub terminals: Vec<Terminal>,
-  pub auto: bool,
 
   #[serde(skip)]
   pub pathfinder: Pathfinder,
@@ -93,7 +92,6 @@ impl Airport {
       taxiways: Vec::new(),
       terminals: Vec::new(),
       frequencies: Frequencies::default(),
-      auto: false,
 
       pathfinder: Pathfinder::new(),
     }
