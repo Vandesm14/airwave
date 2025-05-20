@@ -340,7 +340,7 @@ impl Runner {
               self.engine.rng.chance(ARRIVE_TO_NON_AUTO_CHANCE);
             let destination = self.engine.rng.sample_iter(
               self.engine.world.airports.iter().filter(|a| {
-                if a.id == aircraft.flight_plan.departing {
+                if a.id == airport.id {
                   return false;
                 }
 

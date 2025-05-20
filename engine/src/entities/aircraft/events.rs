@@ -12,10 +12,7 @@ use crate::{
   entities::world::World,
   geometry::{angle_between_points, delta_angle},
   heading_to_direction,
-  pathfinder::{
-    Node, NodeBehavior, NodeKind, Pathfinder, display_node_vec2,
-    display_vec_node_vec2,
-  },
+  pathfinder::{Node, NodeBehavior, NodeKind, Pathfinder, display_node_vec2},
   wayfinder::{VORLimit, VORLimits, new_vor},
 };
 
@@ -410,7 +407,6 @@ pub fn handle_aircraft_event(
       match segment {
         FlightSegment::Unknown => {}
         FlightSegment::Dormant => {
-          aircraft.flip_flight_plan();
           aircraft.flight_time = None;
         }
         FlightSegment::Boarding => {}

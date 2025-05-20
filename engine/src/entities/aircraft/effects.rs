@@ -583,7 +583,17 @@ impl Aircraft {
         .iter()
         .find(|a| self.airspace.is_some_and(|id| id == a.id))
       {
-        let runway = airport.runways.first().unwrap();
+        let runway = airport
+          .runways
+          .iter()
+          .min_by(|a, b| {
+            let dist_a = self.pos.distance_squared(a.start);
+            let dist_b = self.pos.distance_squared(b.start);
+            dist_a
+              .partial_cmp(&dist_b)
+              .unwrap_or(std::cmp::Ordering::Equal)
+          })
+          .unwrap();
         let point_to = move_point(
           runway.start,
           runway.heading,
@@ -641,13 +651,14 @@ impl Aircraft {
                 .flat_map(|t| t.gates.iter())
                 .find(|g| g.available);
               if let Some(gate) = available_gate {
+                tracing::info!("taxi arrival: {}", self.id);
                 events.push(
                   AircraftEvent::new(
                     self.id,
                     EventKind::Taxi(vec![Node::new(
                       gate.id,
                       NodeKind::Gate,
-                      NodeBehavior::GoTo,
+                      NodeBehavior::Park,
                       (),
                     )]),
                   )
@@ -715,6 +726,7 @@ impl Aircraft {
                   let other =
                     airport.pathfinder.graph.node_weight(other).unwrap();
 
+                  tracing::info!("taxi departure: {}", self.id);
                   events.push(
                     AircraftEvent::new(
                       self.id,
