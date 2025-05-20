@@ -38,9 +38,7 @@ pub enum EventKind {
   Altitude(f32),
   AltitudeAtOrBelow(f32),
   AltitudeAtOrAbove(f32),
-  ResumeOwnNavigation {
-    diversion: bool,
-  },
+  ResumeOwnNavigation { diversion: bool },
   Direct(Intern<String>),
 
   // Transitions
@@ -52,9 +50,7 @@ pub enum EventKind {
   // Taxiing
   Taxi(Vec<Node<()>>),
   TaxiContinue,
-  TaxiHold {
-    and_state: bool,
-  },
+  TaxiHold { and_state: bool },
   LineUp(Intern<String>),
 
   // Requests
@@ -66,10 +62,6 @@ pub enum EventKind {
 
   // State
   Segment(FlightSegment),
-
-  // Configuration and Automation
-  /// Teleports an aircraft from its gate to the takeoff phase.
-  QuickDepart,
 
   // External
   // TODO: I think the engine can handle this instead internally.
@@ -451,60 +443,6 @@ pub fn handle_aircraft_event(
       }
     }
 
-    // Configuration and Automation
-    EventKind::QuickDepart => {
-      if let AircraftState::Parked { .. } = &aircraft.state {
-        let departure = world
-          .airports
-          .iter()
-          .find(|a| a.id == aircraft.flight_plan.departing);
-        let arrival = world
-          .airports
-          .iter()
-          .find(|a| a.id == aircraft.flight_plan.arriving);
-        if let Some((departure, arrival)) = departure.zip(arrival) {
-          let departure_angle =
-            angle_between_points(departure.center, arrival.center);
-          let runways = departure.runways.iter();
-
-          let mut smallest_angle = f32::MAX;
-          let mut closest = None;
-          for runway in runways {
-            let diff = delta_angle(runway.heading, departure_angle).abs();
-            if diff < smallest_angle {
-              smallest_angle = diff;
-              closest = Some(runway);
-            }
-          }
-
-          // If an airport doesn't have a runway, we have other problems.
-          let runway = closest.unwrap();
-
-          aircraft.pos = runway.start;
-          aircraft.heading = runway.heading;
-          aircraft.target.heading = runway.heading;
-
-          aircraft.state = AircraftState::Taxiing {
-            current: Node::new(
-              runway.id,
-              NodeKind::Runway,
-              NodeBehavior::Takeoff,
-              runway.start,
-            ),
-            waypoints: Vec::new(),
-            state: TaxiingState::default(),
-          };
-
-          events.push(Event::Aircraft(AircraftEvent::new(
-            aircraft.id,
-            EventKind::Takeoff(runway.id),
-          )));
-        } else {
-          tracing::error!("No arrival airport found for {:?}", aircraft.id);
-        }
-      }
-    }
-
     // External
     EventKind::Delete => {
       tracing::info!("Deleting aircraft: {}", aircraft.id);
@@ -640,11 +578,11 @@ pub fn handle_taxi_event(
 
     all_waypoints.reverse();
 
-    tracing::info!(
-      "Initiating taxi for {}: {:?}",
-      aircraft.id,
-      display_vec_node_vec2(&all_waypoints)
-    );
+    // tracing::info!(
+    //   "Initiating taxi for {}: {:?}",
+    //   aircraft.id,
+    //   display_vec_node_vec2(&all_waypoints)
+    // );
 
     let current = current.clone();
     if let AircraftState::Taxiing { waypoints, .. } = &mut aircraft.state {

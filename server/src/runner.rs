@@ -353,13 +353,11 @@ impl Runner {
               // If we are preparing, only schedule departures from auto
               // airports, otherwise choose airports with normal or automated
               // departure status.
-              if (!self.preparing
-                || self.engine.world.airport_status(airport.id).automate_ground)
-                && !self
-                  .engine
-                  .world
-                  .airport_status(destination.id)
-                  .delay_departures
+              if !self
+                .engine
+                .world
+                .airport_status(destination.id)
+                .delay_departures
               {
                 aircraft.flight_plan.departing = airport.id;
                 aircraft.flight_plan.arriving = destination.id;
@@ -375,27 +373,6 @@ impl Runner {
             }
           }
         }
-      }
-    }
-  }
-
-  fn auto_depart(&mut self) {
-    // QuickDepart based on Flight Time.
-    for aircraft in
-      self.engine.game.aircraft.iter_mut().filter(|a| {
-        a.flight_time.is_some_and(|t| self.engine.tick_counter >= t)
-      })
-    {
-      if self
-        .engine
-        .world
-        .airport_status(aircraft.flight_plan.departing)
-        .automate_ground
-      {
-        self
-          .engine
-          .events
-          .push(AircraftEvent::new(aircraft.id, EventKind::QuickDepart).into());
       }
     }
   }
@@ -509,7 +486,6 @@ impl Runner {
     );
 
     self.do_spawns();
-    self.auto_depart();
     self.cleanup(events.iter());
     // TODO: self.save_world();
 
