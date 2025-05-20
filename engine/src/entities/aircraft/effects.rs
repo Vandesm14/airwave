@@ -1,10 +1,8 @@
 use std::f32::consts::PI;
 
-use petgraph::visit::{EdgeRef, IntoNodeReferences};
-
 use crate::{
-  KNOT_TO_FEET_PER_SECOND, MAX_TAXI_SPEED, MIN_CRUISE_ALTITUDE,
-  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
+  TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
   engine::Event,
   entities::world::World,
@@ -14,7 +12,7 @@ use crate::{
     normalize_angle,
   },
   line::Line,
-  pathfinder::{Node, NodeBehavior, NodeKind},
+  pathfinder::{NodeBehavior, NodeKind},
 };
 
 use super::{
