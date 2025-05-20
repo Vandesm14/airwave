@@ -3,7 +3,10 @@ use engine::{
   AIRSPACE_RADIUS, APPROACH_ALTITUDE,
   assets::load_assets,
   engine::Engine,
-  entities::aircraft::{Aircraft, AircraftState, FlightPlan, LandingState},
+  entities::{
+    aircraft::{Aircraft, AircraftState, FlightPlan, LandingState},
+    world::AirportStatus,
+  },
   geometry::move_point,
 };
 use internment::Intern;
@@ -84,6 +87,10 @@ fn model(app: &App) -> Model {
   .with_synced_targets();
 
   engine.game.aircraft.push(aircraft);
+  engine
+    .world
+    .airport_statuses
+    .insert(airport.id, AirportStatus::all_normal());
   engine.world.airports.push(airport);
 
   let mut snapshots = Vec::new();

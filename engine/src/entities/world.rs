@@ -49,6 +49,20 @@ pub struct AirportStatus {
 }
 
 impl AirportStatus {
+  pub fn all_auto() -> Self {
+    Self {
+      arrival: ArrivalStatus::Automated,
+      departure: DepartureStatus::Automated,
+    }
+  }
+
+  pub fn all_normal() -> Self {
+    Self {
+      arrival: ArrivalStatus::Normal,
+      departure: DepartureStatus::Normal,
+    }
+  }
+
   pub fn auto_arrivals(&self) -> bool {
     matches!(self.arrival, ArrivalStatus::Automated)
   }
