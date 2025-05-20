@@ -68,17 +68,9 @@ fn model(app: &App) -> Model {
     speed: 250.0,
     heading: 270.0,
     altitude: APPROACH_ALTITUDE,
-    state: AircraftState::Landing {
-      runway: airport
-        .runways
-        .iter()
-        .find(|r| r.id == Intern::from_ref("19L"))
-        .unwrap()
-        .clone(),
-      state: LandingState::default(),
-    },
+    state: AircraftState::Flying,
     flight_plan: FlightPlan::new(
-      Intern::from_ref("KSFO"),
+      Intern::from_ref("KDEF"),
       Intern::from_ref("KSFO"),
     ),
     flight_time: Some(0),
@@ -90,7 +82,7 @@ fn model(app: &App) -> Model {
   engine
     .world
     .airport_statuses
-    .insert(airport.id, AirportStatus::all_normal());
+    .insert(airport.id, AirportStatus::all_auto());
   engine.world.airports.push(airport);
 
   let mut snapshots = Vec::new();

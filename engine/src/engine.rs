@@ -179,6 +179,9 @@ impl Engine {
       aircraft.update_landing(&mut events, dt);
       aircraft.update_flying(&mut events, dt);
 
+      // ATC Automation
+      aircraft.update_auto_approach(&mut events, &self.world);
+
       // General effects
       aircraft.update_from_targets(dt);
       aircraft.update_position(dt);

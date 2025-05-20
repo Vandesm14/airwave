@@ -417,10 +417,6 @@ impl Aircraft {
       self.target.heading = runway.heading;
 
       *state = LandingState::Turning;
-    } else if self.speed > self.target.speed {
-      self.target.heading = self.heading;
-
-      *state = LandingState::BeforeTurn;
     }
 
     let angle_to_runway =
@@ -567,6 +563,59 @@ impl Aircraft {
   }
 
   pub fn update_airspace(&mut self, world: &World) {
-    self.airspace = world.closest_airport(self.pos).map(|a| a.id);
+    self.airspace = world.detect_airspace(self.pos).map(|a| a.id);
+  }
+}
+
+// ATC Automation
+impl Aircraft {
+  pub fn update_auto_approach(
+    &mut self,
+    events: &mut Vec<Event>,
+    world: &World,
+  ) {
+    if matches!(self.segment, FlightSegment::Approach)
+      && self.airspace.is_some_and(|a| world.automated_arrivals(a))
+    {
+      if let Some(airport) = world
+        .airports
+        .iter()
+        .find(|a| self.airspace.is_some_and(|id| id == a.id))
+      {
+        let runway = airport.runways.first().unwrap();
+        let point_to = move_point(
+          runway.start,
+          runway.heading,
+          -NAUTICALMILES_TO_FEET * 10.0,
+        );
+
+        let heading = angle_between_points(self.pos, point_to);
+        let altitude = 4000.0;
+        let speed = 200.0;
+
+        if self.target.heading != heading {
+          events.push(
+            AircraftEvent::new(self.id, EventKind::Heading(heading)).into(),
+          );
+        }
+
+        if self.target.altitude >= altitude {
+          events.push(
+            AircraftEvent::new(self.id, EventKind::Altitude(altitude)).into(),
+          );
+        }
+
+        if self.target.speed >= speed {
+          events
+            .push(AircraftEvent::new(self.id, EventKind::Speed(speed)).into());
+        }
+
+        if matches!(self.state, AircraftState::Flying) {
+          events.push(
+            AircraftEvent::new(self.id, EventKind::Land(runway.id)).into(),
+          )
+        }
+      }
+    }
   }
 }

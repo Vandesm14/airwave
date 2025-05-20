@@ -239,13 +239,6 @@ pub fn handle_aircraft_event(
                 .with_altitude(VORLimit::AtOrBelow(ARRIVAL_ALTITUDE))
                 .with_speed(VORLimit::AtOrBelow(250.0)),
             );
-          let wp_vctr = new_vor(Intern::from_ref("VCTR"), transition_vctr)
-            .with_actions(vec![EventKind::Land(runway.id)])
-            .with_limits(
-              VORLimits::new()
-                .with_altitude(VORLimit::AtOrBelow(APPROACH_ALTITUDE))
-                .with_speed(VORLimit::AtOrBelow(180.0)),
-            );
 
           // Generate track waypoints.
           let min_wp_distance = NAUTICALMILES_TO_FEET * 90.0;
@@ -289,10 +282,6 @@ pub fn handle_aircraft_event(
           }
 
           waypoints.push(wp_star);
-          // Only add auto-vectors if we are arriving at an auto airport.
-          if auto_approach {
-            waypoints.push(wp_vctr);
-          }
 
           if !diversion {
             waypoints.insert(0, wp_sid);

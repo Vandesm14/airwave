@@ -5,7 +5,7 @@ use internment::Intern;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::pathfinder::Node;
+use crate::{AIRSPACE_RADIUS, pathfinder::Node};
 
 use super::{aircraft::Aircraft, airport::Airport};
 
@@ -133,6 +133,12 @@ impl World {
     }
 
     closest
+  }
+
+  pub fn detect_airspace(&self, point: Vec2) -> Option<&Airport> {
+    self
+      .closest_airport(point)
+      .filter(|a| point.distance_squared(a.center) <= AIRSPACE_RADIUS.powf(2.0))
   }
 
   pub fn automated_arrivals(&self, airport_id: Intern<String>) -> bool {
