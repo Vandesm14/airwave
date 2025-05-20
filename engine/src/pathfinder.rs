@@ -318,11 +318,21 @@ impl Pathfinder {
       .find(|(_, n)| to.name_and_kind_eq(*n));
 
     if let Some((from_node, to_node)) = from_node.zip(to_node) {
-      let paths = simple_paths::all_simple_paths::<
-        Vec<_>,
-        _,
-        std::hash::RandomState,
-      >(&self.graph, from_node.0, to_node.0, 0, None);
+      // This limits the number of intermediate nodes to greatly reduce
+      // enumeration. It's technically a "magic number" because we still want
+      // the pathfinder to try its best to find a path, but we don't want it to
+      // take forever to do so.
+      //
+      // Setting this to 8 reduced the enumeration from 600k paths to 420.
+      let max_intermediates_magic_number = 8;
+      let paths =
+        simple_paths::all_simple_paths::<Vec<_>, _, std::hash::RandomState>(
+          &self.graph,
+          from_node.0,
+          to_node.0,
+          0,
+          Some(max_intermediates_magic_number),
+        );
 
       let mut count = 0;
 
@@ -445,8 +455,9 @@ impl Pathfinder {
 
       let main_start = main_start.elapsed();
       tracing::info!(
-        "filtered paths into {} results in {:.2}ms",
+        "filtered results to {} paths (out of {} total) in {:.2}ms",
         paths.len(),
+        count,
         main_start.as_secs_f32() * 1000.0
       );
 
