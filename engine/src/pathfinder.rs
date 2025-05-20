@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use glam::Vec2;
 use internment::Intern;
@@ -336,26 +336,16 @@ impl Pathfinder {
 
       let mut count = 0;
 
-      let mut map_to_weights = Duration::ZERO;
-      let mut map_to_waypoints = Duration::ZERO;
-      let mut map_to_paths = Duration::ZERO;
-      let mut filter_paths = Duration::ZERO;
-
       let main_start = Instant::now();
       let mut paths: Vec<PathfinderPath> = paths
         .map(|path| {
-          let start = Instant::now();
-          let path = path
+          path
             .into_iter()
             .map(|wp| (wp, self.graph.node_weight(wp).unwrap()))
-            .collect::<Vec<_>>();
-
-          map_to_weights += start.elapsed();
-          path
+            .collect::<Vec<_>>()
         })
         // Generate a list of waypoints for each path
         .map(|path| {
-          let start = Instant::now();
           let mut waypoints: Vec<Node<Vec2>> = Vec::with_capacity(path.len());
 
           let mut first = path.first().unwrap();
@@ -377,12 +367,10 @@ impl Pathfinder {
             first = next;
           }
 
-          map_to_waypoints += start.elapsed();
           waypoints
         })
         // Turn the Vec<Node<Vec2>> paths into PathfinderPaths
         .map(|path| {
-          let start = Instant::now();
           let mut pos = pos;
           let mut heading = heading;
 
@@ -400,19 +388,15 @@ impl Pathfinder {
             first = wp;
           }
 
-          let path = PathfinderPath {
+          PathfinderPath {
             path,
             final_heading: heading,
             final_pos: pos,
-          };
-
-          map_to_paths += start.elapsed();
-          path
+          }
         })
         // Filter out paths that don't fulfill our requirements
         .filter(|path| {
           count += 1;
-          let start = Instant::now();
           let mut pos = pos;
           let mut heading = heading;
 
@@ -431,14 +415,12 @@ impl Pathfinder {
             if first.kind != NodeKind::Gate
               && delta_angle(heading, angle).abs() >= 175.0
             {
-              filter_paths += start.elapsed();
               return false;
             }
 
             // If the waypoint is a runway and we haven't instructed to go to
             // it, don't use this path.
             if wp.kind == NodeKind::Runway && !to.name_and_kind_eq(wp) {
-              filter_paths += start.elapsed();
               return false;
             }
 
@@ -448,7 +430,6 @@ impl Pathfinder {
             first = wp;
           }
 
-          filter_paths += start.elapsed();
           true
         })
         .collect();
