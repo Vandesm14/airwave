@@ -332,7 +332,7 @@ impl Pathfinder {
       let mut filter_paths = Duration::ZERO;
 
       let main_start = Instant::now();
-      let paths = paths
+      let mut paths: Vec<PathfinderPath> = paths
         .map(|path| {
           let start = Instant::now();
           let path = path
@@ -440,59 +440,12 @@ impl Pathfinder {
 
           filter_paths += start.elapsed();
           true
-        });
-
-      let mut paths: Vec<_> = paths.collect();
+        })
+        .collect();
 
       let main_start = main_start.elapsed();
-
-      let total_weights_ms = map_to_weights.as_secs_f32() * 1000.0;
-      let total_waypoints_ms = map_to_waypoints.as_secs_f32() * 1000.0;
-      let total_paths_ms = map_to_paths.as_secs_f32() * 1000.0;
-      let total_filter_ms = filter_paths.as_secs_f32() * 1000.0;
-
-      let avg_weights_us = if count > 0 {
-        total_weights_ms / count as f32
-      } else {
-        0.0
-      } * 1000.0;
-      let avg_waypoints_us = if count > 0 {
-        total_waypoints_ms / count as f32
-      } else {
-        0.0
-      } * 1000.0;
-      let avg_paths_us = if count > 0 {
-        total_paths_ms / count as f32
-      } else {
-        0.0
-      } * 1000.0;
-      let avg_filter_us = if count > 0 {
-        total_filter_ms / count as f32
-      } else {
-        0.0
-      } * 1000.0;
-
-      println!();
-      println!(
-        "map_to_weights: {:.2}ms ({:.2}us)",
-        total_weights_ms, avg_weights_us
-      );
-      println!(
-        "map_to_waypoints: {:.2}ms ({:.2}us)",
-        total_waypoints_ms, avg_waypoints_us
-      );
-      println!(
-        "map_to_paths: {:.2}ms ({:.2}us)",
-        total_paths_ms, avg_paths_us
-      );
-      println!(
-        "filter_paths: {:.2}ms ({:.2}us)",
-        total_filter_ms, avg_filter_us
-      );
-
-      println!();
-      println!(
-        "filtered {count} into {} paths in {:.2}ms",
+      tracing::info!(
+        "filtered paths into {} results in {:.2}ms",
         paths.len(),
         main_start.as_secs_f32() * 1000.0
       );
