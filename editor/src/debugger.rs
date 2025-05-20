@@ -4,14 +4,10 @@ use engine::{
   assets::load_assets,
   engine::Engine,
   entities::{
-    aircraft::{
-      Aircraft, AircraftState, FlightPlan, LandingState, TaxiingState,
-      events::{AircraftEvent, EventKind},
-    },
+    aircraft::{Aircraft, AircraftState, FlightPlan},
     world::AirportStatus,
   },
   geometry::move_point,
-  pathfinder::{Node, NodeBehavior, NodeKind},
 };
 use internment::Intern;
 use nannou::prelude::*;
@@ -21,99 +17,7 @@ use nannou_egui::{
 };
 
 pub fn main() {
-  let mut engine = Engine {
-    airports: load_assets().airports,
-    ..Default::default()
-  };
-
-  let airport = engine.airports.get("ksfo").unwrap().clone();
-
-  // let aircraft = Aircraft {
-  //   id: Intern::from_ref("AAL1234"),
-  //   pos: move_point(glam::Vec2::ZERO, 45.0, AIRSPACE_RADIUS),
-  //   speed: 250.0,
-  //   heading: 270.0,
-  //   altitude: APPROACH_ALTITUDE,
-  //   state: AircraftState::Flying,
-  //   flight_plan: FlightPlan::new(
-  //     Intern::from_ref("KDEF"),
-  //     Intern::from_ref("KSFO"),
-  //   ),
-  //   flight_time: Some(0),
-  //   ..Default::default()
-  // }
-  // .with_synced_targets();
-
-  let gate = airport
-    .terminals
-    .iter()
-    .flat_map(|t| t.gates.iter())
-    .next()
-    .unwrap();
-  let aircraft = Aircraft {
-    id: Intern::from_ref("AAL1234"),
-    pos: gate.pos,
-    speed: 0.0,
-    heading: gate.heading,
-    altitude: 0.0,
-    state: AircraftState::Parked {
-      at: Node::default().with_name(gate.id).with_kind(NodeKind::Gate),
-    },
-    flight_plan: FlightPlan::new(
-      Intern::from_ref("KDEF"),
-      Intern::from_ref("KSFO"),
-    ),
-    flight_time: None,
-    ..Default::default()
-  }
-  .with_synced_targets();
-
-  engine.game.aircraft.push(aircraft);
-  engine
-    .world
-    .airport_statuses
-    .insert(airport.id, AirportStatus::all_auto());
-  engine.world.airports.push(airport);
-
-  let mut snapshots = Vec::new();
-  for i in 0..engine.tick_rate_tps * 60 * 20 {
-    if i == 15 {
-      engine.events.push(
-        AircraftEvent::new(
-          Intern::from_ref("AAL1234"),
-          EventKind::Taxi(vec![
-            Node::new(
-              Intern::from_ref("A"),
-              NodeKind::Taxiway,
-              NodeBehavior::GoTo,
-              (),
-            ),
-            Node::new(
-              Intern::from_ref("E"),
-              NodeKind::Taxiway,
-              NodeBehavior::GoTo,
-              (),
-            ),
-            Node::new(
-              Intern::from_ref("G"),
-              NodeKind::Taxiway,
-              NodeBehavior::GoTo,
-              (),
-            ),
-          ]),
-        )
-        .into(),
-      );
-    }
-
-    if i % engine.tick_rate_tps == 0 {
-      snapshots.push(engine.game.aircraft.clone());
-    }
-
-    engine.tick();
-  }
-
-  println!("Ready.");
+  nannou::app(model).update(update).run();
 }
 
 struct HeldKeys {
@@ -140,39 +44,79 @@ struct Model {
   held_keys: HeldKeys,
 }
 
-// fn model(app: &App) -> Model {
-//   // Create window
-//   let window_id = app
-//     .new_window()
-//     .view(view)
-//     .raw_event(raw_window_event)
-//     .build()
-//     .unwrap();
-//   let window = app.window(window_id).unwrap();
-//   let egui = Egui::from_window(&window);
+fn model(app: &App) -> Model {
+  // Create window
+  let window_id = app
+    .new_window()
+    .view(view)
+    .raw_event(raw_window_event)
+    .build()
+    .unwrap();
+  let window = app.window(window_id).unwrap();
+  let egui = Egui::from_window(&window);
 
-//   Model {
-//     engine,
-//     egui,
+  let mut engine = Engine {
+    airports: load_assets().airports,
+    ..Default::default()
+  };
 
-//     snapshots,
-//     snapshot_index: 0,
+  let airport = engine.airports.get("ksfo").unwrap().clone();
+  let aircraft = Aircraft {
+    id: Intern::from_ref("AAL1234"),
+    pos: move_point(glam::Vec2::ZERO, 45.0, AIRSPACE_RADIUS),
+    speed: 250.0,
+    heading: 270.0,
+    altitude: APPROACH_ALTITUDE,
+    state: AircraftState::Flying,
+    flight_plan: FlightPlan::new(
+      Intern::from_ref("KDEF"),
+      Intern::from_ref("KSFO"),
+    ),
+    flight_time: Some(0),
+    ..Default::default()
+  }
+  .with_synced_targets();
 
-//     is_mouse_down: false,
-//     is_over_ui: false,
+  engine.game.aircraft.push(aircraft);
+  engine
+    .world
+    .airport_statuses
+    .insert(airport.id, AirportStatus::all_auto());
+  engine.world.airports.push(airport);
 
-//     drag_anchor: None,
-//     old_shift_pos: glam::Vec2::default(),
-//     shift_pos: glam::Vec2::default(),
-//     scale: 0.1,
+  let mut snapshots = Vec::new();
+  for i in 0..engine.tick_rate_tps * 60 * 20 {
+    if i % engine.tick_rate_tps == 0 {
+      snapshots.push(engine.game.aircraft.clone());
+    }
 
-//     held_keys: HeldKeys {
-//       ctrl: false,
-//       shift: false,
-//       alt: false,
-//     },
-//   }
-// }
+    engine.tick();
+  }
+
+  println!("Ready.");
+
+  Model {
+    engine,
+    egui,
+
+    snapshots,
+    snapshot_index: 0,
+
+    is_mouse_down: false,
+    is_over_ui: false,
+
+    drag_anchor: None,
+    old_shift_pos: glam::Vec2::default(),
+    shift_pos: glam::Vec2::default(),
+    scale: 0.1,
+
+    held_keys: HeldKeys {
+      ctrl: false,
+      shift: false,
+      alt: false,
+    },
+  }
+}
 
 fn update(_app: &App, model: &mut Model, update: Update) {
   model.egui.set_elapsed_time(update.since_start);

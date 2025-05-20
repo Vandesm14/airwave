@@ -1,8 +1,5 @@
 use std::f32::consts::PI;
 
-use internment::Intern;
-use petgraph::visit::{EdgeRef, IntoNodeReferences};
-
 use crate::{
   KNOT_TO_FEET_PER_SECOND, MAX_TAXI_SPEED, MIN_CRUISE_ALTITUDE,
   NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
@@ -645,18 +642,18 @@ impl Aircraft {
               .flat_map(|t| t.gates.iter())
               .find(|g| g.available);
             if let Some(gate) = available_gate {
-              // events.push(
-              //   AircraftEvent::new(
-              //     self.id,
-              //     EventKind::Taxi(vec![Node::new(
-              //       gate.id,
-              //       NodeKind::Gate,
-              //       NodeBehavior::GoTo,
-              //       (),
-              //     )]),
-              //   )
-              //   .into(),
-              // );
+              events.push(
+                AircraftEvent::new(
+                  self.id,
+                  EventKind::Taxi(vec![Node::new(
+                    gate.id,
+                    NodeKind::Gate,
+                    NodeBehavior::GoTo,
+                    (),
+                  )]),
+                )
+                .into(),
+              );
             }
           }
         }
