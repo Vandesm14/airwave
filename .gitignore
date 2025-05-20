@@ -19,3 +19,4 @@ recordings/
 
 # Logs
 mprocs.log
+/logs

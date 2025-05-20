@@ -1,7 +1,15 @@
 procs:
   server:
-    cmd: ["cargo", "run", "--bin", "server", "--release"]
+    cmd:
+      - cargo
+      - run
+      - --bin
+      - server
+      - --release
+      - --
+      - --logs-path
+      - logs
   client-watch:
-    cmd: ["pnpm", "client-web:build", "--watch"]
+    cmd: ['pnpm', 'client-web:build', '--watch']
   client-serve:
-    cmd: ["pnpm", "client-web:preview", "--port", "8080"]
+    cmd: ['pnpm', 'client-web:preview', '--port', '8080']
