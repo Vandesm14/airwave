@@ -4,10 +4,14 @@ use engine::{
   assets::load_assets,
   engine::Engine,
   entities::{
-    aircraft::{Aircraft, AircraftState, FlightPlan, LandingState},
+    aircraft::{
+      Aircraft, AircraftState, FlightPlan, LandingState, TaxiingState,
+      events::{AircraftEvent, EventKind},
+    },
     world::AirportStatus,
   },
   geometry::move_point,
+  pathfinder::{Node, NodeBehavior, NodeKind},
 };
 use internment::Intern;
 use nannou::prelude::*;
@@ -62,18 +66,44 @@ fn model(app: &App) -> Model {
 
   let airport = engine.airports.get("ksfo").unwrap().clone();
 
+  // let aircraft = Aircraft {
+  //   id: Intern::from_ref("AAL1234"),
+  //   pos: move_point(glam::Vec2::ZERO, 45.0, AIRSPACE_RADIUS),
+  //   speed: 250.0,
+  //   heading: 270.0,
+  //   altitude: APPROACH_ALTITUDE,
+  //   state: AircraftState::Flying,
+  //   flight_plan: FlightPlan::new(
+  //     Intern::from_ref("KDEF"),
+  //     Intern::from_ref("KSFO"),
+  //   ),
+  //   flight_time: Some(0),
+  //   ..Default::default()
+  // }
+  // .with_synced_targets();
+
+  let gate = airport
+    .terminals
+    .iter()
+    .flat_map(|t| t.gates.iter())
+    .next()
+    .unwrap();
   let aircraft = Aircraft {
     id: Intern::from_ref("AAL1234"),
-    pos: move_point(glam::Vec2::ZERO, 45.0, AIRSPACE_RADIUS),
-    speed: 250.0,
-    heading: 270.0,
-    altitude: APPROACH_ALTITUDE,
-    state: AircraftState::Flying,
+    pos: gate.pos,
+    speed: 0.0,
+    heading: gate.heading,
+    altitude: 0.0,
+    state: AircraftState::Taxiing {
+      current: Node::new(gate.id, NodeKind::Gate, NodeBehavior::Park, gate.pos),
+      waypoints: Vec::new(),
+      state: TaxiingState::default(),
+    },
     flight_plan: FlightPlan::new(
       Intern::from_ref("KDEF"),
       Intern::from_ref("KSFO"),
     ),
-    flight_time: Some(0),
+    flight_time: None,
     ..Default::default()
   }
   .with_synced_targets();
@@ -87,12 +117,43 @@ fn model(app: &App) -> Model {
 
   let mut snapshots = Vec::new();
   for i in 0..engine.tick_rate_tps * 60 * 20 {
+    if i == 15 {
+      engine.events.push(
+        AircraftEvent::new(
+          Intern::from_ref("AAL1234"),
+          EventKind::Taxi(vec![
+            Node::new(
+              Intern::from_ref("A"),
+              NodeKind::Taxiway,
+              NodeBehavior::GoTo,
+              (),
+            ),
+            Node::new(
+              Intern::from_ref("E"),
+              NodeKind::Taxiway,
+              NodeBehavior::GoTo,
+              (),
+            ),
+            Node::new(
+              Intern::from_ref("G"),
+              NodeKind::Taxiway,
+              NodeBehavior::GoTo,
+              (),
+            ),
+          ]),
+        )
+        .into(),
+      );
+    }
+
     if i % engine.tick_rate_tps == 0 {
       snapshots.push(engine.game.aircraft.clone());
     }
 
     engine.tick();
   }
+
+  println!("Ready.");
 
   Model {
     engine,

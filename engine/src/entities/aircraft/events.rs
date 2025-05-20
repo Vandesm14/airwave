@@ -529,42 +529,42 @@ pub fn handle_aircraft_event(
       }
     }
     EventKind::QuickArrive => {
-      let arrival = world
-        .airports
-        .iter()
-        .find(|a| a.id == aircraft.flight_plan.arriving);
-      if let Some(arrival) = arrival {
-        let available_gate = arrival
-          .terminals
-          .iter()
-          .flat_map(|t| t.gates.iter())
-          .find(|g| g.available);
-        if let Some(gate) = available_gate {
-          aircraft.state = AircraftState::Parked {
-            at: Node::new(
-              gate.id,
-              NodeKind::Gate,
-              NodeBehavior::Park,
-              gate.pos,
-            ),
-          };
+      // let arrival = world
+      //   .airports
+      //   .iter()
+      //   .find(|a| a.id == aircraft.flight_plan.arriving);
+      // if let Some(arrival) = arrival {
+      //   let available_gate = arrival
+      //     .terminals
+      //     .iter()
+      //     .flat_map(|t| t.gates.iter())
+      //     .find(|g| g.available);
+      //   if let Some(gate) = available_gate {
+      //     aircraft.state = AircraftState::Parked {
+      //       at: Node::new(
+      //         gate.id,
+      //         NodeKind::Gate,
+      //         NodeBehavior::Park,
+      //         gate.pos,
+      //       ),
+      //     };
 
-          aircraft.pos = gate.pos;
+      //     aircraft.pos = gate.pos;
 
-          aircraft.speed = 0.0;
-          aircraft.heading = gate.heading;
-          aircraft.altitude = 0.0;
-          aircraft.sync_targets_to_vals();
+      //     aircraft.speed = 0.0;
+      //     aircraft.heading = gate.heading;
+      //     aircraft.altitude = 0.0;
+      //     aircraft.sync_targets_to_vals();
 
-          aircraft.flip_flight_plan();
-        } else {
-          tracing::error!(
-            "No available gates for {} at {}",
-            aircraft.id,
-            aircraft.flight_plan.arriving
-          );
-        }
-      }
+      //     aircraft.flip_flight_plan();
+      //   } else {
+      //     tracing::error!(
+      //       "No available gates for {} at {}",
+      //       aircraft.id,
+      //       aircraft.flight_plan.arriving
+      //     );
+      //   }
+      // }
     }
 
     // External
@@ -641,6 +641,7 @@ pub fn handle_taxi_event(
   events: &mut Vec<Event>,
   world: &World,
 ) {
+  println!("taxiing {:?}", waypoint_strings);
   if let AircraftState::Taxiing { current, .. }
   | AircraftState::Parked { at: current, .. } = &aircraft.state
   {

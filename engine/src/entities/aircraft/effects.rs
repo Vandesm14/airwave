@@ -1,8 +1,11 @@
 use std::f32::consts::PI;
 
+use internment::Intern;
+use petgraph::visit::{EdgeRef, IntoNodeReferences};
+
 use crate::{
-  KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
-  TRANSITION_ALTITUDE,
+  KNOT_TO_FEET_PER_SECOND, MAX_TAXI_SPEED, MIN_CRUISE_ALTITUDE,
+  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
   command::{CommandReply, CommandWithFreq},
   engine::Event,
   entities::world::World,
@@ -12,7 +15,7 @@ use crate::{
     normalize_angle,
   },
   line::Line,
-  pathfinder::{NodeBehavior, NodeKind},
+  pathfinder::{Node, NodeBehavior, NodeKind},
 };
 
 use super::{
@@ -170,6 +173,10 @@ impl Aircraft {
     dt: f32,
   ) {
     let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND * dt;
+    if let AircraftState::Taxiing { current, .. } = &mut self.state {
+      current.data = self.pos;
+    }
+
     if let AircraftState::Taxiing {
       waypoints, current, ..
     } = &mut self.state
@@ -614,6 +621,44 @@ impl Aircraft {
           events.push(
             AircraftEvent::new(self.id, EventKind::Land(runway.id)).into(),
           )
+        }
+      }
+    }
+  }
+
+  pub fn update_auto_ground(&mut self, events: &mut Vec<Event>, world: &World) {
+    if matches!(self.segment, FlightSegment::TaxiArr)
+      && self.airspace.is_some_and(|a| world.automated_arrivals(a))
+    {
+      if let AircraftState::Taxiing { waypoints, .. } = &self.state {
+        if self.speed <= MAX_TAXI_SPEED
+          && !waypoints.iter().any(|w| w.kind == NodeKind::Gate)
+        {
+          if let Some(airport) = world
+            .airports
+            .iter()
+            .find(|a| self.airspace.is_some_and(|id| id == a.id))
+          {
+            let available_gate = airport
+              .terminals
+              .iter()
+              .flat_map(|t| t.gates.iter())
+              .find(|g| g.available);
+            if let Some(gate) = available_gate {
+              // events.push(
+              //   AircraftEvent::new(
+              //     self.id,
+              //     EventKind::Taxi(vec![Node::new(
+              //       gate.id,
+              //       NodeKind::Gate,
+              //       NodeBehavior::GoTo,
+              //       (),
+              //     )]),
+              //   )
+              //   .into(),
+              // );
+            }
+          }
         }
       }
     }

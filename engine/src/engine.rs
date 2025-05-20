@@ -181,6 +181,7 @@ impl Engine {
 
       // ATC Automation
       aircraft.update_auto_approach(&mut events, &self.world);
+      aircraft.update_auto_ground(&mut events, &self.world);
 
       // General effects
       aircraft.update_from_targets(dt);
@@ -196,7 +197,7 @@ impl Engine {
     // Capture the left over events and actions for next time
     if self.config.show_logs() && !events.is_empty() {
       // TODO: decide if we want to keep this or discard this.
-      // tracing::info!("new events: {:?}", bundle.events);
+      // println!("new events: {:?}", events);
     }
 
     self.events = events;

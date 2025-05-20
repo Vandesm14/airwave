@@ -40,6 +40,8 @@ pub const TRANSITION_ALTITUDE: f32 = 18000.0;
 pub const ARRIVAL_ALTITUDE: f32 = 10000.0;
 pub const APPROACH_ALTITUDE: f32 = 3000.0;
 
+pub const MAX_TAXI_SPEED: f32 = 20.0;
+
 #[derive(Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename = "Vec2")]
