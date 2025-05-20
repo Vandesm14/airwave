@@ -6,21 +6,25 @@ use std::{
 use glam::Vec2;
 use internment::Intern;
 use itertools::Itertools;
+use petgraph::visit::{EdgeRef, IntoNodeReferences};
 use serde::{Deserialize, Serialize};
 use turborand::rng::Rng;
 
 use crate::{
-  DEFAULT_TICK_RATE_TPS, KNOT_TO_FEET_PER_SECOND,
+  DEFAULT_TICK_RATE_TPS, KNOT_TO_FEET_PER_SECOND, MAX_TAXI_SPEED,
+  NAUTICALMILES_TO_FEET,
   assets::load_assets,
   entities::{
     aircraft::{
-      Aircraft, AircraftState, TCAS, TaxiingState,
+      Aircraft, AircraftState, FlightSegment, TCAS, TaxiingState,
       events::{AircraftEvent, EventKind, handle_aircraft_event},
     },
     airport::Airport,
     world::{Game, World},
   },
-  geometry::{angle_between_points, delta_angle},
+  geometry::{angle_between_points, delta_angle, move_point},
+  line::Line,
+  pathfinder::{Node, NodeBehavior, NodeKind},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -142,7 +146,6 @@ impl Engine {
     let _tick_span_guard = tick_span.enter();
 
     let mut events: Vec<Event> = Vec::new();
-    self.compute_available_gates();
 
     if !self.events.is_empty() {
       tracing::trace!("tick events: {:?}", self.events);
@@ -153,7 +156,6 @@ impl Engine {
     }
 
     for aircraft in self.game.aircraft.iter_mut() {
-      // Capture the previous state
       let prev = aircraft.clone();
 
       // Run through all events
@@ -174,14 +176,11 @@ impl Engine {
       }
 
       // Run through all effects
+
       // State effects
       aircraft.update_taxiing(&mut events, &self.world, dt);
       aircraft.update_landing(&mut events, dt);
       aircraft.update_flying(&mut events, dt);
-
-      // ATC Automation
-      aircraft.update_auto_approach(&mut events, &self.world);
-      aircraft.update_auto_ground(&mut events, &self.world);
 
       // General effects
       aircraft.update_from_targets(dt);
@@ -190,9 +189,17 @@ impl Engine {
       aircraft.update_segment(&mut events, &self.world, self.tick_counter);
     }
 
+    self.compute_available_gates();
+
+    // ATC Automation
+    self.update_auto_approach(&mut events);
+    self.update_auto_ground(&mut events);
+
     if self.config.run_collisions() {
       self.taxi_collisions();
     }
+
+    self.tick_counter += 1;
 
     self.events = events;
     self.events.clone()
@@ -202,22 +209,31 @@ impl Engine {
 // Effects
 impl Engine {
   pub fn compute_available_gates(&mut self) {
-    for gate in self
-      .world
-      .airports
-      .iter_mut()
-      .flat_map(|a| a.terminals.iter_mut())
-      .flat_map(|t| t.gates.iter_mut())
-    {
-      let aircraft = self.game.aircraft.iter().find(|a| {
-        if let AircraftState::Parked { at, .. } = &a.state {
-          at.name == gate.id && a.pos == gate.pos
-        } else {
-          false
-        }
-      });
+    for airport in self.world.airports.iter_mut() {
+      for gate in airport
+        .terminals
+        .iter_mut()
+        .flat_map(|t| t.gates.iter_mut())
+      {
+        let available = !self.game.aircraft.iter().any(|a| {
+          a.airspace.is_some_and(|id| id == airport.id)
+            && if let AircraftState::Parked { at, .. } = &a.state {
+              at.name == gate.id
+            } else if let AircraftState::Taxiing {
+              current, waypoints, ..
+            } = &a.state
+            {
+              waypoints
+                .iter()
+                .chain(core::iter::once(current))
+                .any(|w| w.name == gate.id && w.kind == NodeKind::Gate)
+            } else {
+              false
+            }
+        });
 
-      gate.available = aircraft.is_none();
+        gate.available = available;
+      }
     }
   }
 
@@ -420,5 +436,218 @@ impl Engine {
     }
 
     events
+  }
+
+  pub fn update_auto_approach(&mut self, events: &mut Vec<Event>) {
+    for aircraft in self.game.aircraft.iter() {
+      if matches!(aircraft.segment, FlightSegment::Approach)
+        && aircraft
+          .airspace
+          .is_some_and(|a| self.world.airport_status(a).automate_air)
+      {
+        if let Some(airport) = self
+          .world
+          .airports
+          .iter()
+          .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
+        {
+          let runway = airport
+            .runways
+            .iter()
+            .min_by(|a, b| {
+              let dist_a = aircraft.pos.distance_squared(a.start);
+              let dist_b = aircraft.pos.distance_squared(b.start);
+              dist_a
+                .partial_cmp(&dist_b)
+                .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .unwrap();
+          let point_to = move_point(
+            runway.start,
+            runway.heading,
+            -NAUTICALMILES_TO_FEET * 10.0,
+          );
+
+          let heading = angle_between_points(aircraft.pos, point_to);
+          let altitude = 4000.0;
+          let speed = 200.0;
+
+          if aircraft.target.heading != heading {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::Heading(heading))
+                .into(),
+            );
+          }
+
+          if aircraft.target.altitude >= altitude {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::Altitude(altitude))
+                .into(),
+            );
+          }
+
+          if aircraft.target.speed >= speed {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
+            );
+          }
+
+          if matches!(aircraft.state, AircraftState::Flying) {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
+                .into(),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  pub fn update_auto_ground(&mut self, events: &mut Vec<Event>) {
+    for aircraft in self.game.aircraft.iter() {
+      if aircraft
+        .airspace
+        .is_some_and(|a| self.world.airport_status(a).automate_ground)
+      {
+        if matches!(aircraft.segment, FlightSegment::TaxiArr)
+          && aircraft.speed <= MAX_TAXI_SPEED
+        {
+          if let AircraftState::Taxiing {
+            current, waypoints, ..
+          } = &aircraft.state
+          {
+            if waypoints
+              .iter()
+              .chain(core::iter::once(current))
+              .all(|w| w.kind != NodeKind::Gate)
+            {
+              if let Some(airport) = self
+                .world
+                .airports
+                .iter()
+                .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
+              {
+                let available_gate = airport
+                  .terminals
+                  .iter()
+                  .flat_map(|t| t.gates.iter())
+                  .find(|g| g.available);
+                if let Some(gate) = available_gate {
+                  events.push(
+                    AircraftEvent::new(
+                      aircraft.id,
+                      EventKind::Taxi(vec![Node::new(
+                        gate.id,
+                        NodeKind::Gate,
+                        NodeBehavior::Park,
+                        (),
+                      )]),
+                    )
+                    .into(),
+                  );
+
+                  // TODO: Instead of only scheduling one aircraft, keep a
+                  // tally of gates we've sent aircraft to instead of relying
+                  // on the `compute_available_gates` method which runs once
+                  // per tick.
+                  return;
+                }
+              }
+            }
+          }
+        } else if matches!(aircraft.segment, FlightSegment::Parked) {
+          if let AircraftState::Parked { .. } = &aircraft.state {
+            if let Some(airport) = self
+              .world
+              .airports
+              .iter()
+              .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
+            {
+              let departure = self
+                .world
+                .airports
+                .iter()
+                .find(|a| a.id == aircraft.flight_plan.departing);
+              let arrival = self
+                .world
+                .airports
+                .iter()
+                .find(|a| a.id == aircraft.flight_plan.arriving);
+              if let Some((departure, arrival)) = departure.zip(arrival) {
+                let departure_angle =
+                  angle_between_points(departure.center, arrival.center);
+                let runways = departure.runways.iter();
+
+                let mut smallest_angle = f32::MAX;
+                let mut closest = None;
+                for runway in runways {
+                  let diff = delta_angle(runway.heading, departure_angle).abs();
+                  if diff < smallest_angle {
+                    smallest_angle = diff;
+                    closest = Some(runway);
+                  }
+                }
+
+                // If an airport doesn't have a runway, we have other problems.
+                let runway = closest.unwrap();
+                let node_index = airport
+                  .pathfinder
+                  .graph
+                  .node_references()
+                  .find(|(_, w)| {
+                    w.name_and_kind_eq(&Node::<Line>::from(runway))
+                  })
+                  .map(|(i, _)| i);
+                if let Some(index) = node_index {
+                  let mut points =
+                    airport.pathfinder.graph.edges(index).collect::<Vec<_>>();
+                  points.sort_by(|a, b| {
+                    let dist_a = a.weight().distance_squared(runway.start);
+                    let dist_b = b.weight().distance_squared(runway.start);
+                    dist_a
+                      .partial_cmp(&dist_b)
+                      .unwrap_or(std::cmp::Ordering::Equal)
+                  });
+
+                  if let Some(closest) = points.first() {
+                    let other = if closest.source() == index {
+                      closest.target()
+                    } else {
+                      closest.source()
+                    };
+                    let other =
+                      airport.pathfinder.graph.node_weight(other).unwrap();
+
+                    // tracing::info!("taxi departure: {}", aircraft.id);
+                    events.push(
+                      AircraftEvent::new(
+                        aircraft.id,
+                        EventKind::Taxi(vec![other.into(), runway.into()]),
+                      )
+                      .into(),
+                    );
+                  }
+                }
+              }
+            }
+          }
+        } else if matches!(aircraft.segment, FlightSegment::TaxiDep) {
+          if let AircraftState::Taxiing {
+            current, waypoints, ..
+          } = &aircraft.state
+          {
+            if current.kind == NodeKind::Runway && waypoints.is_empty() {
+              events.push(
+                AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::Takeoff(current.name),
+                )
+                .into(),
+              );
+            }
+          }
+        }
+      }
+    }
   }
 }

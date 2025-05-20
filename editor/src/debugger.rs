@@ -7,7 +7,7 @@ use engine::{
     aircraft::{Aircraft, AircraftState, FlightPlan},
     world::AirportStatus,
   },
-  geometry::{Translate, move_point},
+  geometry::{Translate, angle_between_points, move_point},
 };
 use glam::Vec2;
 use internment::Intern;
@@ -31,7 +31,7 @@ struct Model {
   engine: Engine,
   egui: Egui,
 
-  snapshots: Vec<Vec<Aircraft>>,
+  snapshots: Vec<(usize, Vec<Aircraft>)>,
   snapshot_index: usize,
 
   is_mouse_down: bool,
@@ -65,18 +65,36 @@ fn model(app: &App) -> Model {
   let mut far_airport = engine.airports.get("ksfo").unwrap().clone();
   far_airport.translate(Vec2::splat(NAUTICALMILES_TO_FEET * 100.0));
 
-  let arrival_aircraft = Aircraft {
-    id: Intern::from_ref("ARR1234"),
-    pos: move_point(main_airport.center, 45.0, AIRSPACE_RADIUS),
-    speed: 250.0,
-    heading: 270.0,
-    altitude: APPROACH_ALTITUDE,
-    state: AircraftState::Flying,
-    flight_plan: FlightPlan::new(far_airport.id, main_airport.id),
-    flight_time: Some(0),
-    ..Default::default()
-  }
-  .with_synced_targets();
+  // let arrival_aircraft = Aircraft {
+  //   id: Intern::from_ref("ARR1234"),
+  //   pos: move_point(main_airport.center, 45.0, AIRSPACE_RADIUS),
+  //   speed: 250.0,
+  //   heading: 270.0,
+  //   altitude: APPROACH_ALTITUDE,
+  //   state: AircraftState::Flying,
+  //   flight_plan: FlightPlan::new(far_airport.id, main_airport.id),
+  //   flight_time: Some(0),
+  //   ..Default::default()
+  // }
+  // .with_synced_targets();
+
+  let count = 20;
+  let arrivals = (0..count).map(|i| {
+    let angle = (360.0 / count as f32) * i as f32;
+    let pos = move_point(main_airport.center, angle, AIRSPACE_RADIUS);
+    Aircraft {
+      id: Intern::from(format!("ARV{}", i + 1)),
+      pos,
+      speed: 250.0,
+      heading: angle_between_points(pos, main_airport.center),
+      altitude: APPROACH_ALTITUDE,
+      state: AircraftState::Flying,
+      flight_plan: FlightPlan::new(far_airport.id, main_airport.id),
+      flight_time: Some(0),
+      ..Default::default()
+    }
+    .with_synced_targets()
+  });
 
   let gate = main_airport
     .terminals
@@ -97,7 +115,7 @@ fn model(app: &App) -> Model {
   }
   .with_synced_targets();
 
-  engine.game.aircraft.push(arrival_aircraft);
+  engine.game.aircraft.extend(arrivals);
   engine.game.aircraft.push(departure_aircraft);
   engine
     .world
@@ -113,7 +131,7 @@ fn model(app: &App) -> Model {
   let mut snapshots = Vec::new();
   for i in 0..engine.tick_rate_tps * 60 * 20 {
     if i % engine.tick_rate_tps == 0 && i > 0 {
-      snapshots.push(engine.game.aircraft.clone());
+      snapshots.push((i, engine.game.aircraft.clone()));
     }
 
     engine.tick();
@@ -151,6 +169,11 @@ fn update(_app: &App, model: &mut Model, update: Update) {
   let side_panel =
     egui::panel::SidePanel::new(egui::panel::Side::Left, Id::new("side_panel"))
       .show(&ctx, |ui| {
+        ui.label(format!(
+          "tick: {}",
+          model.snapshots.get(model.snapshot_index).unwrap().0
+        ));
+
         egui::ScrollArea::vertical().show(ui, |ui| {
           ui.label(format!("{:#?}", model.snapshots.get(model.snapshot_index)));
         });
@@ -251,7 +274,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
   model.engine.world.draw(&draw, model.scale, model.shift_pos);
   if let Some(snapshot) = model.snapshots.get(model.snapshot_index) {
-    for aircraft in snapshot.iter() {
+    for aircraft in snapshot.1.iter() {
       aircraft.draw(&draw, model.scale, model.shift_pos);
     }
   }

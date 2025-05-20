@@ -513,8 +513,6 @@ impl Runner {
       self.perf_tick_time_ms = Duration::default();
     }
 
-    self.engine.tick_counter += 1;
-
     events.clone()
   }
 
