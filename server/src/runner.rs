@@ -353,11 +353,13 @@ impl Runner {
               // If we are preparing, only schedule departures from auto
               // airports, otherwise choose airports with normal or automated
               // departure status.
-              if !self
-                .engine
-                .world
-                .airport_status(destination.id)
-                .delay_departures
+              if (!self.preparing
+                || self.engine.world.airport_status(airport.id).automate_ground)
+                && !self
+                  .engine
+                  .world
+                  .airport_status(destination.id)
+                  .delay_departures
               {
                 aircraft.flight_plan.departing = airport.id;
                 aircraft.flight_plan.arriving = destination.id;
