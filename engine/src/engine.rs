@@ -341,6 +341,10 @@ impl Engine {
       let aircraft = pair.first().unwrap();
       let other_aircraft = pair.last().unwrap();
 
+      if aircraft.airspace != other_aircraft.airspace {
+        continue;
+      }
+
       // Skip checking aircraft that are both parked or not at the same airport.
       if matches!(aircraft.state, AircraftState::Parked { .. })
         && matches!(other_aircraft.state, AircraftState::Parked { .. })
