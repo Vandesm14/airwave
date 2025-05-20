@@ -46,7 +46,7 @@ pub enum NodeBehavior {
   LineUp,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct Node<T> {
   #[ts(as = "String")]
