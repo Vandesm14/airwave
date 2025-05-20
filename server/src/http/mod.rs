@@ -43,7 +43,7 @@ pub async fn run(
       .route("/messages", get(get_messages))
       .route("/world", get(get_world))
       .route("/status/{id}", get(get_airport_status))
-      .route("/status/{id}/{status}", post(post_airport_status))
+      .route("/status/{id}", post(post_airport_status))
       .with_state(AppState::new(get_sender, post_sender))
       .layer(CompressionLayer::new())
       .layer(cors),

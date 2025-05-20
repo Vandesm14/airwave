@@ -143,16 +143,20 @@ export function useAirportStatus(id: string) {
 }
 
 export const postAirportStatusKey = `/api/status`;
-export const postAirportStatus = (id: string, status: AirportStatus) =>
-  `${postAirportStatusKey}/${id}/${JSON.stringify(status)}`;
+export const postAirportStatus = (id: string) =>
+  `${postAirportStatusKey}/${id}`;
 export function useSetAirportStatus() {
   const client = useQueryClient();
 
   return createMutation(() => ({
     mutationKey: [postAirportStatusKey],
     mutationFn: async ({ id, status }: { id: string; status: AirportStatus }) =>
-      await fetch(`${baseAPIPath}${postAirportStatus(id, status)}`, {
+      await fetch(`${baseAPIPath}${postAirportStatus(id)}`, {
         method: 'POST',
+        body: JSON.stringify(status),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }),
     onMutate: ({ status }: { id: string; status: AirportStatus }) =>
       client.setQueryData<AirportStatus>([getAirportStatusKey], () => {

@@ -1,4 +1,5 @@
 use axum::{
+  Json,
   extract::{Path, State},
   http,
 };
@@ -68,7 +69,8 @@ pub async fn get_airport_status(
 
 pub async fn post_airport_status(
   State(mut state): State<AppState>,
-  Path((id, status)): Path<(String, AirportStatus)>,
+  Path(id): Path<String>,
+  Json(status): Json<AirportStatus>,
 ) -> Result<(), http::StatusCode> {
   let res = JobReq::send(
     TinyReqKind::SetAirportStatus(Intern::from(id), status),
