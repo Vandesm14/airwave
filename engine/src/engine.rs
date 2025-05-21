@@ -511,7 +511,7 @@ impl Engine {
 
           let heading = angle_between_points(aircraft.pos, point);
           let altitude = 4000.0;
-          let speed = 200.0;
+          let speed = 250.0;
 
           if aircraft.target.heading != heading {
             events.push(
@@ -537,6 +537,10 @@ impl Engine {
             && final_fix.distance_squared(aircraft.pos)
               <= (NAUTICALMILES_TO_FEET * 4.0).powf(2.0)
           {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::SpeedAtOrBelow(180.0))
+                .into(),
+            );
             events.push(
               AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
                 .into(),
