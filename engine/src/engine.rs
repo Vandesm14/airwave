@@ -22,7 +22,7 @@ use crate::{
     airport::Airport,
     world::{Game, World},
   },
-  geometry::{angle_between_points, delta_angle, move_point},
+  geometry::{AngleDirections, angle_between_points, delta_angle, move_point},
   line::Line,
   pathfinder::{Node, NodeBehavior, NodeKind},
 };
@@ -462,13 +462,46 @@ impl Engine {
                 .unwrap_or(std::cmp::Ordering::Equal)
             })
             .unwrap();
-          let point_to = move_point(
+
+          let directions = AngleDirections::new(runway.heading);
+          let final_fix = move_point(
             runway.start,
-            runway.heading,
-            -NAUTICALMILES_TO_FEET * 10.0,
+            directions.backward,
+            NAUTICALMILES_TO_FEET * 10.0,
+          );
+          let pattern_direction = if delta_angle(
+            directions.forward,
+            angle_between_points(final_fix, aircraft.pos),
+          )
+          .is_sign_negative()
+          {
+            directions.left
+          } else {
+            directions.right
+          };
+
+          let base_fix = move_point(
+            move_point(
+              final_fix,
+              pattern_direction,
+              NAUTICALMILES_TO_FEET * 5.0,
+            ),
+            directions.backward,
+            NAUTICALMILES_TO_FEET * 5.0,
           );
 
-          let heading = angle_between_points(aircraft.pos, point_to);
+          let mut point = base_fix;
+          if delta_angle(
+            pattern_direction,
+            angle_between_points(base_fix, aircraft.pos),
+          )
+          .abs()
+            >= 90.0
+          {
+            point = final_fix;
+          }
+
+          let heading = angle_between_points(aircraft.pos, point);
           let altitude = 4000.0;
           let speed = 200.0;
 
@@ -492,7 +525,9 @@ impl Engine {
             );
           }
 
-          if matches!(aircraft.state, AircraftState::Flying) {
+          if matches!(aircraft.state, AircraftState::Flying)
+            && point == final_fix
+          {
             events.push(
               AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
                 .into(),

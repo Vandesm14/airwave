@@ -13,6 +13,31 @@ pub trait Translate {
   fn translate(&mut self, offset: Vec2) -> &mut Self;
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AngleDirections {
+  pub forward: f32,
+  pub backward: f32,
+  pub left: f32,
+  pub right: f32,
+}
+
+impl AngleDirections {
+  pub fn new(angle: f32) -> Self {
+    let angle = normalize_angle(angle);
+    let forward = normalize_angle(angle);
+    let backward = normalize_angle(angle + 180.0);
+    let left = normalize_angle(angle + 270.0);
+    let right = normalize_angle(angle + 90.0);
+
+    Self {
+      forward,
+      backward,
+      left,
+      right,
+    }
+  }
+}
+
 pub fn calculate_ils_altitude(distance: f32) -> f32 {
   let slope_radians = 7.0_f32.to_radians();
   distance * slope_radians.tan()
