@@ -473,6 +473,7 @@ impl Engine {
             directions.backward,
             NAUTICALMILES_TO_FEET * 10.0,
           );
+
           let pattern_direction = if delta_angle(
             directions.forward,
             angle_between_points(final_fix, aircraft.pos),
@@ -484,29 +485,21 @@ impl Engine {
             directions.right
           };
 
-          // Wf we are already on a +/-45 deg course to the final fix, go
-          // straight to the final fix.
-          // let base_direction = if delta_angle(
-          //   directions.backward,
-          //   angle_between_points(final_fix, aircraft.pos),
-          // )
-          // .abs()
-          //   <= 45.0
-          // {
-          //   angle_between_points(final_fix, aircraft.pos)
-          // } else {
-          //   pattern_direction
-          // };
           let base_fix = move_point(
-            move_point(
-              final_fix,
-              directions.backward,
-              NAUTICALMILES_TO_FEET * 5.0,
-            ),
+            final_fix,
             pattern_direction,
             NAUTICALMILES_TO_FEET * 5.0,
           );
+          let downwind_fix = move_point(
+            base_fix,
+            directions.forward,
+            NAUTICALMILES_TO_FEET * 5.0,
+          );
 
+          let downwind_wp = Node::default()
+            .with_name(Intern::from_ref("DOWNWIND"))
+            .with_vor(VORData::new(downwind_fix))
+            .with_altitude_limit(VORLimit::AtOrBelow(4000.0));
           let base_wp = Node::default()
             .with_name(Intern::from_ref("BASE"))
             .with_vor(VORData::new(base_fix))
@@ -514,12 +507,9 @@ impl Engine {
           let final_wp = Node::default()
             .with_name(Intern::from_ref("FINAL"))
             .with_vor(VORData::new(final_fix));
-          let land_wp = Node::default()
-            .with_name(Intern::from_ref("LAND"))
-            .with_vor(VORData::new(final_fix.lerp(base_fix, 0.5)))
-            .with_action(EventKind::Land(runway.id));
 
-          let waypoints: Vec<Node<VORData>> = vec![base_wp, land_wp, final_wp];
+          let waypoints: Vec<Node<VORData>> =
+            vec![downwind_wp, base_wp, final_wp];
 
           let altitude = 4000.0;
           let speed = 250.0;
@@ -540,6 +530,18 @@ impl Engine {
             events.push(
               AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
             );
+          }
+
+          if let Some(wp) = aircraft.flight_plan.waypoint() {
+            if wp.data.pos == final_fix
+              && wp.data.pos.distance_squared(aircraft.pos)
+                <= (NAUTICALMILES_TO_FEET * 2.0).powf(2.0)
+            {
+              events.push(
+                AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
+                  .into(),
+              );
+            }
           }
         }
       }
