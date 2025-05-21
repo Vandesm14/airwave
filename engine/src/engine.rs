@@ -399,6 +399,7 @@ impl Engine {
       if rel_pos_a.y >= min_forward_distance
         && rel_pos_a.x <= side_distance
         && rel_pos_a.y <= forward_distance
+        && aircraft.speed <= MAX_TAXI_SPEED
       {
         collisions.insert(aircraft.id);
       }
@@ -407,6 +408,7 @@ impl Engine {
       if rel_pos_b.y >= min_forward_distance
         && rel_pos_b.x <= side_distance
         && rel_pos_b.y <= forward_distance
+        && other_aircraft.speed <= MAX_TAXI_SPEED
       {
         collisions.insert(other_aircraft.id);
       }
