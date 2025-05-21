@@ -491,12 +491,20 @@ impl Engine {
           );
 
           let mut point = base_fix;
+          // If we have passed the waypoint or if we are already on a +/-45 deg
+          // course to the final fix, go straight to the final fix.
           if delta_angle(
             pattern_direction,
             angle_between_points(base_fix, aircraft.pos),
           )
           .abs()
             >= 90.0
+            || delta_angle(
+              directions.backward,
+              angle_between_points(final_fix, aircraft.pos),
+            )
+            .abs()
+              <= 45.0
           {
             point = final_fix;
           }
