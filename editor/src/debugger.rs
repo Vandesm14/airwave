@@ -43,6 +43,7 @@ struct Model {
   scale: f32,
 
   held_keys: HeldKeys,
+  selected: String,
 }
 
 fn model(app: &App) -> Model {
@@ -146,6 +147,8 @@ fn model(app: &App) -> Model {
       shift: false,
       alt: false,
     },
+
+    selected: String::new(),
   }
 }
 
@@ -156,13 +159,29 @@ fn update(_app: &App, model: &mut Model, update: Update) {
   let side_panel =
     egui::panel::SidePanel::new(egui::panel::Side::Left, Id::new("side_panel"))
       .show(&ctx, |ui| {
-        ui.label(format!(
-          "tick: {}",
-          model.snapshots.get(model.snapshot_index).unwrap().0
-        ));
+        egui::TextEdit::singleline(&mut model.selected)
+          .hint_text("Search")
+          .show(ui);
 
+        let tick = model.snapshots.get(model.snapshot_index).unwrap().0;
+        ui.label(format!("tick: {}", tick));
+
+        let aircraft: Vec<_> = model
+          .snapshots
+          .get(model.snapshot_index)
+          .unwrap()
+          .1
+          .iter()
+          .filter(|a| {
+            if model.selected.is_empty() {
+              true
+            } else {
+              model.selected.to_uppercase().contains(&a.id.to_string())
+            }
+          })
+          .collect();
         egui::ScrollArea::vertical().show(ui, |ui| {
-          ui.label(format!("{:#?}", model.snapshots.get(model.snapshot_index)));
+          ui.label(format!("{:#?}", aircraft));
         });
       });
 
@@ -261,7 +280,13 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
   model.engine.world.draw(&draw, model.scale, model.shift_pos);
   if let Some(snapshot) = model.snapshots.get(model.snapshot_index) {
-    for aircraft in snapshot.1.iter() {
+    for aircraft in snapshot.1.iter().filter(|a| {
+      if model.selected.is_empty() {
+        true
+      } else {
+        model.selected.to_uppercase().contains(&a.id.to_string())
+      }
+    }) {
       aircraft.draw(&draw, model.scale, model.shift_pos);
     }
   }

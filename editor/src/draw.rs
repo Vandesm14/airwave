@@ -1,7 +1,7 @@
 use engine::{
   AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
   entities::{
-    aircraft::Aircraft,
+    aircraft::{Aircraft, AircraftState},
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::World,
   },
@@ -247,14 +247,16 @@ impl Draw for Aircraft {
       .weight(2.0)
       .color(color::GREEN);
 
-    for waypoint in self.flight_plan.active_waypoints() {
-      let point = scale_point(waypoint.data.pos, offset, scale);
-      draw
-        .ellipse()
-        .x_y(point.x, point.y)
-        .width(10.0)
-        .height(10.0)
-        .color(color::YELLOW);
+    if self.state == AircraftState::Flying {
+      for waypoint in self.flight_plan.active_waypoints() {
+        let point = scale_point(waypoint.data.pos, offset, scale);
+        draw
+          .ellipse()
+          .x_y(point.x, point.y)
+          .width(10.0)
+          .height(10.0)
+          .color(color::YELLOW);
+      }
     }
 
     self.draw_label(draw, scale, offset);
