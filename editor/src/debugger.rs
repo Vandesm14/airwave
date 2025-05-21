@@ -247,10 +247,12 @@ fn raw_window_event(
     ..
   } = event
   {
-    if *y < 0.0 {
-      model.scale *= 0.9;
-    } else {
-      model.scale *= 1.1;
+    if !model.is_over_ui {
+      if *y < 0.0 {
+        model.scale *= 0.9;
+      } else {
+        model.scale *= 1.1;
+      }
     }
   }
 
