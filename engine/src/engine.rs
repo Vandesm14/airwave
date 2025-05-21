@@ -1,6 +1,7 @@
 use std::{
   collections::{HashMap, HashSet},
   time::Instant,
+  vec,
 };
 
 use glam::Vec2;
@@ -25,6 +26,7 @@ use crate::{
   geometry::{AngleDirections, angle_between_points, delta_angle, move_point},
   line::Line,
   pathfinder::{Node, NodeBehavior, NodeKind},
+  wayfinder::{VORData, VORLimit},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -441,7 +443,7 @@ impl Engine {
   }
 
   pub fn update_auto_approach(&mut self, events: &mut Vec<Event>) {
-    for aircraft in self.game.aircraft.iter() {
+    for aircraft in self.game.aircraft.iter_mut() {
       if matches!(aircraft.segment, FlightSegment::Approach)
         && aircraft
           .airspace
@@ -482,44 +484,49 @@ impl Engine {
             directions.right
           };
 
+          // Wf we are already on a +/-45 deg course to the final fix, go
+          // straight to the final fix.
+          // let base_direction = if delta_angle(
+          //   directions.backward,
+          //   angle_between_points(final_fix, aircraft.pos),
+          // )
+          // .abs()
+          //   <= 45.0
+          // {
+          //   angle_between_points(final_fix, aircraft.pos)
+          // } else {
+          //   pattern_direction
+          // };
           let base_fix = move_point(
             move_point(
               final_fix,
-              pattern_direction,
+              directions.backward,
               NAUTICALMILES_TO_FEET * 5.0,
             ),
-            directions.backward,
+            pattern_direction,
             NAUTICALMILES_TO_FEET * 5.0,
           );
 
-          let mut point = base_fix;
-          // If we have passed the waypoint or if we are already on a +/-45 deg
-          // course to the final fix, go straight to the final fix.
-          if delta_angle(
-            pattern_direction,
-            angle_between_points(base_fix, aircraft.pos),
-          )
-          .abs()
-            >= 90.0
-            || delta_angle(
-              directions.backward,
-              angle_between_points(final_fix, aircraft.pos),
-            )
-            .abs()
-              <= 45.0
-          {
-            point = final_fix;
-          }
+          let base_wp = Node::default()
+            .with_name(Intern::from_ref("BASE"))
+            .with_vor(VORData::new(base_fix))
+            .with_speed_limit(VORLimit::AtOrBelow(180.0));
+          let final_wp = Node::default()
+            .with_name(Intern::from_ref("FINAL"))
+            .with_vor(VORData::new(final_fix));
+          let land_wp = Node::default()
+            .with_name(Intern::from_ref("LAND"))
+            .with_vor(VORData::new(final_fix.lerp(base_fix, 0.5)))
+            .with_action(EventKind::Land(runway.id));
 
-          let heading = angle_between_points(aircraft.pos, point);
+          let waypoints: Vec<Node<VORData>> = vec![base_wp, land_wp, final_wp];
+
           let altitude = 4000.0;
           let speed = 250.0;
 
-          if aircraft.target.heading != heading {
-            events.push(
-              AircraftEvent::new(aircraft.id, EventKind::Heading(heading))
-                .into(),
-            );
+          if aircraft.flight_plan.at_end() {
+            aircraft.flight_plan.amend_end(waypoints);
+            aircraft.flight_plan.start_following();
           }
 
           if aircraft.target.altitude >= altitude {
@@ -534,23 +541,11 @@ impl Engine {
               AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
             );
           }
-
-          if matches!(aircraft.state, AircraftState::Flying)
-            && final_fix.distance_squared(aircraft.pos)
-              <= (NAUTICALMILES_TO_FEET * 4.0).powf(2.0)
-          {
-            events.push(
-              AircraftEvent::new(aircraft.id, EventKind::SpeedAtOrBelow(180.0))
-                .into(),
-            );
-            events.push(
-              AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
-                .into(),
-            );
-          }
         }
       }
     }
+
+    // let distances: Vec<_> = self.game.aircraft.iter().filter(|a| a.segment ==FlightSegment::Approach).map(|a| (a.id, a.pos.distance(rhs)))
   }
 
   pub fn update_auto_ground(&mut self, events: &mut Vec<Event>) {

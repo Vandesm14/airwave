@@ -154,6 +154,15 @@ impl FlightPlan {
     self.start_following();
   }
 
+  pub fn active_waypoints(&self) -> Vec<Node<VORData>> {
+    self
+      .waypoints
+      .iter()
+      .skip(self.waypoint_index)
+      .cloned()
+      .collect()
+  }
+
   pub fn waypoint(&self) -> Option<&Node<VORData>> {
     if self.follow {
       self.waypoints.get(self.waypoint_index)
@@ -186,13 +195,44 @@ impl FlightPlan {
     self.clamp_index();
   }
 
-  pub fn clamp_index(&mut self) {
+  fn clamp_index(&mut self) {
     if self.waypoints.is_empty() {
       self.waypoint_index = 0;
     } else {
-      self.waypoint_index =
-        self.waypoint_index.clamp(0, self.waypoints.len() - 1);
+      self.waypoint_index = self.waypoint_index.clamp(0, self.waypoints.len());
     }
+  }
+
+  pub fn index(&self) -> usize {
+    self.waypoint_index
+  }
+
+  pub fn at_end(&self) -> bool {
+    self.waypoint_index == self.waypoints.len() || self.waypoints.is_empty()
+  }
+
+  pub fn amend_end(&mut self, waypoints: Vec<Node<VORData>>) {
+    let len = waypoints.len();
+    let already_exists = self
+      .waypoints
+      .iter()
+      .rev()
+      .take(len)
+      .rev()
+      .enumerate()
+      .all(|(i, wp)| {
+        if let Some(new_wp) = waypoints.get(i) {
+          wp == new_wp
+        } else {
+          false
+        }
+      });
+
+    if self.waypoints.is_empty() || !already_exists {
+      self.waypoints.extend(waypoints);
+    }
+
+    self.set_index(self.waypoints.len() - len);
   }
 }
 

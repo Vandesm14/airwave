@@ -122,6 +122,11 @@ pub fn new_vor(name: Intern<String>, to: Vec2) -> Node<VORData> {
 }
 
 impl Node<VORData> {
+  pub fn with_action(mut self, behavior: EventKind) -> Self {
+    self.data.events.push(behavior);
+    self
+  }
+
   pub fn with_actions(mut self, behavior: Vec<EventKind>) -> Self {
     self.data.events = behavior;
     self
@@ -129,6 +134,16 @@ impl Node<VORData> {
 
   pub fn with_limits(mut self, limits: VORLimits) -> Self {
     self.data.limits = limits;
+    self
+  }
+
+  pub fn with_altitude_limit(mut self, limits: VORLimit) -> Self {
+    self.data.limits.altitude = limits;
+    self
+  }
+
+  pub fn with_speed_limit(mut self, limits: VORLimit) -> Self {
+    self.data.limits.speed = limits;
     self
   }
 }

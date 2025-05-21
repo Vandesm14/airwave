@@ -101,11 +101,17 @@ impl<T> Node<T> {
     self.data = data;
     self
   }
-}
 
-impl<T> Node<T> {
   pub fn name_and_kind_eq<U>(&self, other: &Node<U>) -> bool {
     self.name == other.name && self.kind == other.kind
+  }
+}
+
+impl<VORData> Node<VORData> {
+  pub fn with_vor(mut self, vor: VORData) -> Self {
+    self.kind = NodeKind::VOR;
+    self.data = vor;
+    self
   }
 }
 
