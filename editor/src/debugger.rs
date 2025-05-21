@@ -186,6 +186,8 @@ fn update(_app: &App, model: &mut Model, update: Update) {
 
   let side_panel =
     egui::panel::SidePanel::new(egui::panel::Side::Left, Id::new("side_panel"))
+      .resizable(false)
+      .min_width(200.0)
       .show(&ctx, |ui| {
         egui::TextEdit::singleline(&mut model.selected)
           .hint_text("Search")
