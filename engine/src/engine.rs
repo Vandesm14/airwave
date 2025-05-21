@@ -471,7 +471,7 @@ impl Engine {
           let final_fix = move_point(
             runway.start,
             directions.backward,
-            NAUTICALMILES_TO_FEET * 10.0,
+            NAUTICALMILES_TO_FEET * 15.0,
           );
 
           let pattern_direction = if delta_angle(
@@ -493,17 +493,15 @@ impl Engine {
           let downwind_fix = move_point(
             base_fix,
             directions.forward,
-            NAUTICALMILES_TO_FEET * 5.0,
+            NAUTICALMILES_TO_FEET * 15.0,
           );
 
           let downwind_wp = Node::default()
             .with_name(Intern::from_ref("DOWNWIND"))
-            .with_vor(VORData::new(downwind_fix))
-            .with_altitude_limit(VORLimit::AtOrBelow(4000.0));
+            .with_vor(VORData::new(downwind_fix));
           let base_wp = Node::default()
             .with_name(Intern::from_ref("BASE"))
-            .with_vor(VORData::new(base_fix))
-            .with_speed_limit(VORLimit::AtOrBelow(180.0));
+            .with_vor(VORData::new(base_fix));
           let final_wp = Node::default()
             .with_name(Intern::from_ref("FINAL"))
             .with_vor(VORData::new(final_fix));
@@ -533,14 +531,25 @@ impl Engine {
           }
 
           if let Some(wp) = aircraft.flight_plan.waypoint() {
-            if wp.data.pos == final_fix
-              && wp.data.pos.distance_squared(aircraft.pos)
-                <= (NAUTICALMILES_TO_FEET * 2.0).powf(2.0)
-            {
-              events.push(
-                AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
-                  .into(),
-              );
+            if wp.data.pos == final_fix {
+              let distance = wp.data.pos.distance_squared(aircraft.pos);
+
+              let speed_distance = (NAUTICALMILES_TO_FEET * 5.0).powf(2.0);
+              let land_distance = (NAUTICALMILES_TO_FEET * 2.0).powf(2.0);
+
+              if distance <= speed_distance && aircraft.target.speed >= 180.0 {
+                events.push(
+                  AircraftEvent::new(aircraft.id, EventKind::Speed(180.0))
+                    .into(),
+                );
+              }
+
+              if distance <= land_distance {
+                events.push(
+                  AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
+                    .into(),
+                );
+              }
             }
           }
         }
