@@ -534,7 +534,8 @@ impl Engine {
           }
 
           if matches!(aircraft.state, AircraftState::Flying)
-            && point == final_fix
+            && final_fix.distance_squared(aircraft.pos)
+              <= (NAUTICALMILES_TO_FEET * 4.0).powf(2.0)
           {
             events.push(
               AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
