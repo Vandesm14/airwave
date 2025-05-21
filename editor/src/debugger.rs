@@ -46,6 +46,32 @@ struct Model {
   selected: String,
 }
 
+impl Model {
+  fn filtered_aircraft(&self) -> Vec<Aircraft> {
+    self
+      .snapshots
+      .get(self.snapshot_index)
+      .map(|snapshot| {
+        snapshot
+          .1
+          .iter()
+          .filter(|a| {
+            if self.selected.is_empty() {
+              true
+            } else {
+              self
+                .selected
+                .split(',')
+                .any(|str| a.id.to_string() == str.trim().to_uppercase())
+            }
+          })
+          .cloned()
+          .collect()
+      })
+      .unwrap_or_default()
+  }
+}
+
 fn model(app: &App) -> Model {
   // Create window
   let window_id = app
@@ -153,6 +179,8 @@ fn model(app: &App) -> Model {
 }
 
 fn update(_app: &App, model: &mut Model, update: Update) {
+  let filtered_aircraft = model.filtered_aircraft();
+
   model.egui.set_elapsed_time(update.since_start);
   let ctx = model.egui.begin_frame();
 
@@ -166,22 +194,8 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         let tick = model.snapshots.get(model.snapshot_index).unwrap().0;
         ui.label(format!("tick: {}", tick));
 
-        let aircraft: Vec<_> = model
-          .snapshots
-          .get(model.snapshot_index)
-          .unwrap()
-          .1
-          .iter()
-          .filter(|a| {
-            if model.selected.is_empty() {
-              true
-            } else {
-              model.selected.to_uppercase().contains(&a.id.to_string())
-            }
-          })
-          .collect();
         egui::ScrollArea::vertical().show(ui, |ui| {
-          ui.label(format!("{:#?}", aircraft));
+          ui.label(format!("{:#?}", filtered_aircraft));
         });
       });
 
@@ -279,16 +293,8 @@ fn view(app: &App, model: &Model, frame: Frame) {
   draw.background().color(BLACK);
 
   model.engine.world.draw(&draw, model.scale, model.shift_pos);
-  if let Some(snapshot) = model.snapshots.get(model.snapshot_index) {
-    for aircraft in snapshot.1.iter().filter(|a| {
-      if model.selected.is_empty() {
-        true
-      } else {
-        model.selected.to_uppercase().contains(&a.id.to_string())
-      }
-    }) {
-      aircraft.draw(&draw, model.scale, model.shift_pos);
-    }
+  for aircraft in model.filtered_aircraft() {
+    aircraft.draw(&draw, model.scale, model.shift_pos);
   }
 
   draw.to_frame(app, &frame).unwrap();
