@@ -383,6 +383,16 @@ function aircraftToStrip(
   } else if (aircraft.state.type === 'parked') {
     data.topStatus = 'PARK';
     data.bottomStatus = aircraft.state.value.at.name;
+  } else if (
+    ['departure', 'climb', 'cruise', 'arrival'].includes(aircraft.segment)
+  ) {
+    let waypoint = aircraft.flight_plan.waypoints.at(
+      aircraft.flight_plan.waypoint_index
+    );
+    if (aircraft.flight_plan.follow && waypoint !== undefined) {
+      data.topStatus = 'DCT';
+      data.bottomStatus = waypoint.name;
+    }
   } else {
     data.topStatus = '----';
   }
