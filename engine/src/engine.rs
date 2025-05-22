@@ -640,7 +640,7 @@ impl Engine {
             aircraft.flight_plan.start_following();
           }
 
-          if aircraft.target.altitude >= altitude {
+          if aircraft.target.altitude > altitude {
             events.push(
               AircraftEvent::new(aircraft.id, EventKind::Altitude(altitude))
                 .into(),
