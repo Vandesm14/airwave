@@ -263,18 +263,19 @@ impl FlightPlan {
     distances
   }
 
-  pub fn heading(&self, pos: Vec2) -> Option<f32> {
+  pub fn heading(&self, aircraft: &Aircraft) -> Option<f32> {
     if !self.follow {
       return None;
     }
 
     if let Some(wp) = self.waypoint() {
-      let mut heading = angle_between_points(pos, wp.data.pos);
-      if self.course_offset != 0.0 {
-        heading += self.course_offset;
+      let heading = angle_between_points(aircraft.pos, wp.data.pos);
+      let distance = aircraft.pos.distance_squared(wp.data.pos);
+      if distance <= aircraft.turn_distance(heading).powf(2.0) {
+        Some(heading)
+      } else {
+        Some(normalize_angle(heading + self.course_offset))
       }
-
-      Some(normalize_angle(heading))
     } else {
       None
     }
@@ -282,7 +283,7 @@ impl FlightPlan {
 
   pub fn next_heading(&self) -> Option<f32> {
     let next_two = self.active_waypoints();
-    let mut next_two = next_two.iter().take(2);
+    let mut next_two = next_two.iter();
     let next_two = next_two.next().zip(next_two.next());
     if let Some((a, b)) = next_two {
       let angle = angle_between_points(a.data.pos, b.data.pos);

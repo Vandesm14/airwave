@@ -455,9 +455,21 @@ impl Engine {
           .is_some_and(|id| self.world.airport_status(id).automate_air)
       })
       .fold(
-        HashMap::<_, Vec<(Intern<String>, f32)>>::new(),
+        HashMap::<_, Vec<(Intern<String>, f32, f32)>>::new(),
         |mut map, aircraft| {
           let airspace = aircraft.airspace.unwrap();
+          let direction = aircraft
+            .flight_plan
+            .next_heading()
+            .map(|h| {
+              if delta_angle(aircraft.heading, h).is_sign_positive() {
+                1.0
+              } else {
+                -1.0
+              }
+            })
+            .unwrap_or(0.0);
+
           let key = (
             airspace,
             aircraft
@@ -475,6 +487,7 @@ impl Engine {
               .last()
               .copied()
               .unwrap_or(0.0),
+            direction,
           );
           if let Some(entry) = map.get_mut(&key) {
             entry.push(item);
@@ -488,6 +501,7 @@ impl Engine {
 
     let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
     let min_approach_speed = 150.0;
+    let max_deviation_angle = 30.0;
     for (_, mut aircraft) in airspaces.into_iter() {
       aircraft.sort_by(|a, b| {
         a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
@@ -500,14 +514,16 @@ impl Engine {
       let mut current = first.1;
 
       let mut speeds: Vec<(Intern<String>, f32, f32)> = Vec::new();
-      for (id, distance) in aircraft {
+      for (id, distance, direction) in aircraft {
         let diff = distance - current;
         if diff < separation_distance {
           let half_sep = separation_distance * 0.5;
+          // If our next turn is right, we can offset to the left to delay that
+          // turn and increase our travel time.
           if diff < half_sep {
             // For the first half, use min_approach_speed and scale offset from 30.0 to 0.0
-            let offset = 30.0 * (1.0 - diff / half_sep);
-            speeds.push((id, min_approach_speed, -offset));
+            let offset = max_deviation_angle * (1.0 - diff / half_sep);
+            speeds.push((id, min_approach_speed, offset * direction));
           } else {
             // For the second half, interpolate speed up to 250.0, offset is 0
             let t = ((diff - half_sep) / half_sep).clamp(0.0, 1.0);
@@ -529,13 +545,16 @@ impl Engine {
           self.game.aircraft.iter_mut().find(|a| a.id == id)
         {
           // Only change speeds for aircraft on approach.
-          if aircraft.segment == FlightSegment::Approach
-            && aircraft.target.speed != speed
-          {
-            aircraft.flight_plan.course_offset = offset;
-            events.push(
-              AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
-            );
+          if aircraft.segment == FlightSegment::Approach {
+            if aircraft.flight_plan.course_offset != offset {
+              aircraft.flight_plan.course_offset = offset;
+            }
+
+            if aircraft.target.speed != speed {
+              events.push(
+                AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
+              );
+            }
           }
         }
       }
