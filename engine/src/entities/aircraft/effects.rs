@@ -172,6 +172,10 @@ impl Aircraft {
         let seconds_to_turn = diff / AircraftKind::A21N.stats().turn_speed;
         let distance_to_turn = seconds_to_turn * speed_in_feet_dt;
         if a.data.pos.distance_squared(self.pos) <= distance_to_turn.powf(2.0) {
+          for e in a.data.events.iter() {
+            events.push(AircraftEvent::new(self.id, e.clone()).into());
+          }
+
           self.flight_plan.inc_index();
         }
       }
