@@ -1,10 +1,7 @@
 pub mod effects;
 pub mod events;
 
-use std::{
-  f32::consts::PI,
-  ops::{Mul, Sub},
-};
+use std::{f32::consts::PI, ops::Sub};
 
 use glam::Vec2;
 use internment::Intern;
