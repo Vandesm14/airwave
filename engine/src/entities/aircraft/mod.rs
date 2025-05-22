@@ -234,6 +234,21 @@ impl FlightPlan {
 
     self.set_index(self.waypoints.len() - len);
   }
+
+  pub fn distances(&self, pos: Vec2) -> Vec<f32> {
+    let mut pos = pos;
+    let mut distance = 0.0;
+    let mut distances = Vec::with_capacity(self.active_waypoints().len());
+    for wp in self.active_waypoints() {
+      let dist = pos.distance(wp.data.pos) + distance;
+      distance = dist;
+      pos = wp.data.pos;
+
+      distances.push(dist);
+    }
+
+    distances
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

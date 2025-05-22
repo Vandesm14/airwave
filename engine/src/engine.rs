@@ -556,7 +556,74 @@ impl Engine {
       }
     }
 
-    // let distances: Vec<_> = self.game.aircraft.iter().filter(|a| a.segment ==FlightSegment::Approach).map(|a| (a.id, a.pos.distance(rhs)))
+    let airspaces = self
+      .game
+      .aircraft
+      .iter()
+      .filter(|a| a.segment == FlightSegment::Approach)
+      .filter(|a| {
+        a.airspace
+          .is_some_and(|id| self.world.airport_status(id).automate_air)
+      })
+      .fold(
+        HashMap::<_, Vec<(Intern<String>, f32)>>::new(),
+        |mut map, aircraft| {
+          let airspace = aircraft.airspace.unwrap();
+          let item = (
+            aircraft.id,
+            aircraft
+              .flight_plan
+              .distances(aircraft.pos)
+              .last()
+              .copied()
+              .unwrap_or(0.0),
+          );
+          if let Some(entry) = map.get_mut(&airspace) {
+            entry.push(item);
+          } else {
+            map.insert(airspace, vec![item]);
+          }
+
+          map
+        },
+      );
+
+    let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
+    for (_, mut aircraft) in airspaces.into_iter() {
+      aircraft.sort_by(|a, b| {
+        a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
+      });
+
+      let mut aircraft = aircraft.into_iter();
+      let Some(first) = aircraft.next() else {
+        continue;
+      };
+      let mut current = first.1;
+
+      let mut speeds: Vec<(Intern<String>, f32)> = Vec::new();
+      for (id, distance) in aircraft {
+        let diff = distance - current;
+        if diff < separation_distance {
+          speeds.push((id, 180.0));
+        } else if diff > separation_distance {
+          speeds.push((id, 250.0));
+        }
+
+        current = distance;
+      }
+
+      for (id, speed) in
+        speeds.into_iter().chain(core::iter::once((first.0, 250.0)))
+      {
+        if let Some(aircraft) = self.game.aircraft.iter().find(|a| a.id == id) {
+          if aircraft.target.speed != speed {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
+            );
+          }
+        }
+      }
+    }
   }
 
   pub fn update_auto_ground(&mut self, events: &mut Vec<Event>) {
