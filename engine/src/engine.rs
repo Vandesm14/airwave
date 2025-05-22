@@ -485,6 +485,7 @@ impl Engine {
       );
 
     let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
+    let max_approach_speed = 225.0;
     let min_approach_speed = 150.0;
     let max_deviation_angle = 60.0;
     for (_, mut aircraft) in airspaces.into_iter() {
@@ -513,13 +514,14 @@ impl Engine {
               max_deviation_angle * direction,
             ));
           } else {
-            // For the second half, interpolate speed from min up to 250.0.
+            // For the second half, interpolate speed from min to max.
             let t = ((diff - half_sep) / half_sep).clamp(0.0, 1.0);
-            let speed = min_approach_speed + t * (250.0 - min_approach_speed);
-            speeds.push((id, speed.min(250.0), 0.0));
+            let speed = min_approach_speed
+              + t * (max_approach_speed - min_approach_speed);
+            speeds.push((id, speed.min(max_approach_speed), 0.0));
           }
         } else {
-          speeds.push((id, 250.0, 0.0));
+          speeds.push((id, max_approach_speed, 0.0));
         }
 
         current = distance;
@@ -632,25 +634,31 @@ impl Engine {
           let waypoints: Vec<Node<VORData>> =
             vec![crosswind_wp, downwind_wp, base_wp, final_wp];
 
-          let altitude = 4000.0;
-          let speed = 250.0;
+          let max_approach_altitude = 4000.0;
+          let maxx_approach_speed = 225.0;
 
           if aircraft.flight_plan.at_end() {
             aircraft.flight_plan.amend_end(waypoints);
             aircraft.flight_plan.start_following();
           }
 
-          if aircraft.target.altitude > altitude {
+          if aircraft.target.altitude > max_approach_altitude {
             events.push(
-              AircraftEvent::new(aircraft.id, EventKind::Altitude(altitude))
-                .into(),
+              AircraftEvent::new(
+                aircraft.id,
+                EventKind::Altitude(max_approach_altitude),
+              )
+              .into(),
             );
           }
 
-          if aircraft.target.speed > speed {
+          if aircraft.target.speed > maxx_approach_speed {
             events.push(
-              AircraftEvent::new(aircraft.id, EventKind::SpeedAtOrBelow(speed))
-                .into(),
+              AircraftEvent::new(
+                aircraft.id,
+                EventKind::SpeedAtOrBelow(maxx_approach_speed),
+              )
+              .into(),
             );
           }
 
