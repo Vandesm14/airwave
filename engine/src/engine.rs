@@ -26,7 +26,7 @@ use crate::{
   geometry::{AngleDirections, angle_between_points, delta_angle, move_point},
   line::Line,
   pathfinder::{Node, NodeBehavior, NodeKind},
-  wayfinder::{VORData, VORLimit},
+  wayfinder::VORData,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -443,124 +443,13 @@ impl Engine {
   }
 
   pub fn update_auto_approach(&mut self, events: &mut Vec<Event>) {
-    for aircraft in self.game.aircraft.iter_mut() {
-      if matches!(aircraft.segment, FlightSegment::Approach)
-        && aircraft
-          .airspace
-          .is_some_and(|a| self.world.airport_status(a).automate_air)
-      {
-        if let Some(airport) = self
-          .world
-          .airports
-          .iter()
-          .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
-        {
-          let runway = airport
-            .runways
-            .iter()
-            .min_by(|a, b| {
-              let dist_a = aircraft.pos.distance_squared(a.start);
-              let dist_b = aircraft.pos.distance_squared(b.start);
-              dist_a
-                .partial_cmp(&dist_b)
-                .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .unwrap();
-
-          let directions = AngleDirections::new(runway.heading);
-          let final_fix = move_point(
-            runway.start,
-            directions.backward,
-            NAUTICALMILES_TO_FEET * 15.0,
-          );
-
-          let pattern_direction = if delta_angle(
-            directions.forward,
-            angle_between_points(final_fix, aircraft.pos),
-          )
-          .is_sign_negative()
-          {
-            directions.left
-          } else {
-            directions.right
-          };
-
-          let base_fix = move_point(
-            final_fix,
-            pattern_direction,
-            NAUTICALMILES_TO_FEET * 5.0,
-          );
-          let downwind_fix = move_point(
-            base_fix,
-            directions.forward,
-            NAUTICALMILES_TO_FEET * 15.0,
-          );
-
-          let downwind_wp = Node::default()
-            .with_name(Intern::from_ref("DOWNWIND"))
-            .with_vor(VORData::new(downwind_fix));
-          let base_wp = Node::default()
-            .with_name(Intern::from_ref("BASE"))
-            .with_vor(VORData::new(base_fix));
-          let final_wp = Node::default()
-            .with_name(runway.id)
-            .with_vor(VORData::new(final_fix));
-
-          let waypoints: Vec<Node<VORData>> =
-            vec![downwind_wp, base_wp, final_wp];
-
-          let altitude = 4000.0;
-          let speed = 250.0;
-
-          if aircraft.flight_plan.at_end() {
-            aircraft.flight_plan.amend_end(waypoints);
-            aircraft.flight_plan.start_following();
-          }
-
-          if aircraft.target.altitude >= altitude {
-            events.push(
-              AircraftEvent::new(aircraft.id, EventKind::Altitude(altitude))
-                .into(),
-            );
-          }
-
-          if aircraft.target.speed >= speed {
-            events.push(
-              AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
-            );
-          }
-
-          if let Some(wp) = aircraft.flight_plan.waypoint() {
-            if wp.data.pos == final_fix {
-              let distance = wp.data.pos.distance_squared(aircraft.pos);
-
-              let speed_distance = (NAUTICALMILES_TO_FEET * 5.0).powf(2.0);
-              let land_distance = (NAUTICALMILES_TO_FEET * 2.0).powf(2.0);
-
-              if distance <= speed_distance && aircraft.target.speed >= 180.0 {
-                events.push(
-                  AircraftEvent::new(aircraft.id, EventKind::Speed(180.0))
-                    .into(),
-                );
-              }
-
-              if distance <= land_distance {
-                events.push(
-                  AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
-                    .into(),
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-
     let airspaces = self
       .game
       .aircraft
       .iter()
-      .filter(|a| a.segment == FlightSegment::Approach)
+      .filter(|a| {
+        matches!(a.segment, FlightSegment::Approach | FlightSegment::Landing)
+      })
       .filter(|a| {
         a.airspace
           .is_some_and(|id| self.world.airport_status(id).automate_air)
@@ -597,7 +486,8 @@ impl Engine {
         },
       );
 
-    let separation_distance = NAUTICALMILES_TO_FEET * 3.0;
+    let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
+    let min_approach_speed = 150.0;
     for (_, mut aircraft) in airspaces.into_iter() {
       aircraft.sort_by(|a, b| {
         a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
@@ -613,8 +503,13 @@ impl Engine {
       for (id, distance) in aircraft {
         let diff = distance - current;
         if diff < separation_distance {
-          speeds.push((id, 180.0));
-        } else if diff > separation_distance {
+          speeds.push((
+            id,
+            250.0
+              - ((1.0 - (diff / separation_distance))
+                * (250.0 - min_approach_speed)),
+          ));
+        } else {
           speeds.push((id, 250.0));
         }
 
@@ -625,10 +520,134 @@ impl Engine {
         speeds.into_iter().chain(core::iter::once((first.0, 250.0)))
       {
         if let Some(aircraft) = self.game.aircraft.iter().find(|a| a.id == id) {
-          if aircraft.target.speed != speed {
+          if aircraft.segment == FlightSegment::Approach
+            && aircraft.target.speed != speed
+          {
             events.push(
               AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
             );
+          }
+        }
+      }
+    }
+
+    for aircraft in self.game.aircraft.iter_mut() {
+      if matches!(aircraft.segment, FlightSegment::Approach)
+        && aircraft
+          .airspace
+          .is_some_and(|a| self.world.airport_status(a).automate_air)
+      {
+        if let Some(airport) = self
+          .world
+          .airports
+          .iter()
+          .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
+        {
+          let runway = airport
+            .runways
+            .iter()
+            .min_by(|a, b| {
+              let dist_a = aircraft.pos.distance_squared(a.start);
+              let dist_b = aircraft.pos.distance_squared(b.start);
+              dist_a
+                .partial_cmp(&dist_b)
+                .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .unwrap();
+
+          let directions = AngleDirections::new(runway.heading);
+          let pattern_length = NAUTICALMILES_TO_FEET * 10.0;
+          let final_fix =
+            move_point(runway.start, directions.backward, pattern_length);
+
+          let pattern_direction = if delta_angle(
+            directions.forward,
+            angle_between_points(final_fix, aircraft.pos),
+          )
+          .is_sign_negative()
+          {
+            directions.left
+          } else {
+            directions.right
+          };
+
+          let base_fix = move_point(
+            final_fix,
+            pattern_direction,
+            NAUTICALMILES_TO_FEET * 5.0,
+          );
+
+          let downwind_fix = if delta_angle(
+            angle_between_points(aircraft.pos, final_fix),
+            directions.forward,
+          )
+          .abs()
+            < 90.0
+          {
+            move_point(
+              base_fix,
+              directions.backward,
+              NAUTICALMILES_TO_FEET * 5.0,
+            )
+          } else {
+            move_point(base_fix, directions.forward, pattern_length)
+          };
+
+          let downwind_wp = Node::default()
+            .with_name(Intern::from_ref("DOWNWIND"))
+            .with_vor(VORData::new(downwind_fix));
+          let base_wp = Node::default()
+            .with_name(Intern::from_ref("BASE"))
+            .with_vor(VORData::new(base_fix));
+          let final_wp = Node::default()
+            .with_name(runway.id)
+            .with_vor(VORData::new(final_fix));
+
+          let waypoints: Vec<Node<VORData>> =
+            vec![downwind_wp, base_wp, final_wp];
+
+          let altitude = 4000.0;
+          let speed = 250.0;
+
+          if aircraft.flight_plan.at_end() {
+            aircraft.flight_plan.amend_end(waypoints);
+            aircraft.flight_plan.start_following();
+          }
+
+          if aircraft.target.altitude >= altitude {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::Altitude(altitude))
+                .into(),
+            );
+          }
+
+          if aircraft.target.speed > speed {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::SpeedAtOrBelow(speed))
+                .into(),
+            );
+          }
+
+          if let Some(wp) = aircraft.flight_plan.waypoint() {
+            if wp.data.pos == final_fix {
+              let distance = wp.data.pos.distance_squared(aircraft.pos);
+              let land_distance = (NAUTICALMILES_TO_FEET * 2.0).powf(2.0);
+
+              if distance <= land_distance {
+                events.push(
+                  AircraftEvent::new(
+                    aircraft.id,
+                    EventKind::SpeedAtOrBelow(180.0),
+                  )
+                  .into(),
+                );
+
+                events.push(
+                  AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
+                    .into(),
+                );
+              }
+            }
           }
         }
       }
