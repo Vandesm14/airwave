@@ -13,8 +13,11 @@ use ts_rs::TS;
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
-  geometry::{angle_between_points, delta_angle, normalize_angle},
+  KNOT_TO_FEET_PER_SECOND, NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  geometry::{
+    angle_between_points, closest_point_on_line, delta_angle, move_point,
+    normalize_angle,
+  },
   pathfinder::Node,
   sign3,
   wayfinder::VORData,
@@ -282,8 +285,12 @@ impl FlightPlan {
       let Some(heading) = self.heading(aircraft.pos) else {
         unreachable!()
       };
-      let distance = aircraft.pos.distance_squared(wp.data.pos);
-      if distance <= aircraft.turn_distance(heading).mul(5.0).powf(2.0) {
+      let direction_of_travel =
+        move_point(aircraft.pos, aircraft.heading, NAUTICALMILES_TO_FEET * 5.0);
+      let closest_intercept =
+        closest_point_on_line(wp.data.pos, aircraft.pos, direction_of_travel);
+      let distance = aircraft.pos.distance_squared(closest_intercept);
+      if distance <= aircraft.turn_distance(heading).powf(2.0) {
         Some(heading)
       } else {
         Some(normalize_angle(heading + self.course_offset))
