@@ -117,7 +117,7 @@ fn model(app: &App) -> Model {
     .next()
     .unwrap();
   let departure_aircraft = Aircraft {
-    id: Intern::from_ref("DEP1234"),
+    id: Intern::from_ref("DEP1"),
     pos: gate.pos,
     speed: 0.0,
     heading: gate.heading,

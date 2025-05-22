@@ -1,7 +1,7 @@
 pub mod effects;
 pub mod events;
 
-use std::ops::Sub;
+use std::{f32::consts::PI, ops::Sub};
 
 use glam::Vec2;
 use internment::Intern;
@@ -10,8 +10,8 @@ use ts_rs::TS;
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE, pathfinder::Node,
-  wayfinder::VORData,
+  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE, geometry::delta_angle,
+  pathfinder::Node, wayfinder::VORData,
 };
 
 use super::airport::{Airport, Gate, Runway};
@@ -596,6 +596,21 @@ impl Aircraft {
       // Flying
       2.0
     }
+  }
+
+  pub fn turn_distance(&self, new_angle: f32) -> f32 {
+    let delta_ang = delta_angle(self.heading, new_angle).abs();
+
+    let degrees_per_sec = self.turn_speed();
+    let turning_radius = 360.0 / degrees_per_sec;
+    let turning_radius = turning_radius * self.speed * KNOT_TO_FEET_PER_SECOND;
+    let turning_radius = turning_radius / (2.0 * PI);
+    let turning_radius = turning_radius * 2.0;
+
+    let percent_of = delta_ang.abs() / 180.0;
+    let percent_of = (percent_of * PI + PI * 1.5).sin() / 2.0 + 0.5;
+
+    turning_radius * percent_of
   }
 
   /// Outputs the distance in feet traveled until the current speed matches

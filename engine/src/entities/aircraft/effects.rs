@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use crate::{
   KNOT_TO_FEET_PER_SECOND, MIN_CRUISE_ALTITUDE, NAUTICALMILES_TO_FEET,
   TRANSITION_ALTITUDE,
@@ -143,6 +141,7 @@ impl Aircraft {
     self.prune_waypoints();
 
     if let AircraftState::Flying = &mut self.state {
+      // Snap to our next waypoint if we will pass it in the next tick.
       if let Some(current) = self.flight_plan.waypoint() {
         let heading = angle_between_points(self.pos, current.data.pos);
 
@@ -162,16 +161,15 @@ impl Aircraft {
         }
       }
 
+      // Start our turn early so we line up perfectly with the next track.
       let next_two = self.flight_plan.active_waypoints();
       let mut next_two = next_two.iter().take(2);
       let next_two = next_two.next().zip(next_two.next());
       if let Some((a, b)) = next_two {
         let angle = angle_between_points(a.data.pos, b.data.pos);
-        let diff = delta_angle(self.heading, angle).abs();
 
-        let seconds_to_turn = diff / self.turn_speed();
-        let distance_to_turn = seconds_to_turn * speed_in_feet;
-        if a.data.pos.distance_squared(self.pos) <= distance_to_turn.powf(2.0) {
+        let distance_to_wp = a.data.pos.distance_squared(self.pos);
+        if distance_to_wp <= self.turn_distance(angle).powf(2.0) {
           for e in a.data.events.iter() {
             events.push(AircraftEvent::new(self.id, e.clone()).into());
           }
@@ -399,11 +397,12 @@ impl Aircraft {
 
 // Landing Effect
 impl Aircraft {
-  fn state_before_turn(&mut self, dt: f32) {
-    let degrees_per_sec = self.turn_speed() * dt;
-    let AircraftState::Landing { runway, state } = &mut self.state else {
+  fn state_before_turn(&mut self) {
+    let AircraftState::Landing { runway, state } = &self.state else {
       unreachable!("outer function asserts that aircraft is landing")
     };
+
+    let mut new_state = *state;
 
     let ils_line = Line::new(
       move_point(runway.end(), runway.heading, 500.0),
@@ -414,25 +413,13 @@ impl Aircraft {
       ),
     );
 
-    let turning_radius = 360.0 / degrees_per_sec;
-    let turning_radius =
-      turning_radius * self.speed * KNOT_TO_FEET_PER_SECOND * dt;
-    let turning_radius = turning_radius / (2.0 * PI);
-    let turning_radius = turning_radius * 2.0;
-
-    let delta_ang = delta_angle(self.heading, runway.heading);
-    let percent_of = delta_ang.abs() / 180.0;
-    let percent_of = (percent_of * PI + PI * 1.5).sin() / 2.0 + 0.5;
-    let turn_distance = turning_radius * percent_of;
-    let turn_distance = turn_distance.powf(2.0);
-
     let closest_point = closest_point_on_line(self.pos, ils_line.0, ils_line.1);
     let distance_to_point = self.pos.distance_squared(closest_point);
 
-    if distance_to_point <= turn_distance {
+    if distance_to_point <= self.turn_distance(runway.heading).powf(2.0) {
       self.target.heading = runway.heading;
 
-      *state = LandingState::Turning;
+      new_state = LandingState::Turning;
     }
 
     let angle_to_runway =
@@ -450,13 +437,20 @@ impl Aircraft {
         self.target.heading = add_degrees(runway.heading, -30.0);
       }
 
-      *state = LandingState::Correcting;
+      new_state = LandingState::Correcting;
     }
 
     if distance_to_point <= 50_f32.powf(2.0)
       && self.heading.round() == runway.heading
     {
-      *state = LandingState::Localizer;
+      new_state = LandingState::Localizer;
+    }
+
+    let AircraftState::Landing { state, .. } = &mut self.state else {
+      unreachable!("outer function asserts that aircraft is landing")
+    };
+    if *state != new_state {
+      *state = new_state;
     }
   }
 
@@ -573,7 +567,7 @@ impl Aircraft {
     if let AircraftState::Landing { .. } = &self.state {
       Self::state_touchdown(self, events);
       Self::state_go_around(self, events);
-      Self::state_before_turn(self, dt);
+      Self::state_before_turn(self);
       Self::state_glideslope(self, dt);
     }
   }
