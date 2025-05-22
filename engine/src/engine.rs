@@ -584,11 +584,7 @@ impl Engine {
           .abs()
             < 90.0
           {
-            move_point(
-              base_fix,
-              directions.backward,
-              NAUTICALMILES_TO_FEET * 5.0,
-            )
+            move_point(base_fix, directions.backward, pattern_length)
           } else {
             move_point(base_fix, directions.forward, pattern_length)
           };
