@@ -1,5 +1,3 @@
-use std::vec;
-
 use editor::draw::Draw;
 use engine::{
   AIRSPACE_RADIUS, APPROACH_ALTITUDE, NAUTICALMILES_TO_FEET,

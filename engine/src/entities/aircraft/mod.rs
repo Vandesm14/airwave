@@ -1,7 +1,10 @@
 pub mod effects;
 pub mod events;
 
-use std::{f32::consts::PI, ops::Sub};
+use std::{
+  f32::consts::PI,
+  ops::{Mul, Sub},
+};
 
 use glam::Vec2;
 use internment::Intern;
@@ -13,6 +16,7 @@ use crate::{
   KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
   geometry::{angle_between_points, delta_angle, normalize_angle},
   pathfinder::Node,
+  sign3,
   wayfinder::VORData,
 };
 
@@ -263,15 +267,23 @@ impl FlightPlan {
     distances
   }
 
-  pub fn heading(&self, aircraft: &Aircraft) -> Option<f32> {
+  pub fn heading(&self, pos: Vec2) -> Option<f32> {
+    self
+      .waypoint()
+      .map(|wp| angle_between_points(pos, wp.data.pos))
+  }
+
+  pub fn course_heading(&self, aircraft: &Aircraft) -> Option<f32> {
     if !self.follow {
       return None;
     }
 
     if let Some(wp) = self.waypoint() {
-      let heading = angle_between_points(aircraft.pos, wp.data.pos);
+      let Some(heading) = self.heading(aircraft.pos) else {
+        unreachable!()
+      };
       let distance = aircraft.pos.distance_squared(wp.data.pos);
-      if distance <= aircraft.turn_distance(heading).powf(2.0) {
+      if distance <= aircraft.turn_distance(heading).mul(5.0).powf(2.0) {
         Some(heading)
       } else {
         Some(normalize_angle(heading + self.course_offset))
@@ -292,6 +304,27 @@ impl FlightPlan {
     } else {
       None
     }
+  }
+
+  pub fn turn_bias(&self, aircraft: &Aircraft) -> f32 {
+    if self.active_waypoints().len() == 1 {
+      return 0.0;
+    }
+
+    let mut bias = 0.0;
+    let mut last_pos = aircraft.pos;
+    let mut last_hdg = aircraft.heading;
+    for active in self.active_waypoints() {
+      let course = angle_between_points(last_pos, active.data.pos);
+      let diff = delta_angle(last_hdg, course);
+
+      bias += sign3(diff);
+
+      last_pos = active.data.pos;
+      last_hdg = course;
+    }
+
+    bias
   }
 }
 

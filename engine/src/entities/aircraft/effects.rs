@@ -143,7 +143,7 @@ impl Aircraft {
     if let AircraftState::Flying = &mut self.state {
       // Snap to our next waypoint if we will pass it in the next tick.
       if let Some(current) = self.flight_plan.waypoint() {
-        let heading = self.flight_plan.heading(self);
+        let heading = self.flight_plan.course_heading(self);
 
         if let Some(heading) = heading {
           self.target.heading = heading;

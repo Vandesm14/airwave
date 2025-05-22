@@ -1,7 +1,6 @@
 use std::{
   collections::{HashMap, HashSet},
   time::Instant,
-  usize, vec,
 };
 
 use glam::Vec2;
@@ -26,6 +25,7 @@ use crate::{
   geometry::{AngleDirections, angle_between_points, delta_angle, move_point},
   line::Line,
   pathfinder::{Node, NodeBehavior, NodeKind},
+  sign3,
   wayfinder::VORData,
 };
 
@@ -458,17 +458,7 @@ impl Engine {
         HashMap::<_, Vec<(Intern<String>, f32, f32)>>::new(),
         |mut map, aircraft| {
           let airspace = aircraft.airspace.unwrap();
-          let direction = aircraft
-            .flight_plan
-            .next_heading()
-            .map(|h| {
-              if delta_angle(aircraft.heading, h).is_sign_positive() {
-                1.0
-              } else {
-                -1.0
-              }
-            })
-            .unwrap_or(0.0);
+          let direction = sign3(aircraft.flight_plan.turn_bias(aircraft));
 
           let key = (
             airspace,
@@ -501,7 +491,7 @@ impl Engine {
 
     let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
     let min_approach_speed = 150.0;
-    let max_deviation_angle = 30.0;
+    let max_deviation_angle = 60.0;
     for (_, mut aircraft) in airspaces.into_iter() {
       aircraft.sort_by(|a, b| {
         a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
@@ -518,14 +508,17 @@ impl Engine {
         let diff = distance - current;
         if diff < separation_distance {
           let half_sep = separation_distance * 0.5;
-          // If our next turn is right, we can offset to the left to delay that
-          // turn and increase our travel time.
           if diff < half_sep {
-            // For the first half, use min_approach_speed and scale offset from 30.0 to 0.0
-            let offset = max_deviation_angle * (1.0 - diff / half_sep);
-            speeds.push((id, min_approach_speed, offset * direction));
+            // If our next turn is right, we can offset to the left to delay that
+            // turn and increase our travel time.
+            let direction = -direction;
+            speeds.push((
+              id,
+              min_approach_speed,
+              max_deviation_angle * direction,
+            ));
           } else {
-            // For the second half, interpolate speed up to 250.0, offset is 0
+            // For the second half, interpolate speed from min up to 250.0.
             let t = ((diff - half_sep) / half_sep).clamp(0.0, 1.0);
             let speed = min_approach_speed + t * (250.0 - min_approach_speed);
             speeds.push((id, speed.min(250.0), 0.0));

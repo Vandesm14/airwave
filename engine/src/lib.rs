@@ -55,6 +55,16 @@ pub struct ExportedDuration {
   nanos: f32,
 }
 
+pub fn sign3(x: f32) -> f32 {
+  if x > 0.0 {
+    1.0
+  } else if x < 0.0 {
+    -1.0
+  } else {
+    0.0
+  }
+}
+
 pub fn duration_now() -> Duration {
   SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
 }
