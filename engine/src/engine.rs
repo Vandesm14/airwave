@@ -570,7 +570,7 @@ impl Engine {
               })
               .unwrap()
           } else {
-            println!("{} No runway for {}!", self.tick_counter, aircraft.id);
+            tracing::error!("No STAR, so no runway for {}!", aircraft.id);
             continue;
           };
 
