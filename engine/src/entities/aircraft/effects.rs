@@ -16,7 +16,7 @@ use crate::{
 };
 
 use super::{
-  Aircraft, AircraftState, FlightSegment, LandingState, TCAS,
+  Aircraft, AircraftKind, AircraftState, FlightSegment, LandingState, TCAS,
   events::{AircraftEvent, EventKind},
 };
 
@@ -137,7 +137,8 @@ impl Aircraft {
       return;
     }
 
-    let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND * dt;
+    let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND;
+    let speed_in_feet_dt = speed_in_feet * dt;
 
     self.prune_waypoints();
 
@@ -148,7 +149,7 @@ impl Aircraft {
         self.target.heading = heading;
 
         let distance = self.pos.distance_squared(current.data.pos);
-        let movement_speed = speed_in_feet.powf(2.0);
+        let movement_speed = speed_in_feet_dt.powf(2.0);
 
         if movement_speed >= distance {
           self.pos = current.data.pos;
@@ -157,6 +158,20 @@ impl Aircraft {
             events.push(AircraftEvent::new(self.id, e.clone()).into());
           }
 
+          self.flight_plan.inc_index();
+        }
+      }
+
+      let active_waypoints = self.flight_plan.active_waypoints();
+      if let Some(next_two) = active_waypoints.get(0..1) {
+        let a = next_two.first().unwrap();
+        let b = next_two.last().unwrap();
+        let angle = angle_between_points(a.data.pos, b.data.pos);
+        let diff = delta_angle(self.heading, angle).abs();
+
+        let seconds_to_turn = diff / AircraftKind::A21N.stats().turn_speed;
+        let distance_to_turn = seconds_to_turn * speed_in_feet_dt;
+        if a.data.pos.distance_squared(self.pos) <= distance_to_turn.powf(2.0) {
           self.flight_plan.inc_index();
         }
       }
