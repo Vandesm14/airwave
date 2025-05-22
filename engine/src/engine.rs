@@ -458,27 +458,22 @@ impl Engine {
         HashMap::<_, Vec<(Intern<String>, f32, f32)>>::new(),
         |mut map, aircraft| {
           let airspace = aircraft.airspace.unwrap();
-          let direction = sign3(aircraft.flight_plan.turn_bias(aircraft));
+          let last_wp = aircraft
+            .flight_plan
+            .active_waypoints()
+            .last()
+            .map(|w| w.name)
+            .unwrap_or_default();
+          let key = (airspace, last_wp);
 
-          let key = (
-            airspace,
-            aircraft
-              .flight_plan
-              .active_waypoints()
-              .last()
-              .map(|w| w.name)
-              .unwrap_or_default(),
-          );
-          let item = (
-            aircraft.id,
-            aircraft
-              .flight_plan
-              .distances(aircraft.pos)
-              .last()
-              .copied()
-              .unwrap_or(0.0),
-            direction,
-          );
+          let direction = sign3(aircraft.flight_plan.turn_bias(aircraft));
+          let distance_to_last = aircraft
+            .flight_plan
+            .distances(aircraft.pos)
+            .last()
+            .copied()
+            .unwrap_or(0.0);
+          let item = (aircraft.id, distance_to_last, direction);
           if let Some(entry) = map.get_mut(&key) {
             entry.push(item);
           } else {
