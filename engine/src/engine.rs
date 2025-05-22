@@ -1,7 +1,7 @@
 use std::{
   collections::{HashMap, HashSet},
   time::Instant,
-  vec,
+  usize, vec,
 };
 
 use glam::Vec2;
@@ -528,6 +528,7 @@ impl Engine {
         if let Some(aircraft) =
           self.game.aircraft.iter_mut().find(|a| a.id == id)
         {
+          // Only change speeds for aircraft on approach.
           if aircraft.segment == FlightSegment::Approach
             && aircraft.target.speed != speed
           {
@@ -587,13 +588,13 @@ impl Engine {
             NAUTICALMILES_TO_FEET * 5.0,
           );
 
-          let downwind_fix = if delta_angle(
+          let reverse_downwind = delta_angle(
             angle_between_points(aircraft.pos, final_fix),
             directions.forward,
           )
           .abs()
-            < 90.0
-          {
+            < 90.0;
+          let downwind_fix = if reverse_downwind {
             move_point(base_fix, directions.backward, pattern_length)
           } else {
             move_point(base_fix, directions.forward, pattern_length)
@@ -608,7 +609,11 @@ impl Engine {
             .with_name(Intern::from_ref("CW"))
             .with_vor(VORData::new(crosswind_fix));
           let downwind_wp = Node::default()
-            .with_name(Intern::from_ref("DW"))
+            .with_name(Intern::from_ref(if reverse_downwind {
+              "UW"
+            } else {
+              "DW"
+            }))
             .with_vor(VORData::new(downwind_fix));
           let base_wp = Node::default()
             .with_name(Intern::from_ref("BS"))
