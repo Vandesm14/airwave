@@ -143,7 +143,7 @@ fn model(app: &App) -> Model {
   engine.world.airports.push(far_airport);
 
   let mut snapshots = Vec::new();
-  for i in 0..engine.tick_rate_tps * 60 * 20 {
+  for i in 0..engine.tick_rate_tps * 60 * 40 {
     if i % engine.tick_rate_tps == 0 && i > 0 {
       snapshots.push((i, engine.game.aircraft.clone()));
     }

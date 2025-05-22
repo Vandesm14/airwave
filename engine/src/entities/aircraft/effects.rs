@@ -16,7 +16,7 @@ use crate::{
 };
 
 use super::{
-  Aircraft, AircraftKind, AircraftState, FlightSegment, LandingState, TCAS,
+  Aircraft, AircraftState, FlightSegment, LandingState, TCAS,
   events::{AircraftEvent, EventKind},
 };
 
@@ -24,11 +24,11 @@ use super::{
 impl Aircraft {
   pub fn update_from_targets(&mut self, dt: f32) {
     // In feet per second
-    let climb_speed = self.dt_climb_speed(dt);
+    let climb_speed = self.climb_speed() * dt;
     // In degrees per second
-    let turn_speed = self.dt_turn_speed(dt);
+    let turn_speed = self.turn_speed() * dt;
     // In knots per second
-    let speed_speed = self.dt_speed_speed(dt);
+    let speed_speed = self.speed_speed() * dt;
 
     let mut altitude = self.altitude;
     let mut heading = self.heading;
@@ -162,15 +162,15 @@ impl Aircraft {
         }
       }
 
-      let active_waypoints = self.flight_plan.active_waypoints();
-      if let Some(next_two) = active_waypoints.get(0..1) {
-        let a = next_two.first().unwrap();
-        let b = next_two.last().unwrap();
+      let next_two = self.flight_plan.active_waypoints();
+      let mut next_two = next_two.iter().take(2);
+      let next_two = next_two.next().zip(next_two.next());
+      if let Some((a, b)) = next_two {
         let angle = angle_between_points(a.data.pos, b.data.pos);
         let diff = delta_angle(self.heading, angle).abs();
 
-        let seconds_to_turn = diff / AircraftKind::A21N.stats().turn_speed;
-        let distance_to_turn = seconds_to_turn * speed_in_feet_dt;
+        let seconds_to_turn = diff / self.turn_speed();
+        let distance_to_turn = seconds_to_turn * speed_in_feet;
         if a.data.pos.distance_squared(self.pos) <= distance_to_turn.powf(2.0) {
           for e in a.data.events.iter() {
             events.push(AircraftEvent::new(self.id, e.clone()).into());
@@ -400,7 +400,7 @@ impl Aircraft {
 // Landing Effect
 impl Aircraft {
   fn state_before_turn(&mut self, dt: f32) {
-    let degrees_per_sec = self.dt_turn_speed(dt);
+    let degrees_per_sec = self.turn_speed() * dt;
     let AircraftState::Landing { runway, state } = &mut self.state else {
       unreachable!("outer function asserts that aircraft is landing")
     };
@@ -527,7 +527,7 @@ impl Aircraft {
   }
 
   fn state_glideslope(aircraft: &mut Aircraft, dt: f32) {
-    let climb_speed = aircraft.dt_climb_speed(dt);
+    let climb_speed = aircraft.climb_speed() * dt;
 
     let AircraftState::Landing { runway, state } = &mut aircraft.state else {
       unreachable!("outer function asserts that aircraft is landing")

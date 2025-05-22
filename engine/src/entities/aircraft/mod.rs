@@ -326,7 +326,7 @@ impl AircraftKind {
         thrust: 140.96,
         // TODO: placeholder
         drag: 0.0,
-        turn_speed: 1.0,
+        turn_speed: 2.0,
         roc: 1500.0,
         rod: 2500.0,
         max_altitude: 39000.0,
@@ -565,36 +565,36 @@ impl Aircraft {
 
 // Performance stats
 impl Aircraft {
-  pub fn dt_climb_speed(&self, dt: f32) -> f32 {
+  pub fn climb_speed(&self) -> f32 {
     // When taking off or taxiing (no climb until V2)
     if self.speed < 140.0 {
       0.0
     } else {
       // Flying
-      (2000.0_f32 / 60.0_f32).round() * dt
+      (2000.0_f32 / 60.0_f32).round()
     }
   }
 
-  pub fn dt_turn_speed(&self, dt: f32) -> f32 {
-    2.0 * dt
+  pub fn turn_speed(&self) -> f32 {
+    AircraftKind::A21N.stats().turn_speed
   }
 
-  pub fn dt_speed_speed(&self, dt: f32) -> f32 {
+  pub fn speed_speed(&self) -> f32 {
     // Taxi speed
     if self.altitude == 0.0 {
       // If landing
       if self.speed > 20.0 {
-        3.3 * dt
+        3.3
         // If taxiing
       } else {
-        5.0 * dt
+        5.0
       }
     } else if self.altitude <= 1000.0 {
       // When taking off
-      5.0 * dt
+      5.0
     } else {
       // Flying
-      2.0 * dt
+      2.0
     }
   }
 
@@ -607,11 +607,11 @@ impl Aircraft {
 
     let mut distance = 0.0;
     let mut speed = self.speed;
-    while speed.sub(new_speed).abs() >= self.dt_speed_speed(1.0) {
+    while speed.sub(new_speed).abs() >= self.speed_speed() {
       if speed > new_speed {
-        speed -= self.dt_speed_speed(1.0);
+        speed -= self.speed_speed();
       } else {
-        speed += self.dt_speed_speed(1.0);
+        speed += self.speed_speed();
       }
 
       distance += speed * KNOT_TO_FEET_PER_SECOND;
@@ -629,11 +629,11 @@ impl Aircraft {
 
     let mut distance = 0.0;
     let mut altitude = self.altitude;
-    while altitude.sub(new_altitude).abs() >= self.dt_climb_speed(1.0) {
+    while altitude.sub(new_altitude).abs() >= self.climb_speed() {
       if altitude > new_altitude {
-        altitude -= self.dt_climb_speed(1.0);
+        altitude -= self.climb_speed();
       } else {
-        altitude += self.dt_climb_speed(1.0);
+        altitude += self.climb_speed();
       }
 
       distance += self.speed * KNOT_TO_FEET_PER_SECOND;

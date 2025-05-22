@@ -259,10 +259,10 @@ impl Engine {
         continue;
       }
 
-      let a_feet_to_descend = (500.0 / aircraft.dt_climb_speed(1.0))
+      let a_feet_to_descend = (500.0 / aircraft.climb_speed())
         * aircraft.speed
         * KNOT_TO_FEET_PER_SECOND;
-      let b_feet_to_descend = (500.0 / other_aircraft.dt_climb_speed(1.0))
+      let b_feet_to_descend = (500.0 / other_aircraft.climb_speed())
         * other_aircraft.speed
         * KNOT_TO_FEET_PER_SECOND;
       let total_distance = a_feet_to_descend + b_feet_to_descend;
