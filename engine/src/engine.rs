@@ -503,7 +503,7 @@ impl Engine {
             .with_name(Intern::from_ref("BASE"))
             .with_vor(VORData::new(base_fix));
           let final_wp = Node::default()
-            .with_name(Intern::from_ref("FINAL"))
+            .with_name(runway.id)
             .with_vor(VORData::new(final_fix));
 
           let waypoints: Vec<Node<VORData>> =
@@ -569,6 +569,15 @@ impl Engine {
         HashMap::<_, Vec<(Intern<String>, f32)>>::new(),
         |mut map, aircraft| {
           let airspace = aircraft.airspace.unwrap();
+          let key = (
+            airspace,
+            aircraft
+              .flight_plan
+              .active_waypoints()
+              .last()
+              .map(|w| w.name)
+              .unwrap_or_default(),
+          );
           let item = (
             aircraft.id,
             aircraft
@@ -578,17 +587,17 @@ impl Engine {
               .copied()
               .unwrap_or(0.0),
           );
-          if let Some(entry) = map.get_mut(&airspace) {
+          if let Some(entry) = map.get_mut(&key) {
             entry.push(item);
           } else {
-            map.insert(airspace, vec![item]);
+            map.insert(key, vec![item]);
           }
 
           map
         },
       );
 
-    let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
+    let separation_distance = NAUTICALMILES_TO_FEET * 3.0;
     for (_, mut aircraft) in airspaces.into_iter() {
       aircraft.sort_by(|a, b| {
         a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
