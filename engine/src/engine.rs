@@ -605,13 +605,13 @@ impl Engine {
           );
 
           let crosswind_wp = Node::default()
-            .with_name(Intern::from_ref("CROSSWIND"))
+            .with_name(Intern::from_ref("CW"))
             .with_vor(VORData::new(crosswind_fix));
           let downwind_wp = Node::default()
-            .with_name(Intern::from_ref("DOWNWIND"))
+            .with_name(Intern::from_ref("DW"))
             .with_vor(VORData::new(downwind_fix));
           let base_wp = Node::default()
-            .with_name(Intern::from_ref("BASE"))
+            .with_name(Intern::from_ref("BS"))
             .with_vor(VORData::new(base_fix));
           let final_wp = Node::default()
             .with_name(runway.id)
