@@ -90,8 +90,8 @@ fn model(app: &App) -> Model {
     ..Default::default()
   };
 
-  let main_airport = engine.airports.get("default").unwrap().clone();
-  let mut far_airport = engine.airports.get("ksfo").unwrap().clone();
+  let main_airport = engine.airports.get("ksfo").unwrap().clone();
+  let mut far_airport = engine.airports.get("default").unwrap().clone();
   far_airport.translate(Vec2::splat(NAUTICALMILES_TO_FEET * 100.0));
 
   let count = 18;
@@ -117,27 +117,30 @@ fn model(app: &App) -> Model {
     .with_synced_targets()
   });
 
-  let gate = main_airport
+  let count = 6;
+  let gates = main_airport
     .terminals
     .iter()
     .flat_map(|t| t.gates.iter())
-    .next()
-    .unwrap();
-  let departure_aircraft = Aircraft {
-    id: Intern::from_ref("DEP1"),
-    pos: gate.pos,
-    speed: 0.0,
-    heading: gate.heading,
-    altitude: 0.0,
-    state: AircraftState::Parked { at: gate.into() },
-    flight_plan: FlightPlan::new(main_airport.id, far_airport.id),
-    flight_time: Some(0),
-    ..Default::default()
-  }
-  .with_synced_targets();
+    .collect::<Vec<_>>();
+  let departures = (0..count).map(|i| {
+    let gate = gates.get(i % gates.len()).unwrap();
+    Aircraft {
+      id: Intern::from(format!("DEP{}", i + 1)),
+      pos: gate.pos,
+      speed: 0.0,
+      heading: gate.heading,
+      altitude: 0.0,
+      state: AircraftState::Parked { at: (*gate).into() },
+      flight_plan: FlightPlan::new(main_airport.id, far_airport.id),
+      flight_time: Some(0),
+      ..Default::default()
+    }
+    .with_synced_targets()
+  });
 
   engine.game.aircraft.extend(arrivals);
-  engine.game.aircraft.push(departure_aircraft);
+  engine.game.aircraft.extend(departures);
   engine
     .world
     .airport_statuses

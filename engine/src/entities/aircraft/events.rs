@@ -193,7 +193,7 @@ pub fn handle_aircraft_event(
           };
           let wp_sid = new_vor(Intern::from_ref("SID"), transition_sid)
             .with_actions(vec![
-              EventKind::SpeedAtOrAbove(AircraftKind::A21N.stats().max_speed),
+              EventKind::SpeedAtOrAbove(aircraft.flight_plan.speed),
               EventKind::AltitudeAtOrAbove(cruise_alt),
               EventKind::Frequency(departure.frequencies.center),
             ]);
@@ -618,7 +618,7 @@ pub fn handle_takeoff_event(
     // If we are at the runway
     if let Some(runway) = runway {
       if NodeKind::Runway == current.kind && current.name == runway_id {
-        aircraft.target.speed = aircraft.flight_plan.speed;
+        aircraft.target.speed = aircraft.separation_minima().max_speed;
         aircraft.target.altitude = aircraft.flight_plan.altitude;
         aircraft.heading = runway.heading;
         aircraft.target.heading = runway.heading;

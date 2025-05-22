@@ -141,7 +141,7 @@ impl Default for FlightPlan {
       follow: true,
       course_offset: 0.0,
 
-      speed: 250.0,
+      speed: 450.0,
       altitude: TRANSITION_ALTITUDE,
     }
   }
@@ -478,33 +478,26 @@ pub enum FlightSegment {
 
 // TODO: Implement these tests into the segment effect in effect.rs.
 impl FlightSegment {
-  pub fn on_ground(&self) -> bool {
-    matches!(self, Self::Parked | Self::TaxiDep | Self::TaxiArr)
+  pub const fn on_ground(&self) -> bool {
+    matches!(
+      self,
+      Self::Dormant
+        | Self::Boarding
+        | Self::Parked
+        | Self::TaxiDep
+        | Self::TaxiArr
+    )
   }
 
-  pub fn in_air(&self) -> bool {
+  pub const fn in_air(&self) -> bool {
     matches!(
       self,
       Self::Departure
+        | Self::Climb
         | Self::Cruise
         | Self::Arrival
         | Self::Approach
         | Self::Landing
-    )
-  }
-
-  pub fn departing(&self) -> bool {
-    matches!(self, Self::TaxiDep | Self::Takeoff | Self::Departure)
-  }
-
-  pub fn en_route(&self) -> bool {
-    matches!(self, Self::Departure | Self::Cruise)
-  }
-
-  pub fn arriving(&self) -> bool {
-    matches!(
-      self,
-      Self::Arrival | Self::Approach | Self::Landing | Self::TaxiArr
     )
   }
 }
@@ -534,6 +527,30 @@ impl TCAS {
 
   pub fn is_ra(&self) -> bool {
     matches!(self, Self::Climb | Self::Descend | Self::Hold)
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct SeparationMinima {
+  pub separation_distance: f32,
+  pub max_speed: f32,
+  pub min_speed: f32,
+  pub max_deviation_angle: f32,
+}
+
+impl SeparationMinima {
+  pub fn new(
+    separation_distance: f32,
+    max_speed: f32,
+    min_speed: f32,
+    max_deviation_angle: f32,
+  ) -> Self {
+    Self {
+      separation_distance,
+      max_speed,
+      min_speed,
+      max_deviation_angle,
+    }
   }
 }
 
@@ -646,6 +663,27 @@ impl Aircraft {
 
 // Performance stats
 impl Aircraft {
+  pub fn separation_minima(&self) -> SeparationMinima {
+    let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
+    if matches!(self.segment, FlightSegment::Approach) {
+      SeparationMinima::new(separation_distance, 230.0, 150.0, 60.0)
+    } else if matches!(self.segment, FlightSegment::Departure) {
+      SeparationMinima::new(separation_distance, 250.0, 180.0, 60.0)
+    } else if matches!(
+      self.segment,
+      FlightSegment::Climb | FlightSegment::Cruise | FlightSegment::Arrival
+    ) {
+      SeparationMinima::new(
+        NAUTICALMILES_TO_FEET * 7.5,
+        self.flight_plan.speed,
+        350.0,
+        30.0,
+      )
+    } else {
+      SeparationMinima::new(separation_distance, 250.0, 180.0, 30.0)
+    }
+  }
+
   pub fn climb_speed(&self) -> f32 {
     // When taking off or taxiing (no climb until V2)
     if self.speed < 140.0 {

@@ -447,15 +447,13 @@ impl Engine {
       .game
       .aircraft
       .iter()
-      .filter(|a| {
-        matches!(a.segment, FlightSegment::Approach | FlightSegment::Landing)
-      })
+      .filter(|a| a.segment.in_air())
       .filter(|a| {
         a.airspace
           .is_some_and(|id| self.world.airport_status(id).automate_air)
       })
       .fold(
-        HashMap::<_, Vec<(Intern<String>, f32, f32)>>::new(),
+        HashMap::<_, Vec<(&Aircraft, f32)>>::new(),
         |mut map, aircraft| {
           let airspace = aircraft.airspace.unwrap();
           let last_wp = aircraft
@@ -466,14 +464,13 @@ impl Engine {
             .unwrap_or_default();
           let key = (airspace, last_wp);
 
-          let direction = sign3(aircraft.flight_plan.turn_bias(aircraft));
           let distance_to_last = aircraft
             .flight_plan
             .distances(aircraft.pos)
             .last()
             .copied()
             .unwrap_or(0.0);
-          let item = (aircraft.id, distance_to_last, direction);
+          let item = (aircraft, distance_to_last);
           if let Some(entry) = map.get_mut(&key) {
             entry.push(item);
           } else {
@@ -484,67 +481,65 @@ impl Engine {
         },
       );
 
-    let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
-    let max_approach_speed = 225.0;
-    let min_approach_speed = 150.0;
-    let max_deviation_angle = 60.0;
-    for (_, mut aircraft) in airspaces.into_iter() {
-      aircraft.sort_by(|a, b| {
+    let mut speeds: Vec<(Intern<String>, f32, f32)> = Vec::new();
+
+    for (_, mut aircrafts) in airspaces.into_iter() {
+      aircrafts.sort_by(|a, b| {
         a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
       });
 
-      let mut aircraft = aircraft.into_iter();
-      let Some(first) = aircraft.next() else {
+      let mut aircrafts = aircrafts.into_iter();
+      let Some(first) = aircrafts.next() else {
         continue;
       };
+
+      speeds.push((first.0.id, first.0.separation_minima().max_speed, 0.0));
+
       let mut current = first.1;
 
-      let mut speeds: Vec<(Intern<String>, f32, f32)> = Vec::new();
-      for (id, distance, direction) in aircraft {
+      for (aircraft, distance) in aircrafts {
+        let minima = aircraft.separation_minima();
+
         let diff = distance - current;
-        if diff < separation_distance {
-          let half_sep = separation_distance * 0.5;
+        if diff < minima.separation_distance {
+          let half_sep = minima.separation_distance * 0.5;
           if diff < half_sep {
             // If our next turn is right, we can offset to the left to delay that
             // turn and increase our travel time.
-            let direction = -direction;
+            let direction = -sign3(aircraft.flight_plan.turn_bias(aircraft));
             speeds.push((
-              id,
-              min_approach_speed,
-              max_deviation_angle * direction,
+              aircraft.id,
+              minima.min_speed,
+              minima.max_deviation_angle * direction,
             ));
           } else {
             // For the second half, interpolate speed from min to max.
             let t = ((diff - half_sep) / half_sep).clamp(0.0, 1.0);
-            let speed = min_approach_speed
-              + t * (max_approach_speed - min_approach_speed);
-            speeds.push((id, speed.min(max_approach_speed), 0.0));
+            let speed =
+              minima.min_speed + t * (minima.max_speed - minima.min_speed);
+            speeds.push((aircraft.id, speed.min(minima.max_speed), 0.0));
           }
         } else {
-          speeds.push((id, max_approach_speed, 0.0));
+          speeds.push((aircraft.id, minima.max_speed, 0.0));
         }
 
         current = distance;
       }
+    }
 
-      for (id, speed, offset) in speeds
-        .into_iter()
-        .chain(core::iter::once((first.0, 250.0, 0.0)))
+    for (id, speed, offset) in speeds.into_iter() {
+      if let Some(aircraft) = self.game.aircraft.iter_mut().find(|a| a.id == id)
       {
-        if let Some(aircraft) =
-          self.game.aircraft.iter_mut().find(|a| a.id == id)
-        {
-          // Only change speeds for aircraft on approach.
-          if aircraft.segment == FlightSegment::Approach {
-            if aircraft.flight_plan.course_offset != offset {
-              aircraft.flight_plan.course_offset = offset;
-            }
+        // Only change speeds for aircraft on approach.
+        if aircraft.segment == FlightSegment::Approach {
+          if aircraft.flight_plan.course_offset != offset {
+            aircraft.flight_plan.course_offset = offset;
+          }
 
-            if aircraft.target.speed != speed {
-              events.push(
-                AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
-              );
-            }
+          if aircraft.target.speed != speed {
+            events.push(
+              AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
+            );
           }
         }
       }
