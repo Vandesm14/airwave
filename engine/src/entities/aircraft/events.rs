@@ -697,12 +697,6 @@ pub fn handle_approach_transition(
       .copied()
       .unwrap_or_default();
     if !status.divert_arrivals {
-      // TODO: This clears all waypoints to force the player to deal
-      // with the approach rather than use its automated routing.
-      // This might break future implementations of routing and
-      // waypoints so please check this TODO when that happens.
-      aircraft.flight_plan.clear_waypoints();
-
       aircraft.target.heading =
         angle_between_points(aircraft.pos, airport.center);
 

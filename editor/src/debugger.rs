@@ -1,3 +1,5 @@
+use std::vec;
+
 use editor::draw::Draw;
 use engine::{
   AIRSPACE_RADIUS, APPROACH_ALTITUDE, NAUTICALMILES_TO_FEET,
@@ -8,6 +10,8 @@ use engine::{
     world::AirportStatus,
   },
   geometry::{Translate, angle_between_points, move_point},
+  pathfinder::Node,
+  wayfinder::VORData,
 };
 use glam::Vec2;
 use internment::Intern;
@@ -103,7 +107,12 @@ fn model(app: &App) -> Model {
       heading: angle_between_points(pos, main_airport.center),
       altitude: APPROACH_ALTITUDE,
       state: AircraftState::Flying,
-      flight_plan: FlightPlan::new(far_airport.id, main_airport.id),
+      flight_plan: FlightPlan::new(far_airport.id, main_airport.id)
+        .with_waypoints(vec![
+          Node::default()
+            .with_name(Intern::from_ref("STAR"))
+            .with_data(VORData::new(pos)),
+        ]),
       flight_time: Some(0),
       ..Default::default()
     }

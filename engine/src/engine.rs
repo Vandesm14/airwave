@@ -552,17 +552,27 @@ impl Engine {
           .iter()
           .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
         {
-          let runway = airport
-            .runways
+          let runway = if let Some(star) = aircraft
+            .flight_plan
+            .waypoints
             .iter()
-            .min_by(|a, b| {
-              let dist_a = aircraft.pos.distance_squared(a.start);
-              let dist_b = aircraft.pos.distance_squared(b.start);
-              dist_a
-                .partial_cmp(&dist_b)
-                .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .unwrap();
+            .find(|w| w.name == Intern::from_ref("STAR"))
+          {
+            airport
+              .runways
+              .iter()
+              .min_by(|a, b| {
+                let dist_a = star.data.pos.distance_squared(a.start);
+                let dist_b = star.data.pos.distance_squared(b.start);
+                dist_a
+                  .partial_cmp(&dist_b)
+                  .unwrap_or(std::cmp::Ordering::Equal)
+              })
+              .unwrap()
+          } else {
+            println!("{} No runway for {}!", self.tick_counter, aircraft.id);
+            continue;
+          };
 
           let directions = AngleDirections::new(runway.heading);
           let pattern_length = NAUTICALMILES_TO_FEET * 10.0;

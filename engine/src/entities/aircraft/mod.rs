@@ -152,6 +152,15 @@ impl FlightPlan {
     }
   }
 
+  pub fn with_waypoints(mut self, waypoints: Vec<Node<VORData>>) -> Self {
+    self.waypoints = waypoints;
+    self.waypoint_index = 0;
+
+    self
+  }
+}
+
+impl FlightPlan {
   pub fn clear_waypoints(&mut self) {
     self.waypoints.clear();
     self.waypoint_index = 0;
