@@ -92,7 +92,7 @@ fn model(app: &App) -> Model {
   let mut far_airport = engine.airports.get("ksfo").unwrap().clone();
   far_airport.translate(Vec2::splat(NAUTICALMILES_TO_FEET * 100.0));
 
-  let count = 36;
+  let count = 18;
   let arrivals = (0..count).map(|i| {
     let angle = (360.0 / count as f32) * i as f32;
     let pos = move_point(main_airport.center, angle, AIRSPACE_RADIUS);

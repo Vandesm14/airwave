@@ -503,16 +503,16 @@ impl Engine {
       for (id, distance) in aircraft {
         let diff = distance - current;
         if diff < separation_distance {
-          if diff < separation_distance * 0.5 {
-            speeds.push((id, min_approach_speed, 10.0));
+          let half_sep = separation_distance * 0.5;
+          if diff < half_sep {
+            // For the first half, use min_approach_speed and scale offset from 30.0 to 0.0
+            let offset = 30.0 * (1.0 - diff / half_sep);
+            speeds.push((id, min_approach_speed, -offset));
           } else {
-            speeds.push((
-              id,
-              250.0
-                - ((1.0 - (diff / separation_distance))
-                  * (250.0 - min_approach_speed)),
-              0.0,
-            ));
+            // For the second half, interpolate speed up to 250.0, offset is 0
+            let t = ((diff - half_sep) / half_sep).clamp(0.0, 1.0);
+            let speed = min_approach_speed + t * (250.0 - min_approach_speed);
+            speeds.push((id, speed.min(250.0), 0.0));
           }
         } else {
           speeds.push((id, 250.0, 0.0));
@@ -569,16 +569,7 @@ impl Engine {
           let final_fix =
             move_point(runway.start, directions.backward, pattern_length);
 
-          let pattern_direction = if delta_angle(
-            directions.forward,
-            angle_between_points(final_fix, aircraft.pos),
-          )
-          .is_sign_negative()
-          {
-            directions.left
-          } else {
-            directions.right
-          };
+          let pattern_direction = directions.left;
 
           let base_fix = move_point(
             final_fix,
@@ -597,7 +588,15 @@ impl Engine {
           } else {
             move_point(base_fix, directions.forward, pattern_length)
           };
+          let crosswind_fix = move_point(
+            downwind_fix,
+            pattern_direction,
+            -NAUTICALMILES_TO_FEET * 5.0,
+          );
 
+          let crosswind_wp = Node::default()
+            .with_name(Intern::from_ref("CROSSWIND"))
+            .with_vor(VORData::new(crosswind_fix));
           let downwind_wp = Node::default()
             .with_name(Intern::from_ref("DOWNWIND"))
             .with_vor(VORData::new(downwind_fix));
@@ -609,7 +608,7 @@ impl Engine {
             .with_vor(VORData::new(final_fix));
 
           let waypoints: Vec<Node<VORData>> =
-            vec![downwind_wp, base_wp, final_wp];
+            vec![crosswind_wp, downwind_wp, base_wp, final_wp];
 
           let altitude = 4000.0;
           let speed = 250.0;
