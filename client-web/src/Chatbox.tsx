@@ -5,8 +5,8 @@ import {
   selectedAircraftAtom,
   useTTSAtom,
 } from './lib/atoms';
-import { createEffect, createSignal, onMount, onCleanup } from 'solid-js';
-import { useStorageAtom } from './lib/hooks';
+import { createEffect, createSignal } from 'solid-js';
+import useGlobalShortcuts, { useStorageAtom } from './lib/hooks';
 import { useMessages } from './lib/api';
 import { OutgoingCommandReply } from '../bindings/OutgoingCommandReply';
 
@@ -80,27 +80,19 @@ export default function Chatbox({
     }
   });
 
-  function onKeydown(e: KeyboardEvent) {
+  useGlobalShortcuts((e) => {
     if (
       e.key === 't' &&
       chatboxInput instanceof HTMLInputElement &&
       document.activeElement !== chatboxInput
     ) {
       // TODO: this conflicts with pressing "t" in the stripboard.
-      // chatboxInput.focus();
-      // e.preventDefault();
+      chatboxInput.focus();
+      e.preventDefault();
     } else if (e.key === 'Escape') {
       chatboxInput.blur();
       e.preventDefault();
     }
-  }
-
-  onMount(() => {
-    document.addEventListener('keydown', onKeydown);
-  });
-
-  onCleanup(() => {
-    document.removeEventListener('keydown', onKeydown);
   });
 
   function resetText() {

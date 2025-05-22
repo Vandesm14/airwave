@@ -27,6 +27,7 @@ import fastDeepEqual from 'fast-deep-equal';
 
 import './StripBoard.scss';
 import { Airport } from '../bindings/Airport';
+import useGlobalShortcuts from './lib/hooks';
 
 const INBOX_ID = 0;
 
@@ -706,6 +707,12 @@ export default function StripBoard() {
       })
     );
   }
+
+  useGlobalShortcuts((e) => {
+    if (e.key === 'c') {
+      handleClear();
+    }
+  });
 
   const allYours = createMemo(
     () =>
