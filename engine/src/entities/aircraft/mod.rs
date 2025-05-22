@@ -10,8 +10,10 @@ use ts_rs::TS;
 use turborand::{TurboRand, rng::Rng};
 
 use crate::{
-  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE, geometry::delta_angle,
-  pathfinder::Node, wayfinder::VORData,
+  KNOT_TO_FEET_PER_SECOND, TRANSITION_ALTITUDE,
+  geometry::{angle_between_points, delta_angle, normalize_angle},
+  pathfinder::Node,
+  wayfinder::VORData,
 };
 
 use super::airport::{Airport, Gate, Runway};
@@ -116,6 +118,7 @@ pub struct FlightPlan {
   pub waypoint_index: usize,
 
   pub follow: bool,
+  pub course_offset: f32,
 
   // Initial Clearance
   pub speed: f32,
@@ -132,6 +135,7 @@ impl Default for FlightPlan {
       waypoint_index: 0,
 
       follow: true,
+      course_offset: 0.0,
 
       speed: 250.0,
       altitude: TRANSITION_ALTITUDE,
@@ -248,6 +252,36 @@ impl FlightPlan {
     }
 
     distances
+  }
+
+  pub fn heading(&self, pos: Vec2) -> Option<f32> {
+    if !self.follow {
+      return None;
+    }
+
+    if let Some(wp) = self.waypoint() {
+      let mut heading = angle_between_points(pos, wp.data.pos);
+      if self.course_offset != 0.0 {
+        heading += self.course_offset;
+      }
+
+      Some(normalize_angle(heading))
+    } else {
+      None
+    }
+  }
+
+  pub fn next_heading(&self) -> Option<f32> {
+    let next_two = self.active_waypoints();
+    let mut next_two = next_two.iter().take(2);
+    let next_two = next_two.next().zip(next_two.next());
+    if let Some((a, b)) = next_two {
+      let angle = angle_between_points(a.data.pos, b.data.pos);
+
+      Some(angle)
+    } else {
+      None
+    }
   }
 }
 

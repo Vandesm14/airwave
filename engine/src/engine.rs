@@ -499,30 +499,39 @@ impl Engine {
       };
       let mut current = first.1;
 
-      let mut speeds: Vec<(Intern<String>, f32)> = Vec::new();
+      let mut speeds: Vec<(Intern<String>, f32, f32)> = Vec::new();
       for (id, distance) in aircraft {
         let diff = distance - current;
         if diff < separation_distance {
-          speeds.push((
-            id,
-            250.0
-              - ((1.0 - (diff / separation_distance))
-                * (250.0 - min_approach_speed)),
-          ));
+          if diff < separation_distance * 0.5 {
+            speeds.push((id, min_approach_speed, 10.0));
+          } else {
+            speeds.push((
+              id,
+              250.0
+                - ((1.0 - (diff / separation_distance))
+                  * (250.0 - min_approach_speed)),
+              0.0,
+            ));
+          }
         } else {
-          speeds.push((id, 250.0));
+          speeds.push((id, 250.0, 0.0));
         }
 
         current = distance;
       }
 
-      for (id, speed) in
-        speeds.into_iter().chain(core::iter::once((first.0, 250.0)))
+      for (id, speed, offset) in speeds
+        .into_iter()
+        .chain(core::iter::once((first.0, 250.0, 0.0)))
       {
-        if let Some(aircraft) = self.game.aircraft.iter().find(|a| a.id == id) {
+        if let Some(aircraft) =
+          self.game.aircraft.iter_mut().find(|a| a.id == id)
+        {
           if aircraft.segment == FlightSegment::Approach
             && aircraft.target.speed != speed
           {
+            aircraft.flight_plan.course_offset = offset;
             events.push(
               AircraftEvent::new(aircraft.id, EventKind::Speed(speed)).into(),
             );

@@ -143,9 +143,11 @@ impl Aircraft {
     if let AircraftState::Flying = &mut self.state {
       // Snap to our next waypoint if we will pass it in the next tick.
       if let Some(current) = self.flight_plan.waypoint() {
-        let heading = angle_between_points(self.pos, current.data.pos);
+        let heading = self.flight_plan.heading(self.pos);
 
-        self.target.heading = heading;
+        if let Some(heading) = heading {
+          self.target.heading = heading;
+        }
 
         let distance = self.pos.distance_squared(current.data.pos);
         let movement_speed = speed_in_feet_dt.powf(2.0);
@@ -162,15 +164,12 @@ impl Aircraft {
       }
 
       // Start our turn early so we line up perfectly with the next track.
-      let next_two = self.flight_plan.active_waypoints();
-      let mut next_two = next_two.iter().take(2);
-      let next_two = next_two.next().zip(next_two.next());
-      if let Some((a, b)) = next_two {
-        let angle = angle_between_points(a.data.pos, b.data.pos);
-
-        let distance_to_wp = a.data.pos.distance_squared(self.pos);
-        if distance_to_wp <= self.turn_distance(angle).powf(2.0) {
-          for e in a.data.events.iter() {
+      let next_heading = self.flight_plan.next_heading();
+      if let Some(heading) = next_heading {
+        let first = self.flight_plan.waypoint().unwrap();
+        let distance_to_wp = first.data.pos.distance_squared(self.pos);
+        if distance_to_wp <= self.turn_distance(heading).powf(2.0) {
+          for e in first.data.events.iter() {
             events.push(AircraftEvent::new(self.id, e.clone()).into());
           }
 
