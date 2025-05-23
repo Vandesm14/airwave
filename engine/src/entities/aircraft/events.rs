@@ -17,8 +17,7 @@ use crate::{
 };
 
 use super::{
-  Aircraft, AircraftKind, AircraftState, FlightSegment, LandingState,
-  TaxiingState,
+  Aircraft, AircraftState, FlightSegment, LandingState, TaxiingState,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
