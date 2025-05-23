@@ -4,12 +4,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  TRANSITION_ALTITUDE,
   entities::aircraft::{Aircraft, events::EventKind},
-  geometry::{
-    angle_between_points, closest_point_on_line, delta_angle, move_point,
-    normalize_angle,
-  },
+  geometry::{angle_between_points, delta_angle, normalize_angle},
   pathfinder::{Node, NodeBehavior, NodeKind},
   sign3,
 };
@@ -323,20 +320,11 @@ impl FlightPlan {
       return None;
     }
 
-    if let Some(wp) = self.waypoint() {
+    if let Some(..) = self.waypoint() {
       let Some(heading) = self.heading(aircraft.pos) else {
         unreachable!()
       };
-      let direction_of_travel =
-        move_point(aircraft.pos, aircraft.heading, NAUTICALMILES_TO_FEET * 5.0);
-      let closest_intercept =
-        closest_point_on_line(wp.data.pos, aircraft.pos, direction_of_travel);
-      let distance = aircraft.pos.distance_squared(closest_intercept);
-      if distance <= aircraft.turn_distance(heading).powf(2.0) {
-        Some(heading)
-      } else {
-        Some(normalize_angle(heading + self.course_offset))
-      }
+      Some(normalize_angle(heading + self.course_offset))
     } else {
       None
     }

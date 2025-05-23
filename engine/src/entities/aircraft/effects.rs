@@ -97,15 +97,14 @@ impl Aircraft {
     }
   }
 
-  pub fn prune_waypoints(&mut self) {
+  pub fn prune_waypoints(&mut self, dt: f32) {
     if let AircraftState::Flying = &mut self.state {
-      let flight_plan = &mut self.flight_plan;
-      if flight_plan.waypoints.len() < 2 {
+      if self.flight_plan.waypoints.len() < 2 {
         return;
       }
 
       let mut skip_amount = 0;
-      for (i, wp) in flight_plan.waypoints.windows(2).enumerate() {
+      for (i, wp) in self.flight_plan.waypoints.windows(2).enumerate() {
         let a = wp.first().unwrap();
         let b = wp.last().unwrap();
 
@@ -121,8 +120,8 @@ impl Aircraft {
       }
 
       // Only set if we are skipping new waypoints. Don't decrease the index.
-      if skip_amount > flight_plan.waypoint_index {
-        flight_plan.set_index(skip_amount);
+      if skip_amount > self.flight_plan.waypoint_index {
+        self.flight_plan.set_index(skip_amount);
       }
 
       // Update targets based on waypoint limits.
@@ -138,7 +137,7 @@ impl Aircraft {
     let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND;
     let speed_in_feet_dt = speed_in_feet * dt;
 
-    self.prune_waypoints();
+    self.prune_waypoints(dt);
 
     if let AircraftState::Flying = &mut self.state {
       // Snap to our next waypoint if we will pass it in the next tick.
@@ -174,6 +173,27 @@ impl Aircraft {
           }
 
           self.flight_plan.inc_index();
+        }
+      }
+
+      // TODO: XYZ comment
+      if self.flight_plan.course_offset != 0.0 {
+        let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND * dt;
+
+        if let Some(wp) = self.flight_plan.waypoint() {
+          let direction_of_travel =
+            move_point(self.pos, self.heading, NAUTICALMILES_TO_FEET * 5.0);
+          let closest_intercept =
+            closest_point_on_line(wp.data.pos, self.pos, direction_of_travel);
+          let distance = self.pos.distance_squared(closest_intercept);
+
+          if distance <= speed_in_feet.powf(2.0) {
+            for e in wp.data.events.iter() {
+              events.push(AircraftEvent::new(self.id, e.clone()).into());
+            }
+
+            self.flight_plan.inc_index();
+          }
         }
       }
     }
