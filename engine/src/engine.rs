@@ -530,10 +530,6 @@ impl Engine {
       }
     }
 
-    if self.tick_counter == 11085 {
-      println!("{:#?}", speeds);
-    }
-
     for (id, speed, offset) in speeds.into_iter() {
       if let Some(aircraft) = self.game.aircraft.iter_mut().find(|a| a.id == id)
       {
