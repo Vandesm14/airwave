@@ -530,8 +530,8 @@ impl Engine {
     for (id, speed, offset) in speeds.into_iter() {
       if let Some(aircraft) = self.game.aircraft.iter_mut().find(|a| a.id == id)
       {
-        // Only change speeds for aircraft on approach.
-        if aircraft.segment == FlightSegment::Approach {
+        // Only change speeds for aircraft not landing.
+        if aircraft.segment != FlightSegment::Landing {
           if aircraft.flight_plan.course_offset != offset {
             aircraft.flight_plan.course_offset = offset;
           }
