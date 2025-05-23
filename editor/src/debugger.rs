@@ -4,12 +4,12 @@ use engine::{
   assets::load_assets,
   engine::Engine,
   entities::{
-    aircraft::{Aircraft, AircraftState, FlightPlan},
+    aircraft::{Aircraft, AircraftState},
     world::AirportStatus,
   },
   geometry::{Translate, angle_between_points, move_point},
   pathfinder::Node,
-  wayfinder::VORData,
+  wayfinder::{FlightPlan, VORData},
 };
 use glam::Vec2;
 use internment::Intern;

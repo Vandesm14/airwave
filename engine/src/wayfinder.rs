@@ -4,8 +4,14 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-  entities::aircraft::events::EventKind,
+  NAUTICALMILES_TO_FEET, TRANSITION_ALTITUDE,
+  entities::aircraft::{Aircraft, events::EventKind},
+  geometry::{
+    angle_between_points, closest_point_on_line, delta_angle, move_point,
+    normalize_angle,
+  },
   pathfinder::{Node, NodeBehavior, NodeKind},
+  sign3,
 };
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -145,5 +151,228 @@ impl Node<VORData> {
   pub fn with_speed_limit(mut self, limits: VORLimit) -> Self {
     self.data.limits.speed = limits;
     self
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct FlightPlan {
+  // To and From
+  #[ts(as = "String")]
+  pub arriving: Intern<String>,
+  #[ts(as = "String")]
+  pub departing: Intern<String>,
+
+  pub waypoints: Vec<Node<VORData>>,
+  pub waypoint_index: usize,
+
+  pub follow: bool,
+  pub course_offset: f32,
+
+  // Initial Clearance
+  pub speed: f32,
+  pub altitude: f32,
+}
+
+impl Default for FlightPlan {
+  fn default() -> Self {
+    Self {
+      arriving: Intern::from_ref(""),
+      departing: Intern::from_ref(""),
+
+      waypoints: Vec::new(),
+      waypoint_index: 0,
+
+      follow: true,
+      course_offset: 0.0,
+
+      speed: 450.0,
+      altitude: TRANSITION_ALTITUDE,
+    }
+  }
+}
+
+impl FlightPlan {
+  pub fn new(departing: Intern<String>, arriving: Intern<String>) -> Self {
+    Self {
+      departing,
+      arriving,
+      ..Self::default()
+    }
+  }
+
+  pub fn with_waypoints(mut self, waypoints: Vec<Node<VORData>>) -> Self {
+    self.waypoints = waypoints;
+    self.waypoint_index = 0;
+
+    self
+  }
+}
+
+impl FlightPlan {
+  pub fn clear_waypoints(&mut self) {
+    self.waypoints.clear();
+    self.waypoint_index = 0;
+    self.start_following();
+  }
+
+  pub fn active_waypoints(&self) -> Vec<Node<VORData>> {
+    self
+      .waypoints
+      .iter()
+      .skip(self.waypoint_index)
+      .cloned()
+      .collect()
+  }
+
+  pub fn waypoint(&self) -> Option<&Node<VORData>> {
+    if self.follow {
+      self.waypoints.get(self.waypoint_index)
+    } else {
+      None
+    }
+  }
+
+  pub fn stop_following(&mut self) {
+    self.follow = false;
+  }
+
+  pub fn start_following(&mut self) {
+    self.follow = true;
+  }
+
+  pub fn inc_index(&mut self) {
+    self.set_index(self.waypoint_index + 1);
+    self.clamp_index();
+  }
+
+  pub fn dec_index(&mut self) {
+    self.set_index(self.waypoint_index + 1);
+    self.clamp_index();
+  }
+
+  pub fn set_index(&mut self, index: usize) {
+    self.start_following();
+    self.waypoint_index = index;
+    self.clamp_index();
+  }
+
+  fn clamp_index(&mut self) {
+    if self.waypoints.is_empty() {
+      self.waypoint_index = 0;
+    } else {
+      self.waypoint_index = self.waypoint_index.clamp(0, self.waypoints.len());
+    }
+  }
+
+  pub fn index(&self) -> usize {
+    self.waypoint_index
+  }
+
+  pub fn at_end(&self) -> bool {
+    self.waypoint_index == self.waypoints.len() || self.waypoints.is_empty()
+  }
+
+  pub fn amend_end(&mut self, waypoints: Vec<Node<VORData>>) {
+    let len = waypoints.len();
+    let already_exists = self
+      .waypoints
+      .iter()
+      .rev()
+      .take(len)
+      .rev()
+      .enumerate()
+      .all(|(i, wp)| {
+        if let Some(new_wp) = waypoints.get(i) {
+          wp == new_wp
+        } else {
+          false
+        }
+      });
+
+    if self.waypoints.is_empty() || !already_exists {
+      self.waypoints.extend(waypoints);
+    }
+
+    self.set_index(self.waypoints.len() - len);
+  }
+
+  pub fn distances(&self, pos: Vec2) -> Vec<f32> {
+    let mut pos = pos;
+    let mut distance = 0.0;
+    let mut distances = Vec::with_capacity(self.active_waypoints().len());
+    for wp in self.active_waypoints() {
+      let dist = pos.distance(wp.data.pos) + distance;
+      distance = dist;
+      pos = wp.data.pos;
+
+      distances.push(dist);
+    }
+
+    distances
+  }
+
+  pub fn heading(&self, pos: Vec2) -> Option<f32> {
+    self
+      .waypoint()
+      .map(|wp| angle_between_points(pos, wp.data.pos))
+  }
+
+  pub fn course_heading(&self, aircraft: &Aircraft) -> Option<f32> {
+    if !self.follow {
+      return None;
+    }
+
+    if let Some(wp) = self.waypoint() {
+      let Some(heading) = self.heading(aircraft.pos) else {
+        unreachable!()
+      };
+      let direction_of_travel =
+        move_point(aircraft.pos, aircraft.heading, NAUTICALMILES_TO_FEET * 5.0);
+      let closest_intercept =
+        closest_point_on_line(wp.data.pos, aircraft.pos, direction_of_travel);
+      let distance = aircraft.pos.distance_squared(closest_intercept);
+      if distance <= aircraft.turn_distance(heading).powf(2.0) {
+        Some(heading)
+      } else {
+        Some(normalize_angle(heading + self.course_offset))
+      }
+    } else {
+      None
+    }
+  }
+
+  pub fn next_heading(&self) -> Option<f32> {
+    let next_two = self.active_waypoints();
+    let mut next_two = next_two.iter();
+    let next_two = next_two.next().zip(next_two.next());
+    if let Some((a, b)) = next_two {
+      let angle = angle_between_points(a.data.pos, b.data.pos);
+
+      Some(angle)
+    } else {
+      None
+    }
+  }
+
+  pub fn turn_bias(&self, aircraft: &Aircraft) -> f32 {
+    if self.active_waypoints().len() == 1 {
+      return 0.0;
+    }
+
+    let mut bias = 0.0;
+    let mut last_pos = aircraft.pos;
+    let mut last_hdg = aircraft.heading;
+    for active in self.active_waypoints() {
+      let course = angle_between_points(last_pos, active.data.pos);
+      let diff = delta_angle(last_hdg, course);
+
+      bias += sign3(diff);
+
+      last_pos = active.data.pos;
+      last_hdg = course;
+    }
+
+    bias
   }
 }
