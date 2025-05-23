@@ -449,13 +449,16 @@ impl Engine {
       .iter()
       .filter(|a| a.segment.in_air())
       .filter(|a| {
-        a.airspace
-          .is_some_and(|id| self.world.airport_status(id).automate_air)
+        a.airspace.is_some_and(|id| {
+          (id == a.flight_plan.arriving || id == a.flight_plan.departing)
+            && self.world.airport_status(id).automate_air
+        }) || a.airspace.is_none()
       })
       .fold(
         HashMap::<_, Vec<(&Aircraft, f32)>>::new(),
         |mut map, aircraft| {
-          let airspace = aircraft.airspace.unwrap();
+          let airspace =
+            aircraft.airspace.unwrap_or(aircraft.flight_plan.arriving);
           let last_wp = aircraft
             .flight_plan
             .active_waypoints()
@@ -525,6 +528,10 @@ impl Engine {
 
         current = distance;
       }
+    }
+
+    if self.tick_counter == 11085 {
+      println!("{:#?}", speeds);
     }
 
     for (id, speed, offset) in speeds.into_iter() {
@@ -659,7 +666,7 @@ impl Engine {
           if let Some(wp) = aircraft.flight_plan.waypoint() {
             if wp.data.pos == final_fix {
               let distance = wp.data.pos.distance_squared(aircraft.pos);
-              let land_distance = (NAUTICALMILES_TO_FEET * 2.0).powf(2.0);
+              let land_distance = (NAUTICALMILES_TO_FEET * 1.5).powf(2.0);
 
               if distance <= land_distance {
                 events.push(
