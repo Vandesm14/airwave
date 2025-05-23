@@ -469,7 +469,7 @@ impl Engine {
             .distances(aircraft.pos)
             .last()
             .copied()
-            .unwrap_or(0.0);
+            .unwrap_or(f32::MAX);
           let item = (aircraft, distance_to_last);
           if let Some(entry) = map.get_mut(&key) {
             entry.push(item);
@@ -566,6 +566,7 @@ impl Engine {
             airport
               .runways
               .iter()
+              .dedup_by(|a, b| a.heading == b.heading)
               .min_by(|a, b| {
                 let dist_a = star.data.pos.distance_squared(a.start);
                 let dist_b = star.data.pos.distance_squared(b.start);
@@ -584,7 +585,16 @@ impl Engine {
           let final_fix =
             move_point(runway.start, directions.backward, pattern_length);
 
-          let pattern_direction = directions.left;
+          let pattern_direction = if delta_angle(
+            runway.heading,
+            angle_between_points(aircraft.pos, final_fix),
+          )
+          .is_sign_positive()
+          {
+            directions.left
+          } else {
+            directions.right
+          };
 
           let base_fix = move_point(
             final_fix,
@@ -630,7 +640,6 @@ impl Engine {
             vec![crosswind_wp, downwind_wp, base_wp, final_wp];
 
           let max_approach_altitude = 4000.0;
-          let maxx_approach_speed = 225.0;
 
           if aircraft.flight_plan.at_end() {
             aircraft.flight_plan.amend_end(waypoints);
@@ -642,16 +651,6 @@ impl Engine {
               AircraftEvent::new(
                 aircraft.id,
                 EventKind::Altitude(max_approach_altitude),
-              )
-              .into(),
-            );
-          }
-
-          if aircraft.target.speed > maxx_approach_speed {
-            events.push(
-              AircraftEvent::new(
-                aircraft.id,
-                EventKind::SpeedAtOrBelow(maxx_approach_speed),
               )
               .into(),
             );
