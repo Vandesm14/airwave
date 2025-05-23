@@ -131,6 +131,7 @@ pub fn handle_aircraft_event(
 
         // Cancel waypoints
         aircraft.flight_plan.stop_following();
+        aircraft.flight_plan.course_offset = 0.0;
       } else if let AircraftState::Landing { .. } = &aircraft.state {
         aircraft.target.heading = *heading;
       }
@@ -281,6 +282,7 @@ pub fn handle_aircraft_event(
       if let AircraftState::Landing { .. } = aircraft.state {
         aircraft.state = AircraftState::Flying;
         aircraft.flight_plan.stop_following();
+        aircraft.flight_plan.course_offset = 0.0;
         aircraft.sync_targets_to_vals();
 
         events.push(
