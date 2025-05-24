@@ -548,7 +548,7 @@ impl Engine {
       }
     }
 
-    for (i, aircraft) in self.game.aircraft.iter().enumerate() {
+    for aircraft in self.game.aircraft.iter() {
       if matches!(aircraft.segment, FlightSegment::Approach)
         && aircraft
           .airspace

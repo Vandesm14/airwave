@@ -320,14 +320,9 @@ impl FlightPlan {
       return None;
     }
 
-    if let Some(..) = self.waypoint() {
-      let Some(heading) = self.heading(aircraft.pos) else {
-        unreachable!()
-      };
-      Some(normalize_angle(heading + self.course_offset))
-    } else {
-      None
-    }
+    self
+      .heading(aircraft.pos)
+      .map(|heading| normalize_angle(heading + self.course_offset))
   }
 
   pub fn next_heading(&self) -> Option<f32> {

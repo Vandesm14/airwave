@@ -97,7 +97,7 @@ impl Aircraft {
     }
   }
 
-  pub fn prune_waypoints(&mut self, dt: f32) {
+  pub fn prune_waypoints(&mut self) {
     if let AircraftState::Flying = &mut self.state {
       if self.flight_plan.waypoints.len() < 2 {
         return;
@@ -137,7 +137,7 @@ impl Aircraft {
     let speed_in_feet = self.speed * KNOT_TO_FEET_PER_SECOND;
     let speed_in_feet_dt = speed_in_feet * dt;
 
-    self.prune_waypoints(dt);
+    self.prune_waypoints();
 
     if let AircraftState::Flying = &mut self.state {
       // Snap to our next waypoint if we will pass it in the next tick.
