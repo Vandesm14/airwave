@@ -701,10 +701,12 @@ impl Engine {
                   let waypoints = vec![downwind_wp, crosswind_wp];
 
                   tracing::warn!(
-                    "Automatic Go-Around for {} caused by {} at distance {:.1}nm",
+                    "Resequencing {} for approach as {} (landing) is too close at {:.1}nm (min {:.1}nm)",
                     aircraft.id,
                     too_close.id,
                     distance.sqrt() / NAUTICALMILES_TO_FEET,
+                    aircraft.separation_minima().separation_distance
+                      / NAUTICALMILES_TO_FEET
                   );
 
                   events.push(
