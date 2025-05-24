@@ -681,11 +681,7 @@ impl Engine {
                   })
                   .map(|a| (a, a.pos.distance_squared(aircraft.pos)))
                   .find(|(_, distance)| {
-                    *distance
-                      < aircraft
-                        .separation_minima()
-                        .separation_distance
-                        .powf(2.0)
+                    *distance < (NAUTICALMILES_TO_FEET * 3.5).powf(2.0)
                   })
                 {
                   let downwind_fix = move_point(
@@ -709,7 +705,7 @@ impl Engine {
                   let waypoints = vec![downwind_wp, crosswind_wp];
 
                   println!(
-                    "{} Go-Around for {} caused by {} at distance {}nm",
+                    "{} Go-Around for {} caused by {} at distance {:.1}nm",
                     self.tick_counter,
                     aircraft.id,
                     too_close.id,

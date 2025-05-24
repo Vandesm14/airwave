@@ -445,13 +445,11 @@ impl Aircraft {
       FlightSegment::Climb | FlightSegment::Cruise | FlightSegment::Arrival
     ) {
       SeparationMinima::new(
-        NAUTICALMILES_TO_FEET * 7.5,
+        NAUTICALMILES_TO_FEET * 5.0,
         self.flight_plan.speed,
         350.0,
         30.0,
       )
-    } else if matches!(self.segment, FlightSegment::Landing) {
-      SeparationMinima::new(NAUTICALMILES_TO_FEET * 3.0, 180.0, 180.0, 0.0)
     } else {
       SeparationMinima::new(separation_distance, 250.0, 180.0, 30.0)
     }
