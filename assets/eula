@@ -1,0 +1,7 @@
+Airwave uses OpenAI's Whisper for speech-to-text and GPT-4o for natural text
+processing. To use either of these features, you must agree to OpenAI's Terms of
+Service <https://openai.com/policies/row-terms-of-use/> and Privacy Policy
+<https://openai.com/policies/row-privacy-policy/>. Replace 'no' with 'yes' below
+to state that you have read and agree to the terms above.
+
+eula=no

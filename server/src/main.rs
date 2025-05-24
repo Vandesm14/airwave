@@ -44,6 +44,22 @@ async fn main() {
     logs_file_min_level.into(),
   );
 
+  // TODO: Make this optional if the OpenAI components are not being used, once
+  //       that is possible.
+  let eula_path = PROJECT_DIRS
+    .state_dir()
+    .unwrap_or_else(|| PROJECT_DIRS.data_local_dir())
+    .join("eula");
+
+  if !eula_path.try_exists().unwrap() {
+    fs::write(&eula_path, include_str!("../../assets/eula")).unwrap();
+  }
+
+  if !fs::read_to_string(&eula_path).unwrap().contains("eula=yes") {
+    tracing::error!("please read the EULA at {}", eula_path.display());
+    std::process::exit(1);
+  }
+
   if let Err(e) = dotenv::dotenv() {
     tracing::warn!(".env file was not provided: {}", e);
   }
