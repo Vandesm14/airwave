@@ -1,0 +1,20 @@
+[frequencies]
+approach = 118.6
+departure = 118.6
+tower = 118.5
+ground = 118.5
+center = 118.7
+
+[world]
+seed = 202505131433
+airport = "ksfo"
+paused = true
+
+[world.status]
+divert_arrivals = true
+delay_departures = true
+automate_air = true
+automate_ground = true
+
+[server]
+address = "0.0.0.0:9001"
