@@ -402,6 +402,7 @@ impl Aircraft {
         tracing::warn!("Aircraft has an unknown segment: {:#?}", self);
       }
 
+      self.segment = segment;
       events.push(
         AircraftEvent {
           id: self.id,

@@ -869,7 +869,15 @@ impl Engine {
             current, waypoints, ..
           } = &aircraft.state
           {
-            if current.kind == NodeKind::Runway && waypoints.is_empty() {
+            if current.kind == NodeKind::Runway
+              && waypoints.is_empty()
+              && !self.game.aircraft.iter().any(|a| {
+                a.airspace == aircraft.airspace
+                  // && a.state == AircraftState::Flying
+                  // && a.altitude == 0.0
+                && a.segment == FlightSegment::Takeoff
+              })
+            {
               events.push(
                 AircraftEvent::new(
                   aircraft.id,
@@ -884,6 +892,9 @@ impl Engine {
                 )
                 .into(),
               );
+
+              // Only send one aircraft for takeoff.
+              return;
             }
           }
         }

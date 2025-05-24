@@ -408,8 +408,6 @@ pub fn handle_aircraft_event(
       //   segment
       // );
 
-      aircraft.segment = *segment;
-
       match segment {
         FlightSegment::Unknown => {}
         FlightSegment::Dormant => {
