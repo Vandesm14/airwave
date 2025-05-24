@@ -8,14 +8,9 @@ import {
   Show,
   Signal,
 } from 'solid-js';
-import {
-  HARD_CODED_AIRPORT,
-  hardcodedAirport,
-  realTimeTicks,
-  smallFlightSegment,
-} from './lib/lib';
+import { getAirport, realTimeTicks, smallFlightSegment } from './lib/lib';
 import { useAtom } from 'solid-jotai';
-import { frequencyAtom, selectedAircraftAtom } from './lib/atoms';
+import { airportAtom, frequencyAtom, selectedAircraftAtom } from './lib/atoms';
 import { calculateDistance, formatTime, nauticalMilesToFeet } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, ServerTicks, usePing, useWorld } from './lib/api';
@@ -271,6 +266,7 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
 
   let [ourFrequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
+  const [airport] = useAtom(airportAtom);
 
   const handleMouseDown = () => {
     setSelectedAircraft(strip().callsign);
@@ -304,7 +300,7 @@ function AircraftStripView(props: StripProps<AircraftStrip>) {
         dragged: dragged()?.() === id(),
         theirs: dimmer(),
         selected: selected(),
-        departure: HARD_CODED_AIRPORT === departing(),
+        departure: airport() === departing(),
       }}
       onmousedown={handleMouseDown}
       onmousemove={() => onmousemove()?.()}
@@ -541,6 +537,7 @@ export default function StripBoard() {
   }));
   const query = useWorld();
   const [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
+  const [airportId] = useAtom(airportAtom);
 
   const ping = usePing();
 
@@ -562,7 +559,7 @@ export default function StripBoard() {
 
   // Create strips for aircraft that are our responsibility.
   createEffect(() => {
-    const airport = hardcodedAirport(query.data!);
+    const airport = getAirport(query.data!, airportId());
     const selected = selectedAircraft();
     const existing = board
       .strips()
@@ -598,7 +595,7 @@ export default function StripBoard() {
 
   // Update aircraft strips.
   createEffect(() => {
-    const airport = hardcodedAirport(query.data!);
+    const airport = getAirport(query.data!, airportId());
     const selected = selectedAircraft();
 
     if (airport && aircrafts.data.length > 0) {

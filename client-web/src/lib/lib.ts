@@ -16,12 +16,13 @@ export const TICK_RATE_TPS = 15;
 export const AIRSPACE_RADIUS = nauticalMilesToFeet * 30;
 
 // TODO: remove this
-export const HARD_CODED_AIRPORT = 'KSFO';
-export function hardcodedAirport(
-  world: World | undefined
+export const DEFAULT_AIRPORT = 'KSFO';
+export function getAirport(
+  world: World | undefined,
+  id: string
 ): Airport | undefined {
   if (!world) return undefined;
-  return world.airports.find((airport) => airport.id === HARD_CODED_AIRPORT);
+  return world.airports.find((airport) => airport.id === id);
 }
 
 export function ticksAsMs(ticks: number): number {

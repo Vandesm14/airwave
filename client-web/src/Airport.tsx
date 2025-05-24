@@ -1,19 +1,41 @@
 import './Airport.scss';
-import { createMemo, createSignal, For, Show } from 'solid-js';
-import { useAirportStatus, useSetAirportStatus, useWorld } from './lib/api';
-import { HARD_CODED_AIRPORT } from './lib/lib';
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js';
+import {
+  getAirportStatusKey,
+  useAirportStatus,
+  useSetAirportStatus,
+  useWorld,
+} from './lib/api';
 import { useStorageAtom } from './lib/hooks';
 import { airportAtom } from './lib/atoms';
+import { useQueryClient } from '@tanstack/solid-query';
 
 export default function Flights() {
   const [show, setShow] = createSignal(false);
 
   const [airport, setAirport] = useStorageAtom(airportAtom);
 
-  const airportStatus = useAirportStatus(HARD_CODED_AIRPORT);
+  const world = useWorld();
+  const airportStatus = useAirportStatus(airport);
   const setAirportStatus = useSetAirportStatus();
 
-  const world = useWorld();
+  const client = useQueryClient();
+
+  createEffect(async () => {
+    let _ = airport();
+
+    await client.invalidateQueries({
+      queryKey: [getAirportStatusKey],
+      type: 'all',
+      exact: true,
+    });
+    await client.refetchQueries({
+      queryKey: [getAirportStatusKey],
+      type: 'all',
+      exact: true,
+    });
+  });
+
   const airports = createMemo(() => {
     return world.data !== undefined ? world.data.airports : [];
   });
@@ -31,13 +53,7 @@ export default function Flights() {
             <label>
               Airport:{' '}
               <select
-                onchange={(e) => {
-                  setAirport(e.currentTarget.value);
-                  setAirportStatus.mutate({
-                    id: e.currentTarget.value,
-                    status: airportStatus.data,
-                  });
-                }}
+                onchange={(e) => setAirport(e.currentTarget.value)}
                 value={airport()}
               >
                 <For each={airports()}>
@@ -56,7 +72,7 @@ export default function Flights() {
                 type="checkbox"
                 onchange={(e) =>
                   setAirportStatus.mutate({
-                    id: HARD_CODED_AIRPORT,
+                    id: airport()!,
                     status: {
                       ...airportStatus.data,
                       divert_arrivals: e.target.checked,
@@ -74,7 +90,7 @@ export default function Flights() {
                 type="checkbox"
                 onchange={(e) =>
                   setAirportStatus.mutate({
-                    id: HARD_CODED_AIRPORT,
+                    id: airport()!,
                     status: {
                       ...airportStatus.data,
                       delay_departures: e.target.checked,
@@ -93,7 +109,7 @@ export default function Flights() {
                 type="checkbox"
                 onchange={(e) =>
                   setAirportStatus.mutate({
-                    id: HARD_CODED_AIRPORT,
+                    id: airport()!,
                     status: {
                       ...airportStatus.data,
                       automate_air: e.target.checked,
@@ -111,7 +127,7 @@ export default function Flights() {
                 type="checkbox"
                 onchange={(e) =>
                   setAirportStatus.mutate({
-                    id: HARD_CODED_AIRPORT,
+                    id: airport()!,
                     status: {
                       ...airportStatus.data,
                       automate_ground: e.target.checked,

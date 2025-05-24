@@ -1,5 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import {
+  airportAtom,
   frequencyAtom,
   radarAtom,
   renderAtom,
@@ -16,8 +17,7 @@ import {
 import {
   AIRSPACE_RADIUS,
   calculateSquaredDistance,
-  HARD_CODED_AIRPORT,
-  hardcodedAirport,
+  getAirport,
   headingToDegrees,
   knotToFeetPerSecond,
   midpointBetweenPoints,
@@ -39,6 +39,43 @@ import { World } from '../bindings/World';
 import { Airport } from '../bindings/Airport';
 
 const groundScale = 5.0;
+const FEET_TO_PIXELS = 0.003;
+
+function scaleFeetToPixels(num: number, scale: number): number {
+  return num * FEET_TO_PIXELS * scale;
+}
+
+function scalePixelsToFeet(num: number, scale: number): number {
+  return num / FEET_TO_PIXELS / scale;
+}
+
+function scalePoint(
+  vec2: Vec2,
+  scale: number,
+  shiftPoint: { x: number; y: number }
+): Vec2 {
+  let x = vec2[0] + shiftPoint.x;
+  let y = vec2[1] - shiftPoint.y;
+
+  x = scaleFeetToPixels(x, scale);
+  y = scaleFeetToPixels(y, scale);
+
+  return [x, -y];
+}
+
+function scalePixelPoint(
+  vec2: Vec2,
+  scale: number,
+  shiftPoint: { x: number; y: number }
+): Vec2 {
+  let x = scalePixelsToFeet(vec2[0], scale);
+  let y = scalePixelsToFeet(-vec2[1], scale);
+
+  x -= shiftPoint.x;
+  y += shiftPoint.y;
+
+  return [x, y];
+}
 
 export default function Canvas() {
   let canvas!: HTMLCanvasElement;
@@ -67,19 +104,40 @@ export default function Canvas() {
   let [frameCount, setFrameCount] = createSignal(0);
   let [currentFps, setCurrentFps] = createSignal(0);
 
+  const [airportId] = useAtom(airportAtom);
+
+  createEffect(() => {
+    const id = airportId();
+    const airport = world.data.airports.find((a) => a.id === id);
+    if (airport) {
+      setRadar((radar) => {
+        radar.scale = 1;
+        radar.shiftPoint = {
+          x: -airport.center[0],
+          y: airport.center[1],
+        };
+        return { ...radar };
+      });
+    }
+  });
+
   function clickToSelectAircraft(e: MouseEvent) {
     // Convert the cursor position to your coordinate system
-    const coords: Vec2 = scalePixelPoint([
-      e.offsetX - canvas.width * 0.5,
-      e.offsetY - canvas.height * 0.5,
-    ]);
+    const coords: Vec2 = scalePixelPoint(
+      [e.offsetX - canvas.width * 0.5, e.offsetY - canvas.height * 0.5],
+      radar().scale,
+      radar().shiftPoint
+    );
 
     // Initialize variables to keep track of the closest aircraft
     let closestAircraft = null;
     let smallestDistance = Infinity;
 
     // Define the maximum allowable distance squared
-    const maxDistanceSquared = Math.pow(scalePixelsToFeet(100), 2);
+    const maxDistanceSquared = Math.pow(
+      scalePixelsToFeet(100, radar().scale),
+      2
+    );
 
     // Iterate through all aircraft to find the closest one within the criteria
     for (const aircraft of aircrafts.data) {
@@ -111,36 +169,6 @@ export default function Canvas() {
     }
   }
 
-  function scaleFeetToPixels(num: number): number {
-    const FEET_TO_PIXELS = 0.003;
-    return num * FEET_TO_PIXELS * radar().scale;
-  }
-
-  function scalePixelsToFeet(num: number): number {
-    const FEET_TO_PIXELS = 0.003;
-    return num / FEET_TO_PIXELS / radar().scale;
-  }
-
-  function scalePoint(vec2: Vec2): Vec2 {
-    let x = vec2[0] + radar().shiftPoint.x;
-    let y = vec2[1] - radar().shiftPoint.y;
-
-    x = scaleFeetToPixels(x);
-    y = scaleFeetToPixels(y);
-
-    return [x, -y];
-  }
-
-  function scalePixelPoint(vec2: Vec2): Vec2 {
-    let x = scalePixelsToFeet(vec2[0]);
-    let y = scalePixelsToFeet(-vec2[1]);
-
-    x -= radar().shiftPoint.x;
-    y += radar().shiftPoint.y;
-
-    return [x, y];
-  }
-
   createEffect(() => {
     setRadar((radar) => {
       radar.shiftPoint = {
@@ -155,18 +183,32 @@ export default function Canvas() {
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'PageUp') {
       e.preventDefault();
-      setRadar((radar) => {
-        radar.scale = 1;
-        radar.shiftPoint = { x: 0, y: 0 };
-        return { ...radar };
-      });
+      const id = airportId();
+      const airport = world.data.airports.find((a) => a.id === id);
+      if (airport) {
+        setRadar((radar) => {
+          radar.scale = 1;
+          radar.shiftPoint = {
+            x: -airport.center[0],
+            y: airport.center[1],
+          };
+          return { ...radar };
+        });
+      }
     } else if (e.key === 'PageDown') {
       e.preventDefault();
-      setRadar((radar) => {
-        radar.scale = groundScale * 8;
-        radar.shiftPoint = { x: 0, y: 0 };
-        return { ...radar };
-      });
+      const id = airportId();
+      const airport = world.data.airports.find((a) => a.id === id);
+      if (airport) {
+        setRadar((radar) => {
+          radar.scale = groundScale * 8.0;
+          radar.shiftPoint = {
+            x: -airport.center[0],
+            y: airport.center[1],
+          };
+          return { ...radar };
+        });
+      }
     } else if (e.key === 'Control') {
       setMod((mod) => !mod);
     }
@@ -200,8 +242,14 @@ export default function Canvas() {
             y: e.clientY,
           };
 
-          radar.lastShiftPoint.x = scaleFeetToPixels(radar.shiftPoint.x);
-          radar.lastShiftPoint.y = scaleFeetToPixels(radar.shiftPoint.y);
+          radar.lastShiftPoint.x = scaleFeetToPixels(
+            radar.shiftPoint.x,
+            radar.scale
+          );
+          radar.lastShiftPoint.y = scaleFeetToPixels(
+            radar.shiftPoint.y,
+            radar.scale
+          );
 
           return { ...radar };
         });
@@ -224,8 +272,8 @@ export default function Canvas() {
             let x = e.clientX - radar.dragStartPoint.x + radar.lastShiftPoint.x;
             let y = e.clientY - radar.dragStartPoint.y + radar.lastShiftPoint.y;
 
-            radar.shiftPoint.x = scalePixelsToFeet(x);
-            radar.shiftPoint.y = scalePixelsToFeet(y);
+            radar.shiftPoint.x = scalePixelsToFeet(x, radar.scale);
+            radar.shiftPoint.y = scalePixelsToFeet(y, radar.scale);
 
             return { ...radar };
           });
@@ -360,7 +408,7 @@ export default function Canvas() {
       aircraft &&
       (aircraft.state.type === 'flying' || aircraft.state.type === 'landing')
     ) {
-      let origin = scalePoint(aircraft.pos);
+      let origin = scalePoint(aircraft.pos, radar().scale, radar().shiftPoint);
 
       ctx.fillStyle = '#888';
       ctx.textAlign = 'center';
@@ -386,7 +434,7 @@ export default function Canvas() {
 
   function drawAirspace(ctx: Ctx, airport: Airport) {
     resetTransform(ctx);
-    let pos = scalePoint(airport.center);
+    let pos = scalePoint(airport.center, radar().scale, radar().shiftPoint);
     ctx.strokeStyle = colors.special.airspace;
 
     let aircraft = aircrafts.data.find((a) => a.id === selectedAircraft());
@@ -399,7 +447,13 @@ export default function Canvas() {
     }
 
     ctx.beginPath();
-    ctx.arc(pos[0], pos[1], scaleFeetToPixels(AIRSPACE_RADIUS), 0, Math.PI * 2);
+    ctx.arc(
+      pos[0],
+      pos[1],
+      scaleFeetToPixels(AIRSPACE_RADIUS, radar().scale),
+      0,
+      Math.PI * 2
+    );
     ctx.stroke();
 
     // Draw airport name
@@ -409,25 +463,37 @@ export default function Canvas() {
     ctx.fillText(
       airport.id,
       pos[0],
-      pos[1] - scaleFeetToPixels(AIRSPACE_RADIUS) - 20
+      pos[1] - scaleFeetToPixels(AIRSPACE_RADIUS, radar().scale) - 20
     );
   }
 
   function drawRunway(ctx: Ctx, runway: Runway) {
     resetTransform(ctx);
     let info = runwayInfo(runway);
-    let start = scalePoint(info.start);
-    let end = scalePoint(info.end);
+    let start = scalePoint(info.start, radar().scale, radar().shiftPoint);
+    let end = scalePoint(info.end, radar().scale, radar().shiftPoint);
     let ils = {
-      minGlideslope: scalePoint(info.ils.minGlideslope),
-      end: scalePoint(info.ils.end),
-      maxAngle: scalePoint(info.ils.maxAngle),
-      minAngle: scalePoint(info.ils.minAngle),
+      minGlideslope: scalePoint(
+        info.ils.minGlideslope,
+        radar().scale,
+        radar().shiftPoint
+      ),
+      end: scalePoint(info.ils.end, radar().scale, radar().shiftPoint),
+      maxAngle: scalePoint(
+        info.ils.maxAngle,
+        radar().scale,
+        radar().shiftPoint
+      ),
+      minAngle: scalePoint(
+        info.ils.minAngle,
+        radar().scale,
+        radar().shiftPoint
+      ),
     };
 
     ctx.strokeStyle = 'grey';
     ctx.fillStyle = 'grey';
-    ctx.lineWidth = scaleFeetToPixels(1000);
+    ctx.lineWidth = scaleFeetToPixels(1000, radar().scale);
     ctx.beginPath();
     ctx.moveTo(start[0], start[1]);
     ctx.lineTo(end[0], end[1]);
@@ -459,7 +525,7 @@ export default function Canvas() {
     ctx.arc(
       ils.minGlideslope[0],
       ils.minGlideslope[1],
-      scaleFeetToPixels(1500),
+      scaleFeetToPixels(1500, radar().scale),
       0,
       Math.PI * 2
     );
@@ -467,19 +533,34 @@ export default function Canvas() {
   }
 
   function drawWaypoint(ctx: Ctx, name: string, position: Vec2, color: string) {
-    let pos = scalePoint(position);
+    let pos = scalePoint(position, radar().scale, radar().shiftPoint);
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
     ctx.beginPath();
-    ctx.arc(pos[0], pos[1], scaleFeetToPixels(700), 0, Math.PI * 2);
+    ctx.arc(
+      pos[0],
+      pos[1],
+      scaleFeetToPixels(700, radar().scale),
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
 
     // Draw the separation circle
     ctx.beginPath();
-    ctx.arc(pos[0], pos[1], scaleFeetToPixels(2000), 0, Math.PI * 2);
+    ctx.arc(
+      pos[0],
+      pos[1],
+      scaleFeetToPixels(2000, radar().scale),
+      0,
+      Math.PI * 2
+    );
     ctx.stroke();
 
-    let spacing = scaleFeetToPixels(2000 + nauticalMilesToFeet * 0.2);
+    let spacing = scaleFeetToPixels(
+      2000 + nauticalMilesToFeet * 0.2,
+      radar().scale
+    );
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
 
@@ -509,8 +590,8 @@ export default function Canvas() {
     // we have better tooling for ARTCC.
     if (
       ['climb', 'cruise', 'arrival'].includes(aircraft.segment) &&
-      aircraft.flight_plan.arriving !== HARD_CODED_AIRPORT &&
-      aircraft.flight_plan.departing !== HARD_CODED_AIRPORT
+      aircraft.flight_plan.arriving !== airportId() &&
+      aircraft.flight_plan.departing !== airportId()
     ) {
       isActive = false;
     }
@@ -551,7 +632,7 @@ export default function Canvas() {
     // }
 
     // Draw waypoints
-    let pos = scalePoint(aircraft.pos);
+    let pos = scalePoint(aircraft.pos, radar().scale, radar().shiftPoint);
     if (
       aircraft.state.type === 'flying' &&
       aircraft.flight_plan.follow &&
@@ -566,7 +647,7 @@ export default function Canvas() {
       for (let wp of aircraft.flight_plan.waypoints.slice(
         aircraft.flight_plan.waypoint_index
       )) {
-        let pos = scalePoint(wp.data.pos);
+        let pos = scalePoint(wp.data.pos, radar().scale, radar().shiftPoint);
         ctx.lineTo(pos[0], pos[1]);
       }
       ctx.stroke();
@@ -595,7 +676,7 @@ export default function Canvas() {
     }
 
     // Draw the dot
-    const dotSize = Math.max(6, scaleFeetToPixels(3000));
+    const dotSize = Math.max(6, scaleFeetToPixels(3000, radar().scale));
     ctx.fillRect(
       pos[0] - dotSize * 0.5,
       pos[1] - dotSize * 0.5,
@@ -603,7 +684,7 @@ export default function Canvas() {
       dotSize
     );
 
-    let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0);
+    let spacing = scaleFeetToPixels(nauticalMilesToFeet * 1.0, radar().scale);
     if (!isActive && !isSelected) {
       ctx.textAlign = 'left';
       ctx.fillStyle = colors.text_grey;
@@ -622,7 +703,7 @@ export default function Canvas() {
     // Draw the direction
     const length = aircraft.speed * knotToFeetPerSecond * 60;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
-    let endPos = scalePoint(end);
+    let endPos = scalePoint(end, radar().scale, radar().shiftPoint);
 
     ctx.beginPath();
     ctx.moveTo(pos[0], pos[1]);
@@ -641,7 +722,7 @@ export default function Canvas() {
       ctx.fillStyle = colors.text_dark_grey;
     } else if (aircraft.frequency !== frequency()) {
       ctx.fillStyle = colors.text_grey;
-    } else if (aircraft.flight_plan.departing === HARD_CODED_AIRPORT) {
+    } else if (aircraft.flight_plan.departing === airportId()) {
       ctx.fillStyle = colors.line_blue;
     }
 
@@ -709,13 +790,13 @@ export default function Canvas() {
   }
 
   function drawTerminal(ctx: Ctx, terminal: Terminal) {
-    let a = scalePoint(terminal.a);
-    let b = scalePoint(terminal.b);
-    let c = scalePoint(terminal.c);
-    let d = scalePoint(terminal.d);
+    let a = scalePoint(terminal.a, radar().scale, radar().shiftPoint);
+    let b = scalePoint(terminal.b, radar().scale, radar().shiftPoint);
+    let c = scalePoint(terminal.c, radar().scale, radar().shiftPoint);
+    let d = scalePoint(terminal.d, radar().scale, radar().shiftPoint);
 
     ctx.fillStyle = colors.special.terminal;
-    ctx.lineWidth = scaleFeetToPixels(200);
+    ctx.lineWidth = scaleFeetToPixels(200, radar().scale);
     ctx.beginPath();
     ctx.moveTo(a[0], a[1]);
     ctx.lineTo(b[0], b[1]);
@@ -725,8 +806,16 @@ export default function Canvas() {
     ctx.fill();
 
     // TODO: we should show aprons nicer than a debug line
-    let apron_a = scalePoint(terminal.apron[0]);
-    let apron_b = scalePoint(terminal.apron[1]);
+    let apron_a = scalePoint(
+      terminal.apron[0],
+      radar().scale,
+      radar().shiftPoint
+    );
+    let apron_b = scalePoint(
+      terminal.apron[1],
+      radar().scale,
+      radar().shiftPoint
+    );
 
     ctx.strokeStyle = colors.line_green;
     ctx.lineWidth = 2;
@@ -746,9 +835,9 @@ export default function Canvas() {
 
   function drawGate(ctx: Ctx, gate: Gate) {
     let id = gate.id;
-    let pos = scalePoint(gate.pos);
+    let pos = scalePoint(gate.pos, radar().scale, radar().shiftPoint);
 
-    let gate_size = scaleFeetToPixels(175);
+    let gate_size = scaleFeetToPixels(175, radar().scale);
 
     ctx.fillStyle = '#222';
     ctx.strokeStyle = colors.text_red;
@@ -775,11 +864,11 @@ export default function Canvas() {
 
   function drawTaxiway(ctx: Ctx, taxiway: Taxiway) {
     resetTransform(ctx);
-    let start = scalePoint(taxiway.a);
-    let end = scalePoint(taxiway.b);
+    let start = scalePoint(taxiway.a, radar().scale, radar().shiftPoint);
+    let end = scalePoint(taxiway.b, radar().scale, radar().shiftPoint);
 
     ctx.strokeStyle = colors.special.taxiway;
-    ctx.lineWidth = scaleFeetToPixels(200);
+    ctx.lineWidth = scaleFeetToPixels(200, radar().scale);
     ctx.beginPath();
     ctx.moveTo(start[0], start[1]);
     ctx.lineTo(end[0], end[1]);
@@ -787,8 +876,8 @@ export default function Canvas() {
   }
 
   function drawTaxiwayLabel(ctx: Ctx, taxiway: Taxiway) {
-    let start = scalePoint(taxiway.a);
-    let end = scalePoint(taxiway.b);
+    let start = scalePoint(taxiway.a, radar().scale, radar().shiftPoint);
+    let end = scalePoint(taxiway.b, radar().scale, radar().shiftPoint);
     let middle = midpointBetweenPoints(start, end);
     let textWidth = ctx.measureText(taxiway.id).width + 10;
     ctx.fillStyle = colors.text_background;
@@ -806,16 +895,24 @@ export default function Canvas() {
   function drawRunwayGround(ctx: Ctx, runway: Runway) {
     resetTransform(ctx);
     let info = runwayInfo(runway);
-    let start = scalePoint(info.start);
-    let end = scalePoint(info.end);
+    let start = scalePoint(info.start, radar().scale, radar().shiftPoint);
+    let end = scalePoint(info.end, radar().scale, radar().shiftPoint);
     let ils = {
-      end: scalePoint(info.ils.end),
-      maxAngle: scalePoint(info.ils.maxAngle),
-      minAngle: scalePoint(info.ils.minAngle),
+      end: scalePoint(info.ils.end, radar().scale, radar().shiftPoint),
+      maxAngle: scalePoint(
+        info.ils.maxAngle,
+        radar().scale,
+        radar().shiftPoint
+      ),
+      minAngle: scalePoint(
+        info.ils.minAngle,
+        radar().scale,
+        radar().shiftPoint
+      ),
     };
 
     ctx.strokeStyle = '#222';
-    ctx.lineWidth = scaleFeetToPixels(250);
+    ctx.lineWidth = scaleFeetToPixels(250, radar().scale);
     ctx.beginPath();
     ctx.moveTo(start[0], start[1]);
     ctx.lineTo(end[0], end[1]);
@@ -846,10 +943,10 @@ export default function Canvas() {
 
   function drawBlipGround(ctx: Ctx, aircraft: Aircraft) {
     const isSelected = selectedAircraft() === aircraft.id;
-    const airport = hardcodedAirport(world.data);
+    const airport = getAirport(world.data, airportId());
 
     resetTransform(ctx);
-    let pos = scalePoint(aircraft.pos);
+    let pos = scalePoint(aircraft.pos, radar().scale, radar().shiftPoint);
     // let taxi_yellow = '#ffff00';
     let taxi_color =
       aircraft.segment !== 'dormant' ? '#ffffff' : colors.text_dark_grey;
@@ -870,13 +967,13 @@ export default function Canvas() {
     // Draw taxi waypoints
     if (aircraft.state.type === 'taxiing' && isSelected) {
       ctx.strokeStyle = '#ffff0088';
-      ctx.lineWidth = scaleFeetToPixels(50);
+      ctx.lineWidth = scaleFeetToPixels(50, radar().scale);
 
       // Draw waypoint lines
       ctx.beginPath();
       ctx.moveTo(pos[0], pos[1]);
       for (let wp of aircraft.state.value.waypoints.slice().reverse()) {
-        let pos = scalePoint(wp.data);
+        let pos = scalePoint(wp.data, radar().scale, radar().shiftPoint);
         ctx.lineTo(pos[0], pos[1]);
       }
       ctx.stroke();
@@ -892,9 +989,15 @@ export default function Canvas() {
         } else {
           ctx.fillStyle = colors.line_yellow;
         }
-        let pos = scalePoint(wp.data);
+        let pos = scalePoint(wp.data, radar().scale, radar().shiftPoint);
         ctx.beginPath();
-        ctx.arc(pos[0], pos[1], scaleFeetToPixels(40), 0, Math.PI * 2);
+        ctx.arc(
+          pos[0],
+          pos[1],
+          scaleFeetToPixels(40, radar().scale),
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
       }
 
@@ -910,7 +1013,7 @@ export default function Canvas() {
         } else if (wp.behavior === 'holdshort') {
           ctx.fillStyle = colors.line_red;
         }
-        let pos = scalePoint(wp.data);
+        let pos = scalePoint(wp.data, radar().scale, radar().shiftPoint);
         ctx.beginPath();
         ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2);
         ctx.fill();
@@ -924,7 +1027,13 @@ export default function Canvas() {
 
     // Draw the dot
     ctx.beginPath();
-    ctx.arc(pos[0], pos[1], scaleFeetToPixels(50), 0, Math.PI * 2);
+    ctx.arc(
+      pos[0],
+      pos[1],
+      scaleFeetToPixels(50, radar().scale),
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
 
     // Draw the direction
@@ -932,7 +1041,7 @@ export default function Canvas() {
     ctx.lineWidth = 2;
     const length = 150;
     const end = movePoint(aircraft.pos, length, aircraft.heading);
-    let endPos = scalePoint(end);
+    let endPos = scalePoint(end, radar().scale, radar().shiftPoint);
 
     ctx.beginPath();
     ctx.moveTo(pos[0], pos[1]);
@@ -944,7 +1053,7 @@ export default function Canvas() {
     }
 
     // Draw info
-    let spacing = scaleFeetToPixels(100);
+    let spacing = scaleFeetToPixels(100, radar().scale);
     ctx.textAlign = 'left';
     ctx.fillStyle = taxi_color;
 
@@ -1005,7 +1114,7 @@ export default function Canvas() {
 
   function drawFlightPlanWaypoints(ctx: Ctx, aircraft: Aircraft) {
     resetTransform(ctx);
-    let pos = scalePoint(aircraft.pos);
+    let pos = scalePoint(aircraft.pos, radar().scale, radar().shiftPoint);
 
     if (
       aircraft.state.type === 'taxiing' &&

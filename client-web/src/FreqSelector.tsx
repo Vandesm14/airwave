@@ -1,5 +1,5 @@
 import { useAtom } from 'solid-jotai';
-import { frequencyAtom } from './lib/atoms';
+import { airportAtom, frequencyAtom } from './lib/atoms';
 import {
   Accessor,
   createEffect,
@@ -13,7 +13,7 @@ import useGlobalShortcuts from './lib/hooks';
 
 import './FreqSelector.scss';
 import { useWorld } from './lib/api';
-import { hardcodedAirport } from './lib/lib';
+import { getAirport } from './lib/lib';
 
 type FreqRowProps = {
   index: number;
@@ -23,6 +23,7 @@ type FreqRowProps = {
 };
 
 function FreqRow({ index, freq, setFreq, selected }: FreqRowProps) {
+  const [airportId] = useAtom(airportAtom);
   const query = useWorld();
 
   return (
@@ -47,10 +48,10 @@ function FreqRow({ index, freq, setFreq, selected }: FreqRowProps) {
         }}
       >
         <option value={118.5}></option>
-        {query.data && hardcodedAirport(query.data)?.frequencies
+        {query.data && getAirport(query.data, airportId())?.frequencies
           ? // TODO: Remove uses of as keyof Frequencies.
             Object.entries(
-              query.data && hardcodedAirport(query.data)!.frequencies
+              query.data && getAirport(query.data, airportId())!.frequencies
             ).map(([k, v]) => (
               <option value={v}>
                 {k} - {v}

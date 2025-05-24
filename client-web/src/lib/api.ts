@@ -3,7 +3,7 @@ import {
   createQuery,
   useQueryClient,
 } from '@tanstack/solid-query';
-import { Accessor } from 'solid-js';
+import { Accessor, Resource } from 'solid-js';
 import fastDeepEqual from 'fast-deep-equal';
 import { Aircraft } from '../../bindings/Aircraft';
 import { World } from '../../bindings/World';
@@ -127,13 +127,17 @@ export function useMessages() {
 
 export const getAirportStatusKey = `/api/status`;
 export const getAirportStatus = (id: string) => `${getAirportStatusKey}/${id}`;
-export function useAirportStatus(id: string) {
+export function useAirportStatus(id: Resource<string> | Accessor<string>) {
   return createQuery<AirportStatus>(() => ({
     queryKey: [getAirportStatusKey],
     queryFn: async () => {
-      const result = await fetch(`${baseAPIPath}${getAirportStatus(id)}`);
-      if (!result.ok) return [];
-      return result.json();
+      if (id() === undefined) {
+        return undefined;
+      } else {
+        const result = await fetch(`${baseAPIPath}${getAirportStatus(id()!)}`);
+        if (!result.ok) return [];
+        return result.json();
+      }
     },
     initialData: DefaultAirportStatus(),
     staleTime: 2000,
