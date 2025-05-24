@@ -701,8 +701,7 @@ impl Engine {
                   let waypoints = vec![downwind_wp, crosswind_wp];
 
                   tracing::warn!(
-                    "{} Go-Around for {} caused by {} at distance {:.1}nm",
-                    self.tick_counter,
+                    "Automatic Go-Around for {} caused by {} at distance {:.1}nm",
                     aircraft.id,
                     too_close.id,
                     distance.sqrt() / NAUTICALMILES_TO_FEET,

@@ -513,6 +513,12 @@ impl Aircraft {
 
     // If we are too high, go around.
     if self.altitude - target_altitude > 100.0 {
+      tracing::warn!(
+        "Altitude-based Go-Around for {} (at {} instead of {})",
+        self.id,
+        self.altitude,
+        target_altitude
+      );
       events.push(
         AircraftEvent {
           id: self.id,
