@@ -700,7 +700,7 @@ impl Engine {
 
                   let waypoints = vec![downwind_wp, crosswind_wp];
 
-                  println!(
+                  tracing::warn!(
                     "{} Go-Around for {} caused by {} at distance {:.1}nm",
                     self.tick_counter,
                     aircraft.id,

@@ -140,7 +140,7 @@ async fn main() {
 
   //
 
-  tracing::info!("Quick start loop...");
+  tracing::info!("Quick start loop (this may take a minute)...");
   let start = Instant::now();
   let ticks_ran = runner.quick_start();
   let duration = start.elapsed();
