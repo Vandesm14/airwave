@@ -1,22 +1,53 @@
-import './Flights.scss';
-import { createSignal, Show } from 'solid-js';
-import { useAirportStatus, useSetAirportStatus } from './lib/api';
+import './Airport.scss';
+import { createMemo, createSignal, For, Show } from 'solid-js';
+import { useAirportStatus, useSetAirportStatus, useWorld } from './lib/api';
 import { HARD_CODED_AIRPORT } from './lib/lib';
+import { useStorageAtom } from './lib/hooks';
+import { airportAtom } from './lib/atoms';
 
 export default function Flights() {
   const [show, setShow] = createSignal(false);
 
+  const [airport, setAirport] = useStorageAtom(airportAtom);
+
   const airportStatus = useAirportStatus(HARD_CODED_AIRPORT);
   const setAirportStatus = useSetAirportStatus();
 
+  const world = useWorld();
+  const airports = createMemo(() => {
+    return world.data !== undefined ? world.data.airports : [];
+  });
+
   return (
     <div class="container border">
-      <div class="flights">
+      <div class="airport">
         <Show when={!show()}>
           <button onClick={() => setShow(true)}>Airport</button>
         </Show>
         <Show when={show()}>
           <button onClick={() => setShow(false)}>Close</button>
+          <hr />
+          <div class="row">
+            <label>
+              Airport:{' '}
+              <select
+                onchange={(e) => {
+                  setAirport(e.currentTarget.value);
+                  setAirportStatus.mutate({
+                    id: e.currentTarget.value,
+                    status: airportStatus.data,
+                  });
+                }}
+                value={airport()}
+              >
+                <For each={airports()}>
+                  {(airport) => (
+                    <option value={airport.id}>{airport.id}</option>
+                  )}
+                </For>
+              </select>
+            </label>
+          </div>
           <hr />
           <div class="row">
             <label>

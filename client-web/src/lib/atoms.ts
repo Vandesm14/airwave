@@ -1,4 +1,5 @@
 import { atom } from 'solid-jotai';
+import { HARD_CODED_AIRPORT } from './lib';
 type RadarConfig = {
   scale: number;
   isDragging: boolean;
@@ -35,6 +36,8 @@ export let radarAtom = atom<RadarConfig>({
 export let isRecordingAtom = atom(false);
 export let useTTSAtom = atom(false);
 export let frequencyAtom = atom(118.5);
+
+export let airportAtom = atom<string>(HARD_CODED_AIRPORT);
 
 export let renderAtom = atom<{
   doInitialDraw: boolean;

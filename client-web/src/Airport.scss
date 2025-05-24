@@ -1,0 +1,31 @@
+@import 'styles/vars.scss';
+
+.airport {
+  display: flex;
+  flex-direction: column;
+
+  max-height: 50vh;
+  overflow-y: auto;
+
+  background-color: $transparent-black;
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    margin: 5px 0;
+  }
+
+  hr {
+    width: calc(100% - 5px);
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    h2 {
+      font-size: 18px;
+    }
+  }
+}

@@ -9,7 +9,7 @@ import { Aircraft } from '../../bindings/Aircraft';
 import { World } from '../../bindings/World';
 import { OutgoingCommandReply } from '../../bindings/OutgoingCommandReply';
 import { AirportStatus } from '../../bindings/AirportStatus';
-import { DefaultAirportStatus } from './lib';
+import { DefaultAirportStatus, DefaultWorld } from './lib';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
 const search = new URLSearchParams(window.location.search);
@@ -86,8 +86,10 @@ export function useWorld() {
       if (!result.ok) return null;
       return result.json();
     },
+    initialData: DefaultWorld(),
     staleTime: Infinity,
     refetchOnReconnect: 'always',
+    refetchOnMount: 'always',
     throwOnError: true,
   }));
 }

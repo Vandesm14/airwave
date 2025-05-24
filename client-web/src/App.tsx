@@ -15,7 +15,7 @@ import FreqSelector from './FreqSelector';
 import { useStorageAtom } from './lib/hooks';
 import { baseAPIPath, getMessages, usePing } from './lib/api';
 import { useQueryClient } from '@tanstack/solid-query';
-import Flights from './Flights';
+import Flights from './Airport';
 
 export default function App() {
   const whisper = new WhisperSTT();
