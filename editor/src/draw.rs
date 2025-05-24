@@ -1,7 +1,7 @@
 use engine::{
   AIRSPACE_RADIUS, NAUTICALMILES_TO_FEET,
   entities::{
-    aircraft::{Aircraft, AircraftState},
+    aircraft::{Aircraft, AircraftState, FlightSegment},
     airport::{Airport, Gate, Runway, Taxiway, Terminal},
     world::World,
   },
@@ -225,12 +225,20 @@ impl Draw for Aircraft {
     let pos = scale_point(self.pos, offset, scale);
     let point_scale = (6.0_f32).max(3000.0 * scale).min(20.0);
 
+    let color = if self.flight_plan.course_offset != 0.0 {
+      color::RED
+    } else if self.segment == FlightSegment::Landing {
+      color::YELLOW
+    } else {
+      color::GREEN
+    };
+
     draw
       .rect()
       .x_y(pos.x, pos.y)
       .width(point_scale)
       .height(point_scale)
-      .color(color::GREEN);
+      .color(color);
 
     draw
       .line()
@@ -245,7 +253,7 @@ impl Draw for Aircraft {
         scale,
       )))
       .weight(2.0)
-      .color(color::GREEN);
+      .color(color);
 
     if self.state == AircraftState::Flying {
       for waypoint in self.flight_plan.active_waypoints() {
@@ -263,7 +271,20 @@ impl Draw for Aircraft {
   }
 
   fn draw_label(&self, draw: &nannou::Draw, scale: f32, offset: Vec2) {
-    draw_label(self.id.to_string(), self.pos, draw, scale, offset);
+    let tcas = match self.tcas {
+      engine::entities::aircraft::TCAS::Idle => "",
+      engine::entities::aircraft::TCAS::Warning => " WRN",
+      engine::entities::aircraft::TCAS::Climb => " CLB",
+      engine::entities::aircraft::TCAS::Descend => " DES",
+      engine::entities::aircraft::TCAS::Hold => " HLD",
+    };
+    draw_label(
+      format!("{}{}", self.id, tcas),
+      self.pos,
+      draw,
+      scale,
+      offset,
+    );
   }
 }
 
