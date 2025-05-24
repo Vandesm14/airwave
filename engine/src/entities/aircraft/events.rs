@@ -13,7 +13,7 @@ use crate::{
   geometry::{angle_between_points, delta_angle},
   heading_to_direction,
   pathfinder::{Node, NodeBehavior, NodeKind, Pathfinder, display_node_vec2},
-  wayfinder::{VORLimit, VORLimits, new_vor},
+  wayfinder::{VORData, VORLimit, VORLimits, new_vor},
 };
 
 use super::{
@@ -36,6 +36,7 @@ pub enum EventKind {
   AltitudeAtOrAbove(f32),
   ResumeOwnNavigation { diversion: bool },
   Direct(Intern<String>),
+  AmendAndFollow(Vec<Node<VORData>>),
 
   // Transitions
   Land(Intern<String>),
@@ -273,6 +274,10 @@ pub fn handle_aircraft_event(
       {
         aircraft.flight_plan.set_index(index);
       }
+    }
+    EventKind::AmendAndFollow(waypoints) => {
+      aircraft.flight_plan.amend_end(waypoints.clone());
+      aircraft.flight_plan.start_following();
     }
 
     // Transitions

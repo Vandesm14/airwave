@@ -1,5 +1,6 @@
 use std::{
   collections::{HashMap, HashSet},
+  ops::Mul,
   time::Instant,
 };
 
@@ -548,7 +549,7 @@ impl Engine {
       }
     }
 
-    for aircraft in self.game.aircraft.iter_mut() {
+    for (i, aircraft) in self.game.aircraft.iter().enumerate() {
       if matches!(aircraft.segment, FlightSegment::Approach)
         && aircraft
           .airspace
@@ -642,13 +643,17 @@ impl Engine {
           let waypoints: Vec<Node<VORData>> =
             vec![crosswind_wp, downwind_wp, base_wp, final_wp];
 
-          let max_approach_altitude = 4000.0;
-
           if aircraft.flight_plan.at_end() {
-            aircraft.flight_plan.amend_end(waypoints);
-            aircraft.flight_plan.start_following();
+            events.push(
+              AircraftEvent::new(
+                aircraft.id,
+                EventKind::AmendAndFollow(waypoints),
+              )
+              .into(),
+            );
           }
 
+          let max_approach_altitude = 4000.0;
           if aircraft.target.altitude > max_approach_altitude {
             events.push(
               AircraftEvent::new(
@@ -662,21 +667,76 @@ impl Engine {
           if let Some(wp) = aircraft.flight_plan.waypoint() {
             if wp.data.pos == final_fix {
               let distance = wp.data.pos.distance_squared(aircraft.pos);
-              let land_distance = (NAUTICALMILES_TO_FEET * 1.5).powf(2.0);
+              let land_distance = NAUTICALMILES_TO_FEET * 1.5;
 
-              if distance <= land_distance {
-                events.push(
-                  AircraftEvent::new(
+              if distance <= land_distance.powf(2.0) {
+                if let Some((too_close, distance)) = self
+                  .game
+                  .aircraft
+                  .iter()
+                  .filter(|a| {
+                    a.id != aircraft.id
+                      && a.airspace == aircraft.airspace
+                      && a.segment == FlightSegment::Landing
+                  })
+                  .map(|a| (a, a.pos.distance_squared(aircraft.pos)))
+                  .find(|(_, distance)| {
+                    *distance
+                      < aircraft
+                        .separation_minima()
+                        .separation_distance
+                        .powf(2.0)
+                  })
+                {
+                  let downwind_fix = move_point(
+                    runway.start,
+                    directions.forward,
+                    NAUTICALMILES_TO_FEET * 5.0,
+                  );
+                  let crosswind_fix = move_point(
+                    downwind_fix,
+                    pattern_direction,
+                    NAUTICALMILES_TO_FEET * 5.0,
+                  );
+
+                  let downwind_wp = Node::default()
+                    .with_name(Intern::from_ref("DW"))
+                    .with_vor(VORData::new(downwind_fix));
+                  let crosswind_wp = Node::default()
+                    .with_name(Intern::from_ref("CW"))
+                    .with_vor(VORData::new(crosswind_fix));
+
+                  let waypoints = vec![downwind_wp, crosswind_wp];
+
+                  println!(
+                    "{} Go-Around for {} caused by {} at distance {}nm",
+                    self.tick_counter,
                     aircraft.id,
-                    EventKind::SpeedAtOrBelow(180.0),
-                  )
-                  .into(),
-                );
+                    too_close.id,
+                    distance.sqrt() / NAUTICALMILES_TO_FEET,
+                  );
 
-                events.push(
-                  AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
+                  events.push(
+                    AircraftEvent::new(
+                      aircraft.id,
+                      EventKind::AmendAndFollow(waypoints),
+                    )
                     .into(),
-                );
+                  );
+                } else {
+                  events.push(
+                    AircraftEvent::new(
+                      aircraft.id,
+                      EventKind::SpeedAtOrBelow(180.0),
+                    )
+                    .into(),
+                  );
+
+                  events.push(
+                    AircraftEvent::new(aircraft.id, EventKind::Land(runway.id))
+                      .into(),
+                  );
+                }
               }
             }
           }

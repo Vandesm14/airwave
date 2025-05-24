@@ -450,6 +450,8 @@ impl Aircraft {
         350.0,
         30.0,
       )
+    } else if matches!(self.segment, FlightSegment::Landing) {
+      SeparationMinima::new(NAUTICALMILES_TO_FEET * 3.0, 180.0, 180.0, 0.0)
     } else {
       SeparationMinima::new(separation_distance, 250.0, 180.0, 30.0)
     }
