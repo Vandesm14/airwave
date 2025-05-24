@@ -1,3 +1,5 @@
+# Override the default frequencies for the airport you select in
+# `world.airport`.
 [frequencies]
 approach = 118.6
 departure = 118.6
@@ -5,16 +7,28 @@ tower = 118.5
 ground = 118.5
 center = 118.7
 
+# Settings for the world.
 [world]
+# The seed for flight randomization.
 seed = 202505131433
-airport = "ksfo"
+# The name of the airport to use (the corresponding `.lua` or `.json` file in
+# `assets/airports`, just without the file extension).
+airport = "default"
+# Whether to start the game paused (does not skip or pause the quick start step).
 paused = true
 
+# Override the status of the airport you select in `world.airport`.
 [world.status]
+# Whether to divert arrivals to other airports.
 divert_arrivals = true
+# Whether to delay departures.
 delay_departures = true
+# Whether to have Airwave take over all air-based operations.
 automate_air = true
+# Whether to have Airwave take over all ground-based operations.
 automate_ground = true
 
+# Settings for the server.
 [server]
+# The address to bind the server to (supports IPv6).
 address = "0.0.0.0:9001"
