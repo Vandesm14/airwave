@@ -554,11 +554,8 @@ impl Engine {
           .airspace
           .is_some_and(|a| self.world.airport_status(a).automate_air)
       {
-        if let Some(airport) = self
-          .world
-          .airports
-          .iter()
-          .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
+        if let Some(airport) =
+          aircraft.airspace.and_then(|id| self.world.airport(id))
         {
           let runway = if let Some(star) = aircraft
             .flight_plan
@@ -758,11 +755,8 @@ impl Engine {
               .chain(core::iter::once(current))
               .all(|w| w.kind != NodeKind::Gate)
             {
-              if let Some(airport) = self
-                .world
-                .airports
-                .iter()
-                .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
+              if let Some(airport) =
+                aircraft.airspace.and_then(|id| self.world.airport(id))
               {
                 let available_gate = airport
                   .terminals
@@ -794,22 +788,12 @@ impl Engine {
           }
         } else if matches!(aircraft.segment, FlightSegment::Parked) {
           if let AircraftState::Parked { .. } = &aircraft.state {
-            if let Some(airport) = self
-              .world
-              .airports
-              .iter()
-              .find(|a| aircraft.airspace.is_some_and(|id| id == a.id))
+            if let Some(airport) =
+              aircraft.airspace.and_then(|id| self.world.airport(id))
             {
-              let departure = self
-                .world
-                .airports
-                .iter()
-                .find(|a| a.id == aircraft.flight_plan.departing);
-              let arrival = self
-                .world
-                .airports
-                .iter()
-                .find(|a| a.id == aircraft.flight_plan.arriving);
+              let departure =
+                self.world.airport(aircraft.flight_plan.departing);
+              let arrival = self.world.airport(aircraft.flight_plan.arriving);
               if let Some((departure, arrival)) = departure.zip(arrival) {
                 let departure_angle =
                   angle_between_points(departure.center, arrival.center);
@@ -878,6 +862,13 @@ impl Engine {
                 AircraftEvent::new(
                   aircraft.id,
                   EventKind::Takeoff(current.name),
+                )
+                .into(),
+              );
+              events.push(
+                AircraftEvent::new(
+                  aircraft.id,
+                  EventKind::NamedFrequency("departure".to_owned()),
                 )
                 .into(),
               );

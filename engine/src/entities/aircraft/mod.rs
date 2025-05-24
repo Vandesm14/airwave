@@ -53,6 +53,12 @@ pub enum LandingState {
   GoAround,
 }
 
+impl LandingState {
+  pub fn established(&self) -> bool {
+    matches!(self, Self::Localizer | Self::Glideslope)
+  }
+}
+
 #[derive(
   Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize, TS,
 )]

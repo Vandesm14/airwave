@@ -251,10 +251,9 @@ impl Aircraft {
           // Runway specific
           NodeBehavior::LineUp => {
             if current.kind == NodeKind::Runway {
-              if let Some(runway) = world
-                .airports
-                .iter()
-                .find(|a| self.airspace.is_some_and(|id| a.id == id))
+              if let Some(runway) = self
+                .airspace
+                .and_then(|id| world.airport(id))
                 .and_then(|x| x.runways.iter().find(|r| r.id == current.name))
               {
                 self.heading = runway.heading;

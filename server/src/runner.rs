@@ -541,12 +541,8 @@ impl Runner {
           if let Some(aircraft) =
             self.engine.game.aircraft.iter_mut().find(|a| a.id == id)
           {
-            if let Some(airport) = self
-              .engine
-              .world
-              .airports
-              .iter()
-              .find(|a| a.id == aircraft.flight_plan.arriving)
+            if let Some(airport) =
+              self.engine.world.airport(aircraft.flight_plan.arriving)
             {
               if !self.engine.world.airport_status(airport.id).automate_air {
                 tracing::info!(

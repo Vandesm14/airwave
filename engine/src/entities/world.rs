@@ -92,6 +92,10 @@ impl World {
       .copied()
       .unwrap_or_default()
   }
+
+  pub fn airport(&self, airport_id: Intern<String>) -> Option<&Airport> {
+    self.airports.iter().find(|a| a.id == airport_id)
+  }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
