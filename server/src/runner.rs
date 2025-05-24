@@ -535,7 +535,7 @@ impl Runner {
       for event in self.tick().drain(..) {
         if let Event::Aircraft(AircraftEvent {
           id,
-          kind: EventKind::Segment(FlightSegment::Approach),
+          kind: EventKind::Segment(_, FlightSegment::Approach),
         }) = event
         {
           if let Some(aircraft) =

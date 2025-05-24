@@ -158,8 +158,6 @@ impl Engine {
     }
 
     for aircraft in self.game.aircraft.iter_mut() {
-      let prev = aircraft.clone();
-
       // Run through all events
       for event in self.events.iter().filter_map(|e| match e {
         Event::Aircraft(aircraft_event) => Some(aircraft_event),
@@ -168,7 +166,6 @@ impl Engine {
         if event.id == aircraft.id {
           handle_aircraft_event(
             aircraft,
-            &prev,
             &event.kind,
             &mut events,
             &self.world,
@@ -178,7 +175,6 @@ impl Engine {
       }
 
       // Run through all effects
-
       // State effects
       aircraft.update_taxiing(&mut events, &self.world, dt);
       aircraft.update_landing(&mut events, dt);

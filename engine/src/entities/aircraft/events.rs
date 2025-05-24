@@ -58,7 +58,7 @@ pub enum EventKind {
   CalloutTARA,
 
   // State
-  Segment(FlightSegment),
+  Segment(FlightSegment, FlightSegment),
 
   // External
   // TODO: I think the engine can handle this instead internally.
@@ -104,7 +104,6 @@ impl AircraftEvent {
 
 pub fn handle_aircraft_event(
   aircraft: &mut Aircraft,
-  prev: &Aircraft,
   event: &EventKind,
   events: &mut Vec<Event>,
   world: &World,
@@ -399,7 +398,7 @@ pub fn handle_aircraft_event(
     }
 
     // State
-    EventKind::Segment(segment) => {
+    EventKind::Segment(prev, segment) => {
       // TODO: Remove this once we don't need the vis.
       // tracing::info!(
       //   "Setting segment for {} from {:?} to {:?}",
@@ -408,6 +407,8 @@ pub fn handle_aircraft_event(
       //   segment
       // );
 
+      aircraft.segment = *segment;
+
       match segment {
         FlightSegment::Unknown => {}
         FlightSegment::Dormant => {
@@ -415,13 +416,13 @@ pub fn handle_aircraft_event(
         }
         FlightSegment::Boarding => {}
         FlightSegment::Parked => {
-          if prev.segment == FlightSegment::Boarding {
+          if *prev == FlightSegment::Boarding {
             handle_parked_transition(aircraft, events, world);
-          } else if prev.segment == FlightSegment::TaxiArr {
+          } else if *prev == FlightSegment::TaxiArr {
             events.push(
               AircraftEvent::new(
                 aircraft.id,
-                EventKind::Segment(FlightSegment::Dormant),
+                EventKind::Segment(aircraft.segment, FlightSegment::Dormant),
               )
               .into(),
             );
@@ -434,7 +435,7 @@ pub fn handle_aircraft_event(
         FlightSegment::Cruise => {}
         FlightSegment::Arrival => {}
         FlightSegment::Approach => {
-          if prev.segment == FlightSegment::Arrival {
+          if *prev == FlightSegment::Arrival {
             handle_approach_transition(aircraft, world, events, rng);
           }
         }
