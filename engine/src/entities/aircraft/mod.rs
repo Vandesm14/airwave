@@ -435,9 +435,9 @@ impl Aircraft {
 // Performance stats
 impl Aircraft {
   pub fn separation_minima(&self) -> SeparationMinima {
-    let separation_distance = NAUTICALMILES_TO_FEET * 5.0;
+    let separation_distance = NAUTICALMILES_TO_FEET * 7.5;
     if matches!(self.segment, FlightSegment::Approach) {
-      SeparationMinima::new(NAUTICALMILES_TO_FEET * 7.5, 230.0, 150.0, 60.0)
+      SeparationMinima::new(separation_distance, 230.0, 150.0, 60.0)
     } else if matches!(self.segment, FlightSegment::Departure) {
       SeparationMinima::new(separation_distance, 250.0, 180.0, 60.0)
     } else if matches!(
@@ -445,7 +445,7 @@ impl Aircraft {
       FlightSegment::Climb | FlightSegment::Cruise | FlightSegment::Arrival
     ) {
       SeparationMinima::new(
-        NAUTICALMILES_TO_FEET * 5.0,
+        separation_distance,
         self.flight_plan.speed,
         350.0,
         30.0,
