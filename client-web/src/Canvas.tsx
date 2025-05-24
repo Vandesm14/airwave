@@ -29,7 +29,7 @@ import {
   toRadians,
 } from './lib/lib';
 import colors from './lib/colors';
-import { useAircraftWithRate, usePing, useWorld } from './lib/api';
+import { useAircraftWithRate, useWorld } from './lib/api';
 import { Runway } from '../bindings/Runway';
 import { Aircraft } from '../bindings/Aircraft';
 import { Terminal } from '../bindings/Terminal';
@@ -66,8 +66,6 @@ export default function Canvas() {
   let [lastFpsUpdate, setLastFpsUpdate] = createSignal(Date.now());
   let [frameCount, setFrameCount] = createSignal(0);
   let [currentFps, setCurrentFps] = createSignal(0);
-
-  const ping = usePing();
 
   function clickToSelectAircraft(e: MouseEvent) {
     // Convert the cursor position to your coordinate system
