@@ -733,6 +733,18 @@ impl Engine {
             }
           }
         }
+      } else if matches!(aircraft.segment, FlightSegment::Landing) {
+        if let AircraftState::Landing { state, .. } = aircraft.state {
+          if state.established() {
+            events.push(
+              AircraftEvent::new(
+                aircraft.id,
+                EventKind::NamedFrequency("tower".to_owned()),
+              )
+              .into(),
+            );
+          }
+        }
       }
     }
   }
