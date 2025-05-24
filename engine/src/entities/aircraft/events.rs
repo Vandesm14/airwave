@@ -541,10 +541,11 @@ pub fn handle_taxi_event(
 
         all_waypoints.extend(path.path);
       } else {
-        tracing::error!(
-          "Failed to find path for destination: {:?}, from: {:?}",
-          destination,
-          curr
+        tracing::debug!(
+          "Failed to find path for {} from {} to {}",
+          aircraft.id,
+          destination.name,
+          curr.name
         );
         return;
       }
@@ -704,25 +705,27 @@ pub fn handle_approach_transition(
       aircraft.target.heading =
         angle_between_points(aircraft.pos, airport.center);
 
-      let direction = heading_to_direction(angle_between_points(
-        airport.center,
-        aircraft.pos,
-      ))
-      .to_owned();
-      let command = CommandWithFreq::new(
-        Intern::to_string(&aircraft.id),
-        aircraft.frequency,
-        CommandReply::ArriveInAirspace {
-          direction,
-          altitude: aircraft.altitude,
-        },
-        Vec::new(),
-      );
+      if let Some(airport) = world.airport(airport.id) {
+        let direction = heading_to_direction(angle_between_points(
+          airport.center,
+          aircraft.pos,
+        ))
+        .to_owned();
+        let command = CommandWithFreq::new(
+          Intern::to_string(&aircraft.id),
+          airport.frequencies.approach,
+          CommandReply::ArriveInAirspace {
+            direction,
+            altitude: aircraft.altitude,
+          },
+          Vec::new(),
+        );
 
-      events.push(Event::Aircraft(AircraftEvent::new(
-        aircraft.id,
-        EventKind::Callout(command),
-      )));
+        events.push(Event::Aircraft(AircraftEvent::new(
+          aircraft.id,
+          EventKind::Callout(command),
+        )));
+      }
     } else {
       // If diverted, go to a random automated airport.
       let arrival = rng
