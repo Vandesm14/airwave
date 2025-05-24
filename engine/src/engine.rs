@@ -665,6 +665,8 @@ impl Engine {
               let distance = wp.data.pos.distance_squared(aircraft.pos);
               let land_distance = NAUTICALMILES_TO_FEET * 1.5;
 
+              let min_landing_separation = NAUTICALMILES_TO_FEET * 3.5;
+
               if distance <= land_distance.powf(2.0) {
                 if let Some((too_close, distance)) = self
                   .game
@@ -677,7 +679,7 @@ impl Engine {
                   })
                   .map(|a| (a, a.pos.distance_squared(aircraft.pos)))
                   .find(|(_, distance)| {
-                    *distance < (NAUTICALMILES_TO_FEET * 3.5).powf(2.0)
+                    *distance < (min_landing_separation).powf(2.0)
                   })
                 {
                   let downwind_fix = move_point(
@@ -705,8 +707,7 @@ impl Engine {
                     aircraft.id,
                     too_close.id,
                     distance.sqrt() / NAUTICALMILES_TO_FEET,
-                    aircraft.separation_minima().separation_distance
-                      / NAUTICALMILES_TO_FEET
+                    min_landing_separation / NAUTICALMILES_TO_FEET
                   );
 
                   events.push(
