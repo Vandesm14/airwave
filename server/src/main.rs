@@ -18,6 +18,8 @@ use server::{
 #[tokio::main]
 async fn main() {
   let Cli {
+    no_client,
+    no_server,
     address_ipv4,
     address_ipv6,
     ref audio_path,
@@ -180,8 +182,15 @@ async fn main() {
   let address_ipv4 = address_ipv4.unwrap_or(config.server().address_ipv4);
   let address_ipv6 = address_ipv6.unwrap_or(config.server().address_ipv6);
 
-  let _ =
-    tokio::spawn(http::run(address_ipv4, address_ipv6, get_tx, post_tx)).await;
+  let _ = tokio::spawn(http::run(
+    no_server,
+    no_client,
+    address_ipv4,
+    address_ipv6,
+    get_tx,
+    post_tx,
+  ))
+  .await;
 }
 
 fn setup_logging(

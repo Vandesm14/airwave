@@ -11,7 +11,7 @@ import { OutgoingCommandReply } from '../../bindings/OutgoingCommandReply';
 import { AirportStatus } from '../../bindings/AirportStatus';
 import { DefaultAirportStatus, DefaultWorld } from './lib';
 
-const defaultURL = `${window.location.protocol}//${window.location.hostname}:9001`;
+const defaultURL = `${window.location.protocol}//${window.location.hostname}:8080`;
 const search = new URLSearchParams(window.location.search);
 export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;
 

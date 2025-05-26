@@ -17,37 +17,51 @@ use serde::{Deserialize, Serialize};
 use shared::{AppState, GetSender, PostSender};
 
 use engine::engine::UICommand;
-use tower_http::{compression::CompressionLayer, cors::CorsLayer};
+use tower_http::{
+  compression::CompressionLayer, cors::CorsLayer, services::ServeDir,
+};
 
 pub async fn run(
+  no_server: bool,
+  no_client: bool,
   address_ipv4: SocketAddr,
   address_ipv6: SocketAddr,
   get_sender: GetSender,
   post_sender: PostSender,
 ) {
   let cors = CorsLayer::very_permissive();
-  let app = Router::new().nest(
-    "/api",
-    Router::new()
-      .route("/", get(|| async { "Airwave API is active." }))
-      // Misc
-      .route("/pause", post(post_pause))
-      .route("/ping", get(ping_pong))
-      // Comms
-      .route("/comms/text", post(comms_text))
-      .route("/comms/voice", post(comms_voice))
-      // Aircraft
-      .route("/game/aircraft", get(get_aircraft))
-      .route("/game/aircraft/{id}", get(get_one_aircraft))
-      // State
-      .route("/messages", get(get_messages))
-      .route("/world", get(get_world))
-      .route("/status/{id}", get(get_airport_status))
-      .route("/status/{id}", post(post_airport_status))
-      .with_state(AppState::new(get_sender, post_sender))
-      .layer(CompressionLayer::new())
-      .layer(cors),
-  );
+
+  let mut app = Router::new();
+  if !no_server {
+    app = app.nest(
+      "/api",
+      Router::new()
+        .route("/", get(|| async { "Airwave API is active." }))
+        // Misc
+        .route("/pause", post(post_pause))
+        .route("/ping", get(ping_pong))
+        // Comms
+        .route("/comms/text", post(comms_text))
+        .route("/comms/voice", post(comms_voice))
+        // Aircraft
+        .route("/game/aircraft", get(get_aircraft))
+        .route("/game/aircraft/{id}", get(get_one_aircraft))
+        // State
+        .route("/messages", get(get_messages))
+        .route("/world", get(get_world))
+        .route("/status/{id}", get(get_airport_status))
+        .route("/status/{id}", post(post_airport_status))
+        .with_state(AppState::new(get_sender, post_sender))
+        .layer(CompressionLayer::new())
+        .layer(cors),
+    );
+    tracing::info!("Serving API server");
+  }
+
+  if !no_client {
+    app = app.fallback_service(ServeDir::new("assets/client-web"));
+    tracing::info!("Serving web client");
+  }
 
   let listener4 = tokio::net::TcpListener::bind(address_ipv4).await.unwrap();
   let listener6 = tokio::net::TcpListener::bind(address_ipv6).await.unwrap();

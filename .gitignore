@@ -4,7 +4,7 @@ Cargo.lock
 
 # Node
 node_modules/
-client-web/dist/
+assets/client-web/
 client-web/bindings/
 
 # Editors

@@ -11,5 +11,5 @@ procs:
       - logs
   client-watch:
     cmd: ['pnpm', 'client-web:build', '--watch']
-  client-serve:
-    cmd: ['pnpm', 'client-web:preview', '--port', '8080']
+  # client-serve:
+  #   cmd: ['pnpm', 'client-web:preview', '--port', '8080']

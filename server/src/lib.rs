@@ -24,6 +24,13 @@ pub static PROJECT_DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 
 #[derive(Parser)]
 pub struct Cli {
+  /// Disables the API and game server.
+  #[arg(short, long)]
+  pub no_server: bool,
+  /// Disables the web client.
+  #[arg(short, long)]
+  pub no_client: bool,
+
   /// The socket IPv4 address to bind the WebSocket server to.
   #[arg(short, long, default_value = None)]
   pub address_ipv4: Option<SocketAddr>,
