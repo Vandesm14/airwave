@@ -19,9 +19,11 @@ prepare-release:
 
 release-linux: build-linux prepare-release
   cp target/x86_64-unknown-linux-gnu/release/airwave dist/linux/
+  tar -czf dist/x86_64-unknown-linux-gnu.tar.gz dist/linux/
 
 release-windows: build-windows prepare-release
   cp target/x86_64-pc-windows-gnu/release/airwave.exe dist/windows/
+  zip dist/x86_64-pc-windows-gnu.zip dist/windows/
 
 build: build-linux build-windows
 release: release-linux release-windows
