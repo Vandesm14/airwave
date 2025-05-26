@@ -97,87 +97,90 @@ async fn main() {
   let (post_tx, post_rx) =
     mpsc::unbounded_channel::<JobReq<ArgReqKind, ResKind>>();
 
-  let seed = config.world().seed();
+  if !no_server {
+    let seed = config.world().seed();
 
-  tracing::info!("Seed: {seed}");
+    tracing::info!("Seed: {seed}");
 
-  let rng = Rng::with_seed(seed);
-  let mut world_rng = Rng::with_seed(0);
-  let mut runner = Runner::new(
-    get_rx,
-    post_rx,
-    Some(PathBuf::from_str("assets/world.json").unwrap()),
-    rng,
-  );
+    let rng = Rng::with_seed(seed);
+    let mut world_rng = Rng::with_seed(0);
+    let mut runner = Runner::new(
+      get_rx,
+      post_rx,
+      Some(PathBuf::from_str("assets/world.json").unwrap()),
+      rng,
+    );
 
-  runner.engine.load_assets();
+    runner.engine.load_assets();
 
-  let mut main_airport: Airport = match config.world().airport() {
-    Some(id) => match runner.engine.airport(id) {
-      Some(airport) => {
-        tracing::info!(r#"Using airport: "{}""#, airport.id);
-        airport.clone()
-      }
-      None => {
-        tracing::error!(
-          r#"Failed to load airport "{id}": Could not find assets "{id}.json" or "{id}.lua" (assets are case-sensetive)."#
-        );
-        std::process::exit(1);
-      }
-    },
-    None => match runner.engine.default_airport() {
-      Some(airport) => {
-        tracing::info!(r#"Using default airport: "{}""#, airport.id);
-        airport.clone()
-      }
-      None => {
-        tracing::error!("Could not find default airport");
-        std::process::exit(1);
-      }
-    },
-  };
-  if let Some(frequencies) = config.frequencies() {
-    main_airport.frequencies = frequencies.clone();
+    let mut main_airport: Airport = match config.world().airport() {
+      Some(id) => match runner.engine.airport(id) {
+        Some(airport) => {
+          tracing::info!(r#"Using airport: "{}""#, airport.id);
+          airport.clone()
+        }
+        None => {
+          tracing::error!(
+            r#"Failed to load airport "{id}": Could not find assets "{id}.json" or "{id}.lua" (assets are case-sensetive)."#
+          );
+          std::process::exit(1);
+        }
+      },
+      None => match runner.engine.default_airport() {
+        Some(airport) => {
+          tracing::info!(r#"Using default airport: "{}""#, airport.id);
+          airport.clone()
+        }
+        None => {
+          tracing::error!("Could not find default airport");
+          std::process::exit(1);
+        }
+      },
+    };
+    if let Some(frequencies) = config.frequencies() {
+      main_airport.frequencies = frequencies.clone();
+    }
+
+    let main_frequencies = main_airport.frequencies.clone();
+    let main_id = main_airport.id;
+
+    runner.engine.world.airports.push(main_airport);
+
+    runner.generate_airports(&mut world_rng, &main_frequencies);
+    runner.generate_waypoints();
+
+    runner
+      .engine
+      .world
+      .airport_statuses
+      .insert(main_id, config.world().status());
+
+    runner.fill_gates();
+
+    //
+
+    tracing::info!("Quick start loop (this may take a minute)...");
+    let start = Instant::now();
+    let ticks_ran = runner.quick_start();
+    let duration = start.elapsed();
+    let simulated_seconds =
+      ticks_ran as f32 / runner.engine.tick_rate_tps as f32;
+    let simulated_minutes = (simulated_seconds / 60.0).floor();
+    tracing::info!(
+      "Simulated {} ticks (relative time: {:.0}m{:.0}s) in {:.2} secs (approx. {:.2}x speed).",
+      ticks_ran,
+      simulated_minutes,
+      simulated_seconds % 60.0,
+      duration.as_secs_f32(),
+      simulated_seconds / duration.as_secs_f32()
+    );
+
+    tracing::info!("Starting game loop...");
+
+    runner.reset_signal_gens();
+    runner.engine.game.paused = config.world().paused();
+    tokio::task::spawn_blocking(move || runner.begin_loop());
   }
-
-  let main_frequencies = main_airport.frequencies.clone();
-  let main_id = main_airport.id;
-
-  runner.engine.world.airports.push(main_airport);
-
-  runner.generate_airports(&mut world_rng, &main_frequencies);
-  runner.generate_waypoints();
-
-  runner
-    .engine
-    .world
-    .airport_statuses
-    .insert(main_id, config.world().status());
-
-  runner.fill_gates();
-
-  //
-
-  tracing::info!("Quick start loop (this may take a minute)...");
-  let start = Instant::now();
-  let ticks_ran = runner.quick_start();
-  let duration = start.elapsed();
-  let simulated_seconds = ticks_ran as f32 / runner.engine.tick_rate_tps as f32;
-  let simulated_minutes = (simulated_seconds / 60.0).floor();
-  tracing::info!(
-    "Simulated {} ticks (relative time: {:.0}m{:.0}s) in {:.2} secs (approx. {:.2}x speed).",
-    ticks_ran,
-    simulated_minutes,
-    simulated_seconds % 60.0,
-    duration.as_secs_f32(),
-    simulated_seconds / duration.as_secs_f32()
-  );
-
-  tracing::info!("Starting game loop...");
-
-  runner.reset_signal_gens();
-  runner.engine.game.paused = config.world().paused();
-  tokio::task::spawn_blocking(move || runner.begin_loop());
 
   let address_ipv4 = address_ipv4.unwrap_or(config.server().address_ipv4);
   let address_ipv6 = address_ipv6.unwrap_or(config.server().address_ipv6);
