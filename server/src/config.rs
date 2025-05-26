@@ -128,9 +128,9 @@ impl Default for ServerConfig {
 }
 
 fn default_ipv4() -> SocketAddr {
-  SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9001)
+  SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080)
 }
 
 fn default_ipv6() -> SocketAddr {
-  SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 9001)
+  SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 8080)
 }

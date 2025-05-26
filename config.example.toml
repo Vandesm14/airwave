@@ -13,22 +13,22 @@ center = 118.7
 seed = 202505131433
 # The name of the airport to use (the corresponding `.lua` or `.json` file in
 # `assets/airports`, just without the file extension).
-airport = "default"
+airport = "ksfo"
 # Whether to start the game paused (does not skip or pause the quick start step).
-paused = true
+paused = false
 
 # Override the status of the airport you select in `world.airport`.
 [world.status]
 # Whether to divert arrivals to other airports.
-divert_arrivals = true
+divert_arrivals = false
 # Whether to delay departures.
-delay_departures = true
+delay_departures = false
 # Whether to have Airwave take over all air-based operations.
-automate_air = true
+automate_air = false
 # Whether to have Airwave take over all ground-based operations.
-automate_ground = true
+automate_ground = false
 
 # Settings for the server.
 [server]
 # The address to bind the server to (supports IPv6).
-address = "0.0.0.0:9001"
+address = "0.0.0.0:8080"
