@@ -1,0 +1,1 @@
+airwave.exe --no-server

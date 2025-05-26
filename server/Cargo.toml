@@ -9,6 +9,10 @@ license.workspace = true
 name = "dump_prompts"
 path = "src/dump_prompts.rs"
 
+[[bin]]
+name = "airwave"
+path = "src/main.rs"
+
 [dependencies]
 engine = { path = "../engine" }
 

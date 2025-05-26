@@ -7,6 +7,9 @@ node_modules/
 assets/client-web/
 client-web/bindings/
 
+# Build
+/dist/
+
 # Editors
 .vscode/
 .zed/
