@@ -35,7 +35,7 @@ export let radarAtom = atom<RadarConfig>({
 
 export let isRecordingAtom = atom(false);
 export let useTTSAtom = atom(false);
-export let frequencyAtom = atom(118.5);
+export let frequencyAtom = atom(118.6);
 
 export let airportAtom = atom<string>(DEFAULT_AIRPORT);
 

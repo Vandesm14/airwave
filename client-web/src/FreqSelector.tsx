@@ -47,7 +47,7 @@ function FreqRow({ index, freq, setFreq, selected }: FreqRowProps) {
           setFreq(parseFloat(e.target.value));
         }}
       >
-        <option value={118.5}></option>
+        <option value={118.6}></option>
         {query.data && getAirport(query.data, airportId())?.frequencies
           ? // TODO: Remove uses of as keyof Frequencies.
             Object.entries(
