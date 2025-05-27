@@ -157,6 +157,22 @@ export default function App() {
     () => query.data !== undefined && query.data.connected
   );
 
+  const changeServerURL = (e: Event) => {
+    const url = window.location;
+    const input = e.target as HTMLInputElement;
+    let value = input.value;
+
+    // Add http:// if not provided
+    if (!/^https?:\/\//i.test(value)) {
+      value = 'http://' + value;
+    }
+
+    const search = new URLSearchParams(window.location.search);
+    search.set('api', value);
+    const newURL = `${url.origin}${url.pathname}?${search.toString()}`;
+    window.location.href = newURL;
+  };
+
   return (
     <>
       <Show when={isConnected()}>
@@ -198,8 +214,10 @@ export default function App() {
       </Show>
       <Show when={!isConnected()}>
         <div class="connection-message">
-          <h1>Connecting to server...</h1>
-          <h2>Retrying: {baseAPIPath}</h2>
+          <h1>Connecting to server {baseAPIPath}</h1>
+          <h2>
+            Retrying: <input value={baseAPIPath} onchange={changeServerURL} />
+          </h2>
         </div>
       </Show>
     </>

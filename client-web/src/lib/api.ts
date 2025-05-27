@@ -13,7 +13,9 @@ import { DefaultAirportStatus, DefaultWorld } from './lib';
 
 const defaultURL = `${window.location.protocol}//${window.location.hostname}:8080`;
 const search = new URLSearchParams(window.location.search);
-export const baseAPIPath = search.has('api') ? search.get('api') : defaultURL;
+export const baseAPIPath: string = search.has('api')
+  ? (search.get('api') ?? defaultURL)
+  : defaultURL;
 
 export type ServerTicks = { ticks: number; lastFetch: number };
 export type Ping = { connected: boolean; server_ticks: ServerTicks };
