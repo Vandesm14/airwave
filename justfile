@@ -24,7 +24,7 @@ release-linux: build-linux prepare-release
 
 release-windows: build-windows prepare-release
   cp target/x86_64-pc-windows-gnu/release/airwave.exe dist/windows/
-  zip dist/x86_64-pc-windows-gnu.zip dist/windows/
+  zip -r dist/x86_64-pc-windows-gnu.zip dist/windows/
 
 build: build-linux build-windows
 release: release-linux release-windows

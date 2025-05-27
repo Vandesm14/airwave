@@ -1,1 +1,0 @@
-airwave.exe --no-api
