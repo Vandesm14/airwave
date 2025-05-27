@@ -15,14 +15,13 @@ import { calculateDistance, formatTime, nauticalMilesToFeet } from './lib/lib';
 import { createQuery } from '@tanstack/solid-query';
 import { getAircraft, ServerTicks, usePing, useWorld } from './lib/api';
 import { Aircraft } from '../bindings/Aircraft';
-import { makePersisted } from '@solid-primitives/storage';
 import { FlightSegment } from '../bindings/FlightSegment';
 import { unwrap } from 'solid-js/store';
 import fastDeepEqual from 'fast-deep-equal';
 
 import './StripBoard.scss';
 import { Airport } from '../bindings/Airport';
-import useGlobalShortcuts from './lib/hooks';
+import useGlobalShortcuts, { useStorage } from './lib/hooks';
 
 const INBOX_ID = 0;
 
@@ -411,8 +410,9 @@ function aircraftToStrip(
 const Separator = () => <div class="separator"></div>;
 
 function createStrips() {
-  const [_, setNextId] = makePersisted(createSignal(0));
-  const [strips, setStrips] = makePersisted(
+  const [_, setNextId] = useStorage('strip-counter', createSignal(0));
+  const [strips, setStrips] = useStorage(
+    'strips',
     createSignal<Array<Signal<Strip>>>([], {
       equals: (a, b) => fastDeepEqual(a, b),
     }),
@@ -527,7 +527,8 @@ export default function StripBoard() {
   const board = createStrips();
 
   const [showOpts, setShowOpts] = createSignal(false);
-  const [createOn, setCreateOn] = makePersisted(
+  const [createOn, setCreateOn] = useStorage(
+    'strip-options',
     createSignal<CreateOn>(newCreateOn())
   );
 
@@ -700,7 +701,7 @@ export default function StripBoard() {
   function toggleCreateOn(prop: keyof CreateOn) {
     setCreateOn((createOn) => {
       createOn[prop] = !createOn[prop];
-      return createOn;
+      return { ...createOn };
     });
   }
 

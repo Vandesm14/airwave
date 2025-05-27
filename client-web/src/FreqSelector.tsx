@@ -8,8 +8,7 @@ import {
   Index,
   onMount,
 } from 'solid-js';
-import { makePersisted } from '@solid-primitives/storage';
-import useGlobalShortcuts from './lib/hooks';
+import useGlobalShortcuts, { useStorage } from './lib/hooks';
 
 import './FreqSelector.scss';
 import { useWorld } from './lib/api';
@@ -66,10 +65,11 @@ function FreqRow({ index, freq, setFreq, selected }: FreqRowProps) {
 export default function FreqSelector() {
   const [frequency, setFrequency] = useAtom(frequencyAtom);
   const [selected, setSelected] = createSignal(-1);
-  const [slots, setSlots] = makePersisted(
+  const [slots, setSlots] = useStorage(
+    'frequency-slots',
     createSignal<number[]>(Array(10).fill(118.6))
   );
-  const [count, setCount] = makePersisted(createSignal(2));
+  const [count, setCount] = useStorage('frequency-slot-count', createSignal(2));
 
   onMount(() => {
     setSelected(0);

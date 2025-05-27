@@ -1,6 +1,6 @@
 import { useAtom } from 'solid-jotai';
 import { PrimitiveAtom, SetStateAction } from 'jotai';
-import { Accessor, createEffect, Resource } from 'solid-js';
+import { Accessor, createEffect, Resource, Signal } from 'solid-js';
 import { isSome } from './lib';
 
 type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
@@ -19,30 +19,62 @@ function setToLocalStorage<T>(id: string, val: T) {
   localStorage.setItem(id, json);
 }
 
+export function useStorage<T>(
+  id: string,
+  signal: Signal<T>,
+  options?: {
+    serialize?: (data: T) => string;
+    deserialize?: (data: string) => T;
+  }
+): Signal<T> {
+  let [theSignal, setTheSignal] = signal;
+
+  const serialize = options?.serialize ?? JSON.stringify;
+  const deserialize = options?.deserialize ?? JSON.parse;
+
+  onMount(() => {
+    const local = getFromLocalStorage(id);
+    if (isSome(local)) {
+      setTheSignal(deserialize(local));
+    }
+  });
+
+  createEffect(() => setToLocalStorage(id, serialize(theSignal())));
+
+  return [theSignal, setTheSignal];
+}
+
 export function useStorageAtom<T>(
   id: string,
-  atom: PrimitiveAtom<T>
+  atom: PrimitiveAtom<T>,
+  options?: {
+    serialize?: (data: T) => string;
+    deserialize?: (data: string) => T;
+  }
 ): [
   Resource<Awaited<T>> | Accessor<Awaited<T>>,
   SetAtom<[SetStateAction<T>], void>,
 ] {
-  const name = `storage-${id}`;
   let [theAtom, setTheAtom] = useAtom(atom);
 
-  const local = getFromLocalStorage(name);
+  const serialize = options?.serialize ?? JSON.stringify;
+  const deserialize = options?.deserialize ?? JSON.parse;
+
+  onMount(() => {
+    const local = getFromLocalStorage(id);
+    if (isSome(local)) {
+      setTheAtom(deserialize(local));
+    }
+  });
+
+  const local = getFromLocalStorage(id);
   if (isSome(local)) {
-    setTheAtom(local);
+    setTheAtom(deserialize(local));
   }
 
-  createEffect(() => setToLocalStorage(name, theAtom()));
+  createEffect(() => setToLocalStorage(id, serialize(theAtom())));
 
-  return [
-    theAtom,
-    (s) => {
-      setTheAtom(s);
-      setToLocalStorage(name, theAtom());
-    },
-  ];
+  return [theAtom, setTheAtom];
 }
 
 import { onCleanup, onMount } from 'solid-js';
