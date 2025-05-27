@@ -4,12 +4,10 @@ procs:
       - cargo
       - run
       - --bin
-      - server
+      - airwave
       - --release
       - --
       - --logs-path
       - logs
   client-watch:
     cmd: ['pnpm', 'client-web:build', '--watch']
-  # client-serve:
-  #   cmd: ['pnpm', 'client-web:preview', '--port', '8080']
