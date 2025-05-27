@@ -527,7 +527,7 @@ impl Runner {
 
     // TODO: This ensures that the max time is 30 minutes, but should change
     // once we have a quicker engine loop, then we can quick start quicker.
-    let max_time_secs = max_time_hours * 60.0 * 60.0;
+    let max_time_secs = 60.0 * 30.0;
     let max_ticks =
       (max_time_secs * self.engine.tick_rate_tps as f32).ceil() as usize;
 
