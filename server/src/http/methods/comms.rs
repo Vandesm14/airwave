@@ -125,8 +125,28 @@ pub async fn comms_text(
 
   let commands = parse_commands(text.clone(), query.frequency);
   let commands = if commands.is_empty() {
-    complete_atc_request(&mut state.tiny_sender, text.clone(), query.frequency)
+    if std::env::var("OPENAI_API_KEY").is_err() {
+      let _ = JobReq::send(
+          ArgReqKind::CommandATC(CommandWithFreq::new(
+            "ATC".to_string(),
+            query.frequency,
+            CommandReply::Blank { text: "Failed to parse shorthand. Unable to use AI features: OpenAI API key not provided.".to_owned() },
+            Vec::new(),
+          )),
+          &mut state.big_sender,
+        )
+        .recv()
+        .await;
+
+      return;
+    } else {
+      complete_atc_request(
+        &mut state.tiny_sender,
+        text.clone(),
+        query.frequency,
+      )
       .await
+    }
   } else {
     tracing::info!(
       "Parsing shorthand: {} into {} commands",
@@ -217,39 +237,56 @@ pub async fn comms_voice(
 
   tracing::info!("Received comms voice request: {} bytes", bytes.len());
 
-  match transcribe_voice(bytes).await {
-    Ok(text) => {
-      let _ = JobReq::send(
-        ArgReqKind::CommandATC(CommandWithFreq::new(
-          "ATC".to_string(),
-          query.frequency,
-          CommandReply::Blank { text: text.clone() },
-          Vec::new(),
-        )),
-        &mut state.big_sender,
-      )
-      .recv()
-      .await;
-
-      let commands = complete_atc_request(
-        &mut state.tiny_sender,
-        text.clone(),
+  if std::env::var("OPENAI_API_KEY").is_err() {
+    let _ = JobReq::send(
+      ArgReqKind::CommandATC(CommandWithFreq::new(
+        "ATC".to_string(),
         query.frequency,
-      )
-      .await;
-
-      for command in commands.iter() {
-        write_json_data(command);
-
+        CommandReply::Blank {
+          text: "Failed to transcribe voice. Unable to use AI features: OpenAI API key not provided."
+            .to_owned(),
+        },
+        Vec::new(),
+      )),
+      &mut state.big_sender,
+    )
+    .recv()
+    .await;
+  } else {
+    match transcribe_voice(bytes).await {
+      Ok(text) => {
         let _ = JobReq::send(
-          ArgReqKind::CommandReply(command.clone()),
+          ArgReqKind::CommandATC(CommandWithFreq::new(
+            "ATC".to_string(),
+            query.frequency,
+            CommandReply::Blank { text: text.clone() },
+            Vec::new(),
+          )),
           &mut state.big_sender,
         )
         .recv()
         .await;
+
+        let commands = complete_atc_request(
+          &mut state.tiny_sender,
+          text.clone(),
+          query.frequency,
+        )
+        .await;
+
+        for command in commands.iter() {
+          write_json_data(command);
+
+          let _ = JobReq::send(
+            ArgReqKind::CommandReply(command.clone()),
+            &mut state.big_sender,
+          )
+          .recv()
+          .await;
+        }
       }
+      Err(e) => tracing::error!("Transcription failed: {}", e),
     }
-    Err(e) => tracing::error!("Transcription failed: {}", e),
   }
 
   let duration = time.elapsed();
