@@ -9,6 +9,5 @@ procs:
       - --
       - --logs-path
       - logs
-      # - --no-api
   client-watch:
     cmd: ['pnpm', 'client-web:build', '--watch']
