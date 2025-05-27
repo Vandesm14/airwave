@@ -11,3 +11,5 @@ procs:
       - logs
   client-watch:
     cmd: ['pnpm', 'client-web:build', '--watch']
+
+hide_keymap_window: true
