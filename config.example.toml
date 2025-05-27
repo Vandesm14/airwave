@@ -31,4 +31,4 @@ automate_ground = false
 # Settings for the server.
 [server]
 # The address to bind the server to (supports IPv6).
-address = "0.0.0.0:8080"
+address_ipv4 = "0.0.0.0:8080"
