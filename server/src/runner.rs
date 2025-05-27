@@ -18,7 +18,7 @@ use engine::{
   engine::{Engine, EngineConfig, Event},
   entities::{
     aircraft::{
-      Aircraft, AircraftKind, AircraftState, FlightSegment,
+      Aircraft, AircraftState, FlightSegment,
       events::{AircraftEvent, EventKind},
     },
     airport::Frequencies,
@@ -521,9 +521,9 @@ impl Runner {
 
     self.engine.config = EngineConfig::Minimal;
 
-    let size_nm = (WORLD_RADIUS) / NAUTICALMILES_TO_FEET;
-    let base_speed_knots = AircraftKind::A21N.stats().max_speed;
-    let max_time_hours = size_nm / base_speed_knots;
+    // let size_nm = (WORLD_RADIUS) / NAUTICALMILES_TO_FEET;
+    // let base_speed_knots = AircraftKind::A21N.stats().max_speed;
+    // let max_time_hours = size_nm / base_speed_knots;
 
     // TODO: This ensures that the max time is 30 minutes, but should change
     // once we have a quicker engine loop, then we can quick start quicker.
