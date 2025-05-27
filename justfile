@@ -3,13 +3,13 @@ build-client:
   rm -rf assets/client-web
   pnpm client-web:build
 
-build-linux: build-client
+build-linux: 
   cargo build --release --target x86_64-unknown-linux-gnu
 
-build-windows: build-client
+build-windows:
   cargo build --release --target x86_64-pc-windows-gnu
 
-prepare-release:
+prepare-release: build-client
   rm -rf dist/
   mkdir -p dist/windows
   mkdir -p dist/linux
