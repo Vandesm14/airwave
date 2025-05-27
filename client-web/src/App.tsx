@@ -1,4 +1,4 @@
-import { frequencyAtom } from './lib/atoms';
+import { frequencyAtom, frequencyAtomKey } from './lib/atoms';
 import Chatbox from './Chatbox';
 import { createMemo, Show } from 'solid-js';
 import Canvas from './Canvas';
@@ -11,7 +11,7 @@ import Flights from './Airport';
 import GameButtons from './GameButtons';
 
 export default function App() {
-  const [frequency] = useStorageAtom(frequencyAtom);
+  const [frequency] = useStorageAtom(frequencyAtomKey, frequencyAtom);
 
   const query = usePing();
   const client = useQueryClient();

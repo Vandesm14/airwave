@@ -4,6 +4,7 @@ import {
   isRecordingAtom,
   selectedAircraftAtom,
   useTTSAtom,
+  useTTSAtomKey,
 } from './lib/atoms';
 import { createEffect, createSignal } from 'solid-js';
 import useGlobalShortcuts, { useStorageAtom } from './lib/hooks';
@@ -20,7 +21,7 @@ export default function Chatbox({
   let [isRecording] = useAtom(isRecordingAtom);
   let [frequency] = useAtom(frequencyAtom);
   let [selectedAircraft, setSelectedAircraft] = useAtom(selectedAircraftAtom);
-  let [useTTS] = useStorageAtom(useTTSAtom);
+  let [useTTS] = useStorageAtom(useTTSAtomKey, useTTSAtom);
   let [showAll, setShowAll] = createSignal(false);
   let [text, setText] = createSignal('');
   let [lastRead, setLastRead] = createSignal(Date.now() / 1000);

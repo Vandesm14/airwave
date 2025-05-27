@@ -7,13 +7,13 @@ import {
   useWorld,
 } from './lib/api';
 import { useStorageAtom } from './lib/hooks';
-import { airportAtom } from './lib/atoms';
+import { airportAtom, airportAtomKey } from './lib/atoms';
 import { useQueryClient } from '@tanstack/solid-query';
 
 export default function Flights() {
   const [show, setShow] = createSignal(false);
 
-  const [airport, setAirport] = useStorageAtom(airportAtom);
+  const [airport, setAirport] = useStorageAtom(airportAtomKey, airportAtom);
 
   const world = useWorld();
   const airportStatus = useAirportStatus(airport);
@@ -22,7 +22,8 @@ export default function Flights() {
   const client = useQueryClient();
 
   createEffect(async () => {
-    let _ = airport();
+    // Update on airport change.
+    airport();
 
     await client.invalidateQueries({
       queryKey: [getAirportStatusKey],

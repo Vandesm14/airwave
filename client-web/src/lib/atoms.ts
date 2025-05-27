@@ -16,7 +16,7 @@ type RadarConfig = {
     y: number;
   };
 };
-export let radarAtom = atom<RadarConfig>({
+export const radarAtom = atom<RadarConfig>({
   scale: 1.0,
   isDragging: false,
   shiftPoint: {
@@ -33,13 +33,16 @@ export let radarAtom = atom<RadarConfig>({
   },
 });
 
-export let isRecordingAtom = atom(false);
-export let useTTSAtom = atom(false);
-export let frequencyAtom = atom(118.6);
+export const isRecordingAtom = atom(false);
+export const useTTSAtomKey = 'use-tts';
+export const useTTSAtom = atom(false);
+export const frequencyAtomKey = 'frequency';
+export const frequencyAtom = atom(118.6);
 
-export let airportAtom = atom<string>(DEFAULT_AIRPORT);
+export const airportAtomKey = 'airport';
+export const airportAtom = atom<string>(DEFAULT_AIRPORT);
 
-export let renderAtom = atom<{
+export const renderAtom = atom<{
   doInitialDraw: boolean;
   lastDraw: number;
 }>({
@@ -47,4 +50,4 @@ export let renderAtom = atom<{
   lastDraw: 0,
 });
 
-export let selectedAircraftAtom = atom<string>('');
+export const selectedAircraftAtom = atom<string>('');

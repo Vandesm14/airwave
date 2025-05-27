@@ -1,6 +1,12 @@
 import { useAtom } from 'solid-jotai';
 import { WhisperSTT } from './whisper/WhisperSTT';
-import { frequencyAtom, isRecordingAtom, useTTSAtom } from './lib/atoms';
+import {
+  frequencyAtom,
+  frequencyAtomKey,
+  isRecordingAtom,
+  useTTSAtom,
+  useTTSAtomKey,
+} from './lib/atoms';
 import { createSignal, onMount } from 'solid-js';
 import { useStorageAtom } from './lib/hooks';
 import { baseAPIPath, getMessages } from './lib/api';
@@ -10,8 +16,8 @@ export default function GameButtons() {
   const whisper = new WhisperSTT();
 
   const [isRecording, setIsRecording] = useAtom(isRecordingAtom);
-  const [frequency] = useStorageAtom(frequencyAtom);
-  const [useTTS, setUseTTS] = useStorageAtom(useTTSAtom);
+  const [frequency] = useStorageAtom(frequencyAtomKey, frequencyAtom);
+  const [useTTS, setUseTTS] = useStorageAtom(useTTSAtomKey, useTTSAtom);
   const [downButtons, setDownButtons] = createSignal<number>(0);
 
   const client = useQueryClient();
