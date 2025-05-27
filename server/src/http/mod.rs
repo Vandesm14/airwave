@@ -1,10 +1,11 @@
 pub mod methods;
 pub mod shared;
 
-use std::net::SocketAddr;
+use std::{fs, net::SocketAddr};
 
 use axum::{
   Router,
+  response::Html,
   routing::{get, post},
 };
 use methods::{
@@ -71,6 +72,18 @@ pub async fn run(
   if !no_client {
     app = app.fallback_service(ServeDir::new("assets/client-web"));
     tracing::info!("Serving web client.");
+  }
+
+  if no_api {
+    async fn serve_demo() -> Result<Html<String>, ()> {
+      if let Ok(content) = fs::read_to_string("assets/client-web/index.html") {
+        Ok(Html(content.replace("class=\"\"", "class=\"demo\"")))
+      } else {
+        Err(())
+      }
+    }
+
+    app = app.route("/", get(serve_demo));
   }
 
   let listener4 = tokio::net::TcpListener::bind(address_ipv4).await.unwrap();
