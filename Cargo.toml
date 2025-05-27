@@ -33,8 +33,3 @@ directories = "6"
 version = "4"
 default-features = false
 features = ["std", "help", "usage", "error-context", "suggestions", "derive"]
-
-[profile.release.package.serve]
-codegen-units = 1
-opt-level = "z"
-strip = true
