@@ -22,8 +22,9 @@ use tower_http::{
 };
 
 pub async fn run(
-  no_server: bool,
+  no_api: bool,
   no_client: bool,
+  no_server: bool,
   address_ipv4: SocketAddr,
   address_ipv6: SocketAddr,
   get_sender: GetSender,
@@ -31,36 +32,45 @@ pub async fn run(
 ) {
   let cors = CorsLayer::very_permissive();
 
-  let mut app = Router::new();
+  let mut app = Router::new().layer(CompressionLayer::new()).layer(cors);
   if !no_server {
-    app = app.nest(
-      "/api",
-      Router::new()
+    let mut api = Router::new()
+      // Misc
+      .route("/ping", get(ping_pong))
+      // Aircraft
+      .route("/game/aircraft", get(get_aircraft))
+      .route("/game/aircraft/{id}", get(get_one_aircraft))
+      // State
+      .route("/messages", get(get_messages))
+      .route("/world", get(get_world))
+      .route("/status/{id}", get(get_airport_status));
+
+    if !no_api {
+      api = api
         .route("/", get(|| async { "Airwave API is active." }))
         // Misc
         .route("/pause", post(post_pause))
-        .route("/ping", get(ping_pong))
         // Comms
         .route("/comms/text", post(comms_text))
         .route("/comms/voice", post(comms_voice))
-        // Aircraft
-        .route("/game/aircraft", get(get_aircraft))
-        .route("/game/aircraft/{id}", get(get_one_aircraft))
         // State
-        .route("/messages", get(get_messages))
-        .route("/world", get(get_world))
-        .route("/status/{id}", get(get_airport_status))
-        .route("/status/{id}", post(post_airport_status))
-        .with_state(AppState::new(get_sender, post_sender))
-        .layer(CompressionLayer::new())
-        .layer(cors),
+        .route("/status/{id}", post(post_airport_status));
+      tracing::info!("Serving API.");
+    } else {
+      api =
+        api.route("/", get(|| async { "Airwave API is in readonly mode." }));
+      tracing::info!("Serving API in readonly mode.");
+    }
+
+    app = app.nest(
+      "/api",
+      api.with_state(AppState::new(get_sender, post_sender)),
     );
-    tracing::info!("Serving API server");
   }
 
   if !no_client {
     app = app.fallback_service(ServeDir::new("assets/client-web"));
-    tracing::info!("Serving web client");
+    tracing::info!("Serving web client.");
   }
 
   let listener4 = tokio::net::TcpListener::bind(address_ipv4).await.unwrap();

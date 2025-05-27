@@ -20,6 +20,7 @@ async fn main() {
   let Cli {
     no_client,
     no_server,
+    no_api,
     address_ipv4,
     address_ipv6,
     ref audio_path,
@@ -65,9 +66,6 @@ async fn main() {
   if let Err(e) = dotenv::dotenv() {
     tracing::warn!(".env file was not provided: {}", e);
   }
-
-  // Ensure that the API key is set.
-  let _ = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
 
   if let Some(audio_path) = audio_path {
     if !audio_path.exists() {
@@ -186,8 +184,9 @@ async fn main() {
   let address_ipv6 = address_ipv6.unwrap_or(config.server().address_ipv6);
 
   let _ = tokio::spawn(http::run(
-    no_server,
+    no_api,
     no_client,
+    no_server,
     address_ipv4,
     address_ipv6,
     get_tx,

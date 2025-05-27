@@ -30,6 +30,9 @@ pub struct Cli {
   /// Disables the web client.
   #[arg(short, long)]
   pub no_client: bool,
+  /// Disables the mutable API ("demo mode").
+  #[arg(short, long)]
+  pub no_api: bool,
 
   /// The socket IPv4 address to bind the WebSocket server to.
   #[arg(short, long, default_value = None)]
