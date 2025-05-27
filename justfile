@@ -19,7 +19,7 @@ prepare-release: build-client
   mkdir -p dist/release
   cp -rL build_assets/shared/* dist/linux-gnu/
   cp -rL build_assets/shared/* dist/linux-musl/
-  cp -rL build_assets/shared/* dist/windows/
+  cp -rL build_assets/shared/* dist/windows-gnu/
 
 release-linux-gnu: build-linux-gnu prepare-release
   cp -rL build_assets/linux/* dist/linux-gnu/
