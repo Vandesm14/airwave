@@ -1,5 +1,6 @@
 build-client:
   pnpm i
+  rm -rf assets/client-web
   pnpm client-web:build
 
 build-linux: build-client
