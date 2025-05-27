@@ -1,0 +1,14 @@
+{
+  "imports": [
+    "assets/prompts/tasks/altitude.json",
+    "assets/prompts/tasks/direct.json",
+    "assets/prompts/tasks/frequency.json",
+    "assets/prompts/tasks/go-around.json",
+    "assets/prompts/tasks/heading.json",
+    "assets/prompts/tasks/ident.json",
+    "assets/prompts/tasks/land.json",
+    "assets/prompts/tasks/resume.json",
+    "assets/prompts/tasks/speed.json"
+  ],
+  "prompt": []
+}

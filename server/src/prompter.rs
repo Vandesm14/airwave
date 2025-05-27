@@ -188,7 +188,7 @@ impl Prompter {
     message: String,
   ) -> Result<Vec<CallsignAndRequest>, Error> {
     let prompt =
-      Self::load_prompt_as_string("server/prompts/splitter.json".into())?;
+      Self::load_prompt_as_string("assets/prompts/splitter.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
       tracing::warn!("{result}");
@@ -217,7 +217,7 @@ impl Prompter {
 
   pub async fn generate_readback(message: String) -> Result<String, Error> {
     let prompt =
-      Self::load_prompt_as_string("server/prompts/readback.json".into())?;
+      Self::load_prompt_as_string("assets/prompts/readback.json".into())?;
     let result = send_chatgpt_request(prompt.clone(), message).await?;
     if let Some(result) = result {
       Ok(result)
@@ -244,7 +244,7 @@ impl Prompter {
       return Err(Error::NoResult("Unknown aircraft state".into()));
     };
 
-    let path = format!("server/prompts/{mode}.json");
+    let path = format!("assets/prompts/{mode}.json");
     let prompt = Self::load_prompt_as_string(path.clone().into())?;
 
     let result =
@@ -270,14 +270,14 @@ impl Prompter {
     use std::path::Path;
 
     let prompt = Prompter::load_prompt_as_string(
-      Path::new("server/prompts/air.json").into(),
+      Path::new("assets/prompts/air.json").into(),
     )
     .unwrap();
 
     std::fs::write("prompt.air.txt", prompt).unwrap();
 
     let prompt = Prompter::load_prompt_as_string(
-      Path::new("server/prompts/ground.json").into(),
+      Path::new("assets/prompts/ground.json").into(),
     )
     .unwrap();
 

@@ -1,0 +1,10 @@
+{
+  "imports": [
+    "assets/prompts/tasks/frequency.json",
+    "assets/prompts/tasks/ident.json",
+    "assets/prompts/tasks/line-up.json",
+    "assets/prompts/tasks/takeoff.json",
+    "assets/prompts/tasks/taxi.json"
+  ],
+  "prompt": []
+}
