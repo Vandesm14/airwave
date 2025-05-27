@@ -42,7 +42,7 @@ export default function Flights() {
 
   return (
     <div class="container border">
-      <div class="airport">
+      <div id="airport">
         <Show when={!show()}>
           <button onClick={() => setShow(true)}>Airport</button>
         </Show>
