@@ -37,6 +37,7 @@ import { Gate } from '../bindings/Gate';
 import { Taxiway } from '../bindings/Taxiway';
 import { World } from '../bindings/World';
 import { Airport } from '../bindings/Airport';
+import { useDemoMode } from './lib/hooks';
 
 const groundScale = 5.0;
 const FEET_TO_PIXELS = 0.003;
@@ -105,6 +106,8 @@ export default function Canvas() {
   let [currentFps, setCurrentFps] = createSignal(0);
 
   const [airportId] = useAtom(airportAtom);
+
+  const isDemoMode = useDemoMode();
 
   createEffect(() => {
     const id = airportId();
@@ -381,7 +384,9 @@ export default function Canvas() {
         drawCompass(ctx);
       }
 
-      drawFPS(ctx);
+      if (!isDemoMode()) {
+        drawFPS(ctx);
+      }
     }
   }
 

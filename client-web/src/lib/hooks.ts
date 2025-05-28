@@ -1,7 +1,15 @@
 import { useAtom } from 'solid-jotai';
 import { PrimitiveAtom, SetStateAction } from 'jotai';
-import { Accessor, createEffect, Resource, Signal } from 'solid-js';
+import { Accessor, createEffect, createMemo, Resource, Signal } from 'solid-js';
 import { isSome } from './lib';
+
+// Check if we are in demo mode.
+export function useDemoMode() {
+  return createMemo(() => {
+    const root = document.getElementById('root');
+    return root?.classList.contains('demo');
+  });
+}
 
 type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
 

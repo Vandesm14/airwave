@@ -4,7 +4,7 @@ import { createMemo, Show } from 'solid-js';
 import Canvas from './Canvas';
 import StripBoard from './StripBoard';
 import FreqSelector from './FreqSelector';
-import { useStorageAtom } from './lib/hooks';
+import { useDemoMode, useStorageAtom } from './lib/hooks';
 import { baseAPIPath, getMessages, usePing } from './lib/api';
 import { useQueryClient } from '@tanstack/solid-query';
 import Flights from './Airport';
@@ -53,11 +53,7 @@ export default function App() {
     window.location.href = newURL;
   };
 
-  // Check if we are in demo mode.
-  const isDemoMode = createMemo(() => {
-    const root = document.getElementById('root');
-    return root?.classList.contains('demo');
-  });
+  const isDemoMode = useDemoMode();
 
   return (
     <>
