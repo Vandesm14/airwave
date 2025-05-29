@@ -734,13 +734,16 @@ impl Engine {
       } else if matches!(aircraft.segment, FlightSegment::Landing) {
         if let AircraftState::Landing { state, .. } = aircraft.state {
           if state.established() {
-            events.push(
-              AircraftEvent::new(
-                aircraft.id,
-                EventKind::NamedFrequency("tower".to_owned()),
-              )
-              .into(),
-            );
+            if let Some(tower) = aircraft.airspace.and_then(|id| {
+              self.world.airport(id).map(|a| a.frequencies.tower)
+            }) {
+              if aircraft.frequency != tower {
+                events.push(
+                  AircraftEvent::new(aircraft.id, EventKind::Frequency(tower))
+                    .into(),
+                );
+              }
+            }
           }
         }
       }
