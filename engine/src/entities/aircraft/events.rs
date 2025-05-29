@@ -478,6 +478,9 @@ pub fn handle_aircraft_event(
             )),
           )));
         }
+        "dump" => {
+          tracing::warn!("dump: {:#?}", aircraft);
+        }
 
         _ => {}
       }

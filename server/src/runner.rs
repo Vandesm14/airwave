@@ -328,7 +328,8 @@ impl Runner {
             .find(|a| {
               // Find the aircraft that is parked at the gate.
               if let AircraftState::Parked { at } = &a.state {
-                at.name == gate.id && a.pos == gate.pos
+                at.name == gate.id
+                  && a.airspace.is_some_and(|id| id == airport.id)
               } else {
                 false
               }
@@ -527,7 +528,7 @@ impl Runner {
 
     // TODO: This ensures that the max time is 30 minutes, but should change
     // once we have a quicker engine loop, then we can quick start quicker.
-    let max_time_secs = 60.0 * 30.0;
+    let max_time_secs = 60.0 * 150.0;
     let max_ticks =
       (max_time_secs * self.engine.tick_rate_tps as f32).ceil() as usize;
 

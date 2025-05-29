@@ -243,6 +243,9 @@ impl Aircraft {
           NodeBehavior::GoTo => {}
           NodeBehavior::HoldShort => {}
           NodeBehavior::Park => {
+            self.pos = current.data;
+            self.speed = 0.0;
+            self.target.speed = 0.0;
             self.state = AircraftState::Parked {
               at: current.clone(),
             };
