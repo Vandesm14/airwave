@@ -73,21 +73,45 @@ pub fn duration_now() -> Duration {
   SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
 }
 
+// TODO: Remove this once we fix the issue with it.
+// Old
+// pub fn heading_to_direction(heading: f32) -> &'static str {
+//   // Normalize the heading to be between 0 and 360
+//   let normalized_heading = heading.rem_euclid(360.0);
+
+//   match normalized_heading {
+//     0.0..=22.5 => "North",
+//     22.6..=67.5 => "Northeast",
+//     67.6..=112.5 => "East",
+//     112.6..=157.5 => "Southeast",
+//     157.6..=202.5 => "South",
+//     202.6..=247.5 => "Southwest",
+//     247.6..=292.5 => "West",
+//     292.6..=337.5 => "Northwest",
+//     337.6..=360.0 => "North",
+//     _ => unreachable!(),
+//   }
+// }
+
+// New
 pub fn heading_to_direction(heading: f32) -> &'static str {
   // Normalize the heading to be between 0 and 360
   let normalized_heading = heading.rem_euclid(360.0);
 
   match normalized_heading {
     0.0..=22.5 => "North",
-    22.6..=67.5 => "Northeast",
-    67.6..=112.5 => "East",
-    112.6..=157.5 => "Southeast",
-    157.6..=202.5 => "South",
-    202.6..=247.5 => "Southwest",
-    247.6..=292.5 => "West",
-    292.6..=337.5 => "Northwest",
-    337.6..=360.0 => "North",
-    _ => unreachable!(),
+    22.5..=67.5 => "Northeast",
+    67.5..=112.5 => "East",
+    112.5..=157.5 => "Southeast",
+    157.5..=202.5 => "South",
+    202.5..=247.5 => "Southwest",
+    247.5..=292.5 => "West",
+    292.5..=337.5 => "Northwest",
+    337.5..=360.0 => "North",
+    _ => unreachable!(
+      "Invalid heading value: {:?} (normalized: {:?})",
+      heading, normalized_heading
+    ),
   }
 }
 
