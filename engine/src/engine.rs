@@ -184,8 +184,8 @@ impl Engine {
       }
       self.marker.end(mark_events);
 
-      let mark_effects = self.marker.start("effects");
       // Run through all effects
+      let mark_effects = self.marker.start("effects");
       // State effects
       aircraft.update_taxiing(&mut events, &self.world, dt);
       aircraft.update_landing(&mut events, dt);
