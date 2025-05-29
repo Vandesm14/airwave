@@ -11,6 +11,7 @@ pub mod engine;
 pub mod entities;
 pub mod geometry;
 pub mod line;
+pub mod marker;
 pub mod pathfinder;
 pub mod wayfinder;
 pub mod wordify;
