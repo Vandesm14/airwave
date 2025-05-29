@@ -3,6 +3,8 @@ use std::{
   time::{Duration, Instant},
 };
 
+use itertools::Itertools;
+
 #[derive(Debug, Clone, Copy)]
 pub enum Mark<T>
 where
@@ -10,6 +12,18 @@ where
 {
   Start(T),
   End(T),
+}
+
+impl<T> Mark<T>
+where
+  T: std::hash::Hash + Clone + std::fmt::Debug + Eq,
+{
+  pub fn key(&self) -> &T {
+    match self {
+      Mark::Start(key) => key,
+      Mark::End(key) => key,
+    }
+  }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -65,6 +79,57 @@ where
 
     times
   }
+
+  pub fn average_duration(&self, key: &T) -> Option<Duration> {
+    let durations = self.summarize_marks();
+    let durations = durations.get(key)?;
+    if durations.is_empty() {
+      return None;
+    }
+    Some(durations.iter().sum::<Duration>() / durations.len() as u32)
+  }
+
+  pub fn min_duration(&self, key: &T) -> Option<Duration> {
+    let durations = self.summarize_marks();
+    let durations = durations.get(key)?;
+    if durations.is_empty() {
+      return None;
+    }
+    Some(*durations.iter().min()?)
+  }
+
+  pub fn max_duration(&self, key: &T) -> Option<Duration> {
+    let durations = self.summarize_marks();
+    let durations = durations.get(key)?;
+    if durations.is_empty() {
+      return None;
+    }
+    Some(*durations.iter().max()?)
+  }
+
+  pub fn total_duration(&self, key: &T) -> Option<Duration> {
+    let durations = self.summarize_marks();
+    let durations = durations.get(key)?;
+    if durations.is_empty() {
+      return None;
+    }
+    Some(durations.iter().sum())
+  }
+
+  pub fn keys(&self) -> impl Iterator<Item = &T> {
+    self.marks.iter().map(|mark| mark.key()).dedup()
+  }
+
+  pub fn start(&mut self, key: T) -> T {
+    let now = Instant::now();
+    self.add_mark(Mark::Start(key.clone()), now);
+    key
+  }
+
+  pub fn end(&mut self, key: T) {
+    let now = Instant::now();
+    self.add_mark(Mark::End(key), now);
+  }
 }
 
 #[cfg(test)]
@@ -107,10 +172,9 @@ mod tests {
     let next = next + Duration::from_secs(2);
     marker.add_mark(Mark::End("task1"), next);
 
-    let summary = marker.summarize_marks();
-    let task1 = summary.get("task1").unwrap();
-    let average = task1.iter().sum::<Duration>() / task1.len() as u32;
-
-    assert_eq!(average, Duration::from_secs(2));
+    assert_eq!(
+      marker.average_duration(&"task1"),
+      Some(Duration::from_secs(2))
+    );
   }
 }

@@ -24,6 +24,7 @@ use crate::{
   },
   geometry::{AngleDirections, angle_between_points, delta_angle, move_point},
   line::Line,
+  marker::Marker,
   pathfinder::{Node, NodeBehavior, NodeKind},
   sign3,
   wayfinder::VORData,
@@ -97,6 +98,8 @@ pub struct Engine {
   pub last_tick: Instant,
   pub tick_counter: usize,
   pub tick_rate_tps: usize,
+
+  pub marker: Marker<&'static str>,
 }
 
 impl Default for Engine {
@@ -111,6 +114,7 @@ impl Default for Engine {
       last_tick: Instant::now(),
       tick_counter: Default::default(),
       tick_rate_tps: DEFAULT_TICK_RATE_TPS,
+      marker: Marker::default(),
     }
   }
 }
@@ -139,6 +143,8 @@ impl Engine {
   }
 
   pub fn tick(&mut self) -> Vec<Event> {
+    let mark_start = self.marker.start("tick");
+
     // TODO: use real DT.
     let dt = 1.0 / self.tick_rate_tps as f32;
     self.last_tick = Instant::now();
@@ -154,10 +160,13 @@ impl Engine {
     }
 
     if self.config.run_collisions() {
+      let mark_tcas = self.marker.start("tcas");
       events.extend(self.handle_tcas());
+      self.marker.end(mark_tcas);
     }
 
     for aircraft in self.game.aircraft.iter_mut() {
+      let mark_events = self.marker.start("events");
       // Run through all events
       for event in self.events.iter().filter_map(|e| match e {
         Event::Aircraft(aircraft_event) => Some(aircraft_event),
@@ -173,7 +182,9 @@ impl Engine {
           );
         }
       }
+      self.marker.end(mark_events);
 
+      let mark_effects = self.marker.start("effects");
       // Run through all effects
       // State effects
       aircraft.update_taxiing(&mut events, &self.world, dt);
@@ -185,17 +196,31 @@ impl Engine {
       aircraft.update_position(dt);
       aircraft.update_airspace(&self.world);
       aircraft.update_segment(&mut events, &self.world, self.tick_counter);
+      self.marker.end(mark_effects);
     }
 
+    let mark_avail_gates = self.marker.start("avail-gates");
     self.compute_available_gates();
+    self.marker.end(mark_avail_gates);
 
     // ATC Automation
+    let mark_atc_automation = self.marker.start("atc-automation");
+    let mark_auto_approach = self.marker.start("auto-approach");
     self.update_auto_approach(&mut events);
+    self.marker.end(mark_auto_approach);
+
+    let mark_auto_ground = self.marker.start("auto-ground");
     self.update_auto_ground(&mut events);
+    self.marker.end(mark_auto_ground);
+    self.marker.end(mark_atc_automation);
 
     if self.config.run_collisions() {
+      let mark_taxi_collisions = self.marker.start("taxi-collisions");
       self.taxi_collisions();
+      self.marker.end(mark_taxi_collisions);
     }
+
+    self.marker.end(mark_start);
 
     self.tick_counter += 1;
 

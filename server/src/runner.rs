@@ -510,6 +510,29 @@ impl Runner {
         percent * 100.0
       );
 
+      let max_key_len = self.engine.marker.keys().max_by_key(|a| a.len());
+      for (mark, times) in self
+        .engine
+        .marker
+        .summarize_marks()
+        .iter()
+        .sorted_by_key(|(key, _)| key.to_owned())
+      {
+        let avg =
+          times.iter().sum::<Duration>().as_secs_f32() / times.len() as f32;
+        let min = times.iter().min().unwrap();
+        let max = times.iter().max().unwrap();
+
+        tracing::info!(
+          "Mark: {} | Avg: {:.2}ms | Min: {:.2}ms | Max: {:.2}ms",
+          format!("{mark:>width$}", width = max_key_len.map_or(0, |s| s.len())),
+          avg * 1000.0,
+          min.as_secs_f32() * 1000.0,
+          max.as_secs_f32() * 1000.0
+        );
+      }
+
+      self.engine.marker.clear();
       self.last_perf_tick = self.engine.tick_counter;
       self.perf_tick_time_ms = Duration::default();
     }
